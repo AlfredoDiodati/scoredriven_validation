@@ -1,0 +1,58 @@
+t-QVARMA (no drift), same Fisher-relation partition with Employment differenced as us_qvarmad_employment_change.c: GDP_growth, EN_growth, Employment_change I(0), Inflation and InterestRate co-integrated (K_star 3, K_dagger 2, R 1 - forced) - built to compare against that file's own drift-carrying fit, not to re-search the grid
+(GDP_growth, EN_growth, Employment_change, Inflation, InterestRate), 1973Q2 to 2019Q4, 187 quarters
+
+spec       params        aic        bic        hqc        log_lik   gradient    niter    C_1 genuine_max
+(1,1,2)        42     9.8839    10.6096    10.1779      -882.1424   0.004713     1023  0.595        yes
+(1,1,4)        46     9.7564    10.5513    10.0785      -866.2277     0.1361     6956  0.660        yes
+
+residual analysis, every spec
+
+(1,1,2), curvature 0.1166
+  residual mean, null is zero, Newey-West se at bandwidth 4
+    GDP_growth     mean  -0.0148   se  0.0579   t  -0.255   consistent with zero
+    EN_growth      mean  -0.1352   se  0.1174   t  -1.151   consistent with zero
+    Employment_change mean  -0.0233   se  0.0250   t  -0.931   consistent with zero
+    Inflation      mean   0.0375   se  0.0726   t   0.516   consistent with zero
+    InterestRate   mean  -0.0674   se  0.0883   t  -0.763   consistent with zero
+  contemporaneous covariance against nu/(nu-2) Sigma: worst |difference| 0.524
+  residual autocorrelation, lags 1 to 4, against the approximate 95 per cent white-noise band +-0.1433, and the Ljung-Box joint test over those
+  same 4 lags, null is no autocorrelation up to lag 4
+    GDP_growth      0.1411   0.1040  -0.0234  -0.0196    0 of 4 outside the band, Ljung-Box Q   6.026, p 0.1972
+    EN_growth      -0.0878  -0.0237   0.1684* -0.0157    1 of 4 outside the band, Ljung-Box Q   7.063, p 0.1326
+    Employment_change  0.3149*  0.1511*  0.0319  -0.0812    2 of 4 outside the band, Ljung-Box Q  24.676, p 5.844e-05
+    Inflation       0.5410*  0.3841*  0.4471*  0.3626*   4 of 4 outside the band, Ljung-Box Q 147.598, p 6.659e-31
+    InterestRate    0.1785* -0.1730* -0.0175  -0.0344    2 of 4 outside the band, Ljung-Box Q  12.063, p 0.01689
+  q_t/K against F(5, 7.20): sample mean 1.6487 against 1.3847
+    sample variance 6.1812 against 2.4452
+  mean squared residual (et_al.'s stats_mse against zero)
+    pooled, all 5 series x 187 periods: 0.998664
+    GDP_growth     0.474869
+    EN_growth      2.704503
+    Employment_change 0.070400
+    Inflation      0.350967
+    InterestRate   1.392579
+
+(1,1,4), curvature 0.001715
+  residual mean, null is zero, Newey-West se at bandwidth 4
+    GDP_growth     mean   0.0014   se  0.0536   t   0.027   consistent with zero
+    EN_growth      mean  -0.1212   se  0.1135   t  -1.068   consistent with zero
+    Employment_change mean  -0.0145   se  0.0228   t  -0.634   consistent with zero
+    Inflation      mean   0.0366   se  0.0731   t   0.501   consistent with zero
+    InterestRate   mean  -0.0603   se  0.0690   t  -0.873   consistent with zero
+  contemporaneous covariance against nu/(nu-2) Sigma: worst |difference| 0.4652
+  residual autocorrelation, lags 1 to 4, against the approximate 95 per cent white-noise band +-0.1433, and the Ljung-Box joint test over those
+  same 4 lags, null is no autocorrelation up to lag 4
+    GDP_growth      0.1042   0.0798  -0.0643  -0.0159    0 of 4 outside the band, Ljung-Box Q   4.125, p 0.3894
+    EN_growth      -0.1224  -0.0378   0.1708*  0.0037    1 of 4 outside the band, Ljung-Box Q   8.724, p 0.06839
+    Employment_change  0.2779*  0.1223  -0.0086  -0.0887    1 of 4 outside the band, Ljung-Box Q  19.063, p 0.0007637
+    Inflation       0.5704*  0.3935*  0.4456*  0.3798*   4 of 4 outside the band, Ljung-Box Q 157.404, p 5.266e-33
+    InterestRate    0.0701  -0.2320* -0.0436  -0.1415    1 of 4 outside the band, Ljung-Box Q  15.447, p 0.003859
+  q_t/K against F(5, 7.62): sample mean 1.5917 against 1.3559
+    sample variance 5.5392 against 2.1579
+  mean squared residual (et_al.'s stats_mse against zero)
+    pooled, all 5 series x 187 periods: 0.952419
+    GDP_growth     0.446374
+    EN_growth      2.702649
+    Employment_change 0.063180
+    Inflation      0.348336
+    InterestRate   1.201555

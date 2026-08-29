@@ -1,0 +1,21 @@
+t-QVARMA(2,1,1), no drift, fit to qvarma_data.txt (GDP_growth, Inflation, Fed_rate),
+1954Q3 to 2020Q2, 264 quarters - Blazsek, Escribano and Licht (2023)'s own best
+specification by AIC, BIC and HQC (their Table 3)
+K_star 1, K_dagger 2, R 1, mu_star free on every row (the paper's own convention),
+Phi_star bound 1.0000, nu started at 30
+
+params 24, aic 6.0884, bic 6.4135, hqc 6.2190, log_lik -779.6658, gradient 0.004109, niter 458
+C_1 0.8198
+
+  residual mean, null is zero, Newey-West se at bandwidth 5
+    GDP_growth     mean   0.0772   se  0.0770   t   1.002   consistent with zero
+    Inflation      mean  -0.0070   se  0.0198   t  -0.354   consistent with zero
+    Fed_rate       mean   0.0094   se  0.0466   t   0.202   consistent with zero
+  contemporaneous covariance against nu/(nu-2) Sigma: worst |difference| 0.1716
+  residual autocorrelation, lags 1 to 4, against the approximate 95 per cent white-noise band +-0.1206, and the Ljung-Box joint test over those
+  same 4 lags, null is no autocorrelation up to lag 4
+    GDP_growth      0.0690   0.0635   0.0545  -0.3433*   1 of 4 outside the band, Ljung-Box Q  34.992, p 4.662e-07
+    Inflation      -0.0203   0.1047   0.0841  -0.2475*   1 of 4 outside the band, Ljung-Box Q  21.492, p 0.0002529
+    Fed_rate       -0.0034  -0.1216* -0.0251   0.0399    1 of 4 outside the band, Ljung-Box Q   4.568, p 0.3346
+  q_t/K against F(3, 96.94): sample mean 1.0879 against 1.0211
+    sample variance 7.0925 against 0.7324

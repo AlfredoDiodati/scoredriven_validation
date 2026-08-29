@@ -1,0 +1,16 @@
+winning model  EstimationSeriesSample1_91_qvarma_p1q1r2
+mean IRF loss  0.1194015353, the smallest of the 3 models in the confidence set of 200
+source         out/abm_system_mcs_joint.csv
+
+averaged over  108 of 108 replicates, 42 parameters each, in the unconstrained space
+converged      3 of the 108 averaged fits; the rest stopped at the fitting script's own iteration cap
+
+nu             1596.177179
+companion      maximum eigenvalue modulus 0.484161
+
+score Jacobian averaged over 108 replicates of 400 periods at the averaged parameters
+
+bands          2722 of 10000000 rotations satisfied Table 1, percentiles 10%, 50%, 90%
+horizon        0 to 20, seed 20260822
+restrictions   GDP growth (+,+,-), inflation (-,+,-), interest rate (.,+,+) on the supply, demand and monetary policy shocks; energy demand growth, employment change and shocks 4 and 5 unrestricted
+shock names    apply to the band alone. The unrotated column is the Cholesky orientation, where shock b is series b's own orthogonalized innovation under the row order GDP growth, Energy demand growth, Employment change, Inflation, Interest rate

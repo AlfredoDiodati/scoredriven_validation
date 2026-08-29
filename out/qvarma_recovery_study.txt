@@ -1,0 +1,28 @@
+t-QVARMA parameter recovery study
+float64 build, 12 replications per cell
+
+Each cell simulates from known parameters, fits from a start perturbed
+by 0.25 in every coordinate, and reports the root mean squared error of
+the estimates on the unconstrained scale, per parameter block, averaged
+over the replications that converged. conv is how many of them did.
+se is how many of those produced usable standard errors, and cover the
+fraction of coordinates whose true value fell within 1.96 of them, which
+should be near 0.95 wherever the errors are honest.
+Smaller is better; the last column names the block that came out worst.
+
+1. Sample size, baseline shape and baseline regime
+                       conv  iters    se  cover       c     Phi     Psi   Omega      nu   alpha    beta   worst
+T = 100                6/12    631     3  0.903   0.485   3.248   0.255   0.111   0.399   0.116   0.613   Phi    failures: hit the iteration limit
+T = 250               11/12    178    11  0.875   0.300   2.512   0.113   0.058   0.651   0.083   0.362   Phi    failures: hit the iteration limit
+T = 500               12/12    218    12  0.924   0.314   0.289   0.072   0.040   0.228   0.046   0.303   c     
+T = 1000              12/12    294    11  0.924   0.226   0.395   0.062   0.029   0.209   0.052   0.177   Phi   
+T = 2000              12/12    376    12  0.941   0.256   0.099   0.039   0.018   0.107   0.017   0.108   c     
+
+2. Model shape, T = 500, baseline regime
+                       conv  iters    se  cover       c     Phi     Psi   Omega      nu   alpha    beta   worst
+baseline (2,1,1)      10/12    394     8  0.932   0.199   0.224   0.118   0.041   0.394   0.147   0.339   nu     failures: hit the iteration limit
+three AR lags         11/12    338    10  0.920   0.286   0.242   0.086   0.033   0.208   0.059   0.276   c      failures: hit the iteration limit
+two score lags        12/12    277    12  0.924   0.220   0.143   0.089   0.034   0.265   0.037   0.348   beta  
+two coint lags        10/12   1638     0      -   0.158   0.150   0.117   0.044   0.511   0.108   0.356   nu     failures: hit the iteration limit
+rank two               5/12   1972     1  0.909   0.292   0.226   0.106   0.042   0.377   0.089   1.705   beta   failures: hit the iteration limit
+no I(1) block         12/12     65    12  0.917   0.029   0.853   0.080   0.041   0.315       -       -   Phi   
