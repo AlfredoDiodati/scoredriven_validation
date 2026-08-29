@@ -1,0 +1,108 @@
+What one t-QVARMA fit costs, and what the 500,000-fit run will take. Measured
+on this machine, 2026-08-29, by the benchmarks under tests/. `make bench`
+reproduces all of them in about thirteen seconds.
+
+Machine: Intel i5-7400, 4 cores, no hyperthreading, 3.0 GHz base / 3.5 GHz
+turbo, 6 MiB L3, 23 GiB RAM. Ubuntu, gcc -O2 -march=native -DMAT_DOUBLE
+-fopenmp, OpenBLAS 0.3.26 pthread build, the only variant installed.
+
+et_al. as installed at /usr/local/include/et_al./ on 2026-08-29 16:48, matching
+the development tree at commit 42ab6e4. That copy carries two changes this
+report is the after picture of: mat_gemm dispatching products below
+MAT_GEMM_SMALL to an inline loop instead of OpenBLAS, and a fused tapeless
+filter in sd/qvarma.h that qvarma_negative_log_likelihood now takes, against a
+workspace qvarma_fit builds once per fit and reuses across every evaluation.
+
+Workload: applications/abm_system_fit_qvarma.c. Data is
+dataset/abm_system/<sample>/replicate_NNN.csv, K = 5 series by T = 400 periods.
+The pipeline's spec is t-QVARMA(1,1,2), K_star 3, R 1, max_iterations 2000.
+Timing series unless stated:
+dataset/abm_system/EstimationSeriesSample1_1/replicate_000.csv.
+
+Target size 500 folders x 1000 runs = 500,000 fits at r = 2.
+
+Cost of one fit, single threaded, tests/qvarma_fit_cost.c, 200 repeats per
+evaluation timing, one full fit per spec:
+
+  spec r=2: 42 parameters, 0.112 ms per value+gradient, 0.033 ms per value only,
+            0.176 s for the fit, 2000 iterations, not converged, |g| = 2.6e4
+  spec r=4: 46 parameters, 0.079 ms per value+gradient, 0.032 ms per value only,
+            0.175 s for the fit, 2000 iterations, not converged, |g| = 197
+
+The fused filter against the traced one it replaced, tests/qvarma_taped_vs_fused.c.
+Both paths are et_al.'s; the traced one is _qvarma_link plus _qvarma_filter plus
+tape_backward. They agree before either is timed: identical log-likelihood
+(-2599.6696743270), and a worst relative gradient difference of 6.08e-13 over
+the 42 coordinates.
+
+  value only          taped   1 thread   0.2376 ms   scaling 1.00
+  value only          taped   4 threads  0.2820 ms   scaling 3.37
+  value only          fused   1 thread   0.0300 ms   scaling 1.00
+  value only          fused   4 threads  0.0393 ms   scaling 3.05
+  value and gradient  taped   1 thread   0.3902 ms   scaling 1.00
+  value and gradient  taped   4 threads  0.4943 ms   scaling 3.16
+  value and gradient  fused   1 thread   0.0705 ms   scaling 1.00
+  value and gradient  fused   4 threads  0.0766 ms   scaling 3.68
+
+Fused against taped at the same thread count: 7.9x and 7.2x on the value, 5.5x
+and 6.5x on the value and gradient. Against the taped path as it stood before
+mat_gemm's small-size dispatch, when a value+gradient cost 1.404 ms, the fused
+path is 20x.
+
+The backward pass costs 1.35 times its own forward (0.0705 against 0.0300),
+which is below the two to four times a hand-written reverse pass usually costs.
+
+Thread scaling on real fits, tests/qvarma_thread_scaling.c, 8 fits (replicates
+0 to 3, both specs), schedule(dynamic), openblas_set_num_threads(1) as the
+pipeline sets it:
+
+  1 thread   1.361 s   1.00x   0.170 s per fit
+  2 threads  0.745 s   1.83x   0.093 s per fit
+  4 threads  0.401 s   3.40x   0.050 s per fit
+
+The OpenMP loop scales now. Before mat_gemm's dispatch it ran at 0.56x, slower
+on four threads than on one, because every ad_matmul reached OpenBLAS and its
+buffer table is one shared structure per process. tests/small_call_scaling.c
+still shows the underlying effect on a raw cblas call, 155 ns at one thread
+against 1339 ns at four, 0.46x, with malloc at 3.30x and pure arithmetic at
+3.85x on the same machine: the contention was always BLAS, and the fix was to
+stop calling it at these sizes.
+
+Separate processes, tests/qvarma_process_scaling.c, r = 2, 2 fits per copy:
+3.14x at four copies, 0.053 s per fit. No better than threads any more, so the
+pipeline needs no change here.
+
+File handling per fit, tests/qvarma_fit_io.c, files already in the page cache:
+
+  read the replicate CSV    0.932 ms   0.5% of a fit
+  write the fit JSON        0.172 ms   0.1%
+  read the fit JSON back    0.219 ms   0.1%
+
+0.7 percent of a fit, so not worth touching. A fully cached rerun costs 1.15 ms
+per fit and does nothing else.
+
+Projection for 500,000 fits at r = 2, from the 0.050 s per fit measured at four
+threads on real fits:
+
+  500,000 x 0.050 s = 25,000 s = 6.9 hours
+
+Before these changes the same run projected to 38 days.
+
+Two things the speed does not fix.
+
+Convergence. At 0.176 s the fit still stops at the 2000 iteration cap with a
+gradient norm of 2.6e4, and tests/qvarma_iteration_budget.c still shows the
+likelihood descending there: the earliest iteration within 1.0 of the
+2000-iteration value is between 1228 and 1956 across the replicates sampled.
+The budget cannot be shortened. What it now costs to raise it is 0.088 ms per
+extra iteration per fit, so doubling the cap costs about 7 more hours.
+
+The existing cache is stale. qvarma_load_fit accepts a cached fit on the data
+fingerprint alone and knows nothing about the estimator, so the 21,600 JSONs
+under out/abm_system_fit_qvarma/ would be reloaded unchanged by a rerun. They
+were produced by the traced path. The two paths compute the same function to
+6.08e-13, but 2000 unconverged iterations on this likelihood amplify that into
+different endpoints: for r = 2 the log-likelihood moves by 0.0015 to 1.5 across
+the four replicates checked against out/abm_system_fit_qvarma_manifest.txt, in
+both directions. Mixing the two in one confidence set would compare fits that
+did not stop in the same place for reasons unrelated to the ABM.

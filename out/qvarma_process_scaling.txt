@@ -1,0 +1,6 @@
+spec r = 2, 2 fits per copy, max_iterations = 2000, one BLAS thread per copy
+
+  copies     fits     wall_s    s_per_fit    speedup
+       1        2      0.331        0.166       1.00
+       2        4      0.336        0.084       1.97
+       4        8      0.421        0.053       3.14

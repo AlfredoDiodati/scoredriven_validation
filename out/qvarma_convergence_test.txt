@@ -1,0 +1,187 @@
+t-QVARMA(1,1,2), K = 5, K_star = 3, R = 1, simulated from a fixed truth with nu = 8.
+Reference point: 50000 iterations from build_start. Standard errors from the Hessian there.
+A fit has arrived when max_i |theta_i - theta_star_i| / se_i <= 0.01.
+Budgets: 25, 50, 100, 200, 400, 800, 1600, 3200, 6400
+72 cells: T in {200, 400, 1600} by series scale in {1, 100} by 8 replicates.
+
+cells with a positive definite reference Hessian: 59 of 72
+of those, cells that arrived within the largest budget: 57
+
+per cell, the budget at which it arrived and each criterion read there
+       T    scale  rep arrived_at   worst_gradient  relative_gradient   newton_decrement  per_observation
+     200        0    0       3200           0.2144          6.107e-05          4.304e-05         0.001072
+     200        0    1       3200           0.6306          0.0001818          0.0005263         0.003153
+     200        0    2       3200          0.08917          2.567e-05          0.0001511        0.0004459
+     200        0    5       3200          0.02819          2.083e-05          4.938e-05         0.000141
+     200        0    6       3200          0.05196          1.493e-05          4.405e-05        0.0002598
+     200        1    0        100          0.02565          2.342e-05           5.92e-05        0.0001283
+     200        1    1        400           0.1358          0.0001195          3.022e-05        0.0006792
+     200        1    2        100         0.001227          1.085e-06          1.136e-08        6.137e-06
+     200        1    3        200         0.001733          1.487e-06          2.587e-08        8.663e-06
+     200        1    5        100        0.0003755          3.604e-07          9.139e-09        1.877e-06
+     200        1    6        100        0.0001985          1.764e-07          4.455e-09        9.926e-07
+     200      100    2       3200        0.0006136          4.737e-06          7.583e-06        3.068e-06
+     200      100    5       1600          0.01384          6.004e-06          0.0001011        6.921e-05
+     200      100    6       3200         0.001314          9.196e-07          1.975e-06         6.57e-06
+     400        0    0       3200          0.02704          1.804e-05          3.124e-05         6.76e-05
+     400        0    1       1600            0.363          5.205e-05          0.0003714        0.0009076
+     400        0    2       3200           0.1214            2.8e-05          0.0003866        0.0003035
+     400        0    3       3200          0.09462          1.477e-05          0.0002249        0.0002366
+     400        0    4       3200           0.1213          4.032e-05            9.5e-05        0.0003033
+     400        0    5       3200           0.3823          5.477e-05          0.0002174        0.0009557
+     400        0    6       3200          0.07069          1.706e-05          0.0001822        0.0001767
+     400        0    7       1600           0.1071          2.648e-05          5.513e-05        0.0002678
+     400        1    0        100           0.1721          7.395e-05          8.576e-05        0.0004303
+     400        1    1        100         0.009832          4.398e-06           5.11e-06        2.458e-05
+     400        1    2        200         0.004343          1.876e-06          5.083e-08        1.086e-05
+     400        1    3        200         0.002504          1.116e-06           7.24e-07        6.259e-06
+     400        1    4        200         0.008576          3.805e-06           1.29e-07        2.144e-05
+     400        1    5        200         0.006539          2.932e-06          6.941e-08        1.635e-05
+     400        1    6        200          0.01294          5.852e-06          2.888e-06        3.236e-05
+     400        1    7        100         0.006211          2.781e-06          1.492e-06        1.553e-05
+     400      100    0       3200          0.05541          4.802e-06          5.823e-05        0.0001385
+     400      100    1       3200         0.009038          7.871e-06          0.0001347         2.26e-05
+     400      100    3       6400          0.08362           1.05e-05          0.0004334        0.0002091
+     400      100    4       3200         0.002641          3.319e-06          2.828e-05        6.603e-06
+     400      100    5       3200          0.02303          6.907e-06           0.000483        5.756e-05
+     400      100    6       6400          0.03966          3.472e-06          0.0001648        9.914e-05
+     400      100    7       3200         0.001147          2.871e-06          0.0002997        2.867e-06
+    1600        0    0       1600           0.6923          2.512e-05          0.0003284        0.0004327
+    1600        0    1       1600           0.7057          3.127e-05          0.0002931        0.0004411
+    1600        0    2       3200           0.1573          1.556e-05          0.0002937        9.831e-05
+    1600        0    3       1600            7.324          0.0002669          0.0003503         0.004577
+    1600        0    4       3200           0.2374          8.611e-06          0.0005481        0.0001484
+    1600        0    5       1600             5.12          0.0001861          0.0002896           0.0032
+    1600        0    6       3200            1.876          6.787e-05          0.0009007         0.001172
+    1600        0    7       3200           0.2331          8.481e-06          0.0004985        0.0001457
+    1600        1    0        200          0.02073          2.234e-06          1.188e-06        1.296e-05
+    1600        1    1        400          0.06441          6.931e-06          1.925e-05        4.026e-05
+    1600        1    2        200          0.05624          6.098e-06          2.132e-05        3.515e-05
+    1600        1    3        200          0.01097          1.166e-06          7.973e-07        6.855e-06
+    1600        1    4        800          0.03661          3.946e-06          5.836e-06        2.288e-05
+    1600        1    5        200           0.0297          3.182e-06          3.933e-07        1.856e-05
+    1600        1    6        200           0.1464           1.59e-05          6.372e-06        9.151e-05
+    1600        1    7        200         0.005707          6.095e-07           4.39e-07        3.567e-06
+    1600      100    0       3200           0.2956          8.007e-06           0.009179        0.0001848
+    1600      100    2       6400          0.01779          8.938e-06           0.001015        1.112e-05
+    1600      100    3       3200          0.01612          8.232e-06           0.002273        1.007e-05
+    1600      100    5       1600          0.03539          8.812e-06            0.03059        2.212e-05
+
+spread of each criterion at the moment of arrival, over the 57 cells
+  a criterion that does not depend on T or on the units reads the same number in every cell,
+  so the ratio of its largest reading to its smallest is what is being compared here.
+
+  criterion                       min         median            max        max/min
+  worst_gradient            0.0001985        0.03661          7.324      3.689e+04
+  relative_gradient         1.764e-07      8.232e-06      0.0002669           1514
+  newton_decrement          4.455e-09      5.823e-05        0.03059      6.867e+06
+  per_observation           9.926e-07      6.921e-05       0.004577           4612
+  gradient_in_se            2.738e-05       0.007694         0.1083           3956
+
+is there a single threshold that works in every cell?
+  arrived     = se_movement <= 0.01, the threshold must accept all of these
+  not arrived = se_movement >  1, the threshold must reject all of these
+  points between the two are not counted either way.
+
+  criterion               arrived not arrived   max on arrived min on not arrived    separable
+  worst_gradient              210        233            7.324             0.3773           no
+  relative_gradient           210        233        0.0002669          8.302e-05           no
+  newton_decrement            210         98          0.03059              1.595          yes
+  per_observation             210        233         0.004577          0.0006895           no
+  gradient_in_se              210         98           0.1083             0.7524          yes
+
+the best single threshold each criterion can manage
+  criterion               threshold         errors  missed arrivals false convergences
+  worst_gradient             0.7057              7                4                  3
+  relative_gradient       7.395e-05              4                4                  0
+  newton_decrement          0.03059              0                0                  0
+  per_observation          0.001237              6                3                  3
+  gradient_in_se             0.1083              0                0                  0
+
+points where the Hessian was positive definite, so newton_decrement and gradient_in_se
+exist at all: 396 of 531 (74.6%)
+
+reference fits, for whether the yardstick itself is sound
+       T    scale  rep   worst_gradient    converged     usable
+     200        0    0           0.3484          yes        yes
+     200        0    1          0.08255          yes        yes
+     200        0    2            0.139          yes        yes
+     200        0    3             1198          yes         no
+     200        0    4        9.199e+04          yes         no
+     200        0    5          0.06014          yes        yes
+     200        0    6          0.08069          yes        yes
+     200        0    7            586.6          yes         no
+     200        1    0         0.003592          yes        yes
+     200        1    1          0.01874          yes        yes
+     200        1    2         0.002129          yes        yes
+     200        1    3          0.00287          yes        yes
+     200        1    4             6151          yes         no
+     200        1    5          0.00098          yes        yes
+     200        1    6        0.0004019          yes        yes
+     200        1    7             7416          yes         no
+     200      100    0        3.531e+06          yes         no
+     200      100    1          0.01602          yes        yes
+     200      100    2         0.001372          yes        yes
+     200      100    3        1.023e+05          yes         no
+     200      100    4        2.988e+04          yes         no
+     200      100    5          0.02332          yes        yes
+     200      100    6         0.002981          yes        yes
+     200      100    7        3.423e+04          yes         no
+     400        0    0          0.07995          yes        yes
+     400        0    1           0.9422          yes        yes
+     400        0    2           0.1808          yes        yes
+     400        0    3           0.1867          yes        yes
+     400        0    4           0.2473          yes        yes
+     400        0    5             0.64          yes        yes
+     400        0    6           0.1338          yes        yes
+     400        0    7           0.1718          yes        yes
+     400        1    0         0.007205          yes        yes
+     400        1    1         0.001876          yes        yes
+     400        1    2         0.006748          yes        yes
+     400        1    3         0.002864          yes        yes
+     400        1    4          0.01384          yes        yes
+     400        1    5          0.01076          yes        yes
+     400        1    6          0.01846          yes        yes
+     400        1    7         0.009288          yes        yes
+     400      100    0         0.003151          yes        yes
+     400      100    1          0.01612          yes        yes
+     400      100    2        6.481e+05          yes         no
+     400      100    3           0.1467          yes        yes
+     400      100    4         0.004867          yes        yes
+     400      100    5          0.03608          yes        yes
+     400      100    6         0.007083          yes        yes
+     400      100    7         0.003956          yes        yes
+    1600        0    0           0.9325          yes        yes
+    1600        0    1            1.002          yes        yes
+    1600        0    2           0.3815          yes        yes
+    1600        0    3           0.3758          yes        yes
+    1600        0    4           0.5856          yes        yes
+    1600        0    5           0.7209          yes        yes
+    1600        0    6            2.969          yes        yes
+    1600        0    7           0.5784          yes        yes
+    1600        1    0           0.0454          yes        yes
+    1600        1    1           0.2619          yes        yes
+    1600        1    2          0.02237          yes        yes
+    1600        1    3          0.01937          yes        yes
+    1600        1    4          0.06122          yes        yes
+    1600        1    5          0.04358          yes        yes
+    1600        1    6          0.01476          yes        yes
+    1600        1    7          0.01105          yes        yes
+    1600      100    0           0.5338          yes        yes
+    1600      100    1          7.9e+05          yes         no
+    1600      100    2          0.04013          yes        yes
+    1600      100    3          0.02634          yes        yes
+    1600      100    4          0.06167          yes        yes
+    1600      100    5          0.05931          yes        yes
+    1600      100    6        1.851e+13           no         no
+    1600      100    7         1.84e+09          yes         no
+
+
+the proposed test applied to the pipeline's own cached fits
+  out/abm_system_fit_qvarma, spec p1q1r2, every replicate.
+  No reference point exists for real data, so these are counts, not accuracy.
+
+  cached fits read                                 10800
+  called converged by the test in use today          895  (8.3%)
+  Hessian positive definite, so at a maximum        3081  (28.5%)
+  newton_decrement <= 0.0306 as well                 561  (5.2%)

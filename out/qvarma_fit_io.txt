@@ -1,0 +1,12 @@
+series: dataset/abm_system/EstimationSeriesSample1_1/replicate_000.csv
+K = 5, T = 400, spec r = 2, 200 repeats per file operation, single threaded
+Files are already in the page cache: this is parse and format cost, not a cold disk.
+
+operation                                    ms share of a fit
+fit, 2000 iterations                   171.7918         100.0%
+read the replicate CSV                   0.9144           0.5%
+write the fit JSON                       0.1645           0.1%
+read the fit JSON back                   0.2155           0.1%
+
+per fit including its own file handling: 172.8707 ms
+per cached fit, nothing recomputed:        1.1299 ms

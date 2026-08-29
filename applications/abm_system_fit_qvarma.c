@@ -6,12 +6,27 @@ applications/us_qvarma_employment_change.c's own grid fits to the real
 data - to every replicate dataset/abm_system_extract.c wrote under
 dataset/abm_system/, and caches every fitted parameter set the moment it
 is estimated, not once at the end: each of the 10,800 replicates times 2
-specs is one independent call to qvarma.h's own fit_cached, which writes
-its own JSON the instant that one fit finishes and reloads it on a rerun
-rather than refitting - the same caching discipline every other
-application in this project already uses, applied per (sample, replicate,
-spec) rather than once per script, because here there are 21,600
-independent fits rather than one.
+specs writes its own JSON the instant that one fit finishes - the same
+caching discipline every other application in this project already uses,
+applied per (sample, replicate, spec) rather than once per script, because
+here there are 21,600 independent fits rather than one.
+
+A cached fit is reused only when it converged. One that stopped at the
+iteration cap is carried on instead: its own stored parameters become the
+starting guess for another MAX_ITERATIONS, and the result replaces the
+cache. L-BFGS returns the best point it saw and the first point it sees is
+the cached one, so a resumed fit cannot land below where it started;
+the log-likelihood is compared anyway and the cache is left alone if it
+would not improve. That is why this does not call qvarma.h's own
+fit_cached, which returns any cache that loads: the load and the refit are
+spelled out here so the unconverged case can be told apart from the
+converged one.
+
+Resuming is per run, not to convergence. One run gives every unconverged
+fit one more budget; running it again gives them another. The consequence
+is that the estimates depend on how many times this has been run, which
+out/abm_system_fit_qvarma_manifest.txt records per fit in its origin and
+gain columns.
 
 Parallelized with OpenMP over the 10,800 (sample, replicate) pairs -
 schedule(dynamic) since some fits converge in a handful of iterations and
@@ -42,8 +57,9 @@ structure exactly, so which sample and which replicate a cached fit belongs
 to is never in question - dataset/abm_system/<sample>/replicate_<NNN>.csv's
 own input becomes out/abm_system_fit_qvarma/<sample>/replicate_<NNN>_p1q1r2_fit.json
 and ..._p1q1r4_fit.json. Rerunning this script after an interruption resumes
-rather than redoes: fit_cached loads and returns immediately whenever a
-matching cache file with the same data fingerprint already exists.
+rather than redoes: a cache file with the same data fingerprint is loaded
+rather than refitted, and refitted from its own parameters rather than from
+build_start when it did not converge.
 
 Starting-value convention identical to
 applications/us_qvarma_employment_change.c's own build_start(), r fixed at
@@ -52,9 +68,10 @@ abm_system_fit_qvarmad.c uses, chosen for direct comparability against that
 file's own output rather than a fresh search on simulated data.
 
 out/abm_system_fit_qvarma_manifest.txt records, per (sample, replicate, spec):
-converged, log-likelihood, gradient norm and AIC, written once at the end
-from what fit_cached returned for each - a summary of what the individual
-JSON caches already hold, not a substitute for them.
+converged, log-likelihood, gradient norm and AIC, plus whether the fit was
+reused from the cache, carried on from it, or estimated from build_start,
+and what carrying it on was worth. Written once at the end - a summary of
+what the individual JSON caches already hold, not a substitute for them.
 
 MAX_ITERATIONS is set to the same 2000 abm_system_fit_qvarmad.c uses, as a
 starting point for direct comparability - not because this model's own
@@ -196,6 +213,29 @@ static QvarmaParams build_start(Mat y, int rlag) {
     return m;
 }
 
+/*
+The cache, if it holds a fit of this shape for this data. The shape has to be built before
+the load: qvarma_load_params compares every field of it, and
+mu_star_stationary_only and phi_star_bound both change the length of theta it
+expects, so a cache written by this script only loads into params carrying this
+script's own settings. It is spelled out from this file's own constants rather
+than copied off the starting guess because K and R are macros here.
+*/
+static int load_cached(QvarmaFitResult *out, Mat y, int rlag, const char *path) {
+    out->params = qvarma_params_new(K, K_STAR, P, Q, rlag, R, SHARED_BETA, WARMUP_LONGEST);
+    out->params.phi_star_bound = PHI_STAR_BOUND;
+    out->params.mu_star_stationary_only = MU_STAR_STATIONARY_ONLY;
+    if (qvarma_load_fit(out, y, path)) return 1;
+    qvarma_params_free(&out->params);
+    return 0;
+}
+
+/* What one (sample, replicate, spec) fit did, beyond what the fit result itself
+   carries: whether it came from the cache untouched, was carried on from a
+   cached point, or was estimated from build_start, and what carrying it on was
+   worth in log-likelihood. */
+typedef enum { FIT_CACHED, FIT_RESUMED, FIT_FRESH } FitOrigin;
+
 typedef struct { int sample_index, replicate; } Task;
 
 int main(void) {
@@ -236,6 +276,8 @@ int main(void) {
     double *gradient_norm = malloc((size_t)total_tasks * sizeof(double));
     double *aic = malloc((size_t)total_tasks * sizeof(double));
     int *converged = malloc((size_t)total_tasks * sizeof(int));
+    FitOrigin *origin = malloc((size_t)total_tasks * sizeof(FitOrigin));
+    double *gain = malloc((size_t)total_tasks * sizeof(double));
 
     #pragma omp parallel for schedule(dynamic)
     for (int i = 0; i < n_pairs; i++) {
@@ -266,7 +308,37 @@ int main(void) {
             QvarmaParams start = build_start(y, spec_list[spec].r);
             QvarmaFitOptions options = qvarma_default_fit_options();
             options.max_iterations = MAX_ITERATIONS;
-            QvarmaFitResult result = qvarma_fit_cached(y, &start, options, cache_path, 0);
+
+            QvarmaFitResult result;
+            QvarmaFitResult cached;
+            origin[out_idx] = FIT_FRESH;
+            gain[out_idx] = 0;
+            if (load_cached(&cached, y, spec_list[spec].r, cache_path)) {
+                if (cached.is_converged) {
+                    result = cached;
+                    origin[out_idx] = FIT_CACHED;
+                } else {
+                    /* The solver stopped at the iteration cap rather than at
+                       the tolerance, so the cached point is a place it was
+                       still descending from. Carrying on from there costs one
+                       more budget and cannot land above where it started,
+                       since L-BFGS returns the best point it saw and the first
+                       one it sees here is the cached point. */
+                    result = qvarma_fit(y, &cached.params, options);
+                    gain[out_idx] = (double)(result.log_likelihood - cached.log_likelihood);
+                    if (result.log_likelihood >= cached.log_likelihood) {
+                        qvarma_save_fit(&result, y, cache_path);
+                        qvarma_fit_result_free(&cached);
+                    } else {
+                        qvarma_fit_result_free(&result);
+                        result = cached;
+                    }
+                    origin[out_idx] = FIT_RESUMED;
+                }
+            } else {
+                result = qvarma_fit(y, &start, options);
+                qvarma_save_fit(&result, y, cache_path);
+            }
 
             log_lik[out_idx] = (double)result.log_likelihood;
             gradient_norm[out_idx] = (double)result.gradient_norm;
@@ -282,16 +354,27 @@ int main(void) {
     FILE *manifest = fopen("out/abm_system_fit_qvarma_manifest.txt", "w");
     assert(manifest && "cannot open the manifest path for writing");
     fprintf(manifest, "%d samples, %d total (replicate, spec) fits\n\n", n_samples, total_tasks);
-    fprintf(manifest, "%-28s %8s %6s %14s %10s %10s %10s\n", "sample", "replicate", "spec",
-            "log_lik", "gradient", "aic", "converged");
+    fprintf(manifest, "origin is what this run did with the cache: cached, a converged fit "
+                      "reused untouched;\nresumed, an unconverged one carried on from its own "
+                      "parameters for another %d iterations;\nfresh, no usable cache, estimated "
+                      "from build_start. gain is what resuming was worth\nin log-likelihood, "
+                      "blank where nothing was resumed.\n\n", MAX_ITERATIONS);
+    fprintf(manifest, "%-28s %8s %6s %14s %10s %10s %10s %8s %10s\n", "sample", "replicate",
+            "spec", "log_lik", "gradient", "aic", "converged", "origin", "gain");
     for (int i = 0; i < n_pairs; i++) {
         Task task = tasks[i];
         for (int spec = 0; spec < N_SPECS; spec++) {
             int out_idx = i * N_SPECS + spec;
-            fprintf(manifest, "%-28s %8d %6s %14.4f %10.4g %10.4f %10s\n",
+            const char *origin_name = origin[out_idx] == FIT_CACHED ? "cached"
+                                    : origin[out_idx] == FIT_RESUMED ? "resumed" : "fresh";
+            char gain_text[32];
+            if (origin[out_idx] == FIT_RESUMED) snprintf(gain_text, sizeof gain_text, "%.4f",
+                                                         gain[out_idx]);
+            else snprintf(gain_text, sizeof gain_text, "%s", "-");
+            fprintf(manifest, "%-28s %8d %6s %14.4f %10.4g %10.4f %10s %8s %10s\n",
                     samples[task.sample_index], task.replicate, spec_list[spec].label,
                     log_lik[out_idx], gradient_norm[out_idx], aic[out_idx],
-                    converged[out_idx] ? "yes" : "no");
+                    converged[out_idx] ? "yes" : "no", origin_name, gain_text);
         }
     }
     fclose(manifest);
@@ -304,5 +387,7 @@ int main(void) {
     free(gradient_norm);
     free(aic);
     free(converged);
+    free(origin);
+    free(gain);
     return 0;
 }

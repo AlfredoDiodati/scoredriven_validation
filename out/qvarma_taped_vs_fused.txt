@@ -1,0 +1,22 @@
+series: dataset/abm_system/EstimationSeriesSample1_1/replicate_000.csv
+K = 5, T = 400, spec r = 2, 42 parameters
+
+agreement at the pipeline's own starting theta
+  log-likelihood  taped -2599.6696743270  fused -2599.6696743270  gap 0
+  gradient        worst relative difference over 42 coordinates 6.08e-13
+
+evaluation                   path  threads  per_eval_ms    scaling
+value only                  taped        1       0.2412       1.00
+value only                  taped        4       0.2769       3.48
+value only                  fused        1       0.0304       1.00
+value only                  fused        4       0.0323       3.77
+value and gradient          taped        1       0.3913       1.00
+value and gradient          taped        4       0.5595       2.80
+value and gradient          fused        1       0.0703       1.00
+value and gradient          fused        4       0.0780       3.61
+
+fused against taped, same thread count
+  value only            1 threads     7.9x
+  value only            4 threads     8.6x
+  value and gradient    1 threads     5.6x
+  value and gradient    4 threads     7.2x

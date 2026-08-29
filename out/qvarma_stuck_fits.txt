@@ -1,0 +1,62 @@
+Every cached fit under out/abm_system_fit_qvarma, probed at its own stored theta.
+The ladder is f(theta - s g/||g||) for s from 1e-14 to 1e11, 26 steps, one decade apart.
+A fit is called stuck when no s on the ladder lowers the objective.
+
+unconverged cached fits           20295
+  no downhill step on the ladder    226  (1.1%)
+  a downhill step exists          20069  (98.9%)
+
+why one L-BFGS iteration from the cached point stops
+  max iterations           9426  (46.4%)
+  no progress             10869  (53.6%)
+  log-likelihood rose      9480  (46.7%)
+
+the 10869 fits the line search gave up on
+  a downhill step exists on the ladder for 10650 of them (98.0%)
+  its distance in parameter space, quantiles: min 1e-14  median 1e-10  p90 1e-08  max 0.0001
+  closer than the 2^-20 = 9.54e-07 the bisection can reach: 10649 (100.0%)
+
+the same one iteration with max_line_search raised from 20 to 60
+  fits the default gave up on       10869
+  still no progress                    94  (0.9%)
+  log-likelihood rose               10717  (98.6%)
+  mean gain over those, one iteration 0.000341, largest 0.056287
+
+stuck (226 fits), quantiles
+                                min       median          p90          max
+  gradient norm            0.006256         1837    2.276e+04    4.702e+10
+  worst |g_i|              0.002747         1087    1.575e+04    2.855e+10
+  min diag Omega_inv        0.00516      0.01908      0.03363      0.08442
+  nu                          27.16         3105    3.548e+04    4.517e+09
+  |Phi_star|               0.003739       0.4782       0.9163       0.9994
+  objective non-finite somewhere on the ladder: 226 of 226 (100.0%)
+
+movable (20069 fits), quantiles
+                                min       median          p90          max
+  gradient norm            0.006431         1550    1.384e+06    1.397e+11
+  worst |g_i|              0.003079        955.2    7.747e+05    7.697e+10
+  min diag Omega_inv       0.002857     0.009324      0.02349       0.1269
+  nu                          6.503        481.1         4076    4.901e+09
+  |Phi_star|              0.0001483       0.7085         0.92            1
+  objective non-finite somewhere on the ladder: 20069 of 20069 (100.0%)
+
+the coordinate carrying the largest gradient, stuck fits
+  p1q1r2, 192 stuck fits
+    c[2]                       88  (45.8%)
+    alpha2[0,0]                20  (10.4%)
+    alpha1[0,0]                14  (7.3%)
+    c[4]                       12  (6.2%)
+  p1q1r4, 34 stuck fits
+    c[2]                       12  (35.3%)
+    c[3]                        3  (8.8%)
+    c[4]                        3  (8.8%)
+    alpha3[0,0]                 3  (8.8%)
+
+the first 6 stuck fits in directory order, in full
+  sample                        rep   spec    objective    grad norm     min diag         nu  non-fin
+  EstimationSeriesSample1_1       9 p1q1r4   -1039.8275         5213     0.008778       4746      yes
+  EstimationSeriesSample1_1      12 p1q1r2    -569.7519        273.6      0.01615  1.023e+04      yes
+  EstimationSeriesSample1_1      22 p1q1r2    -537.5333         9067      0.01675  7.917e+04      yes
+  EstimationSeriesSample1_1      23 p1q1r2    -801.9061         3496      0.01492  1.256e+04      yes
+  EstimationSeriesSample1_1      30 p1q1r2    -839.1093    3.214e+04      0.01472  2.689e+06      yes
+  EstimationSeriesSample1_1      30 p1q1r4   -1356.1081         2708     0.006435       8988      yes

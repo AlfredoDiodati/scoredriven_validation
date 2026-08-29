@@ -1,0 +1,7 @@
+operation                   threads     wall_s    ns_per_op    speedup ops_per_worker
+cblas_dgemm 5x5 by 5x1            1      0.308       153.82       1.00        2000000
+cblas_dgemm 5x5 by 5x1            4      2.748      1374.07       0.45        2000000
+malloc+free 64 KiB                1      1.016        50.80       1.00       20000000
+malloc+free 64 KiB                4      1.132        56.58       3.59       20000000
+pure arithmetic                   1      0.119         0.30       1.00      400000000
+pure arithmetic                   4      0.126         0.32       3.75      400000000

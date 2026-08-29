@@ -1,0 +1,86 @@
+Each fit starts from build_start and runs to the budget in the first column.
+Budgets are independent runs, not a continued one.
+spec r = 2, K = 5, series named per row below.
+min_sd is the smallest diagonal of Omega_inv, which is the residual standard
+deviation of the series named beside it.
+
+timationSeriesSample1_1/replicate_000.csv
+    budget        log_lik       min_sd           at             nu    grad_norm     status
+       250       688.2253    0.0247557 InterestRate        250.613        137.2     capped
+       500       698.2078     0.023636 InterestRate        405.945        94.77     capped
+      1000       704.5925    0.0231178 InterestRate        1549.08        54.97     capped
+      2000       712.5834    0.0223612 InterestRate        3914.01     2.55e+04     capped
+      4000       713.3341    0.0223221 InterestRate        3987.31         3908     capped
+      8000       713.3341    0.0223221 InterestRate        3987.31         3908     capped
+     16000       713.3341    0.0223221 InterestRate        3987.31         3908     capped
+     32000       713.3341    0.0223221 InterestRate        3987.31         3908     capped
+  Hessian at the 32000 iteration point: 42 parameters, eigenvalues -6.26e+13 to 6.939e+13,
+    19 negative, condition number |max|/|min| 7.591e+11
+    curvature per parameter, largest and smallest diagonal:
+    stiffest c[2]               4.463e+11
+    flattest Omega_inv[2,2]     6.407e+05
+
+timationSeriesSample1_1/replicate_017.csv
+    budget        log_lik       min_sd           at             nu    grad_norm     status
+       250       420.8157    0.0213537 InterestRate        288.816        201.9     capped
+       500       442.1222    0.0197077 InterestRate        537.903        119.8     capped
+      1000       469.1441    0.0174659 InterestRate        996.818        89.72     capped
+      2000       474.9460    0.0168789 InterestRate        1103.69        2.965     capped
+      4000       475.0122    0.0168756 InterestRate        1150.11        1.363     capped
+      8000       475.0181    0.0168752 InterestRate        1156.91      0.04619     capped
+     16000       475.0181    0.0168752 InterestRate        1156.91      0.04619     capped
+     32000       475.0181    0.0168752 InterestRate        1156.91      0.04619     capped
+  Hessian at the 32000 iteration point: 42 parameters, eigenvalues 0.2885 to 1.706e+06,
+    0 negative, condition number |max|/|min| 5.913e+06
+    curvature per parameter, largest and smallest diagonal:
+    stiffest Omega_inv[4,0]     1.405e+06
+    flattest nu                 4.696
+
+timationSeriesSample1_1/replicate_030.csv
+    budget        log_lik       min_sd           at             nu    grad_norm     status
+       250       794.7167    0.0177924 InterestRate        225.382        506.9     capped
+       500       813.5125    0.0168972 InterestRate        461.482        80.49     capped
+      1000       821.9527    0.0161192 InterestRate        3058.34        185.8     capped
+      2000       840.8837    0.0154572 InterestRate         502370         1614     capped
+      4000       840.8837    0.0154572 InterestRate         502370         1614     capped
+      8000       840.8837    0.0154572 InterestRate         502370         1614     capped
+     16000       840.8837    0.0154572 InterestRate         502370         1614     capped
+     32000       840.8837    0.0154572 InterestRate         502370         1614     capped
+  Hessian at the 32000 iteration point: 42 parameters, eigenvalues -6.027e+12 to 8.401e+13,
+    9 negative, condition number |max|/|min| 9.307e+12
+    curvature per parameter, largest and smallest diagonal:
+    stiffest c[2]               2.58e+13
+    flattest nu                 102
+
+timationSeriesSample1_50/replicate_004.csv
+    budget        log_lik       min_sd           at             nu    grad_norm     status
+       250       924.5555    0.0160779 InterestRate        134.762         1165     capped
+       500      1153.4242   0.00614879 InterestRate         651.56          995     capped
+      1000      1188.2703    0.0059251 InterestRate        1073.74        203.8     capped
+      2000      1195.4211   0.00585621 InterestRate        1797.26        76.02     capped
+      4000      1203.1437    0.0056883 InterestRate        8663.37        62.29     capped
+      8000      1208.0442      0.00551 InterestRate        11034.2        14.06     capped
+     16000      1208.4953   0.00553418 InterestRate        15113.9        1.536     capped
+     32000      1208.5012   0.00553601 InterestRate        16232.5       0.3966     capped
+  Hessian at the 32000 iteration point: 42 parameters, eigenvalues 0.04626 to 1.376e+07,
+    0 negative, condition number |max|/|min| 2.975e+08
+    curvature per parameter, largest and smallest diagonal:
+    stiffest Omega_inv[4,0]     1.307e+07
+    flattest nu                 0.236
+
+timationSeriesSample1_100/replicate_031.csv
+    budget        log_lik       min_sd           at             nu    grad_norm     status
+       250       290.7975   0.00804204 InterestRate        78.4112         1658     capped
+       500       438.0118   0.00606018 InterestRate         306.25        690.7     capped
+      1000       468.5922   0.00649697 InterestRate        738.683        73.29     capped
+      2000       475.4949   0.00643278 InterestRate        4272.29        81.11     capped
+      4000       485.8552   0.00635271 InterestRate        14922.8    5.921e+05     capped
+      8000       485.8552   0.00635271 InterestRate        14922.8    5.921e+05     capped
+     16000       485.8552   0.00635271 InterestRate        14922.8    5.921e+05     capped
+     32000       485.8552   0.00635271 InterestRate        14922.8    5.921e+05     capped
+  Hessian at the 32000 iteration point: 42 parameters, eigenvalues -1.291e+14 to 1.442e+14,
+    19 negative, condition number |max|/|min| 5.62e+13
+    curvature per parameter, largest and smallest diagonal:
+    stiffest c[2]               9.843e+11
+    flattest Omega_inv[3,0]     3.236e+06
+

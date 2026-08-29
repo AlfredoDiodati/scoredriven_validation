@@ -49,9 +49,10 @@ CC ?= gcc
 CFLAGS ?= -O2 -march=native -Wall -Wextra -std=c11
 ETAL_CFLAGS := $(shell pkg-config --cflags et_al.-core)
 ETAL_LIBS := $(shell pkg-config --libs et_al.-core)
-# Nothing to add: et_al.'s own -I covers <et_al./...> and the bare <frame/...>
-# spellings, and a "..." include next to the source resolves on its own.
-INCLUDES :=
+# et_al.'s own -I covers <et_al./...> and the bare <frame/...> spellings. The
+# repository root is added for applications/abm_system.h, which the benchmarks
+# under tests/ include to fit the same series the pipeline fits.
+INCLUDES := -I.
 
 # Every header under the installed et_al., so that reinstalling et_al. (its own
 # `sudo make install`) after a change is what makes the next `make` here
@@ -74,8 +75,17 @@ endif
 HEADERS :=
 TEST_HEADERS :=
 TEST_STEMS := qvarma_correctness
-BENCH_STEMS :=
-STUDY_STEMS := qvarma_recovery_study
+# Where the wall time of a t-QVARMA fit goes, and what each way of speeding it
+# up is worth. Measured 2026-08-29 against a 500,000-fit run of
+# abm_system_fit_qvarma; out/fit_speedup_options.txt collects the numbers and
+# the setup behind them. small_call_scaling is the only one that touches
+# neither et_al. nor this project: it times cblas and malloc on their own,
+# because that is what isolates which of the two the taped filter contends on.
+BENCH_STEMS := qvarma_fit_cost qvarma_fit_io qvarma_iteration_budget \
+                qvarma_taped_vs_fused qvarma_thread_scaling qvarma_process_scaling \
+                small_call_scaling
+STUDY_STEMS := qvarma_recovery_study qvarma_stuck_fits qvarma_conditioning \
+                qvarma_convergence_test
 EXAMPLE_STEMS :=
 # _old/ holds the previous attempt and is deliberately not built; _old/README.md
 # says why it was left.
@@ -114,7 +124,8 @@ EXPERIMENT_BINARIES := $(addprefix $(BIN)/,$(EXPERIMENT_STEMS))
 
 # Benchmarks need clock_gettime, which -std=c11 hides, and they are never part
 # of `test`: a function that returns the wrong answer quickly is not fast.
-BENCH_CFLAGS := $(CFLAGS) -D_POSIX_C_SOURCE=199309L
+# -fopenmp because the scaling benchmarks time one thread against four.
+BENCH_CFLAGS := $(CFLAGS) -D_POSIX_C_SOURCE=199309L -fopenmp
 
 # ETAL_DEV=1 builds against the development et_al. at ETAL_DEV_PATH instead of
 # the installed headers, which is how a change to et_al. is measured before and

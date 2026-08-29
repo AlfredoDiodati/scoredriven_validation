@@ -15,10 +15,27 @@ on fitted parameters, and the settings the confidence set is computed under.
 `docs/DATA_DOCUMENTATION.md` records where the US series come from and how each
 one is transformed.
 
+## Layout
+
+    applications/     the scripts that produce results, plus us_data.h and
+                      abm_system.h, which describe this project's own data
+    tests/            what verifies the auxiliary model still computes what it
+                      claims to
+    dataset/          us_real.csv, the raw US series; the ABM's own simulated
+                      output goes here too but is not tracked
+    out/              every result, written here rather than printed
+    docs/             the write-up and the reference documentation
+
+## Requirements
+
+- A C11 compiler with OpenMP, and OpenBLAS
+- et_al, installed so that `pkg-config et_al.-core` resolves
+- Python with `polars`, `plotly` and `kaleido`, for the figures only; plotly
+  writes the PDFs through kaleido
+
 ## Built on et_al
 
-This project depends on [et_al](https://github.com/AlfredoDiodati/et_al.), and
-it is not optional: nothing general is implemented here. The auxiliary model
+This project depends on [et_al](https://github.com/AlfredoDiodati/et_al.): nothing general is implemented here. The auxiliary model
 itself, the optimiser that fits it, the tests run on the residuals and the
 Model Confidence Set are all et_al's:
 
@@ -26,8 +43,7 @@ Model Confidence Set are all et_al's:
   responses and sign-restricted bands
 - `et_al./solver/lbfgs.h` — the limited-memory BFGS the fit descends with
 - `et_al./mcs.h` — the Model Confidence Set
-- `et_al./stats.h` — sample statistics, Ljung-Box, quantiles
-- `et_al./unit_root.h` — unit root tests and the Newey-West bandwidth
+
 - `et_al./qlr_test.h` — the quasi-likelihood ratio test for the absence of
   score-driven dynamics, with the tabulated critical values compiled in
 - `et_al./ad.h`, `et_al./linalg/`, `et_al./frame/`, `et_al./random.h` —
@@ -42,23 +58,54 @@ to be general belongs in et_al rather than here.
 Build flags come from `pkg-config --cflags --libs et_al.-core`. Reinstalling
 et_al after a change is what makes the next `make` here recompile.
 
-## Requirements
+## Installing
 
-- A C11 compiler with OpenMP, and OpenBLAS
-- et_al, installed so that `pkg-config et_al.-core` resolves
-- Python with `polars`, `plotly` and `kaleido`, for the figures only; plotly
-  writes the PDFs through kaleido
+Three things have to be in place before anything builds: OpenBLAS, et_al, and
+this repository. The Python packages come last and are needed only for the
+figures.
 
-## Layout
+OpenBLAS first, because et_al links against it and against nothing else:
 
-    applications/     the scripts that produce results, plus us_data.h and
-                      abm_system.h, which describe this project's own data
-    tests/            what verifies the auxiliary model still computes what it
-                      claims to
-    dataset/          us_real.csv, the raw US series; the ABM's own simulated
-                      output goes here too but is not tracked
-    out/              every result, written here rather than printed
-    docs/             the write-up and the reference documentation
+    sudo apt install libopenblas-dev        # or: sudo pacman -S openblas
+
+Then et_al itself. It is header-only, so installing it means copying its
+headers and writing the pkg-config files that carry the OpenBLAS flags, not
+building a library:
+
+    git clone https://github.com/AlfredoDiodati/et_al.
+    cd et_al.
+    sudo make install-model PREFIX=/usr/local
+
+`install-model` depends on `install-core`, so that one command installs both
+tiers, and it is the model tier this project needs: `sd/qvarma.h` lives there,
+and a core-only install leaves the auxiliary model out. Headers go to
+`$(PREFIX)/include/et_al./`, keeping et_al's own directory structure so that
+its internal relative includes still resolve, and the `.pc` files go to
+`$(PREFIX)/lib/pkgconfig/`. `et_al.-model.pc` declares `Requires: et_al.-core`,
+so naming either one pulls in both. `PREFIX` defaults to `/usr/local`; keep it
+there unless you have a reason not to, since the sources here spell their
+includes `<et_al./sd/qvarma.h>`, which resolves through the compiler's default
+search path rather than through et_al's own `-I`, and a prefix outside that
+path then needs `CPATH` set as well as `PKG_CONFIG_PATH`. The install prints
+the `export PKG_CONFIG_PATH=...` line itself when the prefix chosen is one
+pkg-config does not already search.
+
+Check that it resolves before going further:
+
+    pkg-config --cflags --libs et_al.-core
+
+Then this repository, and the tests, which need nothing beyond the above:
+
+    git clone git@github.com:AlfredoDiodati/scoredriven_validation.git
+    cd scoredriven_validation
+    make test
+
+The figures are the one part that leaves C:
+
+    pip install polars plotly kaleido
+
+`make uninstall-core` in the et_al clone, with the same `PREFIX`, reverses the
+install and removes the model tier with it.
 
 ## Running the pipeline
 
@@ -88,15 +135,3 @@ Results are written to `out/`, never printed.
     make study        parameter recovery from known truths, over sample sizes,
                       model shapes and parameter regimes
 
-## Data not in this repository
-
-The ABM's raw output is 229 MB of `.Rdata` under `dataset/simulated/`, one file
-per parameter configuration, each holding 108 Monte Carlo replicates of 600
-periods. It is not tracked. `dataset/abm_system/`, the five-variable CSVs
-derived from it, and `out/abm_system_fit_qvarma/`, the cached fits, are not
-tracked either: both are rebuilt from the `.Rdata` by the targets above.
-
-`dataset/us_real.csv` is tracked, and everything derived from it is small enough
-to keep, so the real-data half of the analysis reproduces from a fresh clone on
-its own.
-# scoredriven_validation

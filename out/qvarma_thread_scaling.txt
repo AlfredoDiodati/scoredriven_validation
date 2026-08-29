@@ -1,0 +1,6 @@
+8 fits (replicates 0 to 3, both specs), T = 400, max_iterations = 2000
+
+ threads       wall_s      speedup    s_per_fit
+       1        1.361         1.00        0.170
+       2        0.745         1.83        0.093
+       4        0.401         3.40        0.050

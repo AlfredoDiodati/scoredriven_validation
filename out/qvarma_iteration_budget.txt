@@ -1,0 +1,12 @@
+Iterations needed to come within a given log-likelihood of what 2000 iterations reach.
+nll is the negative log-likelihood the solver minimises; gaps are in the same units.
+
+series                                            r    nll at 2000     nll at 200  within1 within.1 within.01
+timationSeriesSample1_1/replicate_000.csv         2      -712.5834      -680.8100     1693     1841     1969
+timationSeriesSample1_1/replicate_000.csv         4     -1107.2042      -860.8290     1892     1990       -1
+timationSeriesSample1_1/replicate_017.csv         2      -474.9460      -409.0190     1228     1534     1823
+timationSeriesSample1_1/replicate_017.csv         4      -904.1683      -660.8980     1758     1986     1999
+timationSeriesSample1_50/replicate_004.csv        2     -1195.4211      -869.2030     1589     1975     1997
+timationSeriesSample1_50/replicate_004.csv        4     -1369.3728      -959.4250     1956     1992       -1
+timationSeriesSample1_100/replicate_031.csv       2      -475.4949      -190.3450     1841     1983     1998
+timationSeriesSample1_100/replicate_031.csv       4      -658.1456      -168.4060     1770     1966     1998
