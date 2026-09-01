@@ -106,10 +106,17 @@ EXAMPLE_STEMS :=
 # not_used/ holds everything outside the chain docs/call_24082026.md
 # describes, in the same directory layout, and is deliberately not built.
 APPLICATION_STEMS := us_prepare_data
+#
+# abm_system_scale_fit_qvarma is deliberately not a stem here. Its solver budget
+# is a compile-time constant that names every file it writes, so one binary per
+# budget is built below from SCALE_ITERATION_CAPS instead, and the generic
+# app-<stem> rule - which would build one unnamed binary at the default budget -
+# would give a second way to write the same tree.
 EXPERIMENT_STEMS := us_qvarma_employment_change \
                      abm_system_extract abm_system_fit_qvarma \
                      abm_system_mse_qvarma abm_system_mcs \
-                     abm_system_winner_irf
+                     abm_system_winner_irf \
+                     abm_system_scale_extract
 # Whatever the application scripts share, so editing it rebuilds them.
 APPLICATION_HEADERS := applications/us_data.h applications/abm_system.h
 BIN := bin
@@ -226,9 +233,48 @@ $(foreach stem,$(EXPERIMENT_STEMS),$(eval $(call application_target_for_stem,$(s
 # left behind.
 app-us_qvarma_employment_change: app-us_prepare_data
 app-abm_system_fit_qvarma: app-abm_system_extract
+# abm_system_scale_extract deliberately does not appear as a prerequisite of
+# app-abm_system_scale_fit_qvarma: it writes 21 GB and takes tens of minutes, so
+# rerunning the throughput test must not rebuild the dataset it reads.
 app-abm_system_mse_qvarma: app-us_qvarma_employment_change
 app-abm_system_mcs: app-abm_system_mse_qvarma
 app-abm_system_winner_irf: app-abm_system_mcs
+
+# One throughput run per solver budget. 86.85% of the 500,000 fits at a cap of
+# 2000 stopped at the cap, so what a larger budget costs and what it moves is
+# measured rather than assumed, which needs both budgets on disk at once. The
+# cap is in the binary's own name as well as in every file it writes, so make
+# cannot hand back a binary built at one budget for a request at another.
+SCALE_ITERATION_CAPS := 2000 4000 8000
+
+# One comparison binary per pair of budgets, named for the pair, because the
+# budgets it reads are compile-time constants and its report is named for them
+# too. A pair is added here rather than passed on the command line so that make
+# cannot serve a binary built for one pair against a request for another.
+SCALE_COMPARISON_PAIRS := 2000_4000 4000_8000
+
+define scale_comparison_for_pair
+.PHONY: app-abm_system_scale_iteration_comparison-i$(1)
+$(BIN)/abm_system_scale_iteration_comparison_i$(1): applications/abm_system_scale_iteration_comparison.c \
+                                                    $(APPLICATION_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
+	$(CC) $(CFLAGS) -DMAT_DOUBLE -fopenmp \
+	      -DBASE_ITERATIONS=$(word 1,$(subst _, ,$(1))) -DHIGH_ITERATIONS=$(word 2,$(subst _, ,$(1))) \
+	      $(ETAL_CFLAGS) $(INCLUDES) $$< -o $$@ $(ETAL_LIBS)
+app-abm_system_scale_iteration_comparison-i$(1): $(BIN)/abm_system_scale_iteration_comparison_i$(1) | $(OUT)
+	./$(BIN)/abm_system_scale_iteration_comparison_i$(1)
+endef
+$(foreach pair,$(SCALE_COMPARISON_PAIRS),$(eval $(call scale_comparison_for_pair,$(pair))))
+
+define scale_fit_target_for_cap
+.PHONY: app-abm_system_scale_fit_qvarma-i$(1)
+$(BIN)/abm_system_scale_fit_qvarma_i$(1): applications/abm_system_scale_fit_qvarma.c \
+                                          $(APPLICATION_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
+	$(CC) $(CFLAGS) -DMAT_DOUBLE -DMAX_ITERATIONS=$(1) -fopenmp $(ETAL_CFLAGS) $(INCLUDES) \
+	      $$< -o $$@ $(ETAL_LIBS)
+app-abm_system_scale_fit_qvarma-i$(1): $(BIN)/abm_system_scale_fit_qvarma_i$(1) | $(OUT)
+	./$(BIN)/abm_system_scale_fit_qvarma_i$(1)
+endef
+$(foreach cap,$(SCALE_ITERATION_CAPS),$(eval $(call scale_fit_target_for_cap,$(cap))))
 
 applications: $(APPLICATION_BINARIES) | $(OUT)
 	@for binary in $(APPLICATION_BINARIES); do ./$$binary || exit 1; done

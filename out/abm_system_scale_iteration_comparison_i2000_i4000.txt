@@ -1,0 +1,147 @@
+t-QVARMA(1,1,2) at a solver budget of 2000 iterations against 4000,
+over the same 500000 series under dataset/abm_system_scale.
+
+out/abm_system_scale_fit_qvarma_i2000
+out/abm_system_scale_fit_qvarma_i4000
+
+Provenance of each run, as its own stamp recorded it
+
+  base (out/abm_system_scale_fit_qvarma_i2000_provenance.txt)
+    et_al headers this run compiled against
+    
+    Written after the fact, on 2026-08-31, not by the run itself: the provenance
+    stamp did not exist when this battery was fitted. What is known for certain
+    is the date and what changed on it.
+    
+      run finished: 2026-08-30 14:27:39
+      et_al installed at that time: the copy that PREDATES the t-QVARMA large-nu
+        correction of 2026-08-31 17:40. Its exact header hashes were not recorded.
+      carries the large-nu correction: no
+    
+    Consequence, stated so a later reader does not have to reconstruct it. The
+    per-period density term in that copy was evaluated as log(nu + q_t) with the
+    log(nu) half folded into the constant, and the normalization as two lgamma
+    terms subtracted. Both are exact identities and both lose the answer at a
+    large nu. Fits in this tree that reached a large nu are therefore on an
+    artifact rather than on the likelihood - 4 of them carry nu above 1e10.
+    
+    More importantly for any comparison: the objective agrees with the corrected
+    one to about 1e-8 wherever nu is moderate, but a perturbation that small is
+    amplified by an unconverged search. Measured on this project's own data, two
+    builds agreeing to 6e-13 in the gradient produced a mean |difference| of 7.2
+    in the fitted log-likelihood across 10,800 series, against a mean gain of 1.45
+    for the entire 2000-to-4000 budget increase. A comparison between this tree
+    and one fitted after the correction is therefore dominated by the build, not
+    by the budget.
+
+  high (out/abm_system_scale_fit_qvarma_i4000_provenance.txt)
+    et_al headers this run compiled against
+    
+    Written after the fact, on 2026-08-31, not by the run itself: the provenance
+    stamp did not exist when this battery was fitted. What is known for certain
+    is the date and what changed on it.
+    
+      run finished: 2026-08-31 00:03:38
+      et_al installed at that time: the copy that PREDATES the t-QVARMA large-nu
+        correction of 2026-08-31 17:40. Its exact header hashes were not recorded.
+      carries the large-nu correction: no
+    
+    Consequence, stated so a later reader does not have to reconstruct it. The
+    per-period density term in that copy was evaluated as log(nu + q_t) with the
+    log(nu) half folded into the constant, and the normalization as two lgamma
+    terms subtracted. Both are exact identities and both lose the answer at a
+    large nu. Fits in this tree that reached a large nu are therefore on an
+    artifact rather than on the likelihood - 11 of them carry nu above 1e10.
+    
+    More importantly for any comparison: the objective agrees with the corrected
+    one to about 1e-8 wherever nu is moderate, but a perturbation that small is
+    amplified by an unconverged search. Measured on this project's own data, two
+    builds agreeing to 6e-13 in the gradient produced a mean |difference| of 7.2
+    in the fitted log-likelihood across 10,800 series, against a mean gain of 1.45
+    for the entire 2000-to-4000 budget increase. A comparison between this tree
+    and one fitted after the correction is therefore dominated by the build, not
+    by the budget.
+
+Fits left out
+
+  nu enters as exp(theta) + 2, and past nu of about 3.6e9 the coded
+  log-likelihood loses precision - the density's (nu + K)/2 log(1 + q/nu)
+  term is a cancellation of two large quantities - while the likelihood
+  itself is flat there, at the Gaussian limit the t tends to. L-BFGS climbs
+  what is left, and a larger budget gives it more room to. Fits carrying
+  nu above 1e+10 at either budget are left out of everything below.
+
+  left out                    11 of 500000 (0.0022%)
+  already over the limit at 2000  4
+  over the limit at 4000         11
+  compared below              499989
+
+What it cost
+
+  2000 iterations     14867.4 s   4.13 h
+  4000 iterations     23822.8 s   6.62 h
+  ratio                 1.60x   +2.49 h, +0.0179 s per fit
+
+  414481 of 499989 fits (82.90%) ran past iteration 2000 at all; the rest had already
+  stopped, so the larger budget cost them nothing.
+
+What it bought, on the objective
+
+  The two runs share a start, data and solver, so the larger budget retraces
+  the smaller one's path and the gain cannot be negative. Negative gains are
+  a check on that, not a result: 0 found.
+
+  total log-likelihood gained   726646.4511 over 499989 fits
+  mean gain per fit             1.453325
+  fits with no gain at all      85657 (17.13%)
+
+  log-likelihood gain, quantiles
+  quantile             all fits fits that ran on
+  min                  0.000000       0.000000
+  p25                  0.021386       0.209077
+  median               0.528286       0.817045
+  p75                  1.643352       1.981356
+  p90                  3.605686       4.110969
+  p99                 13.246881      14.347605
+  max               1592.356836    1592.356836
+
+What it bought, on convergence
+
+  converged at 2000      65764 of 499989 (13.15%)
+  converged at 4000      217616 of 499989 (43.52%)
+  newly converged      151852 (34.97% of the 434225 that had not)
+
+How far the estimates moved
+
+  Distance on the constrained parameters, the scale the paper names them on.
+  relative is that distance over the norm of the 2000-iteration estimate.
+
+  nu is reported on its own as well as inside the total, because it is the
+  one coordinate the likelihood is nearly flat in once it is large - the t
+  is already Gaussian to the data's own precision - so a search wandering
+  up it moves the estimate a long way without moving the fit. The column
+  without nu is the one that says whether the parameters the impulse
+  responses are built from actually changed.
+
+  quantile          relative, all relative, ran on  relative, no nu   largest single
+  min                  0.00000000       0.00000000       0.00000000       0.00000000
+  p25                  0.00050766       0.00245488       0.00087403       0.06149574
+  median               0.00640460       0.01215360       0.00493186       1.38470199
+  p75                  0.05977779       0.10747119       0.04150611      38.22965438
+  p90                  0.58254246       0.76692303       0.28730053     823.79329105
+  p99                  5.28510332       6.11042750       0.91555928   17782.70355150
+  max             827520.08115241  827520.08115241       4.93322634 4117084834.26788521
+
+  Largest absolute change inside each named block, so a distance can be
+  attributed rather than left as a number.
+
+  block          mean of maxima     worst single
+  c                  0.00643908       4.19593403
+  Phi_star           0.01026640       1.00099461
+  Psi_star           0.29681734      15.83484263
+  Omega_inv          0.01029321       1.00200970
+  nu             18842.27133702 4117084834.26788521
+  alpha              0.00306054       0.27628140
+  beta               0.20624116      47.46275968
+
+Per-series rows are in out/abm_system_scale_iteration_comparison_i2000_i4000.csv.

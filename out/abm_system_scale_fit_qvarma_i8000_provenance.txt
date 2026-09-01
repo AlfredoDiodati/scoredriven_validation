@@ -1,0 +1,34 @@
+et_al headers this run compiled against
+  includedir: /usr/local/include/et_al.
+  sd/qvarma.h  md5 49909da0c2b00fab33076f5d05b8f694  mtime 2026-08-31 17:40:42.540560057 +0200
+  special.h  md5 b2711520d81d808de37e58d5a5ff9832  mtime 2026-08-31 17:40:42.512489956 +0200
+  ad.h  md5 92dff1705251a4df34cd168bae181b91  mtime 2026-08-31 17:40:42.512356486 +0200
+  dist/mv/student.h  md5 bc8ccd2eb90474bb37a9f94eafc484cc  mtime 2026-08-31 17:40:42.520817962 +0200
+  carries the large-nu correction: yes
+  binary: ./bin/abm_system_scale_fit_qvarma_i8000 built 2026-08-31 19:40:18.509314442 +0200
+  host: Linux 6.19.14-arch1-1 x86_64, 16 hardware threads, OMP_NUM_THREADS=default
+
+Execution time, measured from outside the process
+  process started  2026-09-01 09:38:11
+  process ended    2026-09-01 13:18:13
+  wall clock       13202 s (3.67 h, 03:40:02)
+  covers the folder scan, all 500,000 fits and the manifest write;
+  the timing file's own 'elapsed' covers the fit loop alone.
+  fit loop only:   elapsed          13201.1 s (3.67 h)
+  exit status      0
+
+Execution time of the 8000-iteration battery, total
+  segment 1        22601 s (6.28 h, 06:16:41)   296337 fits, ended by the suspend
+  segment 2        13202 s (3.67 h, 03:40:02)   203663 fits + 296337 cache loads
+  -------------------------------------------------------------------
+  total observed   35803 s (9.95 h, 09:56:43)
+
+  Segment 2 re-loaded the 296337 fits segment 1 had already written, which a
+  single uninterrupted run would not have paid: at the 1.15 ms per cached fit
+  measured in out/fit_speedup_options.txt that is 341 s.
+
+  one clean run    35462 s (9.85 h, 09:51:02) - the total less that
+                   re-load, and the figure to quote for what 500,000 fits at
+                   an 8000-iteration cap cost on this machine. It is 1.0 per
+                   cent below the observed total, and is an estimate to that
+                   extent rather than a measurement.

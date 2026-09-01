@@ -1,0 +1,32 @@
+et_al headers this run compiled against
+
+Written after the fact, on 2026-08-31, not by the run itself: the provenance
+stamp did not exist when this battery was fitted. What is known for certain
+is the date and what changed on it.
+
+  run finished: 2026-08-31 00:03:38
+  et_al installed at that time: the copy that PREDATES the t-QVARMA large-nu
+    correction of 2026-08-31 17:40. Its exact header hashes were not recorded.
+  carries the large-nu correction: no
+
+Consequence, stated so a later reader does not have to reconstruct it. The
+per-period density term in that copy was evaluated as log(nu + q_t) with the
+log(nu) half folded into the constant, and the normalization as two lgamma
+terms subtracted. Both are exact identities and both lose the answer at a
+large nu. Fits in this tree that reached a large nu are therefore on an
+artifact rather than on the likelihood - 11 of them carry nu above 1e10.
+
+More importantly for any comparison: the objective agrees with the corrected
+one to about 1e-8 wherever nu is moderate, but a perturbation that small is
+amplified by an unconverged search. Measured on this project's own data, two
+builds agreeing to 6e-13 in the gradient produced a mean |difference| of 7.2
+in the fitted log-likelihood across 10,800 series, against a mean gain of 1.45
+for the entire 2000-to-4000 budget increase. A comparison between this tree
+and one fitted after the correction is therefore dominated by the build, not
+by the budget.
+
+Archived 2026-09-01. The 4000-iteration budget was refitted against the
+corrected et_al so that it could be compared with the 8000-iteration run; this
+tree is the original, kept because it is what the 2000-vs-4000 comparison was
+computed from. Nothing reads it automatically any more: the live tree at
+out/abm_system_scale_fit_qvarma_i4000/ is the refit.

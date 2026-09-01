@@ -1,0 +1,69 @@
+t-QVARMA(1,1,2) fits over dataset/abm_system_scale
+parameters to out/abm_system_scale_fit_qvarma_i4000
+
+folders          500
+fits             500000
+threads          16
+max_iterations   4000
+spec             K 5, K_star 3, R 1, shared beta 1, nu start 30
+
+start            2026-08-30 17:26:35
+progress         2026-08-30 17:33:22  10000 of 500000 fits, 407 s elapsed, 24.6 fits/s
+progress         2026-08-30 17:41:12  20000 of 500000 fits, 877 s elapsed, 22.8 fits/s
+progress         2026-08-30 17:49:12  30000 of 500000 fits, 1357 s elapsed, 22.1 fits/s
+progress         2026-08-30 17:56:29  40000 of 500000 fits, 1794 s elapsed, 22.3 fits/s
+progress         2026-08-30 18:04:06  50000 of 500000 fits, 2251 s elapsed, 22.2 fits/s
+progress         2026-08-30 18:11:56  60000 of 500000 fits, 2721 s elapsed, 22.1 fits/s
+progress         2026-08-30 18:19:34  70000 of 500000 fits, 3179 s elapsed, 22.0 fits/s
+progress         2026-08-30 18:27:26  80000 of 500000 fits, 3651 s elapsed, 21.9 fits/s
+progress         2026-08-30 18:35:13  90000 of 500000 fits, 4118 s elapsed, 21.9 fits/s
+progress         2026-08-30 18:43:01  100000 of 500000 fits, 4586 s elapsed, 21.8 fits/s
+progress         2026-08-30 18:50:45  110000 of 500000 fits, 5050 s elapsed, 21.8 fits/s
+progress         2026-08-30 18:58:41  120000 of 500000 fits, 5526 s elapsed, 21.7 fits/s
+progress         2026-08-30 19:06:53  130000 of 500000 fits, 6018 s elapsed, 21.6 fits/s
+progress         2026-08-30 19:14:35  140000 of 500000 fits, 6480 s elapsed, 21.6 fits/s
+progress         2026-08-30 19:22:42  150000 of 500000 fits, 6967 s elapsed, 21.5 fits/s
+progress         2026-08-30 19:30:07  160000 of 500000 fits, 7412 s elapsed, 21.6 fits/s
+progress         2026-08-30 19:38:16  170000 of 500000 fits, 7901 s elapsed, 21.5 fits/s
+progress         2026-08-30 19:46:00  180000 of 500000 fits, 8365 s elapsed, 21.5 fits/s
+progress         2026-08-30 19:53:32  190000 of 500000 fits, 8817 s elapsed, 21.6 fits/s
+progress         2026-08-30 20:01:17  200000 of 500000 fits, 9282 s elapsed, 21.5 fits/s
+progress         2026-08-30 20:09:12  210000 of 500000 fits, 9757 s elapsed, 21.5 fits/s
+progress         2026-08-30 20:16:59  220000 of 500000 fits, 10224 s elapsed, 21.5 fits/s
+progress         2026-08-30 20:24:56  230000 of 500000 fits, 10701 s elapsed, 21.5 fits/s
+progress         2026-08-30 20:32:53  240000 of 500000 fits, 11178 s elapsed, 21.5 fits/s
+progress         2026-08-30 20:40:52  250000 of 500000 fits, 11657 s elapsed, 21.4 fits/s
+progress         2026-08-30 20:48:59  260000 of 500000 fits, 12144 s elapsed, 21.4 fits/s
+progress         2026-08-30 20:57:06  270000 of 500000 fits, 12631 s elapsed, 21.4 fits/s
+progress         2026-08-30 21:05:09  280000 of 500000 fits, 13114 s elapsed, 21.4 fits/s
+progress         2026-08-30 21:12:52  290000 of 500000 fits, 13577 s elapsed, 21.4 fits/s
+progress         2026-08-30 21:20:54  300000 of 500000 fits, 14059 s elapsed, 21.3 fits/s
+progress         2026-08-30 21:29:14  310000 of 500000 fits, 14559 s elapsed, 21.3 fits/s
+progress         2026-08-30 21:37:13  320000 of 500000 fits, 15038 s elapsed, 21.3 fits/s
+progress         2026-08-30 21:45:09  330000 of 500000 fits, 15514 s elapsed, 21.3 fits/s
+progress         2026-08-30 21:53:03  340000 of 500000 fits, 15988 s elapsed, 21.3 fits/s
+progress         2026-08-30 22:01:13  350000 of 500000 fits, 16478 s elapsed, 21.2 fits/s
+progress         2026-08-30 22:09:05  360000 of 500000 fits, 16950 s elapsed, 21.2 fits/s
+progress         2026-08-30 22:16:49  370000 of 500000 fits, 17414 s elapsed, 21.2 fits/s
+progress         2026-08-30 22:24:53  380000 of 500000 fits, 17898 s elapsed, 21.2 fits/s
+progress         2026-08-30 22:32:48  390000 of 500000 fits, 18373 s elapsed, 21.2 fits/s
+progress         2026-08-30 22:40:46  400000 of 500000 fits, 18851 s elapsed, 21.2 fits/s
+progress         2026-08-30 22:48:16  410000 of 500000 fits, 19301 s elapsed, 21.2 fits/s
+progress         2026-08-30 22:55:52  420000 of 500000 fits, 19757 s elapsed, 21.3 fits/s
+progress         2026-08-30 23:03:52  430000 of 500000 fits, 20237 s elapsed, 21.2 fits/s
+progress         2026-08-30 23:11:44  440000 of 500000 fits, 20709 s elapsed, 21.2 fits/s
+progress         2026-08-30 23:19:19  450000 of 500000 fits, 21164 s elapsed, 21.3 fits/s
+progress         2026-08-30 23:27:12  460000 of 500000 fits, 21637 s elapsed, 21.3 fits/s
+progress         2026-08-30 23:36:31  470000 of 500000 fits, 22196 s elapsed, 21.2 fits/s
+progress         2026-08-30 23:48:15  480000 of 500000 fits, 22900 s elapsed, 21.0 fits/s
+progress         2026-08-30 23:55:35  490000 of 500000 fits, 23340 s elapsed, 21.0 fits/s
+progress         2026-08-31 00:03:38  500000 of 500000 fits, 23823 s elapsed, 21.0 fits/s
+end              2026-08-31 00:03:38
+
+elapsed          23822.8 s (6.62 h)
+per fit          0.0476 s wall, 0.7623 s of thread time
+throughput       21.0 fits/s over 16 threads
+
+estimated        500000 fits
+reused           0 fits already cached from an earlier run
+converged        217616 of 500000 met the gradient tolerance; the rest stopped at the 4000 iteration cap

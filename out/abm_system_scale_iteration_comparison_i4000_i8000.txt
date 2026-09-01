@@ -1,0 +1,147 @@
+t-QVARMA(1,1,2) at a solver budget of 4000 iterations against 8000,
+over the same 500000 series under dataset/abm_system_scale.
+
+out/abm_system_scale_fit_qvarma_i4000
+out/abm_system_scale_fit_qvarma_i8000
+
+Provenance of each run, as its own stamp recorded it
+
+  base (out/abm_system_scale_fit_qvarma_i4000_provenance.txt)
+    et_al headers this run compiled against
+      includedir: /usr/local/include/et_al.
+      sd/qvarma.h  md5 49909da0c2b00fab33076f5d05b8f694  mtime 2026-08-31 17:40:42.540560057 +0200
+      special.h  md5 b2711520d81d808de37e58d5a5ff9832  mtime 2026-08-31 17:40:42.512489956 +0200
+      ad.h  md5 92dff1705251a4df34cd168bae181b91  mtime 2026-08-31 17:40:42.512356486 +0200
+      dist/mv/student.h  md5 bc8ccd2eb90474bb37a9f94eafc484cc  mtime 2026-08-31 17:40:42.520817962 +0200
+      carries the large-nu correction: yes
+      binary: ./bin/abm_system_scale_fit_qvarma_i4000 built 2026-09-01 16:03:17.314758901 +0200
+      host: Linux 6.19.14-arch1-1 x86_64, 16 hardware threads, OMP_NUM_THREADS=default
+    
+    Execution time, measured from outside the process
+      process started  2026-09-01 16:03:27
+      process ended    2026-09-01 23:31:39
+      wall clock       26892 s (7.47 h, 07:28:12)
+      covers the folder scan, all 500,000 fits and the manifest write;
+      the timing file's own 'elapsed' covers the fit loop alone.
+      fit loop only:   elapsed          26890.8 s (7.47 h)
+      exit status      0
+
+  high (out/abm_system_scale_fit_qvarma_i8000_provenance.txt)
+    et_al headers this run compiled against
+      includedir: /usr/local/include/et_al.
+      sd/qvarma.h  md5 49909da0c2b00fab33076f5d05b8f694  mtime 2026-08-31 17:40:42.540560057 +0200
+      special.h  md5 b2711520d81d808de37e58d5a5ff9832  mtime 2026-08-31 17:40:42.512489956 +0200
+      ad.h  md5 92dff1705251a4df34cd168bae181b91  mtime 2026-08-31 17:40:42.512356486 +0200
+      dist/mv/student.h  md5 bc8ccd2eb90474bb37a9f94eafc484cc  mtime 2026-08-31 17:40:42.520817962 +0200
+      carries the large-nu correction: yes
+      binary: ./bin/abm_system_scale_fit_qvarma_i8000 built 2026-08-31 19:40:18.509314442 +0200
+      host: Linux 6.19.14-arch1-1 x86_64, 16 hardware threads, OMP_NUM_THREADS=default
+    
+    Execution time, measured from outside the process
+      process started  2026-09-01 09:38:11
+      process ended    2026-09-01 13:18:13
+      wall clock       13202 s (3.67 h, 03:40:02)
+      covers the folder scan, all 500,000 fits and the manifest write;
+      the timing file's own 'elapsed' covers the fit loop alone.
+      fit loop only:   elapsed          13201.1 s (3.67 h)
+      exit status      0
+    
+    Execution time of the 8000-iteration battery, total
+      segment 1        22601 s (6.28 h, 06:16:41)   296337 fits, ended by the suspend
+      segment 2        13202 s (3.67 h, 03:40:02)   203663 fits + 296337 cache loads
+      -------------------------------------------------------------------
+      total observed   35803 s (9.95 h, 09:56:43)
+    
+      Segment 2 re-loaded the 296337 fits segment 1 had already written, which a
+      single uninterrupted run would not have paid: at the 1.15 ms per cached fit
+      measured in out/fit_speedup_options.txt that is 341 s.
+    
+      one clean run    35462 s (9.85 h, 09:51:02) - the total less that
+                       re-load, and the figure to quote for what 500,000 fits at
+                       an 8000-iteration cap cost on this machine. It is 1.0 per
+                       cent below the observed total, and is an estimate to that
+                       extent rather than a measurement.
+
+Fits left out
+
+  nu enters as exp(theta) + 2, and past nu of about 3.6e9 the coded
+  log-likelihood loses precision - the density's (nu + K)/2 log(1 + q/nu)
+  term is a cancellation of two large quantities - while the likelihood
+  itself is flat there, at the Gaussian limit the t tends to. L-BFGS climbs
+  what is left, and a larger budget gives it more room to. Fits carrying
+  nu above 1e+10 at either budget are left out of everything below.
+
+  left out                    12 of 500000 (0.0024%)
+  already over the limit at 4000  2
+  over the limit at 8000         12
+  compared below              499988
+
+What it cost
+
+  4000 iterations     26890.8 s   7.47 h
+  8000 iterations     35462.0 s   9.85 h
+  ratio                 1.32x   +2.38 h, +0.0171 s per fit
+
+  225091 of 499988 fits (45.02%) ran past iteration 4000 at all; the rest had already
+  stopped, so the larger budget cost them nothing.
+
+What it bought, on the objective
+
+  The two runs share a start, data and solver, so the larger budget retraces
+  the smaller one's path and the gain cannot be negative. Negative gains are
+  a check on that, not a result: 0 found.
+
+  total log-likelihood gained   203745.0061 over 499988 fits
+  mean gain per fit             0.407500
+  fits with no gain at all      274985 (55.00%)
+
+  log-likelihood gain, quantiles
+  quantile             all fits fits that ran on
+  min                  0.000000       0.000000
+  p25                  0.000000       0.018703
+  median               0.000000       0.199491
+  p75                  0.130260       0.906656
+  p90                  1.054210       2.273350
+  p99                  5.845270       8.621391
+  max                269.414770     269.414770
+
+What it bought, on convergence
+
+  converged at 4000      246743 of 499988 (49.35%)
+  converged at 8000      366232 of 499988 (73.25%)
+  newly converged      119489 (47.18% of the 253245 that had not)
+
+How far the estimates moved
+
+  Distance on the constrained parameters, the scale the paper names them on.
+  relative is that distance over the norm of the 4000-iteration estimate.
+
+  nu is reported on its own as well as inside the total, because it is the
+  one coordinate the likelihood is nearly flat in once it is large - the t
+  is already Gaussian to the data's own precision - so a search wandering
+  up it moves the estimate a long way without moving the fit. The column
+  without nu is the one that says whether the parameters the impulse
+  responses are built from actually changed.
+
+  quantile          relative, all relative, ran on  relative, no nu   largest single
+  min                  0.00000000       0.00000000       0.00000000       0.00000000
+  p25                  0.00000000       0.00151639       0.00000000       0.00000000
+  median               0.00000000       0.01044981       0.00000000       0.00000000
+  p75                  0.00687835       0.11435529       0.00477466       2.74661817
+  p90                  0.16476033       0.97489586       0.08584916     266.00859843
+  p99                  4.00814817       7.31906237       0.71261363   41849.56892419
+  max             684113.23081122  684113.23081122       5.73506776 4886259466.26708889
+
+  Largest absolute change inside each named block, so a distance can be
+  attributed rather than left as a number.
+
+  block          mean of maxima     worst single
+  c                  0.00233315       4.48913823
+  Phi_star           0.00336095       1.15869435
+  Psi_star           0.14979267      18.46467005
+  Omega_inv          0.00328662       0.99954234
+  nu             59924.44169750 4886259466.26708889
+  alpha              0.00105759       0.25459371
+  beta               0.15516163      65.99439797
+
+Per-series rows are in out/abm_system_scale_iteration_comparison_i4000_i8000.csv.

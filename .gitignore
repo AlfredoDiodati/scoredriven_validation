@@ -25,3 +25,16 @@ core
 vgcore.*
 .claude/
 .DS_Store
+
+# The 500 x 1000 throughput dataset, about 21 GB of CSV, and the 500,000 fits
+# and 45 MB manifest the throughput test writes from it. Both are regenerated
+# by `make app-abm_system_scale_extract` and
+# `make app-abm_system_scale_fit_qvarma`. The timing file those runs produce,
+# out/abm_system_scale_fit_qvarma_timing.txt, is the result and is kept.
+dataset/abm_system_scale/
+out/abm_system_scale_fit_qvarma_i*/
+out/abm_system_scale_fit_qvarma_i*_manifest.txt
+out/abm_system_scale_extract_manifest.txt
+out/abm_system_scale_iteration_comparison_i*.csv
+
+*.Rmd

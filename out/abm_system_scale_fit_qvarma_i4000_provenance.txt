@@ -1,0 +1,18 @@
+et_al headers this run compiled against
+  includedir: /usr/local/include/et_al.
+  sd/qvarma.h  md5 49909da0c2b00fab33076f5d05b8f694  mtime 2026-08-31 17:40:42.540560057 +0200
+  special.h  md5 b2711520d81d808de37e58d5a5ff9832  mtime 2026-08-31 17:40:42.512489956 +0200
+  ad.h  md5 92dff1705251a4df34cd168bae181b91  mtime 2026-08-31 17:40:42.512356486 +0200
+  dist/mv/student.h  md5 bc8ccd2eb90474bb37a9f94eafc484cc  mtime 2026-08-31 17:40:42.520817962 +0200
+  carries the large-nu correction: yes
+  binary: ./bin/abm_system_scale_fit_qvarma_i4000 built 2026-09-01 16:03:17.314758901 +0200
+  host: Linux 6.19.14-arch1-1 x86_64, 16 hardware threads, OMP_NUM_THREADS=default
+
+Execution time, measured from outside the process
+  process started  2026-09-01 16:03:27
+  process ended    2026-09-01 23:31:39
+  wall clock       26892 s (7.47 h, 07:28:12)
+  covers the folder scan, all 500,000 fits and the manifest write;
+  the timing file's own 'elapsed' covers the fit loop alone.
+  fit loop only:   elapsed          26890.8 s (7.47 h)
+  exit status      0
