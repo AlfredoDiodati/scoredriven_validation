@@ -38,3 +38,4 @@ out/abm_system_scale_extract_manifest.txt
 out/abm_system_scale_iteration_comparison_i*.csv
 
 *.Rmd
+*.zip
