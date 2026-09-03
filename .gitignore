@@ -14,6 +14,12 @@ out/abm_system_fit_qvarma/
 out/abm_system_fit_qvarma_manifest.txt
 out/abm_system_fit_qvarma.log
 
+# The copy of those fits kept from before the resume logic existed, 86 MB in
+# 21,600 files, and its own 2 MB manifest. Both are snapshots of a run, not
+# results, and `make app-abm_system_fit_qvarma` produces the current ones.
+out/abm_system_fit_qvarma_before_resume/
+out/abm_system_fit_qvarma_manifest_before_resume.txt
+
 # Everything else under out/ is small, human-readable and worth keeping: the
 # fitted parameters on the real data, the loss table, the confidence set and
 # the figures.
@@ -38,4 +44,8 @@ out/abm_system_scale_extract_manifest.txt
 out/abm_system_scale_iteration_comparison_i*.csv
 
 *.Rmd
+
+# dataset/Dati simulati.zip, 226 MB: the archive dataset/simulated/ was
+# unpacked from. The unpacked form is already ignored above and the README
+# says where it comes from.
 *.zip
