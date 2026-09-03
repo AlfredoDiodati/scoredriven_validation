@@ -42,7 +42,7 @@ printed.
 */
 
 #include <et_al./linalg/mat.h>
-#include <frame/csv.h>
+#include <et_al./frame/csv.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>

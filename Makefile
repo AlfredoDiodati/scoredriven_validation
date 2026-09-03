@@ -105,7 +105,7 @@ EXAMPLE_STEMS :=
 #
 # not_used/ holds everything outside the chain docs/call_24082026.md
 # describes, in the same directory layout, and is deliberately not built.
-APPLICATION_STEMS := us_prepare_data
+APPLICATION_STEMS := us_prepare_data abm_system_design
 #
 # abm_system_scale_fit_qvarma is deliberately not a stem here. Its solver budget
 # is a compile-time constant that names every file it writes, so one binary per
@@ -227,6 +227,15 @@ app-$(1): $(BIN)/$(1) | $(OUT)
 endef
 $(foreach stem,$(APPLICATION_STEMS),$(eval $(call application_target_for_stem,$(stem))))
 $(foreach stem,$(EXPERIMENT_STEMS),$(eval $(call application_target_for_stem,$(stem))))
+
+# abm_system_simulate is built but never run by a target of its own. It takes
+# the path to the DSK executable and to that model's own JSON, neither of
+# which lives in this repository, so there is nothing for a zero-argument
+# app-<stem> rule to run. app-abm_system_design draws the design it reads, and
+# keeps an existing one rather than renumbering configurations under results
+# already on disk.
+$(BIN)/abm_system_simulate: applications/abm_system_simulate.c $(HEADERS) $(APPLICATION_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
+	$(CC) $(CFLAGS) -DMAT_DOUBLE -fopenmp $(ETAL_CFLAGS) $(INCLUDES) $< -o $@ $(ETAL_LIBS)
 
 # us_data.h reads out/us_system.csv rather than the raw file, so a standalone
 # run has to regenerate it first rather than trust whatever an earlier run

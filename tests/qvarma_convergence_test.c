@@ -44,8 +44,8 @@ Writes out/qvarma_convergence_test.txt.
 #include "applications/abm_system.h"
 #include <et_al./sd/qvarma.h>
 #include <et_al./stats.h>
-#include <et_al./random.h>
-#include <frame/csv.h>
+#include <et_al./random/random.h>
+#include <et_al./frame/csv.h>
 #include <cblas.h>
 #include <string.h>
 #include <malloc.h>
@@ -162,7 +162,7 @@ curvature that is not scale free would measure the instrument.
 */
 static Mat relative_step_hessian(Vec theta, const QvarmaParams *shape, Mat y) {
     int n = theta.r;
-    QvarmaFitContext context = { y, shape, qvarma_fused_new(shape, y.c) };
+    QvarmaFitContext context = { y, shape, qvarma_analytic_new(shape, y.c) };
     Mat H = mat_new(n, n);
     Vec forward = mat_new(n, 1), backward = mat_new(n, 1), probe = mat_new(n, 1);
     for (int j = 0; j < n; j++) {
@@ -180,7 +180,7 @@ static Mat relative_step_hessian(Vec theta, const QvarmaParams *shape, Mat y) {
             mreal mean = (mreal)0.5 * (AT(H, i, j) + AT(H, j, i));
             AT(H, i, j) = AT(H, j, i) = mean;
         }
-    qvarma_fused_free(context.workspace);
+    qvarma_analytic_free(context.workspace);
     mat_free(forward); mat_free(backward); mat_free(probe);
     return H;
 }
@@ -304,10 +304,10 @@ int main(void) {
                 }
 
                 /* The criteria, all read at this same point. */
-                QvarmaFitContext context = { y, &fit.params, qvarma_fused_new(&fit.params, T) };
+                QvarmaFitContext context = { y, &fit.params, qvarma_analytic_new(&fit.params, T) };
                 Vec gradient = mat_new(n, 1);
                 double objective = (double)qvarma_negative_log_likelihood(theta, gradient, &context);
-                qvarma_fused_free(context.workspace);
+                qvarma_analytic_free(context.workspace);
 
                 double worst = 0, relative = 0;
                 for (int i = 0; i < n; i++) {
@@ -591,9 +591,9 @@ int main(void) {
                     _qvarma_unlink(&cached.params, theta);
                     Vec gradient = mat_new(n, 1);
                     QvarmaFitContext context = { y, &cached.params,
-                                                 qvarma_fused_new(&cached.params, y.c) };
+                                                 qvarma_analytic_new(&cached.params, y.c) };
                     qvarma_negative_log_likelihood(theta, gradient, &context);
-                    qvarma_fused_free(context.workspace);
+                    qvarma_analytic_free(context.workspace);
 
                     Mat H = relative_step_hessian(theta, &cached.params, y);
                     Mat chol;

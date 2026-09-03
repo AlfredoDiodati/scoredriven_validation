@@ -71,8 +71,8 @@ fits does not rewrite 21 GB. Run it explicitly, once. Nothing printed.
 */
 
 #include "abm_system.h"
-#include <et_al./random.h>
-#include <frame/csv.h>
+#include <et_al./random/random.h>
+#include <et_al./frame/csv.h>
 #include <dirent.h>
 #include <sys/stat.h>
 #include <string.h>
@@ -162,7 +162,7 @@ int main(void) {
         int n_rep = abm_system_n_replicates(&d);
         assert(n_rep > 0 && "abm_system_scale_extract: a source file holds no replicates");
         n_replicates[f] = n_rep;
-        n_periods[f] = abm_system_n_periods(&d) - ABM_SYSTEM_BURN_IN;
+        n_periods[f] = abm_system_n_periods(&d);
 
         /* Sliced once and the parsed array released before any writing, so a
            worker carries the converted series rather than both. */

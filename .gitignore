@@ -1,9 +1,9 @@
 # Compiled binaries. Every one of them is rebuilt by `make`.
 bin/
 
-# The simulated ABM output, 229 MB of .Rdata, and the five-variable CSVs
-# derived from it, 425 MB. Neither belongs in version control; see the README
-# for where the .Rdata comes from and which target rebuilds the CSVs.
+# The simulated ABM output, 229 MB of .Rdata, and the five-variable .npz
+# archives derived from it. Neither belongs in version control; see the README
+# for where the .Rdata comes from and which target rebuilds the archives.
 dataset/simulated/
 dataset/abm_system/
 

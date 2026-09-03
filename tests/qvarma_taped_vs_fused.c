@@ -1,13 +1,13 @@
 /*
-What et_al.'s fused filter is worth against the traced one it replaced, and
+What et_al.'s analytic filter is worth against the traced one it replaced, and
 whether either scales across cores. A benchmark, not a correctness gate,
 though it does check that the two compute the same number before timing
 either: a fast filter that answers a different question is not a speedup.
 
 Both paths come from et_al. The traced one is _qvarma_link plus
 _qvarma_filter plus tape_backward, which is what qvarma_negative_log_likelihood
-called before the fused path existed; the fused one is
-qvarma_fused_log_likelihood against a workspace built once and reused, which
+called before the analytic path existed; the analytic one is
+qvarma_analytic_log_likelihood against a workspace built once and reused, which
 is what qvarma_fit does now.
 
 Value-only and value-and-gradient are timed separately because a line search
@@ -19,7 +19,7 @@ Writes out/qvarma_taped_vs_fused.txt.
 #include "applications/abm_system.h"
 #include <et_al./sd/qvarma.h>
 #include <et_al./stats.h>
-#include <frame/csv.h>
+#include <et_al./frame/csv.h>
 #include <cblas.h>
 #include <omp.h>
 #include <time.h>
@@ -46,7 +46,7 @@ static double now_seconds(void) {
 
 /* The traced evaluation, kept alive here because qvarma_negative_log_likelihood
    no longer takes this path and there is nothing left to compare against
-   otherwise. Same sign convention as the fused one: the log-likelihood, not
+   otherwise. Same sign convention as the analytic one: the log-likelihood, not
    its negation. */
 static mreal taped_log_likelihood(Vec theta, const QvarmaParams *shape, Mat y, Vec gradient) {
     Tape *tape = tape_new();
@@ -120,13 +120,13 @@ static void run_evaluations(int fused, int want_gradient, int repeats, Vec theta
     int n = theta.r;
     Vec local = mat_copy(theta);
     Vec gradient = want_gradient ? mat_new(n, 1) : (Vec){ 0, 0, 0, NULL };
-    QvarmaFused *workspace = fused ? qvarma_fused_new(shape, y.c) : NULL;
+    QvarmaAnalytic *workspace = fused ? qvarma_analytic_new(shape, y.c) : NULL;
     volatile mreal sink = 0;
     for (int i = 0; i < repeats; i++)
-        sink += fused ? qvarma_fused_log_likelihood(workspace, local, y, gradient)
+        sink += fused ? qvarma_analytic_log_likelihood(workspace, local, y, gradient)
                       : taped_log_likelihood(local, shape, y, gradient);
     (void)sink;
-    if (workspace) qvarma_fused_free(workspace);
+    if (workspace) qvarma_analytic_free(workspace);
     if (want_gradient) mat_free(gradient);
     mat_free(local);
 }
@@ -135,17 +135,7 @@ int main(void) {
     keep_the_arena_resident();
     openblas_set_num_threads(1);
 
-    DataFrame df = df_read_csv("dataset/abm_system/EstimationSeriesSample1_1/replicate_000.csv",
-                               csv_read_options_default());
-    Mat y = mat_new(K, df.r);
-    static const char *row_name[K] = {
-        "GDP_growth", "EN_growth", "Employment_change", "Inflation", "InterestRate"
-    };
-    for (int k = 0; k < K; k++) {
-        Mat column = df_col_numeric(&df, row_name[k]);
-        for (int t = 0; t < df.r; t++) AT(y, k, t) = AT(column, t, 0);
-    }
-    df_free(&df);
+    Mat y = abm_system_read_replicate("dataset/abm_system/EstimationSeriesSample1_1", 0);
     int T = y.c;
 
     QvarmaParams shape = build_start(y, SPEC_R);
@@ -157,9 +147,9 @@ int main(void) {
        the pipeline starts every fit from. */
     Vec taped_gradient = mat_new(n, 1), fused_gradient = mat_new(n, 1);
     mreal taped_value = taped_log_likelihood(theta, &shape, y, taped_gradient);
-    QvarmaFused *check = qvarma_fused_new(&shape, T);
-    mreal fused_value = qvarma_fused_log_likelihood(check, theta, y, fused_gradient);
-    qvarma_fused_free(check);
+    QvarmaAnalytic *check = qvarma_analytic_new(&shape, T);
+    mreal fused_value = qvarma_analytic_log_likelihood(check, theta, y, fused_gradient);
+    qvarma_analytic_free(check);
     mreal worst_gradient = 0;
     for (int i = 0; i < n; i++) {
         mreal gap = MABS(taped_gradient.d[i] - fused_gradient.d[i]);
@@ -170,10 +160,10 @@ int main(void) {
 
     FILE *report = fopen("out/qvarma_taped_vs_fused.txt", "w");
     assert(report && "qvarma_taped_vs_fused: cannot open the report path");
-    fprintf(report, "series: dataset/abm_system/EstimationSeriesSample1_1/replicate_000.csv\n");
+    fprintf(report, "series: EstimationSeriesSample1_1 replicate 0\n");
     fprintf(report, "K = %d, T = %d, spec r = %d, %d parameters\n\n", K, T, SPEC_R, n);
     fprintf(report, "agreement at the pipeline's own starting theta\n");
-    fprintf(report, "  log-likelihood  taped %.10f  fused %.10f  gap %.3g\n",
+    fprintf(report, "  log-likelihood  taped %.10f  analytic %.10f  gap %.3g\n",
             (double)taped_value, (double)fused_value,
             (double)MABS(taped_value - fused_value));
     fprintf(report, "  gradient        worst relative difference over %d coordinates %.3g\n\n",
@@ -210,7 +200,7 @@ int main(void) {
         }
     }
 
-    fprintf(report, "\nfused against taped, same thread count\n");
+    fprintf(report, "\nanalytic against taped, same thread count\n");
     for (int j = 0; j < 2; j++)
         for (int c = 0; c < 2; c++)
             fprintf(report, "  %-20s %2d threads  %6.1fx\n", job[j].name,

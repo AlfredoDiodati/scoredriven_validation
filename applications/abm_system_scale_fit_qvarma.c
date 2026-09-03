@@ -86,7 +86,7 @@ to depend on app-abm_system_scale_extract in the Makefile: that step writes
 #include "abm_system.h"
 #include <et_al./sd/qvarma.h>
 #include <et_al./stats.h>
-#include <frame/csv.h>
+#include <et_al./frame/csv.h>
 #include <cblas.h>
 #include <omp.h>
 #include <dirent.h>

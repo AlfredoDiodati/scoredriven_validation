@@ -1,6 +1,6 @@
-series: dataset/abm_system/EstimationSeriesSample1_1/replicate_000.csv
-K = 5, T = 400, evaluation repeats = 200, single threaded
+series: EstimationSeriesSample1_1 replicate 17
+K = 5, T = 400, evaluation repeats = 2, single threaded
 
 spec    n_theta  value+grad_ms  value_only_ms        fit_s    niter  converged    grad_norm
-2            42         0.1121         0.0328        0.176     2000         no     2.55e+04
-4            46         0.0788         0.0317        0.175     2000         no        197.4
+2            42         0.1801         0.0869        0.209     2000         no        13.01
+4            46         0.1127         0.0586        0.236     2000         no        59.81

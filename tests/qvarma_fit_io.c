@@ -2,7 +2,7 @@
 What the file handling around one fit costs, now that the fit itself is fast
 enough for it to matter. A benchmark, not a correctness gate.
 
-abm_system_fit_qvarma.c reads one replicate CSV and, through
+abm_system_fit_qvarma.c reads one replicate and, through
 qvarma_fit_cached, writes one JSON per fit and reads it back on a rerun. At
 the taped filter's cost those were rounding errors beside a four second fit.
 They are not any more, and a rerun that hits the cache does nothing else at
@@ -14,7 +14,7 @@ which it removes before returning.
 #include "applications/abm_system.h"
 #include <et_al./sd/qvarma.h>
 #include <et_al./stats.h>
-#include <frame/csv.h>
+#include <et_al./frame/csv.h>
 #include <cblas.h>
 #include <time.h>
 #include <malloc.h>
@@ -83,17 +83,7 @@ static QvarmaParams build_start(Mat y, int rlag) {
 }
 
 static Mat read_series(const char *path) {
-    DataFrame df = df_read_csv(path, csv_read_options_default());
-    Mat y = mat_new(K, df.r);
-    static const char *row_name[K] = {
-        "GDP_growth", "EN_growth", "Employment_change", "Inflation", "InterestRate"
-    };
-    for (int k = 0; k < K; k++) {
-        Mat column = df_col_numeric(&df, row_name[k]);
-        for (int t = 0; t < df.r; t++) AT(y, k, t) = AT(column, t, 0);
-    }
-    df_free(&df);
-    return y;
+    return abm_system_read_replicate(path, 0);
 }
 
 static void keep_the_arena_resident(void) {
@@ -104,7 +94,7 @@ static void keep_the_arena_resident(void) {
 int main(void) {
     keep_the_arena_resident();
     openblas_set_num_threads(1);
-    const char *csv_path = "dataset/abm_system/EstimationSeriesSample1_1/replicate_000.csv";
+    const char *csv_path = "dataset/abm_system/EstimationSeriesSample1_1";  /* replicate 0 */
 
     Mat y = read_series(csv_path);
     QvarmaParams start = build_start(y, SPEC_R);
@@ -147,7 +137,7 @@ int main(void) {
     fprintf(report, "%-34s %12s %14s\n", "operation", "ms", "share of a fit");
     fprintf(report, "%-34s %12.4f %13.1f%%\n", "fit, 2000 iterations",
             1e3 * fit_seconds, 100.0);
-    fprintf(report, "%-34s %12.4f %13.1f%%\n", "read the replicate CSV",
+    fprintf(report, "%-34s %12.4f %13.1f%%\n", "read the replicate",
             1e3 * csv_read, 100.0 * csv_read / fit_seconds);
     fprintf(report, "%-34s %12.4f %13.1f%%\n", "write the fit JSON",
             1e3 * json_write, 100.0 * json_write / fit_seconds);

@@ -13,7 +13,7 @@ fits (r = 2 and r = 4):
 #include "applications/abm_system.h"
 #include <et_al./sd/qvarma.h>
 #include <et_al./stats.h>
-#include <frame/csv.h>
+#include <et_al./frame/csv.h>
 #include <cblas.h>
 #include <time.h>
 #include <malloc.h>
@@ -91,24 +91,17 @@ static void keep_the_arena_resident(void) {
 int main(int argc, char **argv) {
     keep_the_arena_resident();
     openblas_set_num_threads(1);
-    const char *csv_path = argc > 1 ? argv[1]
-        : "dataset/abm_system/EstimationSeriesSample1_1/replicate_000.csv";
-    int repeats = argc > 2 ? atoi(argv[2]) : 200;
+    const char *sample = argc > 1 ? argv[1] : "EstimationSeriesSample1_1";
+    int replicate = argc > 2 ? atoi(argv[2]) : 0;
+    int repeats = argc > 3 ? atoi(argv[3]) : 200;
 
-    DataFrame df = df_read_csv(csv_path, csv_read_options_default());
-    Mat y = mat_new(K, df.r);
-    static const char *row_name[K] = {
-        "GDP_growth", "EN_growth", "Employment_change", "Inflation", "InterestRate"
-    };
-    for (int k = 0; k < K; k++) {
-        Mat column = df_col_numeric(&df, row_name[k]);
-        for (int t = 0; t < df.r; t++) AT(y, k, t) = AT(column, t, 0);
-    }
-    df_free(&df);
+    char csv_path[560];
+    snprintf(csv_path, sizeof csv_path, "dataset/abm_system/%s", sample);
+    Mat y = abm_system_read_replicate(csv_path, replicate);
 
     FILE *report = fopen("out/qvarma_fit_cost.txt", "w");
     assert(report);
-    fprintf(report, "series: %s\n", csv_path);
+    fprintf(report, "series: %s replicate %d\n", sample, replicate);
     fprintf(report, "K = %d, T = %d, evaluation repeats = %d, single threaded\n\n", K, y.c, repeats);
     fprintf(report, "%-6s %8s %14s %14s %12s %8s %10s %12s\n", "spec", "n_theta",
             "value+grad_ms", "value_only_ms", "fit_s", "niter", "converged", "grad_norm");
@@ -123,7 +116,7 @@ int main(int argc, char **argv) {
         /* The workspace qvarma_fit builds and reuses across every evaluation
            of one fit. Leaving it NULL is allowed and makes each call build its
            own, which is not what a fit does and not what this is timing. */
-        QvarmaFitContext context = { y, &start, qvarma_fused_new(&start, y.c) };
+        QvarmaFitContext context = { y, &start, qvarma_analytic_new(&start, y.c) };
 
         /* warm the allocator and the caches before timing */
         for (int i = 0; i < 5; i++) qvarma_negative_log_likelihood(theta, gradient, &context);
@@ -149,7 +142,7 @@ int main(int argc, char **argv) {
         fflush(report);
 
         qvarma_fit_result_free(&result);
-        qvarma_fused_free(context.workspace);
+        qvarma_analytic_free(context.workspace);
         mat_free(gradient);
         mat_free(theta);
         qvarma_params_free(&start);

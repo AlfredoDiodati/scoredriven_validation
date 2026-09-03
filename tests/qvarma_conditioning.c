@@ -27,7 +27,7 @@ Writes out/qvarma_conditioning.txt.
 #include "applications/abm_system.h"
 #include <et_al./sd/qvarma.h>
 #include <et_al./stats.h>
-#include <frame/csv.h>
+#include <et_al./frame/csv.h>
 #include <cblas.h>
 #include <string.h>
 #include <malloc.h>
@@ -47,12 +47,14 @@ Writes out/qvarma_conditioning.txt.
 static const int budget[] = { 250, 500, 1000, 2000, 4000, 8000, 16000, 32000 };
 #define N_BUDGETS ((int)(sizeof budget / sizeof budget[0]))
 
-static const char *replicate_path[] = {
-    "dataset/abm_system/EstimationSeriesSample1_1/replicate_000.csv",
-    "dataset/abm_system/EstimationSeriesSample1_1/replicate_017.csv",
-    "dataset/abm_system/EstimationSeriesSample1_1/replicate_030.csv",
-    "dataset/abm_system/EstimationSeriesSample1_50/replicate_004.csv",
-    "dataset/abm_system/EstimationSeriesSample1_100/replicate_031.csv"
+typedef struct { const char *sample; int replicate; } Series;
+
+static const Series replicate_path[] = {
+    { "EstimationSeriesSample1_1", 0 },
+    { "EstimationSeriesSample1_1", 17 },
+    { "EstimationSeriesSample1_1", 30 },
+    { "EstimationSeriesSample1_50", 4 },
+    { "EstimationSeriesSample1_100", 31 }
 };
 #define N_REPLICATES ((int)(sizeof replicate_path / sizeof replicate_path[0]))
 
@@ -97,18 +99,10 @@ static QvarmaParams build_start(Mat y, int rlag) {
     return m;
 }
 
-static Mat load_series(const char *path) {
-    DataFrame df = df_read_csv(path, csv_read_options_default());
-    Mat y = mat_new(K, df.r);
-    static const char *row_name[K] = {
-        "GDP_growth", "EN_growth", "Employment_change", "Inflation", "InterestRate"
-    };
-    for (int k = 0; k < K; k++) {
-        Mat column = df_col_numeric(&df, row_name[k]);
-        for (int t = 0; t < df.r; t++) AT(y, k, t) = AT(column, t, 0);
-    }
-    df_free(&df);
-    return y;
+static Mat load_series(Series series) {
+    char path[560];
+    snprintf(path, sizeof path, "dataset/abm_system/%s", series.sample);
+    return abm_system_read_replicate(path, series.replicate);
 }
 
 static int smallest_diagonal_row(const QvarmaParams *m, double *value) {
@@ -144,7 +138,8 @@ int main(void) {
 
     for (int rep = 0; rep < N_REPLICATES; rep++) {
         Mat y = load_series(replicate_path[rep]);
-        fprintf(report, "%s\n", replicate_path[rep] + 21);
+        fprintf(report, "%s replicate %d\n", replicate_path[rep].sample,
+                replicate_path[rep].replicate);
         fprintf(report, "  %8s %14s %12s %12s %14s %12s %10s\n", "budget", "log_lik",
                 "min_sd", "at", "nu", "grad_norm", "status");
 

@@ -26,7 +26,7 @@ Writes out/qvarma_stuck_fits.txt.
 #include "applications/abm_system.h"
 #include <et_al./sd/qvarma.h>
 #include <et_al./stats.h>
-#include <frame/csv.h>
+#include <et_al./frame/csv.h>
 #include <cblas.h>
 #include <dirent.h>
 #include <string.h>
@@ -92,33 +92,18 @@ static char **list_subdirs(const char *dir, int *count) {
 static int count_replicates(const char *sample) {
     char path[560];
     snprintf(path, sizeof path, "%s/%s", INPUT_DIR, sample);
-    DIR *handle = opendir(path);
-    assert(handle);
     int n = 0;
-    struct dirent *entry;
-    while ((entry = readdir(handle)) != NULL)
-        if (strncmp(entry->d_name, "replicate_", 10) == 0) n++;
-    closedir(handle);
+    free(abm_system_list_replicates(path, &n));
     return n;
 }
 
 static Mat load_series(const char *sample, int replicate) {
     char path[560];
-    snprintf(path, sizeof path, "%s/%s/replicate_%03d.csv", INPUT_DIR, sample, replicate);
-    DataFrame df = df_read_csv(path, csv_read_options_default());
-    Mat y = mat_new(K, df.r);
-    static const char *row_name[K] = {
-        "GDP_growth", "EN_growth", "Employment_change", "Inflation", "InterestRate"
-    };
-    for (int k = 0; k < K; k++) {
-        Mat column = df_col_numeric(&df, row_name[k]);
-        for (int t = 0; t < df.r; t++) AT(y, k, t) = AT(column, t, 0);
-    }
-    df_free(&df);
-    return y;
+    snprintf(path, sizeof path, "%s/%s", INPUT_DIR, sample);
+    return abm_system_read_replicate(path, replicate);
 }
 
-static Probe probe_cached_fit(Mat y, int rlag, const char *cache_path, QvarmaFused *workspace) {
+static Probe probe_cached_fit(Mat y, int rlag, const char *cache_path, QvarmaAnalytic *workspace) {
     Probe p;
     memset(&p, 0, sizeof p);
 
@@ -261,12 +246,12 @@ int main(void) {
             QvarmaParams shape = qvarma_params_new(K, K_STAR, P, Q, spec_list[spec].r, R,
                                                    SHARED_BETA, WARMUP_LONGEST);
             shape.mu_star_stationary_only = MU_STAR_STATIONARY_ONLY;
-            QvarmaFused *workspace = qvarma_fused_new(&shape, y.c);
+            QvarmaAnalytic *workspace = qvarma_analytic_new(&shape, y.c);
             int idx = i * N_SPECS + spec;
             probe[idx] = probe_cached_fit(y, spec_list[spec].r, cache_path, workspace);
             sample_of[idx] = pair_sample[i];
             replicate_of[idx] = pair_replicate[i];
-            qvarma_fused_free(workspace);
+            qvarma_analytic_free(workspace);
             qvarma_params_free(&shape);
         }
         mat_free(y);

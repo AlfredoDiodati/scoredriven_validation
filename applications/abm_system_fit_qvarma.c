@@ -33,7 +33,7 @@ schedule(dynamic) since some fits converge in a handful of iterations and
 others need the full budget, the same imbalance every multi-start battery
 in this project already schedules this way. Both specs for a given pair
 run inside the same task rather than as two separate parallel tasks: they
-read the same CSV, so reading it once and fitting both from the one
+read the same series, so reading it once and fitting both from the one
 in-memory copy avoids opening and reparsing the same file twice - each of
 the two fit_cached calls still writes its own JSON independently the
 moment that one fit finishes.
@@ -54,7 +54,7 @@ partition and specs, deliberately not sharing any code with this file
 names, so a translation unit uses one or the other, and neither script
 imports anything from the other). Output mirrors dataset/abm_system/'s own
 structure exactly, so which sample and which replicate a cached fit belongs
-to is never in question - dataset/abm_system/<sample>/replicate_<NNN>.csv's
+to is never in question - dataset/abm_system/<sample>/replicate_<NNN>.npz's
 own input becomes out/abm_system_fit_qvarma/<sample>/replicate_<NNN>_p1q1r2_fit.json
 and ..._p1q1r4_fit.json. Rerunning this script after an interruption resumes
 rather than redoes: a cache file with the same data fingerprint is loaded
@@ -98,9 +98,10 @@ printed.
 */
 
 #include "abm_system.h"
+#include <et_al./frame/npz.h>
 #include <et_al./sd/qvarma.h>
 #include <et_al./stats.h>
-#include <frame/csv.h>
+#include <et_al./frame/csv.h>
 #include <cblas.h>
 #include <dirent.h>
 #include <sys/stat.h>
@@ -155,17 +156,13 @@ static char **list_subdirs(const char *dir, int *count) {
     return names;
 }
 
-static int count_replicates(const char *sample_dir) {
+/* The replicate indices one sample actually holds, read from the archives
+   themselves rather than counted from file names, since a batch whose runs
+   did not all succeed is short. Caller must free. */
+static int *list_replicates(const char *sample_dir, int *count) {
     char path[560];
     snprintf(path, sizeof path, "%s/%s", INPUT_DIR, sample_dir);
-    DIR *handle = opendir(path);
-    assert(handle && "abm_system_fit_qvarma: cannot open a sample subdirectory");
-    int n = 0;
-    struct dirent *entry;
-    while ((entry = readdir(handle)) != NULL)
-        if (strncmp(entry->d_name, "replicate_", 10) == 0) n++;
-    closedir(handle);
-    return n;
+    return abm_system_list_replicates(path, count);
 }
 
 static mreal first_difference_sd(Mat y, int row) {
@@ -249,9 +246,10 @@ int main(void) {
     assert(n_samples > 0 && "abm_system_fit_qvarma: no sample subdirectories under dataset/abm_system/");
 
     int *n_replicates = malloc((size_t)n_samples * sizeof(int));
+    int **replicates = malloc((size_t)n_samples * sizeof(int*));
     int n_pairs = 0;
     for (int s = 0; s < n_samples; s++) {
-        n_replicates[s] = count_replicates(samples[s]);
+        replicates[s] = list_replicates(samples[s], &n_replicates[s]);
         char out_dir[560];
         snprintf(out_dir, sizeof out_dir, "%s/%s", OUTPUT_DIR, samples[s]);
         make_directory(out_dir);
@@ -260,17 +258,15 @@ int main(void) {
     int total_tasks = n_pairs * N_SPECS;
 
     /* One task per (sample, replicate) pair, not per (sample, replicate,
-       spec) triple: both specs share the same CSV, so it is read once per
-       pair and both fit_cached calls reuse the same y in memory, rather
-       than every task re-opening and re-parsing a file another task
-       already just read. Each fit_cached call still writes its own JSON
+       spec) triple: both specs share the same series, so it is read once per
+       pair and both fit_cached calls reuse the same y in memory. Each fit_cached call still writes its own JSON
        the moment that one fit finishes, independent of the other spec's
        own progress. */
     Task *tasks = malloc((size_t)n_pairs * sizeof(Task));
     int t_idx = 0;
     for (int s = 0; s < n_samples; s++)
         for (int r = 0; r < n_replicates[s]; r++)
-            tasks[t_idx++] = (Task){ s, r };
+            tasks[t_idx++] = (Task){ s, replicates[s][r] };
 
     double *log_lik = malloc((size_t)total_tasks * sizeof(double));
     double *gradient_norm = malloc((size_t)total_tasks * sizeof(double));
@@ -284,20 +280,9 @@ int main(void) {
         Task task = tasks[i];
         const char *sample = samples[task.sample_index];
 
-        char csv_path[560];
-        snprintf(csv_path, sizeof csv_path, "%s/%s/replicate_%03d.csv", INPUT_DIR, sample,
-                 task.replicate);
-
-        DataFrame df = df_read_csv(csv_path, csv_read_options_default());
-        Mat y = mat_new(K, df.r);
-        static const char *row_name[K] = {
-            "GDP_growth", "EN_growth", "Employment_change", "Inflation", "InterestRate"
-        };
-        for (int k = 0; k < K; k++) {
-            Mat column = df_col_numeric(&df, row_name[k]);
-            for (int t = 0; t < df.r; t++) AT(y, k, t) = AT(column, t, 0);
-        }
-        df_free(&df);
+        char sample_dir[560];
+        snprintf(sample_dir, sizeof sample_dir, "%s/%s", INPUT_DIR, sample);
+        Mat y = abm_system_read_replicate(sample_dir, task.replicate);
 
         for (int spec = 0; spec < N_SPECS; spec++) {
             int out_idx = i * N_SPECS + spec;
@@ -381,6 +366,8 @@ int main(void) {
 
     for (int s = 0; s < n_samples; s++) free(samples[s]);
     free(samples);
+    for (int s = 0; s < n_samples; s++) free(replicates[s]);
+    free(replicates);
     free(n_replicates);
     free(tasks);
     free(log_lik);

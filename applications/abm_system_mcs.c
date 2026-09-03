@@ -89,8 +89,8 @@ whether it survived) and out/abm_system_mcs_joint.csv (the same as data,
 via mcs_pvalue_frame). In EXPERIMENT_STEMS. Nothing printed.
 */
 
-#include <et_al./mcs.h>
-#include <frame/csv.h>
+#include <et_al./inference/mcs.h>
+#include <et_al./frame/csv.h>
 #include <string.h>
 
 #define LOSS_PATH "out/abm_system_mse_qvarma_joint.csv"

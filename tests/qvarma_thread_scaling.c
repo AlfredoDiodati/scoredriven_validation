@@ -10,7 +10,7 @@ is set exactly as the pipeline sets it. Writes out/qvarma_thread_scaling.txt.
 #include "applications/abm_system.h"
 #include <et_al./sd/qvarma.h>
 #include <et_al./stats.h>
-#include <frame/csv.h>
+#include <et_al./frame/csv.h>
 #include <cblas.h>
 #include <omp.h>
 #include <time.h>

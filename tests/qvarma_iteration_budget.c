@@ -11,7 +11,7 @@ Writes out/qvarma_iteration_budget.txt.
 #include "applications/abm_system.h"
 #include <et_al./sd/qvarma.h>
 #include <et_al./stats.h>
-#include <frame/csv.h>
+#include <et_al./frame/csv.h>
 #include <cblas.h>
 #include <string.h>
 #include <malloc.h>
@@ -69,18 +69,12 @@ static QvarmaParams build_start(Mat y, int rlag) {
     return m;
 }
 
-static Mat load_series(const char *path) {
-    DataFrame df = df_read_csv(path, csv_read_options_default());
-    Mat y = mat_new(K, df.r);
-    static const char *row_name[K] = {
-        "GDP_growth", "EN_growth", "Employment_change", "Inflation", "InterestRate"
-    };
-    for (int k = 0; k < K; k++) {
-        Mat column = df_col_numeric(&df, row_name[k]);
-        for (int t = 0; t < df.r; t++) AT(y, k, t) = AT(column, t, 0);
-    }
-    df_free(&df);
-    return y;
+typedef struct { const char *sample; int replicate; } Series;
+
+static Mat load_series(Series series) {
+    char path[560];
+    snprintf(path, sizeof path, "dataset/abm_system/%s", series.sample);
+    return abm_system_read_replicate(path, series.replicate);
 }
 
 /* Pull "iter" and "f" out of the solver's own trace lines. */
@@ -120,11 +114,11 @@ static void keep_the_arena_resident(void) {
 int main(void) {
     keep_the_arena_resident();
     openblas_set_num_threads(1);
-    static const char *replicate[] = {
-        "dataset/abm_system/EstimationSeriesSample1_1/replicate_000.csv",
-        "dataset/abm_system/EstimationSeriesSample1_1/replicate_017.csv",
-        "dataset/abm_system/EstimationSeriesSample1_50/replicate_004.csv",
-        "dataset/abm_system/EstimationSeriesSample1_100/replicate_031.csv"
+    static const Series replicate[] = {
+        { "EstimationSeriesSample1_1", 0 },
+        { "EstimationSeriesSample1_1", 17 },
+        { "EstimationSeriesSample1_50", 4 },
+        { "EstimationSeriesSample1_100", 31 }
     };
     int n_replicates = (int)(sizeof replicate / sizeof replicate[0]);
     const int r_list[2] = { 2, 4 };
@@ -151,10 +145,9 @@ int main(void) {
 
             int n = read_trace("out/qvarma_iteration_budget_trace.txt", nll, MAX_ITERATIONS);
             double final = -(double)result.log_likelihood;
-            const char *name = strrchr(replicate[i], '/');
             char label[128];
-            snprintf(label, sizeof label, "%.60s", replicate[i] + 21);
-            (void)name;
+            snprintf(label, sizeof label, "%s replicate %d",
+                     replicate[i].sample, replicate[i].replicate);
             fprintf(report, "%-46s %4d %14.4f %14.4f %8d %8d %8d\n", label, r_list[s],
                     final, n > 200 ? nll[200] : nll[n - 1],
                     first_within(nll, n, final, 1.0),
