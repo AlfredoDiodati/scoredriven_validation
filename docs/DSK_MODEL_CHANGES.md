@@ -1,8 +1,7 @@
 # The simulator this project runs, and how it differs from upstream
 
-`model/dsk_sfc` is the DSK stock-flow-consistent agent-based model, vendored
-into this repository because the runs behind every result here come out of it
-and a result whose generator is not in the tree is not reproducible.
+`model/dsk_sfc` holds the source code of the DSK stock-flow-consistent
+agent-based model.
 
 Upstream is `https://github.com/CoMoS-SA/Reissl_2025.git` at commit
 `611ff9cb44348baa55be1bc315eefe2c117ccd44`. Five of its files differ here -
@@ -43,7 +42,7 @@ directory is why the simulation driver reaches the model through a symlink in
 a per-process scratch directory, and it is what made the filename buffer bug
 below reachable.
 
-## What was left out of the vendored copy
+## What was left out of the copy
 
 `model/dsk_sfc` is upstream's source and nothing else. Four things upstream
 ships were dropped because they describe someone else's desk rather than this
@@ -62,8 +61,8 @@ Nothing removed is read by the compiler or the program, which
 byte after the removals.
 
 One thing to check before this repository goes anywhere public: upstream ships
-no licence file, and neither do the three libraries it vendors inside itself
-(newmat10, rapidjson, CLI11). That is upstream's omission, not something to
+no licence file, and neither do the three libraries whose source it carries
+inside itself (newmat10, rapidjson, CLI11). That is upstream's omission, not something to
 paper over here.
 
 ## Why any of this
@@ -365,7 +364,7 @@ could have changed a number as easily as crashed.
 
 ## What the tests establish
 
-`tests/dsk_build_equivalence.c` runs the vendored build and the unmodified one
+`tests/dsk_build_equivalence.c` runs this project's build and the unmodified one
 over the same seeds and compares every byte of the results file. Equality, not
 similarity: two runs that agree byte for byte are indistinguishable under any
 test that could be applied to them, so no test statistic is needed while it

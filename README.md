@@ -22,48 +22,63 @@ simulation workflow was derived from, kept for reference. Everything else
 written down lives in `docs/` too; no directory in this tree carries a note of
 its own.
 
-## The agent-based model, and whose it is
+## The agent-based model
 
-The simulated economy is not this project's work. It is the DSK
-stock-flow-consistent model - Dystopian Schumpeter meeting Keynes - whose source
-is vendored under `model/dsk_sfc` from
+The economy simulated here is not this project's. It is the DSK
+stock-flow-consistent model - Dystopian Schumpeter meeting Keynes - and the code
+under `model/dsk_sfc` is the code its own authors released alongside their
+peer-reviewed paper:
 
     https://github.com/CoMoS-SA/Reissl_2025
     commit 611ff9cb44348baa55be1bc315eefe2c117ccd44
 
-Cite that repository, and the paper it accompanies, for the model itself; the
-DSK family it belongs to is Lamperti, Dosi, Napoletano, Roventini and Sapio's
-integrated climate-macro agent-based model. Nothing in this repository claims
-authorship of the economics.
+Cite that repository and that paper for the model. The economics is theirs, and
+this project starts from their program rather than from a reimplementation of
+it, so that what is validated here is the published model and not a second
+opinion about it.
 
-It is vendored rather than fetched because every result here is a function of
-the exact simulator that produced it, and a generator that is not in the tree
-cannot be reproduced from it.
+### Made to run a million times
 
-### What this project changed in it
+The validation needs 1000 parameter configurations simulated 1000 times each. At
+the speed the published code runs, one 600-period simulation takes 34.8 seconds,
+which puts the experiment at roughly 9700 core-hours: 73 days of the desktop it
+was measured on. It now takes 1.570 seconds, 436 core-hours, 5.3 days - 22 times
+faster.
 
-Two kinds of change, both recorded with their measurements in
-`docs/DSK_MODEL_CHANGES.md`:
+None of that came from changing what the model computes. It came from how the
+program stores its data and how often it repeats itself:
 
-- **Speed.** A run went from 34.840 s to 1.570 s, 22.2x, which turns the
-  experiment's serial cost from roughly 9700 core-hours into 436. The changes
-  are an optimised build, one memory layout, several loop restructurings, and
-  reductions that were being recomputed; nine further attempts were measured
-  and thrown away, and those are written down too.
-- **One bug**, upstream's: every output filename is built into a fixed 64-byte
-  buffer, so the model corrupts memory and then crashes when it is invoked
-  through a path of any realistic length. The buffers are now `PATH_MAX`. This
-  one was not optional - the simulation driver invokes the model through a
-  scratch directory, which is squarely in the range that fails.
+- **The build.** The published `CMakeLists.txt` selects a debug build and adds
+  no optimisation flag, so a default compile carries none. Building it as
+  release is worth 3.8x on its own, before anything in the source is touched.
+- **The direction the arrays are read in.** The model keeps each firm's stock of
+  machines in arrays indexed by period, then machine supplier, then firm.
+  Several of its loops worked through one firm at a time, which means reading a
+  single number out of each of four hundred separate places in memory, tens of
+  millions of times a run. Running the firms on the inside of those loops reads
+  the same numbers consecutively instead, which is the difference between a
+  memory system that can anticipate the next read and one that cannot.
+- **Answers that were being recomputed.** A bank pushing its non-customers to
+  the end of its credit ranking rescanned the whole ranking once for each of
+  them, when the answer only moves by one each time. A firm owns machines of
+  very few vintages - 98 per cent of the firm-and-vintage pairs the model sweeps
+  every period hold nothing - and every one of those was being visited and
+  multiplied by zero.
 
-No change is allowed to move a number. `make test-dsk_build_equivalence` builds
-an unmodified binary from `model/dsk_sfc/upstream/` and compares every byte of
-the two results files over five seeds; it has to say `PASSED` or the change does
-not go in. Byte equality is stronger than statistical indistinguishability: two
-runs that agree byte for byte cannot be separated by any test. That guarantee is
-established with the model's seven shock flags at zero, which is how the
-experiment runs them and, per `docs/ABM_SYSTEM_SIMULATION.md`, how they should
-stay.
+### Why the results are still the published model's
+
+Every change has to leave the model's output identical to the published code's,
+byte for byte. `make test-dsk_build_equivalence` compiles their unmodified
+source, runs both programs over the same seeds, and compares all 3 MB of each
+run's output; a change that moves a single digit does not go in.
+
+That is a stronger guarantee than statistical agreement. Two runs that agree byte
+for byte cannot be told apart by any test, so the question of whether the faster
+version drifts away from the published one does not arise. Nine further changes
+were tried, measured, and dropped for not being faster.
+`docs/DSK_MODEL_CHANGES.md` holds the whole record: every change, every timing
+and the setup it was taken under, every rejected attempt, and what the test does
+and does not cover.
 
 ### Using the simulator
 
@@ -93,10 +108,10 @@ baseline parameter file it uses.
 
     applications/     the scripts that produce results, plus us_data.h and
                       abm_system.h, which describe this project's own data
-    model/dsk_sfc/    the DSK simulator itself, vendored from upstream with
-                      the speed work of docs/DSK_MODEL_CHANGES.md applied
+    model/dsk_sfc/    the DSK simulator itself, a copy of upstream's source
+                      with the speed work of docs/DSK_MODEL_CHANGES.md applied
     tests/            what verifies the auxiliary model still computes what it
-                      claims to, and what verifies the vendored simulator still
+                      claims to, and what verifies this copy of the simulator still
                       matches upstream byte for byte
     dataset/          us_real.csv, the raw US series; the ABM's own simulated
                       output goes here too but is not tracked
@@ -106,7 +121,7 @@ baseline parameter file it uses.
 ## Requirements
 
 - A C11 compiler with OpenMP, and OpenBLAS
-- A C++11 compiler, for the vendored simulator under `model/dsk_sfc`; `make
+- A C++11 compiler, for the simulator under `model/dsk_sfc`; `make
   model` builds it without cmake
 - et_al, installed so that `pkg-config et_al.-core` resolves
 - Python with `polars`, `plotly` and `kaleido`, for the figures only; plotly
@@ -224,7 +239,7 @@ Results are written to `out/`, never printed.
     make study        parameter recovery from known truths, over sample sizes,
                       model shapes and parameter regimes
 
-The vendored simulator has two of its own, and they are the gate on any change
+The simulator has two of its own, and they are the gate on any change
 to it:
 
     make test-dsk_build_equivalence   every byte matches upstream, over five seeds

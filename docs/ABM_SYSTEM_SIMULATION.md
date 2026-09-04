@@ -326,7 +326,7 @@ operation. A batch is skipped whole, its failures included: the model is
 deterministic in its seed, so a run that failed once fails the same way again,
 and the failure log is where that is recorded.
 
-The model is `model/dsk_sfc`, vendored into this repository and built by
+The model is `model/dsk_sfc`, whose source is kept in this repository and built by
 `make model`; `docs/DSK_MODEL_CHANGES.md` records what this project changed in
 it, what those changes are tested to leave alone, and the bug they fixed. It
 reads one JSON parameter file and one seed per execution and writes its output
