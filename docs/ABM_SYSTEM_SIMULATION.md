@@ -354,12 +354,12 @@ smooth and growth rates are noise, but the fit would then have to transform
 what it reads, which is not what the fit is for. The full experiment is
 $1000 \times 1000 = 10^6$ model executions.
 
-One 600-step run of the build this project uses takes 1.570 seconds: seed 1 at
+One 600-step run of the build this project uses takes 1.103 seconds: seed 1 at
 the baseline calibration, this build and upstream's alternated three times each
-on an idle machine, median reported, upstream 34.840 seconds against it. So the
+on an idle machine, median reported, upstream 33.20 seconds against it. So the
 serial arithmetic is
-$10^{6} \times 1.570\ \text{s} = 1.57 \times 10^{6}\ \text{s}$, about 436
-core-hours, against roughly 9700 for the build upstream ships.
+$10^{6} \times 1.103\ \text{s} = 1.10 \times 10^{6}\ \text{s}$, about 306
+core-hours, against roughly 9200 for the build upstream ships.
 `docs/DSK_MODEL_CHANGES.md` records what was changed to get there and what the
 changes are tested to leave alone.
 
@@ -370,16 +370,16 @@ seeds counting up, nothing else running:
 
 | concurrent runs | runs per minute |
 |---:|---:|
-| 1 | 38.2 |
-| 4 | 105.8 |
-| 8 | 130.2 |
-| 16 | 120.2 |
+| 1 | 41.1 |
+| 4 | 152.4 |
+| 8 | 174.1 |
+| 16 | 164.8 |
 
 Throughput peaks at eight and falls at sixteen, which is what running two
 threads on each of eight cores does when both threads want memory. A million
-runs at 130 a minute is 5.3 days of this machine. The ratio between one run and
-saturated throughput is the number to carry to a cluster: a run is 22 times
-faster than upstream's but saturated throughput is only 1.7 times what it was,
+runs at 174 a minute is 4.0 days of this machine. The ratio between one run and
+saturated throughput is the number to carry to a cluster: a run is 30 times
+faster than upstream's but saturated throughput is 2.3 times what it was,
 because concurrent runs compete for one memory system. Re-measure that table on
 the target machine before committing anything to a queue; a node with more
 memory bandwidth per core will sit closer to the serial figure.
@@ -401,4 +401,4 @@ Before the full design, run a handful of configurations at the corners of the
 box with a few replications each. What that pilot checks is not correctness of
 the pipeline but the failure rate: the completion count is the one quantity
 whose behaviour across the parameter space cannot be predicted from the design
-and determines whether the experiment as specified is worth its 436 hours.
+and determines whether the experiment as specified is worth its 306 hours.

@@ -2251,14 +2251,21 @@ void MACH(void)
   //costs. All four take the same values, so all four are copied from gtemp,
   //and a whole period's suppliers and firms lie together, so each is one copy
   //rather than one per supplier.
+  //g_c2 and g_c3 are read in one place, ADJUSTEMISSENLAB, which is reached only
+  //from the two flag_capshocks branches in PRODMACH. With that flag off nothing
+  //reads them, so they are refreshed only when something will.
+  const int capital_shocks_run=(flag_capshocks!=0);
   for (tt=t0; tt<=t; tt++)
   {
     const double* source=gtemp[tt-1][0].p;
     const std::size_t bytes=(std::size_t)N1*N2*sizeof(double);
     std::memcpy(g[tt-1][0].p, source, bytes);
     std::memcpy(g_c[tt-1][0].p, source, bytes);
-    std::memcpy(g_c2[tt-1][0].p, source, bytes);
-    std::memcpy(g_c3[tt-1][0].p, source, bytes);
+    if (capital_shocks_run)
+    {
+      std::memcpy(g_c2[tt-1][0].p, source, bytes);
+      std::memcpy(g_c3[tt-1][0].p, source, bytes);
+    }
   }
 
 
@@ -2304,6 +2311,20 @@ void MACH(void)
     }
   }
 
+  //While the loop below is reading every firm's count of every vintage anyway,
+  //it records which firms hold each one. SCRAPPING wants that same set and was
+  //reading all 52 million counts a run to find it. Recording them here rather
+  //than in a pass of its own costs less than that pass would: it is one store
+  //per firm that holds something, against reading every count again. Nothing
+  //writes g in between, and the firms are recorded in increasing order, which
+  //is the order SCRAPPING met them in.
+  const int n_vintage_held=t-t0+1;
+  if ((int)holders.size() < N1*n_vintage_held*N2)
+  {
+    holders.resize(N1*n_vintage_held*N2);
+    holder_count.resize(N1*n_vintage_held);
+  }
+
   for (i=1; i<=N1; i++)
   {
     for (tt=t0; tt<=t; tt++)
@@ -2324,12 +2345,20 @@ void MACH(void)
       double* A2_ef_s=A2_ef.Store();
       const double* n_mach_s=n_mach.Store();
 
+      const int vintage_row=(i-1)*n_vintage_held+(tt-t0);
+      int* row_holders=&holders[(size_t)vintage_row*N2];
+      int n_holders=0;
+
       for (j=1; j<=N2; j++)
       {
         const double g_itj=g_it[j-1];
         if (weights_sparse && g_itj==0)
         {
           continue;
+        }
+        if (g_itj != 0)
+        {
+          row_holders[n_holders++]=j;
         }
         const double labprod2=weight_labprod2[j-1];
         const double eneff2=weight_eneff2[j-1];
@@ -2341,6 +2370,7 @@ void MACH(void)
         A2_en_s[j-1]+=eneff2*A_en_it*g_itj/n_machj;
         A2_ef_s[j-1]+=A_ef_it*g_itj/n_machj;
       }
+      holder_count[vintage_row]=n_holders;
     }
   }
 
@@ -2593,6 +2623,8 @@ void SCRAPPING(void)
   //The supplier index the loop over firms ends on.
   indsupl=int(supl(N2));
 
+  const int n_vintage_scrap=t-t0+1;
+
   //Which machines each firm is left wanting to scrap, and what each of them
   //costs it to run. CANCMACH is the only other place g_pb and C_pb are used,
   //and it works through this list, so entries outside the list are never read
@@ -2615,20 +2647,22 @@ void SCRAPPING(void)
       const double C_it=C(tt,i);
       const double w_2=w(2);
 
-      for (j=1; j<=N2; j++)
+      //The firms holding this vintage, in increasing order, as MACH recorded
+      //them. A firm holds units of about two vintages in a hundred, and the
+      //rest reach neither branch below.
+      const int vintage_row=(i-1)*n_vintage_scrap+(tt-t0);
+      const int* row_holders=&holders[(size_t)vintage_row*N2];
+      const int n_holders=holder_count[vintage_row];
+
+      for (int holder=0; holder<n_holders; holder++)
       {
-        //A firm holds units of about two vintages in a hundred, and the rest
-        //reach neither branch below.
-        if (g[tt-1][i-1][j-1]==0)
-        {
-          continue;
-        }
+        j=row_holders[holder];
 
         double scrapped_for_age=0;
 
         //If a machine has reached its maximum age, it is scrapped, unless the firm has only 1 machine remaining
         if (g[tt-1][i-1][j-1] > 0 && age[tt-1][i-1][j-1] > (agemax))
-			  {   
+			  {
           scrapped_for_age=min(g[tt-1][i-1][j-1],(K_temp(j)-1));
           g_pb[tt-1][i-1][j-1]=scrapped_for_age;
           C_pb[tt-1][i-1][j-1]=C_it;
@@ -2650,8 +2684,8 @@ void SCRAPPING(void)
 
         //Machines which have not reached their maximum age are scrapped if a superior technology is available from the current supplier
         //Only enter here if the relevant machines have not already been scrapped due to age
-        if (g[tt-1][i-1][j-1] > 0 && scrapped_for_age==0)	  
-			  {													                            
+        if (g[tt-1][i-1][j-1] > 0 && scrapped_for_age==0)
+			  {
           if (w_2 > 0 && A_it > 0 && scrap_supplier_ok[j-1] && A_en_it > 0)
           {
             //calculate payback variable: (price of machine)/(unit cost difference offered by the machine)
@@ -2674,7 +2708,7 @@ void SCRAPPING(void)
 				  if (payback <= b && payback>0)
 				  {
 					  g_pb[tt-1][i-1][j-1]=g[tt-1][i-1][j-1];
-		 			  C_pb[tt-1][i-1][j-1]=C_it;			 
+		 			  C_pb[tt-1][i-1][j-1]=C_it;
 					  SId(j)+=dim_mach*g_pb[tt-1][i-1][j-1];
             marked_supplier[(j-1)*marked_capacity+marked_count[j-1]]=i;
             marked_vintage[(j-1)*marked_capacity+marked_count[j-1]]=tt;
@@ -2712,11 +2746,21 @@ void COSTPROD(void)
   {
     const double w_2=w(2);
     const double labprod2=1-shocks_labprod2(j);
+    //j's own count for each vintage, reached by walking rather than by
+    //subscripting. The subscript works the address out from the array's base
+    //and strides every time, and it has to reload all three each time round,
+    //because the writes below are to other arrays the compiler cannot prove sit
+    //elsewhere in memory. One vintage on is a fixed distance, so the walk is
+    //one addition.
+    const double* const machines=g_c.data.data();
+    const size_t vintage_stride=(size_t)g_c.d1*g_c.d2;
     for (i=1; i<=N1; i++)
     {
-      for (tt=t0; tt<=t; tt++)
+      const double* machines_held=machines+(size_t)(t0-1)*vintage_stride
+                                          +(size_t)(i-1)*g_c.d2+(j-1);
+      for (tt=t0; tt<=t; tt++, machines_held+=vintage_stride)
       {
-        if (g_c[tt-1][i-1][j-1] > 0)
+        if (*machines_held > 0)
         {
           vintage_cost[n_held]=w_2/(labprod2*A(tt,i))+vintage_energy[(i-1)*n_vintage+(tt-t0)]
                                                     +vintage_emission[(i-1)*n_vintage+(tt-t0)];
@@ -2728,10 +2772,10 @@ void COSTPROD(void)
     }
   }
 
-	while (nmp_temp > 0)       
-	{									         
-    cmin=std::numeric_limits<double>::infinity();                                                  
-    imin=0;                                                                 
+	while (nmp_temp > 0)
+	{
+    cmin=std::numeric_limits<double>::infinity();
+    imin=0;
     jmin=0;
     tmin=0;
 
@@ -3240,21 +3284,13 @@ void PRODMACH(void)
     }
   }
 
-  for (i=1; i<=N1; i++)
-  {
-    for (tt=t0; tt<=t; tt++)
-    {
-      const VintageRow<double> gtemp_it=gtemp[tt-1][i-1];
-      const VintageRow<int> age_it=age[tt-1][i-1];
-      for (j=1; j<=N2; j++)
-      {
-        if (gtemp_it[j-1] == 0)
-        {
-          age_it[j-1]=0;
-        }
-      }
-    }
-  }
+  //The age of a machine a firm no longer holds is not cleared here. Every place
+  //that reads an age asks for it only where the firm's count of that machine is
+  //positive - SCRAPPING and CANCMACH under their own count tests, ENTRYEXIT
+  //under gtemp - and the three places a count rises from zero all set the age
+  //at the same entry: the purchase below, and the two second-hand transfers in
+  //ENTRYEXIT. So a stale age is never read, and clearing them cost a sweep of
+  //all 52 million firm-vintage pairs a run.
 
 	for (j=1; j<=N2; j++)
 	{
@@ -6656,18 +6692,19 @@ void UPDATE(void)
   //Machines held get a period older. Doing this for every firm at once rather
   //than inside the loop above runs down contiguous memory instead of across it
   //once per firm; each entry is still incremented exactly once.
-  for (i=1; i<=N1; i++)
+  //Every entry is aged, not only the ones a firm still holds. An age is read
+  //in three places and each asks for it only where the firm's count of that
+  //machine is positive, and the three places a count rises from zero all set
+  //the age at the same entry, so ageing an entry nobody holds changes no value
+  //that is ever read. What it saves is the machine counts: this used to read
+  //all 52 million of them a run to decide, and now reads none.
+  for (tt=t0; tt<=t; tt++)
   {
-    for (tt=t0; tt<=t; tt++)
+    int* ages=age[tt-1][0].p;
+    const int n_entries=N1*N2;
+    for (int entry=0; entry<n_entries; entry++)
     {
-      const VintageRow<double> gtemp_it=gtemp[tt-1][i-1];
-      const VintageRow<int> age_it=age[tt-1][i-1];
-      for (j=1; j<=N2; j++)
-      {
-        if (gtemp_it[j-1] > 0){
-          age_it[j-1]=age_it[j-1]+1;
-        }
-      }
+      ages[entry]=ages[entry]+1;
     }
   }
 

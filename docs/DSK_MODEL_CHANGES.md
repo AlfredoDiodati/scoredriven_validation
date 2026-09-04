@@ -68,7 +68,7 @@ paper over here.
 ## Why any of this
 
 The experiment is a million runs. At the speed upstream ships, that is 73 days
-of this machine; at the speed here it is 5.3. Nothing else about the model is
+of this machine; at the speed here it is 4.0. Nothing else about the model is
 touched, and nothing that touches a number is allowed: every change below
 produces output identical to upstream's, byte for byte, which is what
 `tests/dsk_build_equivalence.c` checks rather than assumes.
@@ -120,8 +120,20 @@ is the measurement and the level between rows is not.
 | `g_pb` and `C_pb` never cleared | 1.827 s | 1.614 s |
 | the second-hand minimum over the live vintages | 1.614 s | 1.557 s |
 
+A third round, measured the same way. It was directed by the loop-level cycle
+counts in the section after next rather than by the per-function profile, which
+by then had stopped agreeing with the A/B results.
+
+| change | before | after |
+|---|---:|---:|
+| `COSTPROD()`'s scan walks a pointer | 1.722 s | 1.670 s |
+| `PRODMACH()`'s clearing of unheld ages dropped | 1.655 s | 1.542 s |
+| `g_c2` and `g_c3` copied only when read | 1.361 s | 1.257 s |
+| `UPDATE()` ages every entry, testing none | 1.259 s | 1.174 s |
+| `SCRAPPING()` reads the holders `MACH()` recorded | 1.174 s | 1.109 s |
+
 End to end, upstream and this build alternated three times each in the same
-thermal state: 34.840 s against 1.570 s, 22.2x.
+thermal state: 33.20 s against 1.103 s, 30.1x.
 
 Two flags are deliberately absent. `-O3` measured no faster. `-march=native`
 lets the compiler contract a multiply and an add into one instruction, which
@@ -252,6 +264,68 @@ use hold anything but infinity. The scan covers those 434 entries. The column
 maximum was measured together with `UPDATE()`'s ageing, 1.914 s to 1.846 s; the
 second-hand minimum on its own, 1.614 s to 1.557 s.
 
+### Measuring the loops instead of the functions
+
+A third round started by replacing the per-function timing above with cycle
+counts taken with `__rdtsc` around individual loops, because the per-function
+figures had stopped agreeing with what the A/B measurements showed. Bracketing a
+function that is called 115,000 times a run costs more than the thing being
+measured, and the timer calls also stop the compiler moving code across them.
+The loop counts, one run at seed 1, as a share of the whole run:
+
+| loop | share of the run |
+|---|---:|
+| `SCRAPPING()`'s scan for the firms holding a vintage | 10.5% |
+| `UPDATE()`'s ageing | 9.7% |
+| `COSTPROD()`'s scan for the vintages a firm holds | 6.9% |
+| the rest of `COSTPROD()` | 5.5% |
+| `MACH()`'s block copies | 3.8% |
+| `CANCMACH()` | 0.4% |
+
+Two of the three largest were sweeps of all 52 million firm-vintage pairs that
+act on the 2% which are not empty, and one turned out not to be needed at all.
+
+### Work done for entries nobody holds
+
+`PRODMACH()` cleared the age of every machine a firm no longer holds, over the
+whole grid, every period. Nothing reads those ages. Every read of an age -
+`SCRAPPING()`, `CANCMACH()`, `ENTRYEXIT()` - asks for it only where the firm's
+count of that machine is positive, and the three places a count rises from zero
+all set the age at the same entry: the purchase in `PRODMACH()` and the two
+second-hand transfers in `ENTRYEXIT()`. The sweep is gone. 6.6%.
+
+`UPDATE()` ages the machines a firm holds, and tested every count to find them.
+By the same argument the test is unnecessary: ageing an entry nobody holds
+changes no value that is ever read, and the entry's age is set when it is next
+acquired. It now ages every entry in the window, which reads none of the counts
+and is a plain increment over contiguous integers. 6.8%.
+
+`MACH()` copies the machine counts into three working arrays, `g_c`, `g_c2` and
+`g_c3`. The second and third are read in one function, `ADJUSTEMISSENLAB()`,
+which is reached only from the two `flag_capshocks` branches in `PRODMACH()`.
+With that flag off nothing reads them, so they are copied only when something
+will. 8.5% - the largest single change of the round, for a two-line condition.
+
+### Finding the same set twice
+
+`SCRAPPING()` reads every firm's count of every vintage to find the few that are
+not zero. `MACH()`'s weighted-average loop reads exactly the same counts a few
+steps earlier, and nothing writes them in between, so it records which firms
+hold each vintage as it goes and `SCRAPPING()` reads that list. 5.5%.
+
+Recording them inside that loop rather than in a pass of its own is not an
+incidental choice: the separate pass was measured and is 6.8% *slower* than
+recording in place, because it reads all 52 million counts a second time and
+that costs more than a store in the middle of the existing loop.
+
+### An address worked out 52 million times
+
+`COSTPROD()` scans a firm's vintages by subscripting `g_c`, which works the
+address out from the array's base and its two strides on every one of the 52
+million reads, and reloads all three each time round because the loop also
+writes to arrays the compiler cannot prove sit elsewhere in memory. One vintage
+on is a fixed distance, so the scan now walks a pointer. 4.4%.
+
 ### What was tried and did not work
 
 What follows was measured and thrown away, which is worth writing down so
@@ -334,6 +408,24 @@ costs a pass of its own. Not kept.
 
 *Writing the two age loops as selects rather than branches.* Eight alternating
 pairs, 1.5965 s against 1.5889 s, 0.5%. Not kept.
+
+Three more from the third round.
+
+*Taking `SCRAPPING()`'s four vintage rows once instead of subscripting.* The
+same change that is worth 4.4% in `COSTPROD()`, applied where the firm index is
+already innermost: 0.85% slower over six alternating pairs. The address there
+advances by one element, which the compiler strength-reduces on its own, and the
+hoisting is paid on every vintage row while 98% of the rows do nothing.
+
+*Recording the holders in a pass of its own* rather than inside `MACH()`'s
+existing loop: 6.8% slower over nine pairs, 1.099 s against 1.174 s.
+
+*Building `COSTPROD()`'s per-firm lists in `MACH()` too.* The obvious companion
+to the change that worked for `SCRAPPING()`, and it measures nothing: ten
+alternating pairs each way, and the sign of the difference changes with the
+order the two builds are run in. Its scan is 6.9% of the run by the cycle
+counts, so something about the second list costs what the scan costs; that was
+not chased further, because the change was not going in either way.
 
 ### Filename buffers too small for a real path
 
@@ -439,24 +531,24 @@ process, seeds 1 upward, nothing else running:
 
 | concurrent runs | this build | upstream's |
 |---:|---:|---:|
-| 1 | 38.2 | 1.4 |
-| 4 | 105.8 | 3.5 |
-| 8 | 130.2 | 3.6 |
-| 16 | 120.2 | 9.5 |
+| 1 | 41.1 | 1.4 |
+| 4 | 152.4 | 3.5 |
+| 8 | 174.1 | 3.6 |
+| 16 | 164.8 | 9.5 |
 
-The machine saturates near 130 runs a minute at eight concurrent, which is a
-million runs in 5.3 days. Sixteen is slower than eight, which is what running
+The machine saturates near 174 runs a minute at eight concurrent, which is a
+million runs in 4.0 days. Sixteen is slower than eight, which is what running
 two threads on each of eight cores does when both threads want memory. The
 experiment is a million independent runs, so the cores are already full and
 making one run use several of them cannot raise that number. It would only
 shorten a single run's latency, which nothing here needs.
 
-Note what does not carry over. One run is 22.2 times faster than upstream's,
-and saturated throughput is 1.7 times what it was before this work - 130
-against the 76 measured at the same point in the history. The gap is memory
-bandwidth: sixteen runs at once want their vintage arrays in cache at the same
-time, and there is one memory system between them. That also means further work
-on a single run buys steadily less of what this experiment actually costs.
+Note what does not carry over. One run is 30 times faster than upstream's, and
+saturated throughput is 2.3 times what it was before this work - 174 against the
+76 measured at the same point in the history. The gap is memory bandwidth: eight
+runs at once want their vintage arrays in cache at the same time, and there is
+one memory system between them. That also means further work on a single run
+buys steadily less of what this experiment actually costs.
 
 The upstream column was measured earlier, at the same concurrencies but before
 the second round of changes, and it is noisier than this one - its 8-way row is

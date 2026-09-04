@@ -297,6 +297,8 @@ std::vector<double> weight_labprod2;                         // MACH's per-firm 
 std::vector<double> weight_eneff2;
 std::vector<int> held_supplier;                              // COSTPROD's shortlist of the vintages the firm holds
 std::vector<int> held_vintage;
+std::vector<int> holders;                                    // Which firms hold each vintage, recorded in MACH for SCRAPPING
+std::vector<int> holder_count;
 std::vector<int> marked_supplier;                            // The machines SCRAPPING marked, per firm, for CANCMACH to work through
 std::vector<int> marked_vintage;
 std::vector<int> marked_count;
