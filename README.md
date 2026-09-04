@@ -40,9 +40,9 @@ opinion about it.
 ### Made to run a million times
 
 The validation needs 1000 parameter configurations simulated 1000 times each. At
-the speed the published code runs, one 600-period simulation takes 33.2 seconds,
-which puts the experiment at roughly 9200 core-hours: 73 days of the desktop it
-was measured on. It now takes 1.103 seconds, 306 core-hours, 4.0 days - 30 times
+the speed the published code runs, one 600-period simulation takes 35.3 seconds,
+which puts the experiment at roughly 9800 core-hours: 73 days of the desktop it
+was measured on. It now takes 0.809 seconds, 225 core-hours, 3.1 days - 44 times
 faster.
 
 None of that came from changing what the model computes. It came from how the
@@ -68,6 +68,11 @@ program stores its data and how often it repeats itself:
   a single function that runs only under a shock setting this experiment does
   not use. The ages of machines nobody owns were being cleared and maintained,
   and every place that reads an age asks for it only where a machine is owned.
+- **Branches the processor cannot guess.** The loop that averages each firm's
+  machines over its vintages reads 52 million counts a run and acts on the 2%
+  that are not zero, and which 2% is not a pattern anything can learn. Testing
+  four firms at a time, and skipping all four when none holds anything, cut that
+  loop by two thirds.
 
 ### Why the results are still the published model's
 
@@ -78,7 +83,7 @@ run's output; a change that moves a single digit does not go in.
 
 That is a stronger guarantee than statistical agreement. Two runs that agree byte
 for byte cannot be told apart by any test, so the question of whether the faster
-version drifts away from the published one does not arise. Twelve further
+version drifts away from the published one does not arise. Fourteen further
 changes were tried, measured, and dropped for not being faster.
 `docs/DSK_MODEL_CHANGES.md` holds the whole record: every change, every timing
 and the setup it was taken under, every rejected attempt, and what the test does

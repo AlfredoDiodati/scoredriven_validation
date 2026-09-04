@@ -49,6 +49,20 @@ static inline Real ColumnMinimum1(const Matrix& M, int col, int& index)
    return minval;
 }
 
+// Sum of one row, where it lies. M.Row(i).Sum() copies the row into a fresh
+// vector first, and a Matrix is stored row-major, so the row is already
+// contiguous and the copy is pure cost. The accumulation starts at zero and
+// runs left to right, which is GeneralMatrix::Sum's own order, so the value is
+// the one that call returned.
+static inline Real RowSum(const Matrix& M, int row)
+{
+   const int ncols = M.Ncols();
+   const Real* s = M.Store() + (size_t)(row - 1) * ncols;
+   Real sum = 0.0;
+   for (int k = 0; k < ncols; k++) sum += s[k];
+   return sum;
+}
+
 // Minimum over a block of whole rows, with GeneralMatrix::Minimum's own scan
 // and comparison, for the case where the rest of the matrix is known to hold
 // values that cannot win.

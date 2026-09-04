@@ -295,8 +295,10 @@ std::vector<double> scrap_emission;
 std::vector<int> scrap_supplier_ok;
 std::vector<double> weight_labprod2;                         // MACH's per-firm shock factors, one value per period rather than per vintage
 std::vector<double> weight_eneff2;
-std::vector<int> held_supplier;                              // COSTPROD's shortlist of the vintages the firm holds
+std::vector<int> held_supplier;                              // The vintages each firm holds a machine of, recorded in MACH for COSTPROD
 std::vector<int> held_vintage;
+std::vector<int> held_count;
+int held_capacity;
 std::vector<int> holders;                                    // Which firms hold each vintage, recorded in MACH for SCRAPPING
 std::vector<int> holder_count;
 std::vector<int> marked_supplier;                            // The machines SCRAPPING marked, per firm, for CANCMACH to work through

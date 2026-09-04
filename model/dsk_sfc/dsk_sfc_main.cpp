@@ -717,6 +717,7 @@ void RESIZE(void)
   weight_eneff2.resize(N2);
   held_supplier.resize(N1);
   held_vintage.resize(N1);
+  held_count.assign(N2,0);
   marked_count.assign(N2,0);
   mu2.ReSize(2,N2);
   LoanInterest_2.ReSize(N2);
@@ -2325,6 +2326,21 @@ void MACH(void)
     holder_count.resize(N1*n_vintage_held);
   }
 
+  //The same pass also records the other way round: for each firm, the vintages
+  //it holds. COSTPROD works through that, and used to find it by reading one
+  //number out of each of 434 vintages for each of the 200 firms - reads a
+  //machine row apart, which is where its time went. The counts it needs are
+  //g_c's, which is the copy of g taken just above; only COSTPROD changes them,
+  //only downwards, and only in its own firm's column. The pairs come out in the
+  //order i and then tt that it visited them in.
+  held_capacity=N1*n_vintage_held;
+  if ((int)held_supplier.size() < N2*held_capacity)
+  {
+    held_supplier.resize(N2*held_capacity);
+    held_vintage.resize(N2*held_capacity);
+  }
+  std::fill(held_count.begin(), held_count.end(), 0);
+
   for (i=1; i<=N1; i++)
   {
     for (tt=t0; tt<=t; tt++)
@@ -2349,7 +2365,46 @@ void MACH(void)
       int* row_holders=&holders[(size_t)vintage_row*N2];
       int n_holders=0;
 
-      for (j=1; j<=N2; j++)
+      //Nearly all of these firms hold nothing of this vintage, and which ones
+      //do is not a pattern the processor can learn, so a test per firm is a
+      //branch it mispredicts. Testing four at a time replaces four of those
+      //with one that is almost always not taken. Each firm still meets its own
+      //terms in the same order, and the five totals are its own, so nothing
+      //accumulates differently.
+      j=1;
+      if (weights_sparse)
+      {
+        for (; j+3<=N2; j+=4)
+        {
+          if (g_it[j-1]==0 && g_it[j]==0 && g_it[j+1]==0 && g_it[j+2]==0)
+          {
+            continue;
+          }
+          for (int held=j; held<j+4; held++)
+          {
+            const double g_ith=g_it[held-1];
+            if (g_ith==0)
+            {
+              continue;
+            }
+            row_holders[n_holders++]=held;
+            held_supplier[(held-1)*held_capacity+held_count[held-1]]=i;
+            held_vintage[(held-1)*held_capacity+held_count[held-1]]=tt;
+            held_count[held-1]++;
+            const double labprod2=weight_labprod2[held-1];
+            const double eneff2=weight_eneff2[held-1];
+            const double n_machh=n_mach_s[held-1];
+
+            c2_s[held-1]+=(w_2/(labprod2*A_it)+c_en_2/(eneff2*A_en_it)+t_CO2*A_ef_it/(eneff2*A_en_it))*g_ith/n_machh;
+            A2_s[held-1]+=labprod2*A_it*g_ith/n_machh;
+            A2_mprod_s[held-1]+=A_it*g_ith/n_machh;
+            A2_en_s[held-1]+=eneff2*A_en_it*g_ith/n_machh;
+            A2_ef_s[held-1]+=A_ef_it*g_ith/n_machh;
+          }
+        }
+      }
+
+      for (; j<=N2; j++)
       {
         const double g_itj=g_it[j-1];
         if (weights_sparse && g_itj==0)
@@ -2359,6 +2414,9 @@ void MACH(void)
         if (g_itj != 0)
         {
           row_holders[n_holders++]=j;
+          held_supplier[(j-1)*held_capacity+held_count[j-1]]=i;
+          held_vintage[(j-1)*held_capacity+held_count[j-1]]=tt;
+          held_count[j-1]++;
         }
         const double labprod2=weight_labprod2[j-1];
         const double eneff2=weight_eneff2[j-1];
@@ -2452,8 +2510,8 @@ void BROCHURE(void)
 	}
 
   //C-firms choose their preferred supplier of machine tools
-  for (j=1; j<=N2; j++)  
-	{									     
+  for (j=1; j<=N2; j++)
+	{
 		//current supplier of j as integer
     indsupl=int(supl(j));
 		for (i=1; i<=N1; i++)
@@ -2726,49 +2784,28 @@ void COSTPROD(void)
   nmachprod=ceil(Qd(j)/dim_mach);  
 	nmp_temp=nmachprod;
 
-  //The vintages j actually holds a machine of, with the unit cost each implies
-  //for it. Only these can win the comparison below, so the search runs over
-  //them rather than over every vintage in existence, and only these have their
-  //cost worked out. A firm holds units of about two vintages in a hundred.
-  //
-  //They are collected in the order i and then tt, so vintages of equal cost
-  //resolve in favour of the same one the full scan resolved in favour of. The
+  //What each of the machines j holds costs it to run. MACH recorded which ones
+  //those are, in the order i and then tt, so vintages of equal cost resolve in
+  //favour of the same one a scan of every vintage resolved in favour of. The
   //cost does not change while j draws its machines down; only the counts in
-  //g_c do.
+  //g_c do. A firm holds units of about two vintages in a hundred.
   const int n_vintage=t-t0+1;
+  const int n_held=held_count[j-1];
+  const int held_base=(j-1)*held_capacity;
   if ((int)vintage_cost.size() < N1*n_vintage)
   {
     vintage_cost.resize(N1*n_vintage);
-    held_supplier.resize(N1*n_vintage);
-    held_vintage.resize(N1*n_vintage);
   }
-  int n_held=0;
   {
     const double w_2=w(2);
     const double labprod2=1-shocks_labprod2(j);
-    //j's own count for each vintage, reached by walking rather than by
-    //subscripting. The subscript works the address out from the array's base
-    //and strides every time, and it has to reload all three each time round,
-    //because the writes below are to other arrays the compiler cannot prove sit
-    //elsewhere in memory. One vintage on is a fixed distance, so the walk is
-    //one addition.
-    const double* const machines=g_c.data.data();
-    const size_t vintage_stride=(size_t)g_c.d1*g_c.d2;
-    for (i=1; i<=N1; i++)
+    for (int entry=0; entry<n_held; entry++)
     {
-      const double* machines_held=machines+(size_t)(t0-1)*vintage_stride
-                                          +(size_t)(i-1)*g_c.d2+(j-1);
-      for (tt=t0; tt<=t; tt++, machines_held+=vintage_stride)
-      {
-        if (*machines_held > 0)
-        {
-          vintage_cost[n_held]=w_2/(labprod2*A(tt,i))+vintage_energy[(i-1)*n_vintage+(tt-t0)]
-                                                    +vintage_emission[(i-1)*n_vintage+(tt-t0)];
-          held_supplier[n_held]=i;
-          held_vintage[n_held]=tt;
-          n_held++;
-        }
-      }
+      const int supplier=held_supplier[held_base+entry];
+      const int vintage=held_vintage[held_base+entry];
+      vintage_cost[entry]=w_2/(labprod2*A(vintage,supplier))
+                         +vintage_energy[(supplier-1)*n_vintage+(vintage-t0)]
+                         +vintage_emission[(supplier-1)*n_vintage+(vintage-t0)];
     }
   }
 
@@ -2781,12 +2818,12 @@ void COSTPROD(void)
 
     for (int held=0; held<n_held; held++)
     {
-      if (g_c[held_vintage[held]-1][held_supplier[held]-1][j-1] > 0 && vintage_cost[held] < cmin)
+      if (g_c[held_vintage[held_base+held]-1][held_supplier[held_base+held]-1][j-1] > 0 && vintage_cost[held] < cmin)
       {
         cmin=vintage_cost[held];
-        imin=held_supplier[held];
+        imin=held_supplier[held_base+held];
         jmin=j;
-        tmin=held_vintage[held];
+        tmin=held_vintage[held_base+held];
       }
     }
 
@@ -3962,6 +3999,11 @@ void COMPET2(void)
   p2m=0;
   l2m=0;
   
+  //The number of firms the averages below are taken over. Nothing in the loop
+  //changes which firms are exiting, so this was the same value on all 400 of
+  //the counts it used to take, two per surviving firm.
+  const Real surviving_2=N2r-exiting_2.Sum();
+
   for (j=1; j<=N2; j++)
   {
     if (exiting_2(j) == 0)
@@ -3970,8 +4012,8 @@ void COMPET2(void)
     // They are de facto removed from ftot since f2 is set to zero when they exit
     // Their competitiveness is calculated but not included in the average C-firm competitiveness since their market share f2 is set to 0 when they exit
     {
-      p2m+=p2(j)/(N2r-exiting_2.Sum());
-      l2m+=l2(j)/(N2r-exiting_2.Sum());
+      p2m+=p2(j)/surviving_2;
+      l2m+=l2(j)/surviving_2;
     }
   }
 
@@ -4862,18 +4904,22 @@ void ALLOC(void)
 	}
 
   //Nominal consumption is calculated
-  Consumption=S2.Row(1).Sum();
+  Consumption=RowSum(S2,1);
   //This is done to ensure that household deposits do not become negative due to consumption (may happen due to rounding issues when liquidity constraint is binding)
   while(Consumption>Cons)
   {
     for (j=1; j<=N2; j++)
 	  {
-      if(S2(1,j)>(S2(1,j)/S2.Row(1).Sum()*(Consumption-Cons)))
+      //One firm's share of the overshoot. The row total is the same in the test
+      //and in the subtraction, since nothing changes between them, so it is
+      //taken once rather than twice.
+      const Real firm_reduction=S2(1,j)/RowSum(S2,1)*(Consumption-Cons);
+      if(S2(1,j)>firm_reduction)
       {
-        S2(1,j)-=(S2(1,j)/S2.Row(1).Sum()*(Consumption-Cons));
+        S2(1,j)-=firm_reduction;
       }
     }
-    Consumption=S2.Row(1).Sum();
+    Consumption=RowSum(S2,1);
   }
 
   //Real consumption is calculated
@@ -5423,16 +5469,25 @@ void ENTRYEXIT(void)
       CapitalStock(1,j)=0;
       //Clear the exiting firms' entries in the frequency arrays
       n_mach_resid=n_mach_entry(j);
+      //Three of the six arrays this used to clear do not need it. g_c2 and g_c3
+      //are read only under flag_capshocks, and with that flag on MACH refreshes
+      //them from gtemp before the next read anyway. An age is read only where a
+      //firm's count of that machine is positive, and the counts cleared here
+      //are what makes them all zero; the machines the entrant receives below
+      //set their own ages.
+      const int capital_shocks_run=(flag_capshocks!=0);
       for (i=1; i<=N1; i++)
       {
         for (tt=t0; tt<=t; tt++)
-        {							
+        {
           g[tt-1][i-1][j-1]=0;
           gtemp[tt-1][i-1][j-1]=0;
           g_c[tt-1][i-1][j-1]=0;
-          g_c2[tt-1][i-1][j-1]=0;
-          g_c3[tt-1][i-1][j-1]=0;
-          age[tt-1][i-1][j-1]=0;
+          if (capital_shocks_run)
+          {
+            g_c2[tt-1][i-1][j-1]=0;
+            g_c3[tt-1][i-1][j-1]=0;
+          }
         }
       }
 

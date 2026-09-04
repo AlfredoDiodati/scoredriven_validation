@@ -68,7 +68,7 @@ paper over here.
 ## Why any of this
 
 The experiment is a million runs. At the speed upstream ships, that is 73 days
-of this machine; at the speed here it is 4.0. Nothing else about the model is
+of this machine; at the speed here it is 3.1. Nothing else about the model is
 touched, and nothing that touches a number is allowed: every change below
 produces output identical to upstream's, byte for byte, which is what
 `tests/dsk_build_equivalence.c` checks rather than assumes.
@@ -131,9 +131,14 @@ by then had stopped agreeing with the A/B results.
 | `g_c2` and `g_c3` copied only when read | 1.361 s | 1.257 s |
 | `UPDATE()` ages every entry, testing none | 1.259 s | 1.174 s |
 | `SCRAPPING()` reads the holders `MACH()` recorded | 1.174 s | 1.109 s |
+| an entrant's arrays cleared three ways, not six | 1.100 s | 1.043 s |
+| the consumption cap's row sums taken in place, once | 1.056 s | 1.018 s |
+| `COMPET2()`'s count of surviving firms hoisted | 1.035 s | 1.006 s |
+| `MACH()`'s weights test four firms at a time | 1.029 s | 0.932 s |
+| `COSTPROD()` reads the vintages `MACH()` recorded | 0.895 s | 0.830 s |
 
 End to end, upstream and this build alternated three times each in the same
-thermal state: 33.20 s against 1.103 s, 30.1x.
+thermal state: 35.29 s against 0.809 s, 43.6x.
 
 Two flags are deliberately absent. `-O3` measured no faster. `-march=native`
 lets the compiler contract a multiply and an add into one instruction, which
@@ -306,6 +311,27 @@ which is reached only from the two `flag_capshocks` branches in `PRODMACH()`.
 With that flag off nothing reads them, so they are copied only when something
 will. 8.5% - the largest single change of the round, for a two-line condition.
 
+### More work whose result nobody reads
+
+`ENTRYEXIT()` clears six arrays over every vintage for each firm that enters,
+and three of them do not need it: `g_c2` and `g_c3` are read only under
+`flag_capshocks`, and an age is read only where a count is positive, which the
+cleared counts make none of them. 3.7% of the run to about half that, and the
+run from 1.100 s to 1.043 s.
+
+### Two more reductions taken once instead of many times
+
+`ALLOC()` caps consumption at what households can pay by scaling every firm's
+sales down, and asked for the row total twice for each of the 200 firms, each
+time through `S2.Row(1).Sum()`, which copies the row before summing it. The row
+is already contiguous, and the total is the same in the test and in the
+subtraction because nothing changes between them. `dsk_sfc_reductions.h` sums it
+where it lies, once per firm. 1.056 s to 1.018 s.
+
+`COMPET2()` divides by the number of surviving firms twice for each firm, and
+counted them by summing a 200-element vector each time, inside a loop that
+cannot change which firms are exiting. 1.035 s to 1.006 s.
+
 ### Finding the same set twice
 
 `SCRAPPING()` reads every firm's count of every vintage to find the few that are
@@ -317,6 +343,39 @@ Recording them inside that loop rather than in a pass of its own is not an
 incidental choice: the separate pass was measured and is 6.8% *slower* than
 recording in place, because it reads all 52 million counts a second time and
 that costs more than a store in the middle of the existing loop.
+
+### A branch the processor cannot predict
+
+`MACH()`'s weighted-average loop reads every firm's count of every vintage, 52
+million a run, and acts on the 2% that are not zero. Which 2% is not a pattern
+the branch predictor can learn, so the test costs a mispredict most times it
+matters. Testing four firms at a time - if all four hold nothing, skip all four
+- replaces four unpredictable branches with one that is almost always not
+taken. The loop went from 13.0% of the run to 4.9%, and the run from 1.029 s to
+0.932 s. Each firm still meets its own terms in the same order and its five
+running totals are its own, so nothing accumulates differently.
+
+That measurement also settles what kind of loop it is. The same treatment
+applied to `COSTPROD()`'s scan does nothing at all, because that one reads a
+firm's counts a machine row apart, four separate cache lines at a time, and it
+is the reads rather than the branches that cost. Two sparse scans, two
+different limits, and the fix for one is worthless on the other.
+
+### Recording what the next function needs
+
+`COSTPROD()`'s scan is the read-bound one, and the way to make a read-bound
+scan cheaper is not to do it. `MACH()`'s weighted-average loop already reads
+those counts, so it records, for each firm, the vintages it holds. `COSTPROD()`
+reads that list. Its scan went from 9.0% of the run to 0.7%, and the run from
+0.895 s to 0.830 s.
+
+This is the same change that was measured and thrown away twice, and it is
+worth saying why it works now. The recording is a store inside `MACH()`'s
+weighted-average loop. While that loop was branch-bound, a store in the middle
+of it cost about what the scan cost, and the two cancelled. Once the four-at-a-
+time test made the loop cheap, the store became cheap with it and the saving
+came through. A change that measures nothing can be worth retrying after the
+code around it changes character - but only after, and only by measuring again.
 
 ### An address worked out 52 million times
 
@@ -421,11 +480,25 @@ hoisting is paid on every vintage row while 98% of the rows do nothing.
 existing loop: 6.8% slower over nine pairs, 1.099 s against 1.174 s.
 
 *Building `COSTPROD()`'s per-firm lists in `MACH()` too.* The obvious companion
-to the change that worked for `SCRAPPING()`, and it measures nothing: ten
-alternating pairs each way, and the sign of the difference changes with the
-order the two builds are run in. Its scan is 6.9% of the run by the cycle
-counts, so something about the second list costs what the scan costs; that was
-not chased further, because the change was not going in either way.
+to the change that worked for `SCRAPPING()`, and at the time it measured
+nothing: ten alternating pairs each way, and the sign of the difference changed
+with the order the two builds were run in. It is in the model now. What changed
+is the loop it records from, which was branch-bound then and is not now; the
+section above has the account. The lesson is not that the measurement was wrong,
+it is that a measurement is of one version of the code and does not carry over
+to another.
+
+*Testing four vintages at a time in `COSTPROD()`'s scan.* The change that is
+worth 9% in `MACH()`, applied to the other sparse scan: 8.97% of the run before,
+9.30% after, which is nothing. The two scans are limited by different things.
+
+*Working out each supplier's offer once in `BROCHURE()`.* The comparison that
+picks a machine supplier rebuilds a four-division cost expression for both
+candidates on each of 4000 firm-supplier pairs a period, and every operand is
+fixed while the firms choose. Computing the 20 suppliers' offers once instead:
+nine alternating pairs said 0.7% slower, ten in the reverse order said 0.1%
+faster. Nothing, and it rewrites an expression of the published model for no
+return, so it is out.
 
 ### Filename buffers too small for a real path
 
@@ -531,20 +604,20 @@ process, seeds 1 upward, nothing else running:
 
 | concurrent runs | this build | upstream's |
 |---:|---:|---:|
-| 1 | 41.1 | 1.4 |
-| 4 | 152.4 | 3.5 |
-| 8 | 174.1 | 3.6 |
-| 16 | 164.8 | 9.5 |
+| 1 | 73.9 | 1.4 |
+| 4 | 199.3 | 3.5 |
+| 8 | 227.0 | 3.6 |
+| 16 | 210.4 | 9.5 |
 
-The machine saturates near 174 runs a minute at eight concurrent, which is a
-million runs in 4.0 days. Sixteen is slower than eight, which is what running
+The machine saturates near 227 runs a minute at eight concurrent, which is a
+million runs in 3.1 days. Sixteen is slower than eight, which is what running
 two threads on each of eight cores does when both threads want memory. The
 experiment is a million independent runs, so the cores are already full and
 making one run use several of them cannot raise that number. It would only
 shorten a single run's latency, which nothing here needs.
 
-Note what does not carry over. One run is 30 times faster than upstream's, and
-saturated throughput is 2.3 times what it was before this work - 174 against the
+Note what does not carry over. One run is 44 times faster than upstream's, and
+saturated throughput is 3.0 times what it was before this work - 227 against the
 76 measured at the same point in the history. The gap is memory bandwidth: eight
 runs at once want their vintage arrays in cache at the same time, and there is
 one memory system between them. That also means further work on a single run
