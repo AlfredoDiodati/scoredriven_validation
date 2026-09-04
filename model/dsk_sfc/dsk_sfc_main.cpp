@@ -2176,6 +2176,12 @@ void DEPOSITINTEREST(void)
 
 void MACH(void)	 
 {  
+  if ((int)vintage_energy.size() < N1*(t-t0+1))
+  {
+    vintage_energy.resize(N1*(t-t0+1));
+    vintage_emission.resize(N1*(t-t0+1));
+  }
+
   //Iterate over all K-Firms and all machine vintages still in use (newer than t0)
   for (i=1; i<=N1; i++)
   {
@@ -2185,7 +2191,13 @@ void MACH(void)
       {
         //Calculate the unit cost of production implied by using a machine of vintage tt
         //produced by i to produce consumption goods in the current period
-        C(tt,i)=w(2)/A(tt,i)+c_en(2)/A_en(tt,i)+t_CO2*A_ef(tt,i)/A_en(tt,i);
+        //The energy and emission-tax halves of the unit cost depend on the
+        //vintage and not on the firm using it, so they are kept for COSTPROD
+        //rather than divided out again for each of the 200 firms. The sum
+        //below is the same one, in the same order, as it always was.
+        vintage_energy[(i-1)*(t-t0+1)+(tt-t0)]=c_en(2)/A_en(tt,i);
+        vintage_emission[(i-1)*(t-t0+1)+(tt-t0)]=t_CO2*A_ef(tt,i)/A_en(tt,i);
+        C(tt,i)=w(2)/A(tt,i)+vintage_energy[(i-1)*(t-t0+1)+(tt-t0)]+vintage_emission[(i-1)*(t-t0+1)+(tt-t0)];
       }
       else
       {
@@ -2557,7 +2569,11 @@ void SCRAPPING(void)
           //calculate payback variable: (price of machine)/(unit cost difference offered by the machine)
           //Payback can be interpreted as number of units which have to be produced with a new machine sucht that
           //the savings in unit cost are equal to the purchase price of the machine
-          payback=p1(indsupl)/(w(2)/A(tt,i)+c_en(2)/A_en(tt,i)+t_CO2*A_ef(tt,i)/A_en(tt,i)-w(2)/A1(indsupl)-c_en(2)/A1_en(indsupl)-t_CO2*A1_ef(indsupl)/A1_en(indsupl));
+          //The first three terms are the unit cost of this vintage, which MACH
+          //put in C(tt,i) this period from the same w(2), c_en(2), t_CO2, A,
+          //A_en and A_ef; nothing between the two touches any of them. They
+          //were being divided out again for every one of the 200 firms.
+          payback=p1(indsupl)/(C(tt,i)-w(2)/A1(indsupl)-c_en(2)/A1_en(indsupl)-t_CO2*A1_ef(indsupl)/A1_en(indsupl));
         }
         else 
         {
@@ -2598,7 +2614,8 @@ void COSTPROD(void)
     for (i=1; i<=N1; i++)
       for (tt=t0; tt<=t; tt++)
         vintage_cost[(i-1)*n_vintage+(tt-t0)]=
-          w_2/(labprod2*A(tt,i))+c_en_2/A_en(tt,i)+t_CO2*A_ef(tt,i)/A_en(tt,i);
+          w_2/(labprod2*A(tt,i))+vintage_energy[(i-1)*n_vintage+(tt-t0)]
+                                +vintage_emission[(i-1)*n_vintage+(tt-t0)];
   }
 
 	while (nmp_temp > 0)       

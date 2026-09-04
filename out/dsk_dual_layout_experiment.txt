@@ -1,15 +1,36 @@
 Does a second copy of g_c, laid out with the vintages adjacent, pay?
 
-Run unattended on 2026-09-04 at 01:07. Three questions in order:
+Run unattended on 2026-09-04 at 12:31. Three questions in order:
 is the output still identical, is one run faster, and is the experiment
-faster once the extra 19 MB a run is counted.
+faster once the extra 19 MB a run needs is counted.
 
 1. Exactness against the unmodified model, five seeds
-   seed 1: a build did not complete
-   seed 2: a build did not complete
-   seed 3: a build did not complete
-   seed 4: a build did not complete
-   seed 5: a build did not complete
-   0 of 5 identical
+   seed 1: identical
+   seed 2: identical
+   seed 3: identical
+   seed 4: identical
+   seed 5: identical
+   5 of 5 identical
 
-Stopping here: a change that alters the output is not worth timing.
+2. One run, alternating, seven each
+   current  median 3.506 s   best 3.419 s
+   dual     median 3.868 s   best 3.798 s
+   the second copy is 10.3% slower
+
+3. What a run occupies, and whether a concurrency sweep is safe
+   current  peak 161 MB a run
+   dual     peak 180 MB a run
+   memory available: 4200 MB
+   concurrent runs that fit with 1 GB kept spare: 17
+
+4. Throughput, which is the number that decides it
+   sweeping up to 16 concurrent runs
+   current   4 concurrent:   4.42 s wall,  54.3 runs/minute
+   current   8 concurrent:   6.22 s wall,  77.2 runs/minute
+   current  16 concurrent:  11.98 s wall,  80.1 runs/minute
+   dual      4 concurrent:   5.26 s wall,  45.6 runs/minute
+   dual      8 concurrent:   7.43 s wall,  64.6 runs/minute
+   dual     16 concurrent:  14.19 s wall,  67.6 runs/minute
+
+The model in the repository was not touched. The variant is /tmp/dsk_dual
+and this run's log is /tmp/dsk_on/log.

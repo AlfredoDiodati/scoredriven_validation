@@ -327,7 +327,9 @@ Vintage3D<int> age;                                          // Age of exiting m
 Vintage3D<double> g_c;                                       // Frequency of machines for cost calculation
 Vintage3D<double> g_c2;                                      // Needed for shocks to capital stock
 Vintage3D<double> g_c3;                            
-std::vector<double> vintage_cost;                            // COSTPROD's per-vintage unit cost for the firm it is working on          // Needed for shocks to capital stock
+std::vector<double> vintage_cost;
+std::vector<double> vintage_energy;                          // c_en/A_en per vintage, the firm-independent half of a unit cost
+std::vector<double> vintage_emission;                        // t_CO2*A_ef/A_en per vintage, likewise                            // COSTPROD's per-vintage unit cost for the firm it is working on          // Needed for shocks to capital stock
 Vintage3D<double> g;                                         // Frequency of machines
 Vintage3D<double> g_price;                                   // Array containing original purchase prices of machines
 Vintage3D<double> gtemp;                                     // Temporary storage for frequency of machines

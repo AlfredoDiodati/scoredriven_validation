@@ -175,8 +175,8 @@ instead: 3.711 s against 3.733 s. No difference either, because the function
 averages about one pass per call, so there is nothing for the gather to
 amortise - it just moves the same scattered reads earlier.
 
-Both results pointed at the array layout, so the layout was taken apart in two
-steps, one kept and one thrown away.
+Both results pointed at the array layout, so the layout was taken apart in
+three steps, one kept and two thrown away.
 
 *One block per array, same index order.* The nine vintage arrays were a vector
 of vectors of vectors, so every row of firms was its own heap allocation and
@@ -196,6 +196,22 @@ vintages for one firm, and ruins `MACH()`, which copies whole rows of firms and
 accumulates across firms for one vintage. The two access patterns want opposite
 layouts and `MACH()` wins. This also retracts an estimate made earlier in this
 file's history, that transposition was worth about 1.5x: it is worth -24%.
+
+*Keeping both layouts at once.* If one order suits `MACH()` and the other suits
+the per-firm sweeps, hold `g_c` twice: as it is, and again with the vintages
+adjacent, the second built inside the copy loop `MACH()` already runs over
+every element. Measured, and it is 10.3% slower on one run and worse again on
+throughput, 67.6 runs a minute against 80.1 at sixteen concurrent, with a run
+growing from 161 MB to 180 MB. `out/dsk_dual_layout_experiment.txt` has the
+whole run; the output was identical on all five seeds, so the copy was being
+kept in step correctly. It simply does not pay, and the reason is arithmetic
+rather than implementation: transposing 80,000 elements a period costs the same
+scattered memory traffic that the per-firm sweep costs, and each array is swept
+exactly once a period, so the copy costs what the copy saves.
+
+That closes the layout question. The order the model already uses is the right
+one for it, and the only thing worth doing to it was making each array
+contiguous, which is done.
 
 Two build-level ideas were tried and gave nothing. Profile-guided optimisation,
 trained on a full run at a different seed, measured 4.04 s against 3.88 s -
