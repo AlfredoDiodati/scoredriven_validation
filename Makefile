@@ -74,7 +74,8 @@ endif
 # on an et_al. change is already covered by ETAL_INSTALLED_HEADERS above.
 HEADERS :=
 TEST_HEADERS :=
-TEST_STEMS := qvarma_correctness dsk_long_path dsk_build_equivalence
+TEST_STEMS := qvarma_correctness dsk_long_path dsk_build_equivalence \
+               dsk_full_output_equivalence dsk_design_equivalence
 # Where the wall time of a t-QVARMA fit goes, and what each way of speeding it
 # up is worth. Measured 2026-08-29 against a 500,000-fit run of
 # abm_system_fit_qvarma; out/fit_speedup_options.txt collects the numbers and
@@ -300,6 +301,8 @@ model-upstream: | $(BIN)
 # Both DSK tests run the simulator, so the binaries have to exist first.
 test-dsk_long_path: model
 test-dsk_build_equivalence: model model-upstream
+test-dsk_full_output_equivalence: model model-upstream
+test-dsk_design_equivalence: model model-upstream app-abm_system_design
 
 applications: $(APPLICATION_BINARIES) | $(OUT)
 	@for binary in $(APPLICATION_BINARIES); do ./$$binary || exit 1; done
@@ -316,7 +319,8 @@ test-stress: $(TEST_BINARIES) | $(OUT)
 # Sanitizers, per et_al.'s testing policy for allocation-heavy code. CFLAGS has
 # to be a make argument rather than a shell prefix, since the assignment above
 # is unconditional and would override an inherited environment variable.
-asan: | $(BIN) $(OUT)
+# Three of the stems run the simulator, so both builds have to exist first.
+asan: model model-upstream | $(BIN) $(OUT)
 	@for stem in $(TEST_STEMS); do \
 	  $(CC) -fsanitize=address,undefined -g -O1 -std=c11 -DMAT_DOUBLE \
 	        $(ETAL_CFLAGS) $(INCLUDES) tests/$$stem.c \

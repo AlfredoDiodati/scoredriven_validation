@@ -707,7 +707,8 @@ void RESIZE(void)
   CreditDemand.ReSize(N2);
   p2.ReSize(N2);
   DebtServiceToSales2_temp.ReSize(N2);
-  DS2_order.resize(N2);
+  DS2_ranked.resize(N2);
+  DS2_by_rank.resize(NB*N2);
   scrap_p1.resize(N2);
   scrap_wage.resize(N2);
   scrap_energy.resize(N2);
@@ -1177,11 +1178,15 @@ void RESIZE(void)
 
   //One block each, zeroed, instead of T times N1 separate row allocations.
   age.resize3(T,N1,N2);
-  C_pb.resize3(T,N1,N2);
-  g_pb.resize3(T,N1,N2);
-  g_c.resize3(T,N1,N2);
-  g_c2.resize3(T,N1,N2);
-  g_c3.resize3(T,N1,N2);
+  //Only ADJUSTEMISSENLAB reads these, and only the two flag_capshocks branches
+  //in PRODMACH reach it. With that flag off nothing reads them, so nothing
+  //allocates them either: two arrays of 19 MB that would otherwise be faulted
+  //in and zeroed at the start of every run for a branch that never executes.
+  if (flag_capshocks!=0)
+  {
+    g_c2.resize3(T,N1,N2);
+    g_c3.resize3(T,N1,N2);
+  }
   g.resize3(T,N1,N2);
   gtemp.resize3(T,N1,N2);
   g_price.resize3(T,N1,N2);
@@ -1886,9 +1891,11 @@ void INITIALIZE(int Exseed)
         g[0][i-1][j-1]++;
         g_price[0][i-1][j-1]=p1(i);	
 				gtemp[0][i-1][j-1]++;
-				g_c[0][i-1][j-1]++;
-        g_c2[0][i-1][j-1]++;
-        g_c3[0][i-1][j-1]++;
+        if (flag_capshocks!=0)
+        {
+          g_c2[0][i-1][j-1]++;
+          g_c3[0][i-1][j-1]++;
+        }
 				age[0][i-1][j-1]=age0;
         n_mach(j)--;
 			}
@@ -2261,7 +2268,6 @@ void MACH(void)
     const double* source=gtemp[tt-1][0].p;
     const std::size_t bytes=(std::size_t)N1*N2*sizeof(double);
     std::memcpy(g[tt-1][0].p, source, bytes);
-    std::memcpy(g_c[tt-1][0].p, source, bytes);
     if (capital_shocks_run)
     {
       std::memcpy(g_c2[tt-1][0].p, source, bytes);
@@ -2693,6 +2699,8 @@ void SCRAPPING(void)
   {
     marked_supplier.resize(N2*marked_capacity);
     marked_vintage.resize(N2*marked_capacity);
+    marked_machines.resize(N2*marked_capacity);
+    marked_cost.resize(N2*marked_capacity);
   }
   std::fill(marked_count.begin(), marked_count.end(), 0);
 
@@ -2722,12 +2730,12 @@ void SCRAPPING(void)
         if (g[tt-1][i-1][j-1] > 0 && age[tt-1][i-1][j-1] > (agemax))
 			  {
           scrapped_for_age=min(g[tt-1][i-1][j-1],(K_temp(j)-1));
-          g_pb[tt-1][i-1][j-1]=scrapped_for_age;
-          C_pb[tt-1][i-1][j-1]=C_it;
           if (scrapped_for_age > 0)
           {
             marked_supplier[(j-1)*marked_capacity+marked_count[j-1]]=i;
             marked_vintage[(j-1)*marked_capacity+marked_count[j-1]]=tt;
+            marked_machines[(j-1)*marked_capacity+marked_count[j-1]]=scrapped_for_age;
+            marked_cost[(j-1)*marked_capacity+marked_count[j-1]]=C_it;
             marked_count[j-1]++;
           }
           scrap_age(j)+=dim_mach*scrapped_for_age;	  
@@ -2765,11 +2773,11 @@ void SCRAPPING(void)
           //If payback is smaller than an exogenous threshold, firm wants to replace the machine in question with the newer vintage
 				  if (payback <= b && payback>0)
 				  {
-					  g_pb[tt-1][i-1][j-1]=g[tt-1][i-1][j-1];
-		 			  C_pb[tt-1][i-1][j-1]=C_it;
-					  SId(j)+=dim_mach*g_pb[tt-1][i-1][j-1];
+					  SId(j)+=dim_mach*g[tt-1][i-1][j-1];
             marked_supplier[(j-1)*marked_capacity+marked_count[j-1]]=i;
             marked_vintage[(j-1)*marked_capacity+marked_count[j-1]]=tt;
+            marked_machines[(j-1)*marked_capacity+marked_count[j-1]]=g[tt-1][i-1][j-1];
+            marked_cost[(j-1)*marked_capacity+marked_count[j-1]]=C_it;
             marked_count[j-1]++;
 				  }
 			  }
@@ -2784,17 +2792,23 @@ void COSTPROD(void)
   nmachprod=ceil(Qd(j)/dim_mach);  
 	nmp_temp=nmachprod;
 
-  //What each of the machines j holds costs it to run. MACH recorded which ones
-  //those are, in the order i and then tt, so vintages of equal cost resolve in
-  //favour of the same one a scan of every vintage resolved in favour of. The
-  //cost does not change while j draws its machines down; only the counts in
-  //g_c do. A firm holds units of about two vintages in a hundred.
+  //What each of the machines j holds costs it to run, and how many of each it
+  //has. MACH recorded which vintages those are, in the order i and then tt, so
+  //vintages of equal cost resolve in favour of the same one a scan of every
+  //vintage resolved in favour of. A firm holds units of about two vintages in a
+  //hundred, so both are a handful of numbers.
+  //
+  //The counts are j's own machines as MACH left them, drawn down here as j
+  //assigns production to them. This is where a whole copy of the machine
+  //frequency array used to be spent: the array was refreshed every period so
+  //that this loop could destroy a column of it, and no other function read it.
   const int n_vintage=t-t0+1;
   const int n_held=held_count[j-1];
   const int held_base=(j-1)*held_capacity;
   if ((int)vintage_cost.size() < N1*n_vintage)
   {
     vintage_cost.resize(N1*n_vintage);
+    held_machines.resize(N1*n_vintage);
   }
   {
     const double w_2=w(2);
@@ -2806,6 +2820,7 @@ void COSTPROD(void)
       vintage_cost[entry]=w_2/(labprod2*A(vintage,supplier))
                          +vintage_energy[(supplier-1)*n_vintage+(vintage-t0)]
                          +vintage_emission[(supplier-1)*n_vintage+(vintage-t0)];
+      held_machines[entry]=g[vintage-1][supplier-1][j-1];
     }
   }
 
@@ -2816,37 +2831,39 @@ void COSTPROD(void)
     jmin=0;
     tmin=0;
 
+    int chosen=-1;
     for (int held=0; held<n_held; held++)
     {
-      if (g_c[held_vintage[held_base+held]-1][held_supplier[held_base+held]-1][j-1] > 0 && vintage_cost[held] < cmin)
+      if (held_machines[held] > 0 && vintage_cost[held] < cmin)
       {
         cmin=vintage_cost[held];
         imin=held_supplier[held_base+held];
         jmin=j;
         tmin=held_vintage[held_base+held];
+        chosen=held;
       }
     }
 
     if (nmachprod>0)
     {
-      if (g_c[tmin-1][imin-1][jmin-1] >= nmp_temp)  
+      if (held_machines[chosen] >= nmp_temp)
       {
         A2e(j)+=(1-shocks_labprod2(j))*A(tmin,imin)*nmp_temp/nmachprod;
         A2e_en(j)+=(1-shocks_eneff2(j))*A_en(tmin,imin)*nmp_temp/nmachprod;
         A2e_ef(j)+=A_ef(tmin,imin)*nmp_temp/nmachprod;
         c2e(j)+=(w(2)/((1-shocks_labprod2(j))*A(tmin,imin))+c_en(2)/((1-shocks_eneff2(j))*A_en(tmin,imin))+t_CO2*A_ef(tmin,imin)/((1-shocks_eneff2(j))*A_en(tmin,imin)))*nmp_temp/nmachprod;
-        g_c[tmin-1][imin-1][jmin-1]-= nmp_temp;
-        nmp_temp=0;                 
+        held_machines[chosen]-= nmp_temp;
+        nmp_temp=0;
       }
-      else                      
+      else
       {
-        A2e(j)+=(1-shocks_labprod2(j))*A(tmin,imin)*g_c[tmin-1][imin-1][jmin-1]/nmachprod;
-        A2e_en(j)+=(1-shocks_eneff2(j))*A_en(tmin,imin)*g_c[tmin-1][imin-1][jmin-1]/nmachprod;
-        A2e_ef(j)+=A_ef(tmin,imin)*g_c[tmin-1][imin-1][jmin-1]/nmachprod;
-        c2e(j)+=(w(2)/((1-shocks_labprod2(j))*A(tmin,imin))+c_en(2)/((1-shocks_eneff2(j))*A_en(tmin,imin))+t_CO2*A_ef(tmin,imin)/((1-shocks_eneff2(j))*A_en(tmin,imin)))*g_c[tmin-1][imin-1][jmin-1]/nmachprod;
-        nmp_temp-=g_c[tmin-1][imin-1][jmin-1];
-        g_c[tmin-1][imin-1][jmin-1]=0;        
-      }                       
+        A2e(j)+=(1-shocks_labprod2(j))*A(tmin,imin)*held_machines[chosen]/nmachprod;
+        A2e_en(j)+=(1-shocks_eneff2(j))*A_en(tmin,imin)*held_machines[chosen]/nmachprod;
+        A2e_ef(j)+=A_ef(tmin,imin)*held_machines[chosen]/nmachprod;
+        c2e(j)+=(w(2)/((1-shocks_labprod2(j))*A(tmin,imin))+c_en(2)/((1-shocks_eneff2(j))*A_en(tmin,imin))+t_CO2*A_ef(tmin,imin)/((1-shocks_eneff2(j))*A_en(tmin,imin)))*held_machines[chosen]/nmachprod;
+        nmp_temp-=held_machines[chosen];
+        held_machines[chosen]=0;
+      }
     }
     else 
     {
@@ -2966,8 +2983,12 @@ void ALLOCATECREDIT(void)
   {
     for (j=1; j<=NL_2(i); j++)
     {
-      ColumnMinimum1(DS2_rating,i,rated_firm_2);
-      DS2_rating(rated_firm_2,i)=ColumnMaximum(DS2_rating,i)+1;
+      //The customer holding this rank. LOANRATES ranked them a few steps
+      //earlier and nothing has touched the ranking since, so this used to be
+      //found by scanning the whole column for its smallest rank and then
+      //pushing that entry above the rest so it would not be found again -
+      //twice through 200 entries for each customer of each bank.
+      rated_firm_2=DS2_by_rank[(i-1)*N2+(j-1)];
 			if (BankMatch_2(rated_firm_2,i)==1)
       { 
         //If customer does not need credit, they use deposits to repay their outstanding loans
@@ -3741,25 +3762,24 @@ void CANCMACH(void)
     //the order i and then tt.
     for (int marked=0; marked<marked_count[j-1]; marked++)
     {
+      const int entry=(j-1)*marked_capacity+marked;
+      i=marked_supplier[entry];
+      tt=marked_vintage[entry];
+      if (scrapmax > 0 && marked_machines[entry] > 0 && age[tt-1][i-1][j-1]>(agemax))
       {
-        i=marked_supplier[(j-1)*marked_capacity+marked];
-        tt=marked_vintage[(j-1)*marked_capacity+marked];
-        if (scrapmax > 0 && g_pb[tt-1][i-1][j-1] > 0 && age[tt-1][i-1][j-1]>(agemax))
+        if (marked_machines[entry] >= scrapmax)
         {
-          if (g_pb[tt-1][i-1][j-1] >= scrapmax)	  
-          {                                       
-            gtemp[tt-1][i-1][j-1]-=scrapmax;
-            g_pb[tt-1][i-1][j-1]-=scrapmax;
-            scrap_n+=scrapmax*g_price[tt-1][i-1][j-1];
-            scrapmax=0;                           
-          }
-          else        
-          {						
-            scrapmax-=g_pb[tt-1][i-1][j-1];	        
-            gtemp[tt-1][i-1][j-1]-=g_pb[tt-1][i-1][j-1];
-            scrap_n+=g_pb[tt-1][i-1][j-1]*g_price[tt-1][i-1][j-1];
-            g_pb[tt-1][i-1][j-1]=0;
-          }
+          gtemp[tt-1][i-1][j-1]-=scrapmax;
+          marked_machines[entry]-=scrapmax;
+          scrap_n+=scrapmax*g_price[tt-1][i-1][j-1];
+          scrapmax=0;
+        }
+        else
+        {
+          scrapmax-=marked_machines[entry];
+          gtemp[tt-1][i-1][j-1]-=marked_machines[entry];
+          scrap_n+=marked_machines[entry]*g_price[tt-1][i-1][j-1];
+          marked_machines[entry]=0;
         }
       }
     }
@@ -3769,31 +3789,32 @@ void CANCMACH(void)
   {
     cmax=0;
 
+    int dearest=-1;
     for (int marked=0; marked<marked_count[j-1]; marked++)
     {
-      i=marked_supplier[(j-1)*marked_capacity+marked];
-      tt=marked_vintage[(j-1)*marked_capacity+marked];
-      if (g_pb[tt-1][i-1][j-1] > 0 && C_pb[tt-1][i-1][j-1] > cmax)
+      const int entry=(j-1)*marked_capacity+marked;
+      if (marked_machines[entry] > 0 && marked_cost[entry] > cmax)
       {
-        ind_i=i;					           
-        ind_tt=tt;
-        cmax=C_pb[tt-1][i-1][j-1];
+        ind_i=marked_supplier[entry];
+        ind_tt=marked_vintage[entry];
+        cmax=marked_cost[entry];
+        dearest=entry;
       }
     }
 
-    if (g_pb[ind_tt-1][ind_i-1][j-1] >= scrapmax)	
-    {                                             
-      gtemp[ind_tt-1][ind_i-1][j-1]-=scrapmax;    
-		  g_pb[ind_tt-1][ind_i-1][j-1]-=scrapmax;
+    if (marked_machines[dearest] >= scrapmax)
+    {
+      gtemp[ind_tt-1][ind_i-1][j-1]-=scrapmax;
+		  marked_machines[dearest]-=scrapmax;
       scrap_n+=scrapmax*g_price[ind_tt-1][ind_i-1][j-1];
-		  scrapmax=0;								                 
+		  scrapmax=0;
     }
-	  else                                     
-	  {                                        
-		  scrapmax-=g_pb[ind_tt-1][ind_i-1][j-1];
-      scrap_n+=g_pb[ind_tt-1][ind_i-1][j-1]*g_price[ind_tt-1][ind_i-1][j-1];
- 		  gtemp[ind_tt-1][ind_i-1][j-1]-=g_pb[ind_tt-1][ind_i-1][j-1];      
-		  g_pb[ind_tt-1][ind_i-1][j-1]=0;
+	  else
+	  {
+		  scrapmax-=marked_machines[dearest];
+      scrap_n+=marked_machines[dearest]*g_price[ind_tt-1][ind_i-1][j-1];
+ 		  gtemp[ind_tt-1][ind_i-1][j-1]-=marked_machines[dearest];
+		  marked_machines[dearest]=0;
 	  }
   }
 
@@ -5482,7 +5503,6 @@ void ENTRYEXIT(void)
         {
           g[tt-1][i-1][j-1]=0;
           gtemp[tt-1][i-1][j-1]=0;
-          g_c[tt-1][i-1][j-1]=0;
           if (capital_shocks_run)
           {
             g_c2[tt-1][i-1][j-1]=0;
@@ -5503,9 +5523,11 @@ void ENTRYEXIT(void)
             {
               g[tt-1][rni-1][j-1]+=n_mach_resid;
               gtemp[tt-1][rni-1][j-1]+=n_mach_resid;
-              g_c[tt-1][rni-1][j-1]+=n_mach_resid;
-              g_c2[tt-1][rni-1][j-1]+=n_mach_resid;
-              g_c3[tt-1][rni-1][j-1]+=n_mach_resid;
+              if (capital_shocks_run)
+              {
+                g_c2[tt-1][rni-1][j-1]+=n_mach_resid;
+                g_c3[tt-1][rni-1][j-1]+=n_mach_resid;
+              }
               age[tt-1][rni-1][j-1]=age_secondhand[tt-1][rni-1];
               n_mach(j)+=n_mach_resid;
               CapitalStock(1,j)+=n_mach_resid*g_secondhand_p[tt-1][rni-1];
@@ -5518,9 +5540,11 @@ void ENTRYEXIT(void)
             {
               g[tt-1][rni-1][j-1]+=g_secondhand[tt-1][rni-1];
               gtemp[tt-1][rni-1][j-1]+=g_secondhand[tt-1][rni-1];
-              g_c[tt-1][rni-1][j-1]+=g_secondhand[tt-1][rni-1];
-              g_c2[tt-1][rni-1][j-1]+=g_secondhand[tt-1][rni-1];
-              g_c3[tt-1][rni-1][j-1]+=g_secondhand[tt-1][rni-1];
+              if (capital_shocks_run)
+              {
+                g_c2[tt-1][rni-1][j-1]+=g_secondhand[tt-1][rni-1];
+                g_c3[tt-1][rni-1][j-1]+=g_secondhand[tt-1][rni-1];
+              }
               age[tt-1][rni-1][j-1]=age_secondhand[tt-1][rni-1];
               n_mach(j)+=g_secondhand[tt-1][rni-1];
               CapitalStock(1,j)+=g_secondhand[tt-1][rni-1]*g_secondhand_p[tt-1][rni-1];

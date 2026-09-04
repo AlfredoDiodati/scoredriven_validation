@@ -11,6 +11,7 @@
 #include "modules/WITCH_input/rapidjson/document.h"
 
 #include <map>
+#include <utility>
 
 int              fulloutput;                                 // Dummy indicating whether full output is saved
 long int         seed;				                         // Seed for random number generation
@@ -287,7 +288,8 @@ RowVector        DebtServiceToSales2;                        // C-firms' debt se
 Matrix           DebtService_2;                              // C-firms' debt service
 Real             DS2_min;                                    // Minimum debt service to sales ratio
 RowVector        DebtServiceToSales2_temp;                   // Temporary storage for C-firms' debt service to sales ratio
-std::vector<int> DS2_order;                                  // firm indices being ranked by debt service
+std::vector<std::pair<double,int> > DS2_ranked;                 // Each C-firm's debt service ratio with its own index, for the ranking sort
+std::vector<int> DS2_by_rank;                                // Which firm holds each rank in each bank's ranking
 std::vector<double> scrap_p1;                                // SCRAPPING's per-firm supplier price and the three terms it subtracts
 std::vector<double> scrap_wage;
 std::vector<double> scrap_energy;
@@ -297,6 +299,7 @@ std::vector<double> weight_labprod2;                         // MACH's per-firm 
 std::vector<double> weight_eneff2;
 std::vector<int> held_supplier;                              // The vintages each firm holds a machine of, recorded in MACH for COSTPROD
 std::vector<int> held_vintage;
+std::vector<double> held_machines;                           // How many of each vintage the firm holds, as COSTPROD draws them down
 std::vector<int> held_count;
 int held_capacity;
 std::vector<int> holders;                                    // Which firms hold each vintage, recorded in MACH for SCRAPPING
@@ -304,6 +307,8 @@ std::vector<int> holder_count;
 std::vector<int> marked_supplier;                            // The machines SCRAPPING marked, per firm, for CANCMACH to work through
 std::vector<int> marked_vintage;
 std::vector<int> marked_count;
+std::vector<double> marked_machines;                          // How many of each marked machine, and what it costs to run, as CANCMACH works through them
+std::vector<double> marked_cost;
 int marked_capacity;
 RowVector        k;                                          // Ranking of C-firms' debt service to sales ratio
 RowVector        r_deb_h;                                    // Borrowing rate charged to individual C-firms
@@ -342,7 +347,6 @@ RowVector        n_mach_entry;                               // Number of machin
 RowVector        scrap_age;                                  // Number of machines scrapped due to age
 
 Vintage3D<int> age;                                          // Age of exiting machines
-Vintage3D<double> g_c;                                       // Frequency of machines for cost calculation
 Vintage3D<double> g_c2;                                      // Needed for shocks to capital stock
 Vintage3D<double> g_c3;                            
 std::vector<double> vintage_cost;
@@ -351,8 +355,6 @@ std::vector<double> vintage_emission;                        // t_CO2*A_ef/A_en 
 Vintage3D<double> g;                                         // Frequency of machines
 Vintage3D<double> g_price;                                   // Array containing original purchase prices of machines
 Vintage3D<double> gtemp;                                     // Temporary storage for frequency of machines
-Vintage3D<double> C_pb;                                      // Array containing production costs of machines to be scrapped
-Vintage3D<double> g_pb;                                      // Array containing machines to be scrapped
 std::vector<std::vector<double>> g_secondhand;               // Machines to be sold on second-hand market
 std::vector<std::vector<double>> g_secondhand_p;             // Prices of machines to be sold on second-hand market
 std::vector<std::vector<int>> age_secondhand;                // Age of machines to be sold on second-hand market

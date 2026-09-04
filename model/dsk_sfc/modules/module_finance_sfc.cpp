@@ -88,16 +88,29 @@ void LOANRATES(void)
 
     if (sortable)
     {
-      for (j=1; j<=N2; ++j) DS2_order[j-1]=j;
-      std::sort(DS2_order.begin(), DS2_order.begin()+N2,
-                [](int a, int b)
+      //The ratio travels with the firm rather than being fetched through its
+      //index, which the comparison would otherwise do twice on each of the
+      //1400 comparisons a bank's ranking takes.
+      for (j=1; j<=N2; ++j)
+      {
+        DS2_ranked[j-1].first=DebtServiceToSales2_temp(j);
+        DS2_ranked[j-1].second=j;
+      }
+      std::sort(DS2_ranked.begin(), DS2_ranked.begin()+N2,
+                [](const std::pair<double,int>& a, const std::pair<double,int>& b)
                 {
-                  const double va=DebtServiceToSales2_temp(a), vb=DebtServiceToSales2_temp(b);
-                  if (va < vb) return true;
-                  if (vb < va) return false;
-                  return a > b;
+                  if (a.first < b.first) return true;
+                  if (b.first < a.first) return false;
+                  return a.second > b.second;
                 });
-      for (j=1; j<=N2; ++j) DS2_rating(DS2_order[j-1],i)=j;
+      //Both directions are kept: each firm's rank, which the rate-setting loop
+      //below reads, and which firm holds each rank, which is the order
+      //ALLOCATECREDIT works through its customers in.
+      for (j=1; j<=N2; ++j)
+      {
+        DS2_rating(DS2_ranked[j-1].second,i)=j;
+        DS2_by_rank[(i-1)*N2+(j-1)]=DS2_ranked[j-1].second;
+      }
     }
     else
     {
@@ -105,6 +118,7 @@ void LOANRATES(void)
       {
         DS2_min=DebtServiceToSales2_temp.Minimum1(DS2_min_index);
         DS2_rating(DS2_min_index,i)=j;
+        DS2_by_rank[(i-1)*N2+(j-1)]=DS2_min_index;
         DebtServiceToSales2_temp(DS2_min_index)=DebtServiceToSales2_temp.Maximum()+1;
       }
     }

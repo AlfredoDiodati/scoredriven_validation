@@ -14,7 +14,7 @@
 // same value in the same order. Only where the memory sits changes.
 //
 // The subscripts return small proxies rather than references, which is what
-// lets the 185 element accesses in the model stay exactly as they were written.
+// lets the element accesses in the model stay exactly as they were written.
 // One asymmetry is deliberate and worth knowing about: copying a row proxy
 // copies the pointer, so binding one to a name is free, while assigning to a
 // row copies the firms' values, which is what g_c[tt-1][i-1]=g[tt-1][i-1] has

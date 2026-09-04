@@ -19,8 +19,11 @@ at upstream's flags and nothing in the working tree is disturbed.
 
     make model              the simulator this project runs
     make model-upstream     bin/dsk_SFC_upstream, unmodified, upstream's flags
-    make test-dsk_long_path            the bug fix has its own test
-    make test-dsk_build_equivalence    the speed work changes no number
+
+    make test-dsk_build_equivalence         the aggregate output matches upstream
+    make test-dsk_full_output_equivalence   so do the per-firm files under -f 1
+    make test-dsk_design_equivalence        so does the model away from the baseline
+    make test-dsk_long_path                 the bug fix has its own test
 
 ## The program, and how it is invoked
 
@@ -68,7 +71,7 @@ paper over here.
 ## Why any of this
 
 The experiment is a million runs. At the speed upstream ships, that is 73 days
-of this machine; at the speed here it is 3.1. Nothing else about the model is
+of this machine; at the speed here it is 2.2. Nothing else about the model is
 touched, and nothing that touches a number is allowed: every change below
 produces output identical to upstream's, byte for byte, which is what
 `tests/dsk_build_equivalence.c` checks rather than assumes.
@@ -136,9 +139,13 @@ by then had stopped agreeing with the A/B results.
 | `COMPET2()`'s count of surviving firms hoisted | 1.035 s | 1.006 s |
 | `MACH()`'s weights test four firms at a time | 1.029 s | 0.932 s |
 | `COSTPROD()` reads the vintages `MACH()` recorded | 0.895 s | 0.830 s |
+| the borrower ranking sorts packed pairs | 0.846 s | 0.763 s |
+| `ALLOCATECREDIT()` reads the ranking `LOANRATES()` made | 0.778 s | 0.740 s |
+| `g_c` replaced by a per-firm scratch | 0.717 s | 0.663 s |
+| `g_pb` and `C_pb` too, `g_c2` and `g_c3` not allocated | 0.664 s | 0.642 s |
 
 End to end, upstream and this build alternated three times each in the same
-thermal state: 35.29 s against 0.809 s, 43.6x.
+thermal state: 35.28 s against 0.677 s, 52.1x.
 
 Two flags are deliberately absent. `-O3` measured no faster. `-march=native`
 lets the compiler contract a multiply and an add into one instruction, which
@@ -344,6 +351,65 @@ incidental choice: the separate pass was measured and is 6.8% *slower* than
 recording in place, because it reads all 52 million counts a second time and
 that costs more than a store in the middle of the existing loop.
 
+### Arrays that existed to be destroyed
+
+The round above ran into a wall that was not in the code: one run kept getting
+faster and the throughput of eight concurrent runs stopped moving. Two changes
+worth 9.8% and 4.9% each left saturated throughput where it was. Eight runs at
+once were thrashing a shared 8 MB cache with about 4 MB of live machine arrays
+apiece, so the constraint had stopped being instructions and become memory.
+
+Three of the nine arrays indexed `[period][supplier][firm]` - 19 MB each, 2.4
+million doubles - turned out to exist only so that one function could destroy a
+column of them.
+
+- `g_c` was a copy of the machine counts, refreshed from `gtemp` every period.
+  `COSTPROD()` is its only reader, and it reads only the vintages one firm
+  holds, drawing them down as it assigns production. `ENTRYEXIT()` wrote to it,
+  but `MACH()` overwrote those writes before anything could read them. It is now
+  a per-firm scratch of about eight numbers.
+- `g_pb` and `C_pb` hold what each firm wants to scrap and what each of those
+  machines costs to run. `SCRAPPING()` writes them only for the entries it
+  marks, and `CANCMACH()` reads them only through that same marked list, which
+  is already carried alongside. Both are now columns of that list.
+
+Two more, `g_c2` and `g_c3`, are read only by `ADJUSTEMISSENLAB()`, which only
+the two `flag_capshocks` branches reach. They are no longer allocated when that
+flag is off, which is every run of this project's experiment: 38 MB that was
+being faulted in and zeroed at the start of every run for a branch that never
+executes.
+
+| measure | before | after |
+|---|---:|---:|
+| one 600-step run | 0.717 s | 0.642 s |
+| saturated throughput, eight concurrent | 221.1 a minute | 320.8 a minute |
+| peak resident memory | 163 MB | 74 MB |
+
+The first two rows are the point. A change worth 7.5% on one run bought 41% of
+throughput, because it removed memory traffic rather than instructions, and
+throughput is what a million runs is billed in. The memory figure travels
+further than this machine: at 74 MB instead of 163 twice as many runs fit on a
+cluster node, which is what decides how a job array is packed.
+
+### Ranking borrowers, again
+
+Two functions rank each bank's borrowers by debt service, and between them they
+were 18% of the run.
+
+`LOANRATES()` sorts 200 firm indices with a comparison that fetches each firm's
+ratio through its index, twice for each of the roughly 1400 comparisons a bank's
+ranking takes. Letting the ratio travel with the index - sorting pairs rather
+than indices - took that block from 9.2% of the run to 3.4%. Nothing about the
+order changes: ties break on the firm index, which is distinct, so the ordering
+is total and every correct sort returns the same permutation.
+
+`ALLOCATECREDIT()` then serves each bank's customers in that order, and found
+the order again from scratch: scan the whole column of ranks for its smallest,
+push that entry above all the others so it is not found twice, repeat. Two scans
+of 200 entries for each customer of each bank, about 48 million reads a run, for
+an order `LOANRATES()` had just computed and nothing had touched since. It now
+reads the ranking directly. 0.778 s to 0.740 s.
+
 ### A branch the processor cannot predict
 
 `MACH()`'s weighted-average loop reads every firm's count of every vintage, 52
@@ -420,9 +486,10 @@ reads one element of each row in turn, which was 400 loads from 400 addresses
 the processor cannot guess. `dsk_sfc_vintage.h` lays each array out as one
 block, keeping the index order, so the same walk reads addresses a fixed
 distance apart - a stride the prefetcher recognises. 8.9% faster, and the 185
-element accesses in the model did not have to change: the subscripts return
-small proxies, so `X[tt-1][i-1][j-1]` still parses and still means the same
-thing. Kept.
+element accesses in the model at the time did not have to change: the subscripts
+return small proxies, so `X[tt-1][i-1][j-1]` still parses and still means the
+same thing. Kept. Three of those nine arrays have since gone entirely, and the
+count of accesses with them; the section above has that.
 
 *Turning the order round so the firm is outermost.* The obvious next step, and
 wrong: measured 24.5% slower, 4.72 s against 3.79 s alternating. It does what
@@ -537,22 +604,68 @@ holds. When it stops holding, the test reports the worst absolute and relative
 gap with the period and column it sits at, which is what separates arithmetic
 that moved slightly from a model that moved.
 
-It establishes that at one set of flag settings: the seven shock flags at zero,
-which is how `dsk_sfc_inputs.json` ships and how every run of this project's
-experiment is configured, since `applications/abm_system_simulate.c` writes
-only the `params` block. `docs/ABM_SYSTEM_SIMULATION.md` says why they should
-stay there.
+Two more tests widen that in the two directions the aggregate comparison leaves
+open, and both are worth running before any further change to the model.
 
-Two of the changes have a branch that only runs with a shock flag on, and
-neither branch has been executed by any test. `MACH()` skips the firm-vintage
-pairs with no machines only while every firm's two shock factors are non-zero,
-and reverts to adding every term when one is not; `shocks_labprod2` and
-`shocks_eneff2` are written only inside `if(flag_prodshocks2==1)` and `==2` in
-`modules/module_climate_sfc.cpp`, so with that flag at zero they hold the zero
-they are initialised to and the skip is always taken. `PRODMACH()`'s
-restructured loop sits beside the `flag_capshocks` block, which never executes
-either. Before any run with a shock flag on, add seeds at those settings to
-`tests/dsk_build_equivalence.c` and check that byte equality still holds.
+`tests/dsk_full_output_equivalence.c` runs the model with `-f 1`, which writes
+twelve files of per-firm quantities instead of the one file of economy-wide
+totals: each K-firm's and C-firm's productivity, energy efficiency,
+environmental friendliness and net worth, each bank's net worth, and each
+C-firm's debt. 13 files and 28 MB a run against 3 MB, and per firm rather than
+summed, so a change that moved one firm's machines to another firm while leaving
+the totals alone would pass the aggregate comparison and fail this one. That is
+the failure this test exists for, because several of the changes above rest on
+an argument about which values are ever read.
+
+`tests/dsk_design_equivalence.c` runs the model away from the baseline
+calibration. Every change above was measured and checked at the one parameter
+vector the model ships with, and the experiment runs a thousand others, where
+different numbers of firms enter and exit and the machine arrays are sparse in
+different places - which is what several of those changes turn on. It takes four
+points of `dataset/abm_system_design.csv`: the design's column-wise minima and
+maxima, which are the corners of the box it actually reached, and two rows the
+experiment will really simulate. Each point is compared on three things: the
+exit status, the results file and the error log. A parameter vector the model
+refuses to simulate is a valid outcome and still a comparison, as long as both
+builds refuse it the same way.
+
+    make test-dsk_full_output_equivalence
+    make test-dsk_design_equivalence
+
+`make asan` builds every test with AddressSanitizer and UndefinedBehaviorSanitizer
+and runs it, these three included. That is what catches the class of mistake
+where a test itself is wrong rather than the model: writing
+`tests/dsk_design_equivalence.c` produced one, freeing a `Mat` that
+`df_col_numeric` had returned as a view into the dataframe rather than as
+memory of its own, and under the sanitizer it reports as `bad-free` at the line
+that did it instead of as a bare abort.
+
+### The one thing these tests do not cover
+
+All three run with the model's seven shock flags at zero. That is how
+`dsk_sfc_inputs.json` ships and how every run of this project's experiment is
+configured - `applications/abm_system_simulate.c` writes only the `params`
+block, never `flags` - and `docs/ABM_SYSTEM_SIMULATION.md` sets out why they
+should stay there. The gap is deliberate and is not going to be closed, because
+a test at settings the experiment will not use would guard code the experiment
+will not run.
+
+What that leaves untested is specific and worth naming, in case someone later
+wants the shock scenarios. Two changes have a branch that only executes with a
+flag on:
+
+- `MACH()` skips the firm-vintage pairs with no machines only while every
+  firm's two shock factors are non-zero, and adds every term as before when one
+  is not. `shocks_labprod2` and `shocks_eneff2` are written only inside
+  `if(flag_prodshocks2==1)` and `==2` in `modules/module_climate_sfc.cpp`, so
+  with that flag at zero they hold the zero they are initialised to and the skip
+  is always taken. The fallback has never run.
+- `PRODMACH()`'s restructured loop sits beside the `flag_capshocks` block, and
+  `ENTRYEXIT()` and `MACH()` both skip work on `g_c2` and `g_c3` under the same
+  flag. None of those branches has run either.
+
+Anyone turning a shock flag on should add points at those flag settings to these
+tests first, and check that byte equality still holds there.
 
 ## Parallelising inside a single run: tried, measured, not kept
 
@@ -604,21 +717,32 @@ process, seeds 1 upward, nothing else running:
 
 | concurrent runs | this build | upstream's |
 |---:|---:|---:|
-| 1 | 73.9 | 1.4 |
-| 4 | 199.3 | 3.5 |
-| 8 | 227.0 | 3.6 |
-| 16 | 210.4 | 9.5 |
+| 1 | 89.8 | 1.4 |
+| 4 | 279.4 | 3.5 |
+| 8 | 320.8 | 3.6 |
+| 16 | 281.5 | 9.5 |
 
-The machine saturates near 227 runs a minute at eight concurrent, which is a
-million runs in 3.1 days. Sixteen is slower than eight, which is what running
+The machine saturates near 321 runs a minute at eight concurrent, which is a
+million runs in 2.2 days. Sixteen is slower than eight, which is what running
 two threads on each of eight cores does when both threads want memory. The
 experiment is a million independent runs, so the cores are already full and
 making one run use several of them cannot raise that number. It would only
 shorten a single run's latency, which nothing here needs.
 
-Note what does not carry over. One run is 44 times faster than upstream's, and
-saturated throughput is 3.0 times what it was before this work - 227 against the
-76 measured at the same point in the history. The gap is memory bandwidth: eight
+Note what does not carry over, because this is now the binding constraint. One
+run is 52 times faster than upstream's, and saturated throughput is 4.2 times
+what it was before this work - 321 against the 76 measured at the same point in
+the history.
+
+The two do not move together, and which one a change moves says what it removed.
+Work that took out instructions raised the single-run time steadily and then
+stopped raising throughput at all: two changes worth 9.8% and 4.9% on one run
+moved saturated throughput from 227 to 221, which is noise. Eight runs at once
+were competing for one memory system, so the constraint had stopped being
+instructions. Work that took out memory moved it again: dropping three of the
+nine machine arrays is worth 7.5% on one run and 41% on throughput, and the
+footprint went from 163 MB to 74. That is also what decides how many runs fit on
+a cluster node, which no single-run figure shows. The gap is memory bandwidth: eight
 runs at once want their vintage arrays in cache at the same time, and there is
 one memory system between them. That also means further work on a single run
 buys steadily less of what this experiment actually costs.
@@ -628,7 +752,9 @@ the second round of changes, and it is noisier than this one - its 8-way row is
 slower than its 16-way, which cannot be right and means something else was on
 the machine during that batch.
 
-Memory is the other limit, and it is closer than it looks. A run peaks at 165
-MB resident, both builds, so sixteen at once is 2.6 GB. On a 7 GB machine
-that is part of why the 16-way row gains so little over the 8-way, and on a
-cluster it is what decides how many jobs fit on a node.
+Memory is the other limit, and for most of this work it was the binding one. A
+run peaked at 165 MB resident in both builds, so sixteen at once was 2.6 GB on a
+7 GB machine, and eight at once held far more live machine array than the shared
+8 MB cache. Dropping three of the nine machine arrays took this build to 74 MB
+against upstream's 166, which is where the jump from 221 to 321 runs a minute
+came from. On a cluster the same figure decides how many jobs fit on a node.

@@ -42,7 +42,7 @@ opinion about it.
 The validation needs 1000 parameter configurations simulated 1000 times each. At
 the speed the published code runs, one 600-period simulation takes 35.3 seconds,
 which puts the experiment at roughly 9800 core-hours: 73 days of the desktop it
-was measured on. It now takes 0.809 seconds, 225 core-hours, 3.1 days - 44 times
+was measured on. It now takes 0.677 seconds, 188 core-hours, 2.2 days - 52 times
 faster.
 
 None of that came from changing what the model computes. It came from how the
@@ -73,6 +73,12 @@ program stores its data and how often it repeats itself:
   that are not zero, and which 2% is not a pattern anything can learn. Testing
   four firms at a time, and skipping all four when none holds anything, cut that
   loop by two thirds.
+- **Arrays that existed to be destroyed.** Three of the model's nine
+  machine-vintage arrays, 19 MB each, were whole copies kept so that one
+  function could draw down a column of them; each is now a scratch of a handful
+  of numbers. That took the memory a run needs from 163 MB to 74, which matters
+  more than it sounds: eight runs at once had been competing for one cache, and
+  the number of runs the machine finishes in a minute went up by half.
 
 ### Why the results are still the published model's
 
@@ -80,6 +86,12 @@ Every change has to leave the model's output identical to the published code's,
 byte for byte. `make test-dsk_build_equivalence` compiles their unmodified
 source, runs both programs over the same seeds, and compares all 3 MB of each
 run's output; a change that moves a single digit does not go in.
+
+Three tests do that, in the three directions a mistake could hide: the aggregate
+output over five seeds, the twelve per-firm files the model writes under `-f 1`,
+and four points of the parameter design away from the baseline calibration. All
+three run with the model's shock channels off, which is how the experiment runs
+them; `docs/DSK_MODEL_CHANGES.md` names exactly what that leaves uncovered.
 
 That is a stronger guarantee than statistical agreement. Two runs that agree byte
 for byte cannot be told apart by any test, so the question of whether the faster
@@ -251,8 +263,13 @@ Results are written to `out/`, never printed.
 The simulator has two of its own, and they are the gate on any change
 to it:
 
-    make test-dsk_build_equivalence   every byte matches upstream, over five seeds
-    make test-dsk_long_path           the filename bug stays fixed
+    make test-dsk_build_equivalence         every byte of the aggregate output
+                                           matches upstream, over five seeds
+    make test-dsk_full_output_equivalence   the same for the twelve per-firm
+                                           files the model writes under -f 1
+    make test-dsk_design_equivalence        the same away from the baseline, at
+                                           four points of the design
+    make test-dsk_long_path                 the filename bug stays fixed
 
 `test-dsk_build_equivalence` builds the reference itself, so it takes about
 three minutes: the unmodified binary carries no optimisation and one of its runs

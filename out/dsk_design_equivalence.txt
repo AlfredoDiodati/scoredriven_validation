@@ -1,0 +1,55 @@
+upstream build: /home/dioda/Documents/_py/scoredriven_validation/bin/dsk_SFC_upstream
+this project's: /home/dioda/Documents/_py/scoredriven_validation/model/dsk_sfc/dsk_SFC
+design:         dataset/abm_system_design.csv, 1000 configurations
+4 parameter points, seeds 1 to 1, comparing exit status, results and error log
+
+  lowest of each parameter
+    Gamma      0.050125
+    chi        -1.499806
+    psi1       0.100323
+    psi3       0.100356
+    alfa       0.100248
+    taylor1    1.000015
+    taylor2    0.000428
+    taylor     0.500410
+    kappa      0.500255
+    seed 1 identical, exit status 0
+
+  highest of each parameter
+    Gamma      0.249807
+    chi        -1.250115
+    psi1       0.499661
+    psi3       0.499980
+    alfa       0.499682
+    taylor1    1.499933
+    taylor2    0.499849
+    taylor     0.949683
+    kappa      0.949807
+    seed 1 identical, exit status 0
+
+  design row 1
+    Gamma      0.147700
+    chi        -1.271661
+    psi1       0.371860
+    psi3       0.202025
+    alfa       0.475860
+    taylor1    1.078483
+    taylor2    0.486900
+    taylor     0.779999
+    kappa      0.773545
+    seed 1 identical, exit status 0
+
+  design row middle
+    Gamma      0.248325
+    chi        -1.411640
+    psi1       0.271979
+    psi3       0.227056
+    alfa       0.345048
+    taylor1    1.081943
+    taylor2    0.426510
+    taylor     0.645568
+    kappa      0.645194
+    seed 1 identical, exit status 0
+
+4 point-seed comparisons
+PASSED
