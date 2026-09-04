@@ -1,0 +1,15 @@
+Does a second copy of g_c, laid out with the vintages adjacent, pay?
+
+Run unattended on 2026-09-04 at 01:07. Three questions in order:
+is the output still identical, is one run faster, and is the experiment
+faster once the extra 19 MB a run is counted.
+
+1. Exactness against the unmodified model, five seeds
+   seed 1: a build did not complete
+   seed 2: a build did not complete
+   seed 3: a build did not complete
+   seed 4: a build did not complete
+   seed 5: a build did not complete
+   0 of 5 identical
+
+Stopping here: a change that alters the output is not worth timing.

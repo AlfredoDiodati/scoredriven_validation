@@ -43,6 +43,11 @@ out/abm_system_scale_fit_qvarma_i*_manifest.txt
 out/abm_system_scale_extract_manifest.txt
 out/abm_system_scale_iteration_comparison_i*.csv
 
+# The vendored simulator's own build products. model/dsk_sfc is source; the
+# binary comes from `make model` and its runs write an output/ beside it.
+model/dsk_sfc/dsk_SFC
+model/dsk_sfc/output/
+
 *.Rmd
 
 # dataset/Dati simulati.zip, 226 MB: the archive dataset/simulated/ was

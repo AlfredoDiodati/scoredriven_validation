@@ -74,7 +74,7 @@ endif
 # on an et_al. change is already covered by ETAL_INSTALLED_HEADERS above.
 HEADERS :=
 TEST_HEADERS :=
-TEST_STEMS := qvarma_correctness
+TEST_STEMS := qvarma_correctness dsk_long_path dsk_build_equivalence
 # Where the wall time of a t-QVARMA fit goes, and what each way of speeding it
 # up is worth. Measured 2026-08-29 against a 500,000-fit run of
 # abm_system_fit_qvarma; out/fit_speedup_options.txt collects the numbers and
@@ -228,12 +228,11 @@ endef
 $(foreach stem,$(APPLICATION_STEMS),$(eval $(call application_target_for_stem,$(stem))))
 $(foreach stem,$(EXPERIMENT_STEMS),$(eval $(call application_target_for_stem,$(stem))))
 
-# abm_system_simulate is built but never run by a target of its own. It takes
-# the path to the DSK executable and to that model's own JSON, neither of
-# which lives in this repository, so there is nothing for a zero-argument
-# app-<stem> rule to run. app-abm_system_design draws the design it reads, and
-# keeps an existing one rather than renumbering configurations under results
-# already on disk.
+# abm_system_simulate is built but never run by a target of its own: with no
+# arguments it simulates the whole design, a million runs and about a fortnight
+# of this machine, which is not something a make target should start.
+# app-abm_system_design draws the design it reads, and keeps an existing one
+# rather than renumbering configurations under results already on disk.
 $(BIN)/abm_system_simulate: applications/abm_system_simulate.c $(HEADERS) $(APPLICATION_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
 	$(CC) $(CFLAGS) -DMAT_DOUBLE -fopenmp $(ETAL_CFLAGS) $(INCLUDES) $< -o $@ $(ETAL_LIBS)
 
@@ -284,6 +283,23 @@ app-abm_system_scale_fit_qvarma-i$(1): $(BIN)/abm_system_scale_fit_qvarma_i$(1) 
 	./$(BIN)/abm_system_scale_fit_qvarma_i$(1)
 endef
 $(foreach cap,$(SCALE_ITERATION_CAPS),$(eval $(call scale_fit_target_for_cap,$(cap))))
+
+# The DSK simulator itself, vendored under model/dsk_sfc with the three
+# changes docs/DSK_MODEL_CHANGES.md records. Its own script builds it rather
+# than a rule here: it is 35 translation units of someone else's C++ with its
+# own vendored dependencies, and restating that here would be a second place
+# for it to go wrong. model-upstream builds the unmodified reference the
+# equivalence test compares against, from the copies in model/dsk_sfc/upstream.
+.PHONY: model model-upstream
+model:
+	./model/dsk_sfc/build.sh
+
+model-upstream: | $(BIN)
+	./model/dsk_sfc/build.sh --upstream $(BIN)/dsk_SFC_upstream
+
+# Both DSK tests run the simulator, so the binaries have to exist first.
+test-dsk_long_path: model
+test-dsk_build_equivalence: model model-upstream
 
 applications: $(APPLICATION_BINARIES) | $(OUT)
 	@for binary in $(APPLICATION_BINARIES); do ./$$binary || exit 1; done

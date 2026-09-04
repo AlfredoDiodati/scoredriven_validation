@@ -296,8 +296,11 @@ operation. A batch is skipped whole, its failures included: the model is
 deterministic in its seed, so a run that failed once fails the same way again,
 and the failure log is where that is recorded.
 
-The model reads one JSON parameter file and one seed per execution and writes
-its output into the directory holding the executable it was invoked as. Each
+The model is `model/dsk_sfc`, vendored into this repository and built by
+`make model`; `docs/DSK_MODEL_CHANGES.md` records what this project changed in
+it, what those changes are tested to leave alone, and the bug they fixed. It
+reads one JSON parameter file and one seed per execution and writes its output
+into the directory holding the executable it was invoked as. Each
 process therefore reaches the executable through a symlink inside its own
 scratch directory: the baseline JSON is parsed, the nine design parameters and
 the horizon are overwritten, and the result is written next to that symlink,

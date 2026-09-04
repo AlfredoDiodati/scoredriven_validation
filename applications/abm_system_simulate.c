@@ -35,12 +35,18 @@ share one design without any of them being able to redraw it.
 
 Usage:
 
-    ./bin/abm_system_simulate DSK_EXECUTABLE BASE_JSON [FIRST_COP LAST_COP [N_MC]]
+    ./bin/abm_system_simulate [FIRST_COP LAST_COP [N_MC]]
 
 FIRST_COP and LAST_COP are 1-indexed design rows and default to the whole
 design; N_MC is the replications per configuration and defaults to 1000. One
 process covers the whole design on one machine; one process per configuration
 is what a cluster array wants.
+
+The model itself is model/dsk_sfc, built by `make model` -
+docs/DSK_MODEL_CHANGES.md says what this project changed in it and what those
+changes are tested to leave alone. DSK_EXECUTABLE and DSK_BASE_JSON in the
+environment point this at a different build, which is what the equivalence
+test's reference binary is for.
 
 Writes dataset/, not out/, apart from the failure logs and the manifest.
 */
@@ -63,6 +69,8 @@ Writes dataset/, not out/, apart from the failure logs and the manifest.
 #include <errno.h>
 
 #define DESIGN_PATH "dataset/abm_system_design.csv"
+#define MODEL_PATH "model/dsk_sfc/dsk_SFC"
+#define MODEL_INPUTS "model/dsk_sfc/dsk_sfc_inputs.json"
 #define OUTPUT_DIR "dataset/abm_system"
 #define REPORT_DIR "out/abm_system_simulate"
 #define MANIFEST_PATH "out/abm_system_simulate_manifest.txt"
@@ -172,19 +180,23 @@ static int all_finite(const Mat m) {
 }
 
 int main(int argc, char **argv) {
-    assert(argc >= 3 &&
-           "usage: abm_system_simulate DSK_EXECUTABLE BASE_JSON [FIRST_COP LAST_COP [N_MC]]");
+    const char *model = getenv("DSK_EXECUTABLE");
+    if (!model) model = MODEL_PATH;
+    const char *model_inputs = getenv("DSK_BASE_JSON");
+    if (!model_inputs) model_inputs = MODEL_INPUTS;
 
     char executable[PATH_MAX];
-    assert(realpath(argv[1], executable) && "abm_system_simulate: cannot resolve the executable path");
+    assert(realpath(model, executable) &&
+           "abm_system_simulate: the model is not built - run make model");
     char base_json[PATH_MAX];
-    assert(realpath(argv[2], base_json) && "abm_system_simulate: cannot resolve the base JSON path");
+    assert(realpath(model_inputs, base_json) &&
+           "abm_system_simulate: the model's own inputs JSON is missing");
 
     DataFrame design = df_read_csv(DESIGN_PATH, csv_read_options_default());
     int n_cop = design.r;
-    int first_cop = argc > 3 ? atoi(argv[3]) : 1;
-    int last_cop = argc > 4 ? atoi(argv[4]) : n_cop;
-    int n_mc = argc > 5 ? atoi(argv[5]) : DEFAULT_N_MC;
+    int first_cop = argc > 1 ? atoi(argv[1]) : 1;
+    int last_cop = argc > 2 ? atoi(argv[2]) : n_cop;
+    int n_mc = argc > 3 ? atoi(argv[3]) : DEFAULT_N_MC;
 
     assert(first_cop >= 1 && last_cop <= n_cop && first_cop <= last_cop &&
            "abm_system_simulate: the requested range is not inside the design");

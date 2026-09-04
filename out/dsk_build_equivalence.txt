@@ -1,0 +1,11 @@
+upstream build: /home/dioda/Documents/_py/scoredriven_validation/bin/dsk_SFC_upstream
+this project's: /home/dioda/Documents/_py/scoredriven_validation/model/dsk_sfc/dsk_SFC
+inputs:         /home/dioda/Documents/_py/scoredriven_validation/model/dsk_sfc/dsk_sfc_inputs.json
+seeds 1 to 3, comparing every byte of each run's results file
+
+  seed 1    identical, 2988600 bytes
+  seed 2    identical, 2988600 bytes
+  seed 3    identical, 2988600 bytes
+
+3 of 3 seeds identical
+PASSED

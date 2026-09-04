@@ -13,12 +13,17 @@ which configurations survive.
 compared against what, why the comparison runs on impulse responses rather than
 on fitted parameters, and the settings the confidence set is computed under.
 `docs/DATA_DOCUMENTATION.md` records where the US series come from and how each
-one is transformed.
+one is transformed. `docs/ABM_SYSTEM_SIMULATION.md` describes the design the
+simulations run over and how they are stored, and
+`docs/DSK_MODEL_CHANGES.md` records what this project changed in the simulator
+and what those changes are measured and tested to leave alone.
 
 ## Layout
 
     applications/     the scripts that produce results, plus us_data.h and
                       abm_system.h, which describe this project's own data
+    model/dsk_sfc/    the DSK simulator itself, vendored from upstream with
+                      three changes; docs/DSK_MODEL_CHANGES.md records them
     tests/            what verifies the auxiliary model still computes what it
                       claims to
     dataset/          us_real.csv, the raw US series; the ABM's own simulated
@@ -29,6 +34,8 @@ one is transformed.
 ## Requirements
 
 - A C11 compiler with OpenMP, and OpenBLAS
+- A C++11 compiler, for the vendored simulator under `model/dsk_sfc`; `make
+  model` builds it without cmake
 - et_al, installed so that `pkg-config et_al.-core` resolves
 - Python with `polars`, `plotly` and `kaleido`, for the figures only; plotly
   writes the PDFs through kaleido
