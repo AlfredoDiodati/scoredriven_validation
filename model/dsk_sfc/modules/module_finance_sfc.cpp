@@ -39,14 +39,22 @@ void LOANRATES(void)
       //DebtServiceToSales2_bank; even if j is not a customer of i
       DebtServiceToSales2_bank(j,i)=DebtServiceToSales2(j);
     } 
+    //Iterate again over all C-Firms; if j is not a customer of bank i, set the corresponding value of
+    //DebtServiceToSales2_bank to the maximum across the column plus one
+    //Thereby, all firms which are not customers of j will appear at the end of the ranking
+    //
+    //Each of those assignments makes the value it wrote the new maximum, so
+    //the next one is the one before it plus one. Carrying that value forward
+    //gives the same sequence of writes as rescanning the column would, and the
+    //column is scanned once for the bank rather than once for each of its
+    //roughly 180 non-customers.
+    Real column_maximum=ColumnMaximum(DebtServiceToSales2_bank,i);
     for (j=1; j<=N2; ++j)    
     {	
-      //Iterate again over all C-Firms; if j is not a customer of bank i, set the corresponding value of
-      //DebtServiceToSales2_bank to the maximum across the column plus one
-      //Thereby, all firms which are not customers of j will appear at the end of the ranking
       if (BankMatch_2(j,i)==0)
       {
-        DebtServiceToSales2_bank(j,i)=ColumnMaximum(DebtServiceToSales2_bank,i)+1;
+        column_maximum=column_maximum+1;
+        DebtServiceToSales2_bank(j,i)=column_maximum;
       }   
     } 
   } 
@@ -60,17 +68,45 @@ void LOANRATES(void)
       DebtServiceToSales2_temp(j) = DebtServiceToSales2_bank(j,i);
     }
 
-    //Loop N2 times
+    //Rank the bank's borrowers by debt service ratio, lowest first. Written as
+    //a selection sort - N2 passes, each scanning all N2 firms for the minimum
+    //and all N2 again for the maximum to push the chosen firm out of the way -
+    //which is 80,000 comparisons per bank per period. Sorting the firm indices
+    //reaches the same ranking in about 1,500.
+    //
+    //The order is the one the scan produced: by ratio ascending, and among
+    //equal ratios the higher firm index first, because Minimum1 keeps the last
+    //of equal minima. A ratio that is not a number would make that comparison
+    //no longer a strict ordering, which a sort may not be given, so the
+    //original passes are kept for that case.
+    int sortable=1;
     for (j=1; j<=N2; ++j)
     {
-      //Find the minimum debt service ratio and its index
-      DS2_min=DebtServiceToSales2_temp.Minimum1(DS2_min_index);
-      //Set the rank of C-Firm DS2_min_index to j (e.g. if j=1 then C-Firm DS2_min_index will be ranked first
-      //if j=2 it will be ranked second, and so forth)
-      DS2_rating(DS2_min_index,i)=j;
-      //Afterwards, reset the value of C-Firm DS2_min_index to the maximum plus one;
-      //thereby, the minimum value of DebtServiceToSales2_temp has changed
-      DebtServiceToSales2_temp(DS2_min_index)=DebtServiceToSales2_temp.Maximum()+1;
+      const double v=DebtServiceToSales2_temp(j);
+      if (std::isnan(v)) { sortable=0; break; }
+    }
+
+    if (sortable)
+    {
+      for (j=1; j<=N2; ++j) DS2_order[j-1]=j;
+      std::sort(DS2_order.begin(), DS2_order.begin()+N2,
+                [](int a, int b)
+                {
+                  const double va=DebtServiceToSales2_temp(a), vb=DebtServiceToSales2_temp(b);
+                  if (va < vb) return true;
+                  if (vb < va) return false;
+                  return a > b;
+                });
+      for (j=1; j<=N2; ++j) DS2_rating(DS2_order[j-1],i)=j;
+    }
+    else
+    {
+      for (j=1; j<=N2; ++j)
+      {
+        DS2_min=DebtServiceToSales2_temp.Minimum1(DS2_min_index);
+        DS2_rating(DS2_min_index,i)=j;
+        DebtServiceToSales2_temp(DS2_min_index)=DebtServiceToSales2_temp.Maximum()+1;
+      }
     }
   }
   

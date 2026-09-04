@@ -5,9 +5,18 @@ into this repository because the runs behind every result here come out of it
 and a result whose generator is not in the tree is not reproducible.
 
 Upstream is `https://github.com/CoMoS-SA/Reissl_2025.git` at commit
-`611ff9cb44348baa55be1bc315eefe2c117ccd44`. Three files differ from it, and
+`611ff9cb44348baa55be1bc315eefe2c117ccd44`. Five of its files differ here -
+`dsk_sfc_main.cpp`, `dsk_sfc_globalvars.h`, `modules/module_finance_sfc.cpp`,
+`modules/module_finance_sfc.h` and `CMakeLists.txt` - and
 `model/dsk_sfc/upstream/` holds their original versions so the difference can
-be built and compared without going back to the network.
+be built and compared without going back to the network. Two headers are new,
+`dsk_sfc_vintage.h` and `dsk_sfc_reductions.h`; nothing upstream includes
+them.
+
+Nothing compiles or links against `model/dsk_sfc/upstream/`. `build.sh
+--upstream` copies a scratch tree, drops those five files over their modified
+counterparts in it, and builds that, so the reference binary is upstream's code
+at upstream's flags and nothing in the working tree is disturbed.
 
     make model              the simulator this project runs
     make model-upstream     bin/dsk_SFC_upstream, unmodified, upstream's flags
@@ -60,7 +69,7 @@ paper over here.
 ## Why any of this
 
 The experiment is a million runs. At the speed upstream ships, that is 73 days
-of this machine; at the speed here it is 9. Nothing else about the model is
+of this machine; at the speed here it is 5.3. Nothing else about the model is
 touched, and nothing that touches a number is allowed: every change below
 produces output identical to upstream's, byte for byte, which is what
 `tests/dsk_build_equivalence.c` checks rather than assumes.
@@ -93,6 +102,27 @@ measured the same way.
 Seed 1, the baseline calibration, three repetitions, median reported, nothing
 else running. Every row produces the same output as the row above it and as
 upstream, byte for byte.
+
+A second round took it further. Its rows are each their own alternating A/B
+between the build before the change and the build after it, three or more runs
+each, median, because an hour of benchmarking warms this machine and the
+absolute times drift several per cent across a session; the ratio inside a row
+is the measurement and the level between rows is not.
+
+| change | before | after |
+|---|---:|---:|
+| `SCRAPPING()` for every firm at once | 2.883 s | 2.604 s |
+| the empty firm-vintage pairs skipped | 2.604 s | 2.227 s |
+| `COSTPROD()` searching only what the firm holds | 2.270 s | 2.060 s |
+| `PRODMACH()`'s ages cleared for every firm at once | 2.067 s | 1.946 s |
+| `CANCMACH()` working through `SCRAPPING()`'s list | 1.946 s | 1.918 s |
+| `UPDATE()`'s ages, `LOANRATES()`'s column maximum | 1.914 s | 1.846 s |
+| `MACH()`'s four copies as whole blocks | 1.853 s | 1.789 s |
+| `g_pb` and `C_pb` never cleared | 1.827 s | 1.614 s |
+| the second-hand minimum over the live vintages | 1.614 s | 1.557 s |
+
+End to end, upstream and this build alternated three times each in the same
+thermal state: 34.840 s against 1.570 s, 22.2x.
 
 Two flags are deliberately absent. `-O3` measured no faster. `-march=native`
 lets the compiler contract a multiply and an add into one instruction, which
@@ -151,12 +181,85 @@ find the cheapest machine on offer for every vintage of every exiting firm -
 actually taken; it is now kept and refreshed at the point it changes. Together,
 4.13 seconds to 3.59.
 
-### What was tried on the rest and did not work
+### Ninety-eight per cent of the machine grid is empty
 
-`SCRAPPING()` and `PRODMACH()` are the top of the profile after the four
-changes above, at 15% and 14%. Two attempts on them and on `COSTPROD()` were
-measured and thrown away, which is worth writing down so nobody spends the
-afternoon again.
+Every firm-vintage pair the model can hold is a cell of the arrays indexed
+`[period][supplier][firm]`, and four functions sweep all of them every period.
+A firm holds units of very few vintages, though: instrumenting a run at seed 1
+counts 52,076,000 firm-vintage pairs visited in `MACH()`'s weighted-average
+loop and 51,143,520 of them, 98.2%, with a machine count of zero.
+
+A pair with no machines contributes a productivity multiplied by zero to each
+of five running totals, which leaves each total where it was, so those pairs
+are skipped. The skip is only taken while the divisors are non-zero, since with
+a zero divisor the term would be a NaN and a NaN does not leave a total where
+it was; a check over the firms once per period decides which loop runs.
+`SCRAPPING()` gets the same treatment, since a pair with no machines enters
+neither of its branches. 2.604 s to 2.227 s.
+
+`COSTPROD()` walks a firm's vintages from cheapest to dearest, and it did that
+by scanning all 434 of them on every pass and working out the unit cost of each
+one. It now collects the vintages the firm actually holds once per call, in the
+order the scan visited them, and the passes walk that. Measured on the same
+run: 115,116 calls, 723,656 passes, 49,925,260 unit costs worked out a run
+against 7,074,653 shortlist entries scanned. 2.270 s to 2.060 s.
+
+### One firm at a time, in arrays where the firm is innermost
+
+Four loops did their work for one firm at a time, and the firm is the innermost
+index, so each of them read one element out of each of 434 rows of firms, 48
+million times a run. All four now run the firm loop inside the vintage loops,
+which reads along memory instead of across it.
+
+- `SCRAPPING()` was called once per firm from inside `INVEST()`'s firm loop. It
+  is now called once, before that loop. Nothing `INVEST()` does between firms
+  writes what it reads, and `ORD()` sets its own supplier index, so each firm
+  still decides on the same information in the same order. 2.883 s to 2.604 s.
+- `PRODMACH()` cleared the age of every vintage a firm no longer holds, inside
+  its firm loop. That loop is now three loops: the scrapping cancellations, the
+  ages, then the new machines. 2.067 s to 1.946 s.
+- `UPDATE()` aged every machine a firm holds, inside a loop that otherwise only
+  copies per-firm scalars. The ageing is now its own sweep.
+- `MACH()` copies `gtemp` into `g` and then into `g_c`, `g_c2` and `g_c3`. All
+  four take the same values and a period's suppliers and firms lie together, so
+  it is four copies of one block per period rather than four per supplier.
+  1.853 s to 1.789 s.
+
+### Two arrays cleared for everything and filled in for almost nothing
+
+`g_pb` and `C_pb` hold what each firm wants to scrap and what it costs to run.
+`SCRAPPING()` cleared both for every firm and vintage, then filled in the two
+per cent it marked, and `CANCMACH()` read them back by scanning the whole grid
+for the marks. That is 833 MB of writes and a full strided scan a run to carry
+a few thousand numbers.
+
+`SCRAPPING()` now records what it marks, per firm, in the order it marks it,
+and `CANCMACH()` works through that list. Entries outside the list are never
+read, so neither array is cleared at all. The two changes were measured
+separately: the list is 1.946 s to 1.918 s, dropping the clearing is 1.827 s to
+1.614 s.
+
+### Two more reductions that were being redone
+
+`LOANRATES()` pushes a bank's non-customers to the end of its ranking by
+setting each one to the maximum of the column plus one, and it rescanned the
+column for each of the roughly 180 of them. Each of those writes is itself the
+new maximum, so the next is the one before it plus one; the column is now
+scanned once per bank.
+
+`ENTRYEXIT()` finds the cheapest machine on the second-hand market by taking
+the minimum of a 600 by 20 matrix, of which only the rows for vintages still in
+use hold anything but infinity. The scan covers those 434 entries. The column
+maximum was measured together with `UPDATE()`'s ageing, 1.914 s to 1.846 s; the
+second-hand minimum on its own, 1.614 s to 1.557 s.
+
+### What was tried and did not work
+
+What follows was measured and thrown away, which is worth writing down so
+nobody spends the afternoon again. Everything down to the two build-level ideas
+comes from the round that ended at 3.59 s, where `SCRAPPING()` and `PRODMACH()`
+were the top of the profile at 15% and 14%; the last two are from the round
+after it.
 
 *Hoisting `SCRAPPING()`'s invariants.* Its vintage loop reached seven newmat
 accessors and did three divisions that depend on the firm's supplier but not on
@@ -218,6 +321,21 @@ trained on a full run at a different seed, measured 4.04 s against 3.88 s -
 inside the noise. `-O3` and `-march=native` were tested earlier with the same
 result.
 
+Two more from the round that followed, both of which looked like the changes
+above and neither of which measured.
+
+*Collecting every firm's held vintages in one sweep.* `COSTPROD()` builds its
+shortlist by reading one element out of each of 434 rows, which is the access
+pattern every other change here was about removing. Building all 200 firms'
+shortlists in one contiguous sweep at the top of `INVEST()` instead: six
+alternating pairs, 1.561 s against 1.535 s median, mean difference 0.8%, and
+two of the six pairs went the other way. The strided reads cover 694 KB, which
+sits in L2, so there was less to save than the pattern suggests, and the sweep
+costs a pass of its own. Not kept.
+
+*Writing the two age loops as selects rather than branches.* Eight alternating
+pairs, 1.5965 s against 1.5889 s, 0.5%. Not kept.
+
 ### Filename buffers too small for a real path
 
 This one is a bug, not a speed change, and it is upstream's.
@@ -254,6 +372,23 @@ test that could be applied to them, so no test statistic is needed while it
 holds. When it stops holding, the test reports the worst absolute and relative
 gap with the period and column it sits at, which is what separates arithmetic
 that moved slightly from a model that moved.
+
+It establishes that at one set of flag settings: the seven shock flags at zero,
+which is how `dsk_sfc_inputs.json` ships and how every run of this project's
+experiment is configured, since `applications/abm_system_simulate.c` writes
+only the `params` block. `docs/ABM_SYSTEM_SIMULATION.md` says why they should
+stay there.
+
+Two of the changes have a branch that only runs with a shock flag on, and
+neither branch has been executed by any test. `MACH()` skips the firm-vintage
+pairs with no machines only while every firm's two shock factors are non-zero,
+and reverts to adding every term when one is not; `shocks_labprod2` and
+`shocks_eneff2` are written only inside `if(flag_prodshocks2==1)` and `==2` in
+`modules/module_climate_sfc.cpp`, so with that flag at zero they hold the zero
+they are initialised to and the skip is always taken. `PRODMACH()`'s
+restructured loop sits beside the `flag_capshocks` block, which never executes
+either. Before any run with a shock flag on, add seeds at those settings to
+`tests/dsk_build_equivalence.c` and check that byte equality still holds.
 
 ## Parallelising inside a single run: tried, measured, not kept
 
@@ -299,26 +434,35 @@ and not for that one.
 ## Why it would not have helped anyway
 
 Even a parallelisation that did speed up one run would not shorten this
-experiment. Concurrent independent runs on 16 cores, throughput in runs per
-minute:
+experiment. Concurrent independent runs on this machine - a Ryzen 7 4800H, 8
+cores with two threads each, 7 GB - in runs per minute, ten runs per concurrent
+process, seeds 1 upward, nothing else running:
 
 | concurrent runs | this build | upstream's |
 |---:|---:|---:|
-| 1 | 16.3 | 1.4 |
-| 4 | 51.2 | 3.5 |
-| 8 | 72.9 | 3.6 |
-| 16 | 76.0 | 9.5 |
+| 1 | 38.2 | 1.4 |
+| 4 | 105.8 | 3.5 |
+| 8 | 130.2 | 3.6 |
+| 16 | 120.2 | 9.5 |
 
-The machine saturates near 76 runs a minute, which is a million runs in 9.1
-days against upstream's 73. The experiment is a million
-independent runs, so the cores are already full and making one run use several
-of them cannot raise that number. It would only shorten a single run's latency,
-which nothing here needs.
+The machine saturates near 130 runs a minute at eight concurrent, which is a
+million runs in 5.3 days. Sixteen is slower than eight, which is what running
+two threads on each of eight cores does when both threads want memory. The
+experiment is a million independent runs, so the cores are already full and
+making one run use several of them cannot raise that number. It would only
+shorten a single run's latency, which nothing here needs.
 
-The upstream column is noisier than this one - its 8-way row is slower than
-its 16-way, which cannot be right and means something else was on the machine
-during that batch - but the saturated ratio, 52.4 against 9.5, agrees with the
-5.10x measured on a single run, which is the number to trust.
+Note what does not carry over. One run is 22.2 times faster than upstream's,
+and saturated throughput is 1.7 times what it was before this work - 130
+against the 76 measured at the same point in the history. The gap is memory
+bandwidth: sixteen runs at once want their vintage arrays in cache at the same
+time, and there is one memory system between them. That also means further work
+on a single run buys steadily less of what this experiment actually costs.
+
+The upstream column was measured earlier, at the same concurrencies but before
+the second round of changes, and it is noisier than this one - its 8-way row is
+slower than its 16-way, which cannot be right and means something else was on
+the machine during that batch.
 
 Memory is the other limit, and it is closer than it looks. A run peaks at 165
 MB resident, both builds, so sixteen at once is 2.6 GB. On a 7 GB machine

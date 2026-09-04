@@ -17,15 +17,87 @@ one is transformed. `docs/ABM_SYSTEM_SIMULATION.md` describes the design the
 simulations run over and how they are stored, and
 `docs/DSK_MODEL_CHANGES.md` records what this project changed in the simulator
 and what those changes are measured and tested to leave alone.
+`docs/Model_Simulation.Rmd` is not this project's writing: it is the brief the
+simulation workflow was derived from, kept for reference. Everything else
+written down lives in `docs/` too; no directory in this tree carries a note of
+its own.
+
+## The agent-based model, and whose it is
+
+The simulated economy is not this project's work. It is the DSK
+stock-flow-consistent model - Dystopian Schumpeter meeting Keynes - whose source
+is vendored under `model/dsk_sfc` from
+
+    https://github.com/CoMoS-SA/Reissl_2025
+    commit 611ff9cb44348baa55be1bc315eefe2c117ccd44
+
+Cite that repository, and the paper it accompanies, for the model itself; the
+DSK family it belongs to is Lamperti, Dosi, Napoletano, Roventini and Sapio's
+integrated climate-macro agent-based model. Nothing in this repository claims
+authorship of the economics.
+
+It is vendored rather than fetched because every result here is a function of
+the exact simulator that produced it, and a generator that is not in the tree
+cannot be reproduced from it.
+
+### What this project changed in it
+
+Two kinds of change, both recorded with their measurements in
+`docs/DSK_MODEL_CHANGES.md`:
+
+- **Speed.** A run went from 34.840 s to 1.570 s, 22.2x, which turns the
+  experiment's serial cost from roughly 9700 core-hours into 436. The changes
+  are an optimised build, one memory layout, several loop restructurings, and
+  reductions that were being recomputed; nine further attempts were measured
+  and thrown away, and those are written down too.
+- **One bug**, upstream's: every output filename is built into a fixed 64-byte
+  buffer, so the model corrupts memory and then crashes when it is invoked
+  through a path of any realistic length. The buffers are now `PATH_MAX`. This
+  one was not optional - the simulation driver invokes the model through a
+  scratch directory, which is squarely in the range that fails.
+
+No change is allowed to move a number. `make test-dsk_build_equivalence` builds
+an unmodified binary from `model/dsk_sfc/upstream/` and compares every byte of
+the two results files over five seeds; it has to say `PASSED` or the change does
+not go in. Byte equality is stronger than statistical indistinguishability: two
+runs that agree byte for byte cannot be separated by any test. That guarantee is
+established with the model's seven shock flags at zero, which is how the
+experiment runs them and, per `docs/ABM_SYSTEM_SIMULATION.md`, how they should
+stay.
+
+### Using the simulator
+
+    make model                    builds it, no cmake needed
+    make model-upstream           the unmodified reference, for the test
+
+One run, written into an `output/` directory beside the path the executable was
+invoked as:
+
+    ./model/dsk_sfc/dsk_SFC model/dsk_sfc/dsk_sfc_inputs.json -r myrun -s 1 -f 0 -c 0 -v 0
+
+The whole experiment goes through the driver rather than through that command:
+
+    make app-abm_system_design            draws dataset/abm_system_design.csv
+    make app-abm_system_simulate          runs the design, writes the archives
+
+`abm_system_simulate` takes an optional first, last and replication count
+(`./bin/abm_system_simulate 1 10 100` is configurations 1 to 10, 100
+replications each), so one invocation is the whole design on one machine and one
+configuration per job on a cluster. It writes
+`dataset/abm_system/cop_NNNN/batch_NNN.npz`, ten replications to an archive, and
+skips any archive already on disk, which is what makes an interrupted run
+resumable. `DSK_EXECUTABLE` and `DSK_BASE_JSON` override which binary and which
+baseline parameter file it uses.
 
 ## Layout
 
     applications/     the scripts that produce results, plus us_data.h and
                       abm_system.h, which describe this project's own data
     model/dsk_sfc/    the DSK simulator itself, vendored from upstream with
-                      three changes; docs/DSK_MODEL_CHANGES.md records them
+                      the speed work of docs/DSK_MODEL_CHANGES.md applied
     tests/            what verifies the auxiliary model still computes what it
-                      claims to
+                      claims to, and what verifies the vendored simulator still
+                      matches upstream byte for byte
     dataset/          us_real.csv, the raw US series; the ABM's own simulated
                       output goes here too but is not tracked
     out/              every result, written here rather than printed
@@ -123,12 +195,22 @@ earlier ones.
     make app-us_prepare_data              the five US variables, 1973Q1 to 2019Q4
     make app-us_qvarma_employment_change  the auxiliary model on the real data
     make app-abm_system_extract           the simulated data into the same layout
-    make app-abm_system_fit_qvarma        10,800 fits, one per simulated replicate
+    make app-abm_system_fit_qvarma        one fit per simulated replication
     make app-abm_system_mse_qvarma        impulse responses and the loss table
     make app-abm_system_mcs               the confidence set itself
     make app-abm_system_winner_irf        the surviving model's responses, with bands
 
     python applications/abm_system_winner_irf_plots.py
+
+`app-abm_system_extract` is the older route into the simulated dataset: it reads
+the 108 `.Rdata` files under `dataset/simulated/` and converts them. The
+Latin hypercube experiment described in `docs/ABM_SYSTEM_SIMULATION.md` replaces
+it with `app-abm_system_design` and `app-abm_system_simulate`, which produce the
+same archives from the simulator directly. That replacement has not been made in
+the Makefile: `app-abm_system_fit_qvarma` still depends on
+`app-abm_system_extract`, and `abm_system_fit_qvarma` fits every subdirectory of
+`dataset/abm_system/` regardless of what wrote it, so the two datasets must not
+sit there at once.
 
 The fitting step is the long one. Every fit is cached to its own file the moment
 it finishes, so an interrupted run resumes rather than starting over.
@@ -141,4 +223,14 @@ Results are written to `out/`, never printed.
     make test-stress  the same, including the slow simulation checks
     make study        parameter recovery from known truths, over sample sizes,
                       model shapes and parameter regimes
+
+The vendored simulator has two of its own, and they are the gate on any change
+to it:
+
+    make test-dsk_build_equivalence   every byte matches upstream, over five seeds
+    make test-dsk_long_path           the filename bug stays fixed
+
+`test-dsk_build_equivalence` builds the reference itself, so it takes about
+three minutes: the unmodified binary carries no optimisation and one of its runs
+is 35 seconds.
 

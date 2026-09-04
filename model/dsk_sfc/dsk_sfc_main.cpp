@@ -707,6 +707,17 @@ void RESIZE(void)
   CreditDemand.ReSize(N2);
   p2.ReSize(N2);
   DebtServiceToSales2_temp.ReSize(N2);
+  DS2_order.resize(N2);
+  scrap_p1.resize(N2);
+  scrap_wage.resize(N2);
+  scrap_energy.resize(N2);
+  scrap_emission.resize(N2);
+  scrap_supplier_ok.resize(N2);
+  weight_labprod2.resize(N2);
+  weight_eneff2.resize(N2);
+  held_supplier.resize(N1);
+  held_vintage.resize(N1);
+  marked_count.assign(N2,0);
   mu2.ReSize(2,N2);
   LoanInterest_2.ReSize(N2);
   DebtRemittances2.ReSize(N2);
@@ -2237,18 +2248,17 @@ void MACH(void)
   //stocks of individual machine vintages held by each firm; g is set equal to
   //it to take in everything that happened over the previous period, and g_c,
   //g_c2 and g_c3 are the copies used when calculating C-Firms' production
-  //costs. The firm index is the innermost dimension of these arrays, so
-  //copying a whole vintage row at a time runs down contiguous memory instead
-  //of striding through it once per firm.
-  for (i=1; i<=N1; i++)						
-	{                               
-	 	for (tt=t0; tt<=t; tt++)
-		{
-      g[tt-1][i-1]=gtemp[tt-1][i-1];
-			g_c[tt-1][i-1]=g[tt-1][i-1];
-      g_c2[tt-1][i-1]=g[tt-1][i-1];
-      g_c3[tt-1][i-1]=g[tt-1][i-1];
-    }
+  //costs. All four take the same values, so all four are copied from gtemp,
+  //and a whole period's suppliers and firms lie together, so each is one copy
+  //rather than one per supplier.
+  for (tt=t0; tt<=t; tt++)
+  {
+    const double* source=gtemp[tt-1][0].p;
+    const std::size_t bytes=(std::size_t)N1*N2*sizeof(double);
+    std::memcpy(g[tt-1][0].p, source, bytes);
+    std::memcpy(g_c[tt-1][0].p, source, bytes);
+    std::memcpy(g_c2[tt-1][0].p, source, bytes);
+    std::memcpy(g_c3[tt-1][0].p, source, bytes);
   }
 
 
@@ -2273,6 +2283,27 @@ void MACH(void)
   //accumulates its own terms in the same order, but a vintage's productivity
   //is read once for all firms rather than once per firm, and the firm loop
   //runs down contiguous memory.
+  //The two shock factors below are the same for every vintage a firm holds, so
+  //they are worked out once for the period rather than once for each of the
+  //52 million firm-vintage pairs the loop after this one visits.
+  //
+  //A firm holds units of about two vintages in a hundred, so nearly all of
+  //those pairs contribute a productivity multiplied by a machine count of
+  //zero, which leaves each running total exactly where it was and can be
+  //skipped. That is only true while the divisors are non-zero: with a zero
+  //shock factor the term would be a NaN, which does not leave a total where it
+  //was, so when any firm has one the loop adds every term as before.
+  int weights_sparse=1;
+  for (j=1; j<=N2; j++)
+  {
+    weight_labprod2[j-1]=1-shocks_labprod2(j);
+    weight_eneff2[j-1]=1-shocks_eneff2(j);
+    if (weight_labprod2[j-1]==0 || weight_eneff2[j-1]==0)
+    {
+      weights_sparse=0;
+    }
+  }
+
   for (i=1; i<=N1; i++)
   {
     for (tt=t0; tt<=t; tt++)
@@ -2284,24 +2315,24 @@ void MACH(void)
       const double c_en_2=c_en(2);
       const VintageRow<double> g_it=g[tt-1][i-1];
 
-      //The five running totals and the three per-firm inputs, reached through
-      //their own storage rather than through a bounds-checked accessor apiece:
-      //this loop runs 48 million times a run and did eight of those calls each
-      //time round.
+      //The five running totals and the firm's machine count, reached through
+      //their own storage rather than through a bounds-checked accessor apiece.
       double* c2_s=c2.Store();
       double* A2_s=A2.Store();
       double* A2_mprod_s=A2_mprod.Store();
       double* A2_en_s=A2_en.Store();
       double* A2_ef_s=A2_ef.Store();
-      const double* labprod2_s=shocks_labprod2.Store();
-      const double* eneff2_s=shocks_eneff2.Store();
       const double* n_mach_s=n_mach.Store();
 
       for (j=1; j<=N2; j++)
       {
-        const double labprod2=1-labprod2_s[j-1];
-        const double eneff2=1-eneff2_s[j-1];
         const double g_itj=g_it[j-1];
+        if (weights_sparse && g_itj==0)
+        {
+          continue;
+        }
+        const double labprod2=weight_labprod2[j-1];
+        const double eneff2=weight_eneff2[j-1];
         const double n_machj=n_mach_s[j-1];
 
         c2_s[j-1]+=(w_2/(labprod2*A_it)+c_en_2/(eneff2*A_en_it)+t_CO2*A_ef_it/(eneff2*A_en_it))*g_itj/n_machj;
@@ -2443,6 +2474,10 @@ void BROCHURE(void)
 
 void INVEST(void)
 {
+  //Every firm's scrapping decision, worked out in one sweep before the loop
+  //below rather than once per firm inside it.
+  SCRAPPING();
+
 	for (j=1; j<=N2; j++)
 	{
     //C-firms determine expected demand, desired production, and demand for investment
@@ -2465,8 +2500,6 @@ void INVEST(void)
     //Desired output implies desired capital stock
     Kd(j)=Qd(j)/u;
 
-    //C-firm determines which machines should be scrapped
-    SCRAPPING();	
 
     //Determine the capital stock which the firm will have available in t+1 once aged machines are scrapped
     //Machines scrapped due to age can still be used in t but will be removed at the beginning of t+1
@@ -2533,64 +2566,122 @@ void INVEST(void)
 
 void SCRAPPING(void) 
 {
-  //Put capital stock of j in temporary storage
-  K_temp(j)=K(j)/dim_mach;
-  indsupl=int(supl(j));
-  //C-firm j determines which machines should be scrapped due to age and/or due to superior tech being available
+  //Every C-firm's scrapping decision for this period. The firm is the
+  //innermost dimension of the vintage arrays, so sweeping the firms inside the
+  //vintages reads along memory rather than across it, and reads each vintage's
+  //own quantities once for all firms rather than once per firm.
+  //
+  //Each firm meets its own vintages in the order i then tt, so its running
+  //totals accumulate the same terms in the same sequence they would if it were
+  //the only firm here. Nothing INVEST does between firms touches what this
+  //reads: K, supl, g, age, C, A and the supplier's own productivities are all
+  //left alone there.
+
+  //Per firm, what does not depend on which vintage is being looked at. The
+  //three subtracted terms stay separate rather than being summed here, so the
+  //payback denominator is still evaluated left to right as it was.
+  for (j=1; j<=N2; j++)
+  {
+    K_temp(j)=K(j)/dim_mach;
+    const int supplier=int(supl(j));
+    scrap_p1[j-1]=p1(supplier);
+    scrap_wage[j-1]=w(2)/A1(supplier);
+    scrap_energy[j-1]=c_en(2)/A1_en(supplier);
+    scrap_emission[j-1]=t_CO2*A1_ef(supplier)/A1_en(supplier);
+    scrap_supplier_ok[j-1]=(A1(supplier) > 0 && A1_en(supplier) > 0) ? 1 : 0;
+  }
+  //The supplier index the loop over firms ends on.
+  indsupl=int(supl(N2));
+
+  //Which machines each firm is left wanting to scrap, and what each of them
+  //costs it to run. CANCMACH is the only other place g_pb and C_pb are used,
+  //and it works through this list, so entries outside the list are never read
+  //and the two arrays no longer have to be cleared for every firm and vintage
+  //before they are filled in for the few.
+  marked_capacity=N1*(t-t0+1);
+  if ((int)marked_supplier.size() < N2*marked_capacity)
+  {
+    marked_supplier.resize(N2*marked_capacity);
+    marked_vintage.resize(N2*marked_capacity);
+  }
+  std::fill(marked_count.begin(), marked_count.end(), 0);
+
   for (i=1; i<=N1; i++)
 	{
 		for (tt=t0; tt<=t; tt++)
 		{
-			//Initialise array elements to hold unit cost and quantity of machines to be scrapped
-      C_pb[tt-1][i-1][j-1]=0;
-			g_pb[tt-1][i-1][j-1]=0;
+      const double A_it=A(tt,i);
+      const double A_en_it=A_en(tt,i);
+      const double C_it=C(tt,i);
+      const double w_2=w(2);
 
-      //If a machine has reached its maximum age, it is scrapped, unless the firm has only 1 machine remaining
-      if (g[tt-1][i-1][j-1] > 0 && age[tt-1][i-1][j-1] > (agemax))
-			{   
-        g_pb[tt-1][i-1][j-1]=min(g[tt-1][i-1][j-1],(K_temp(j)-1));
-        C_pb[tt-1][i-1][j-1]=C(tt,i);
-        scrap_age(j)+=dim_mach*g_pb[tt-1][i-1][j-1];	  
-        K_temp(j)-=g_pb[tt-1][i-1][j-1];
-        //If the firm has only one machine left, set the marker_age flag. This will ensure later that
-        //its desired investment is at least 1 machine
-        if(K_temp(j)==1)
+      for (j=1; j<=N2; j++)
+      {
+        //A firm holds units of about two vintages in a hundred, and the rest
+        //reach neither branch below.
+        if (g[tt-1][i-1][j-1]==0)
         {
-          marker_age(j)=1;
-        }
-			}
-
-      //Machines which have not reached their maximum age are scrapped if a superior technology is available from the current supplier
-      //Only enter here if the relevant machines have not already been scrapped due to age
-      if (g[tt-1][i-1][j-1] > 0 && g_pb[tt-1][i-1][j-1]==0)	  
-			{													                            
-        if (w(2) > 0 && A(tt,i) > 0 && A1(indsupl) > 0 && A1_en(indsupl)>0 && A_en(tt,i)>0)
-        {
-          //calculate payback variable: (price of machine)/(unit cost difference offered by the machine)
-          //Payback can be interpreted as number of units which have to be produced with a new machine sucht that
-          //the savings in unit cost are equal to the purchase price of the machine
-          //The first three terms are the unit cost of this vintage, which MACH
-          //put in C(tt,i) this period from the same w(2), c_en(2), t_CO2, A,
-          //A_en and A_ef; nothing between the two touches any of them. They
-          //were being divided out again for every one of the 200 firms.
-          payback=p1(indsupl)/(C(tt,i)-w(2)/A1(indsupl)-c_en(2)/A1_en(indsupl)-t_CO2*A1_ef(indsupl)/A1_en(indsupl));
-        }
-        else 
-        {
-          //All of the variables in the denominators of the formula above should never become zero or negative
-          std::cerr << "\n\n ERROR: payback division by zero in period " << t << " for C-firm "<< j << endl;
-          Errors << "\n Payback division by zero in period " << t << " for C-firm "<< j << endl;
-          exit(EXIT_FAILURE);
+          continue;
         }
 
-        //If payback is smaller than an exogenous threshold, firm wants to replace the machine in question with the newer vintage
-				if (payback <= b && payback>0)
-				{
-					g_pb[tt-1][i-1][j-1]=g[tt-1][i-1][j-1];
-		 			C_pb[tt-1][i-1][j-1]=C(tt,i);			 
-					SId(j)+=dim_mach*g_pb[tt-1][i-1][j-1];
-				}
-			}
+        double scrapped_for_age=0;
+
+        //If a machine has reached its maximum age, it is scrapped, unless the firm has only 1 machine remaining
+        if (g[tt-1][i-1][j-1] > 0 && age[tt-1][i-1][j-1] > (agemax))
+			  {   
+          scrapped_for_age=min(g[tt-1][i-1][j-1],(K_temp(j)-1));
+          g_pb[tt-1][i-1][j-1]=scrapped_for_age;
+          C_pb[tt-1][i-1][j-1]=C_it;
+          if (scrapped_for_age > 0)
+          {
+            marked_supplier[(j-1)*marked_capacity+marked_count[j-1]]=i;
+            marked_vintage[(j-1)*marked_capacity+marked_count[j-1]]=tt;
+            marked_count[j-1]++;
+          }
+          scrap_age(j)+=dim_mach*scrapped_for_age;	  
+          K_temp(j)-=scrapped_for_age;
+          //If the firm has only one machine left, set the marker_age flag. This will ensure later that
+          //its desired investment is at least 1 machine
+          if(K_temp(j)==1)
+          {
+            marker_age(j)=1;
+          }
+			  }
+
+        //Machines which have not reached their maximum age are scrapped if a superior technology is available from the current supplier
+        //Only enter here if the relevant machines have not already been scrapped due to age
+        if (g[tt-1][i-1][j-1] > 0 && scrapped_for_age==0)	  
+			  {													                            
+          if (w_2 > 0 && A_it > 0 && scrap_supplier_ok[j-1] && A_en_it > 0)
+          {
+            //calculate payback variable: (price of machine)/(unit cost difference offered by the machine)
+            //Payback can be interpreted as number of units which have to be produced with a new machine sucht that
+            //the savings in unit cost are equal to the purchase price of the machine
+            //The first three terms are the unit cost of this vintage, which MACH
+            //put in C(tt,i) this period from the same w(2), c_en(2), t_CO2, A,
+            //A_en and A_ef; nothing between the two touches any of them.
+            payback=scrap_p1[j-1]/(C_it-scrap_wage[j-1]-scrap_energy[j-1]-scrap_emission[j-1]);
+          }
+          else 
+          {
+            //All of the variables in the denominators of the formula above should never become zero or negative
+            std::cerr << "\n\n ERROR: payback division by zero in period " << t << " for C-firm "<< j << endl;
+            Errors << "\n Payback division by zero in period " << t << " for C-firm "<< j << endl;
+            exit(EXIT_FAILURE);
+          }
+
+          //If payback is smaller than an exogenous threshold, firm wants to replace the machine in question with the newer vintage
+				  if (payback <= b && payback>0)
+				  {
+					  g_pb[tt-1][i-1][j-1]=g[tt-1][i-1][j-1];
+		 			  C_pb[tt-1][i-1][j-1]=C_it;			 
+					  SId(j)+=dim_mach*g_pb[tt-1][i-1][j-1];
+            marked_supplier[(j-1)*marked_capacity+marked_count[j-1]]=i;
+            marked_vintage[(j-1)*marked_capacity+marked_count[j-1]]=tt;
+            marked_count[j-1]++;
+				  }
+			  }
+      }
 		}
 	}
 }
@@ -2601,21 +2692,40 @@ void COSTPROD(void)
   nmachprod=ceil(Qd(j)/dim_mach);  
 	nmp_temp=nmachprod;
 
-  //The unit cost a vintage implies for j does not change while j draws its
-  //machines down - only the counts in g_c do - so it is worked out once here
-  //rather than twice for every vintage on every pass of the loop below. Same
-  //expression, same operands, same value.
+  //The vintages j actually holds a machine of, with the unit cost each implies
+  //for it. Only these can win the comparison below, so the search runs over
+  //them rather than over every vintage in existence, and only these have their
+  //cost worked out. A firm holds units of about two vintages in a hundred.
+  //
+  //They are collected in the order i and then tt, so vintages of equal cost
+  //resolve in favour of the same one the full scan resolved in favour of. The
+  //cost does not change while j draws its machines down; only the counts in
+  //g_c do.
   const int n_vintage=t-t0+1;
-  if ((int)vintage_cost.size() < N1*n_vintage) vintage_cost.resize(N1*n_vintage);
+  if ((int)vintage_cost.size() < N1*n_vintage)
+  {
+    vintage_cost.resize(N1*n_vintage);
+    held_supplier.resize(N1*n_vintage);
+    held_vintage.resize(N1*n_vintage);
+  }
+  int n_held=0;
   {
     const double w_2=w(2);
-    const double c_en_2=c_en(2);
     const double labprod2=1-shocks_labprod2(j);
     for (i=1; i<=N1; i++)
+    {
       for (tt=t0; tt<=t; tt++)
-        vintage_cost[(i-1)*n_vintage+(tt-t0)]=
-          w_2/(labprod2*A(tt,i))+vintage_energy[(i-1)*n_vintage+(tt-t0)]
-                                +vintage_emission[(i-1)*n_vintage+(tt-t0)];
+      {
+        if (g_c[tt-1][i-1][j-1] > 0)
+        {
+          vintage_cost[n_held]=w_2/(labprod2*A(tt,i))+vintage_energy[(i-1)*n_vintage+(tt-t0)]
+                                                    +vintage_emission[(i-1)*n_vintage+(tt-t0)];
+          held_supplier[n_held]=i;
+          held_vintage[n_held]=tt;
+          n_held++;
+        }
+      }
+    }
   }
 
 	while (nmp_temp > 0)       
@@ -2625,18 +2735,14 @@ void COSTPROD(void)
     jmin=0;
     tmin=0;
 
-    for (i=1; i<=N1; i++)     
+    for (int held=0; held<n_held; held++)
     {
-      for (tt=t0; tt<=t; tt++)
+      if (g_c[held_vintage[held]-1][held_supplier[held]-1][j-1] > 0 && vintage_cost[held] < cmin)
       {
-        const double cost=vintage_cost[(i-1)*n_vintage+(tt-t0)];
-        if (g_c[tt-1][i-1][j-1] > 0 && cost < cmin)
-        {
-          cmin=cost;
-          imin=i;
-          jmin=j;
-          tmin=tt;
-        }          
+        cmin=vintage_cost[held];
+        imin=held_supplier[held];
+        jmin=j;
+        tmin=held_vintage[held];
       }
     }
 
@@ -3111,26 +3217,47 @@ void PRODMACH(void)
   }
 
   //Old machines are scrapped; temporary machine frequency arrays are updated based on expansion & replacement investment
+  //
+  //The three steps below are taken for every firm in turn rather than one firm
+  //at a time. Each firm still has its ages cleared after its own machines have
+  //been scrapped and before its new machines are added, because CANCMACH and
+  //the last loop touch only the firm's own column of these arrays, and
+  //clearing them for all firms at once runs down contiguous memory rather than
+  //across it once per firm.
 	for (j=1; j<=N2; j++)
 	{
-    
     CANCMACH();
+  }
 
-		for (i=1; i<=N1; i++)
-		{
-			if(I_loss(i)>0)
+  for (j=1; j<=N2; j++)
+  {
+    for (i=1; i<=N1; i++)
+    {
+      if(I_loss(i)>0)
       {
         I_loss_share+=1;
       }
-      for (tt=t0; tt<=t; tt++)
-			{
-				if (gtemp[tt-1][i-1][j-1] == 0)
-        {
-					age[tt-1][i-1][j-1]=0;
-        }
-			}
-		}
+    }
+  }
 
+  for (i=1; i<=N1; i++)
+  {
+    for (tt=t0; tt<=t; tt++)
+    {
+      const VintageRow<double> gtemp_it=gtemp[tt-1][i-1];
+      const VintageRow<int> age_it=age[tt-1][i-1];
+      for (j=1; j<=N2; j++)
+      {
+        if (gtemp_it[j-1] == 0)
+        {
+          age_it[j-1]=0;
+        }
+      }
+    }
+  }
+
+	for (j=1; j<=N2; j++)
+	{
 		indsupl=int(supl(j));
 		gtemp[t-1][indsupl-1][j-1]+=I(j)/dim_mach;
     g_price[t-1][indsupl-1][j-1]=p1(indsupl);
@@ -3537,10 +3664,13 @@ void CANCMACH(void)
   if(scrapmax>0)
   {
     //First scrap machines which are too old, then ones with high production cost
-    for (i=1; i<=N1; i++)
-    {									      
-      for (tt=t0; tt<=t; tt++)
+    //Only machines SCRAPPING marked can appear here, and it recorded them in
+    //the order i and then tt.
+    for (int marked=0; marked<marked_count[j-1]; marked++)
+    {
       {
+        i=marked_supplier[(j-1)*marked_capacity+marked];
+        tt=marked_vintage[(j-1)*marked_capacity+marked];
         if (scrapmax > 0 && g_pb[tt-1][i-1][j-1] > 0 && age[tt-1][i-1][j-1]>(agemax))
         {
           if (g_pb[tt-1][i-1][j-1] >= scrapmax)	  
@@ -3566,16 +3696,15 @@ void CANCMACH(void)
   {
     cmax=0;
 
-    for (i=1; i<=N1; i++)    
-	  {                       
-	 	  for (tt=t0; tt<=t; tt++)
-		  {
-        if (g_pb[tt-1][i-1][j-1] > 0 && C_pb[tt-1][i-1][j-1] > cmax)
-        {
-          ind_i=i;					           
-          ind_tt=tt;
-          cmax=C_pb[tt-1][i-1][j-1];
-        }
+    for (int marked=0; marked<marked_count[j-1]; marked++)
+    {
+      i=marked_supplier[(j-1)*marked_capacity+marked];
+      tt=marked_vintage[(j-1)*marked_capacity+marked];
+      if (g_pb[tt-1][i-1][j-1] > 0 && C_pb[tt-1][i-1][j-1] > cmax)
+      {
+        ind_i=i;					           
+        ind_tt=tt;
+        cmax=C_pb[tt-1][i-1][j-1];
       }
     }
 
@@ -4977,7 +5106,11 @@ void ENTRYEXIT(void)
   //The cheapest second-hand machine still on offer. It only moves when one is
   //taken below, so it is worked out here and again after each is taken rather
   //than rescanned for every vintage of every exiting firm.
-  double min_secondhand=C_secondhand.Minimum();
+  //
+  //Only the vintages still in use carry a price: the rest of the matrix is set
+  //to infinity for the period and cannot hold the minimum, so the scan covers
+  //434 entries rather than all 12,000.
+  double min_secondhand=RowRangeMinimum(C_secondhand,t0,t);
   while(n_mach_exit2>0)
   {
     for(j=1; j<=N2; j++)
@@ -5003,7 +5136,7 @@ void ENTRYEXIT(void)
               }
               n_mach_exit2-=min(n_mach_exit2,gtemp[tt-1][i-1][j-1]);
               C_secondhand(tt,i)=1000000;
-              min_secondhand=C_secondhand.Minimum();
+              min_secondhand=RowRangeMinimum(C_secondhand,t0,t);
             }
           }
         }
@@ -6518,13 +6651,21 @@ void UPDATE(void)
     mu2(2,j)=mu2(1,j);
     CapitalStock(2,j)=CapitalStock(1,j);
     NW_2(2,j)=NW_2(1,j);
+  }
 
-    for (i=1; i<=N1; i++)
+  //Machines held get a period older. Doing this for every firm at once rather
+  //than inside the loop above runs down contiguous memory instead of across it
+  //once per firm; each entry is still incremented exactly once.
+  for (i=1; i<=N1; i++)
+  {
+    for (tt=t0; tt<=t; tt++)
     {
-      for (tt=t0; tt<=t; tt++)
+      const VintageRow<double> gtemp_it=gtemp[tt-1][i-1];
+      const VintageRow<int> age_it=age[tt-1][i-1];
+      for (j=1; j<=N2; j++)
       {
-        if (gtemp[tt-1][i-1][j-1] > 0){
-          age[tt-1][i-1][j-1]=age[tt-1][i-1][j-1]+1;
+        if (gtemp_it[j-1] > 0){
+          age_it[j-1]=age_it[j-1]+1;
         }
       }
     }

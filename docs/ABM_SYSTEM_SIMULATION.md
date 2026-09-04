@@ -53,6 +53,36 @@ arbitrary: `taylor1` starting exactly at 1 is where the Taylor principle binds,
 and `taylor` confined to $(0,1)$ is the shape of an interest-rate smoothing
 coefficient. Neither is verified against the model's source here.
 
+### The shock flags stay off
+
+Seven flags in the model's parameter file switch on exogenous shock channels:
+`flag_capshocks`, `flag_encapshocks`, `flag_inventshocks`, `flag_outputshocks`,
+`flag_popshocks`, `flag_prodshocks1` and `flag_prodshocks2`. They damage a
+firm's capital stock, the energy sector's capital, inventories, output,
+population, and the two productivity series respectively. All seven are zero in
+`model/dsk_sfc/dsk_sfc_inputs.json` and every run of this experiment leaves
+them there: the simulator's `flags` block is not written by
+`applications/abm_system_simulate.c`, which rewrites the nine design parameters
+and `T` in the `params` block and nothing else.
+
+They should stay off, for a reason that belongs to the design rather than to
+the model. A shock channel draws from a beta distribution whose parameters
+`X_a` and `X_b` are part of the calibration and are not sampled, so switching
+one on adds a stochastic process that varies across replications but not across
+configurations. The experiment compares configurations through an auxiliary
+model fitted to the simulated series; a process that is identical in
+distribution at every design point contributes nothing to that comparison and
+widens the spread each configuration's own replications show, which is the
+denominator the comparison is read against. It would also consume random draws
+and so weaken the common random numbers described below, which the mechanism
+already makes fragile.
+
+Turning them on is a different experiment - the climate damage question the DSK
+model was built for - and it would need the shock distribution's parameters in
+the design. It would also need the byte-equality check in
+`docs/DSK_MODEL_CHANGES.md` re-run at those flag settings, because that check
+has only ever been run with the flags at zero.
+
 ## The design
 
 The design is a file, `dataset/abm_system_design.csv`, drawn by
@@ -324,13 +354,35 @@ smooth and growth rates are noise, but the fit would then have to transform
 what it reads, which is not what the fit is for. The full experiment is
 $1000 \times 1000 = 10^6$ model executions.
 
-The only timing available is a single one: one 600-step run of the optimised
-build took about 18 seconds on the machine where this design was prepared. It
-is one run, not repeated, not on the hardware the experiment would use, and it
-is quoted here because it is the entire basis of the arithmetic that follows:
-$10^{6} \times 18\ \text{s} = 1.8 \times 10^{7}\ \text{s}$, about 5000
-core-hours. That number should be treated as an order of magnitude and
-re-measured on the target machine before anything is committed to a queue.
+One 600-step run of the build this project uses takes 1.570 seconds: seed 1 at
+the baseline calibration, this build and upstream's alternated three times each
+on an idle machine, median reported, upstream 34.840 seconds against it. So the
+serial arithmetic is
+$10^{6} \times 1.570\ \text{s} = 1.57 \times 10^{6}\ \text{s}$, about 436
+core-hours, against roughly 9700 for the build upstream ships.
+`docs/DSK_MODEL_CHANGES.md` records what was changed to get there and what the
+changes are tested to leave alone.
+
+Core-hours are not what the queue charges, because the runs do not scale with
+the cores. Measured on the machine this was prepared on - a Ryzen 7 4800H,
+eight cores with two threads each, 7 GB - ten runs per concurrent process,
+seeds counting up, nothing else running:
+
+| concurrent runs | runs per minute |
+|---:|---:|
+| 1 | 38.2 |
+| 4 | 105.8 |
+| 8 | 130.2 |
+| 16 | 120.2 |
+
+Throughput peaks at eight and falls at sixteen, which is what running two
+threads on each of eight cores does when both threads want memory. A million
+runs at 130 a minute is 5.3 days of this machine. The ratio between one run and
+saturated throughput is the number to carry to a cluster: a run is 22 times
+faster than upstream's but saturated throughput is only 1.7 times what it was,
+because concurrent runs compete for one memory system. Re-measure that table on
+the target machine before committing anything to a queue; a node with more
+memory bandwidth per core will sit closer to the serial figure.
 
 The experiment is embarrassingly parallel along the configuration index and
 along nothing else that is worth exploiting: one task per configuration, its
@@ -338,13 +390,15 @@ replications run sequentially inside it. Which configurations a single
 invocation simulates is an argument, so the whole design is one command on one
 machine and one configuration per job on a cluster, with no separate driver
 between them. An array already on disk is skipped rather than recomputed, which
-is what makes an interrupted run resumable and a job array re-submittable. Each task copies the executable to
-node-local scratch, because the model writes its output into the directory
-holding the executable - concurrent tasks sharing one copy would overwrite each
-other's results and put a million small writes on a shared filesystem.
+is what makes an interrupted run resumable and a job array re-submittable. Each
+task reaches the executable through a symlink in its own scratch directory,
+because the model writes its output into the directory holding the path it was
+invoked as - concurrent tasks sharing one
+directory would overwrite each other's results and put a million small writes on
+a shared filesystem.
 
 Before the full design, run a handful of configurations at the corners of the
 box with a few replications each. What that pilot checks is not correctness of
 the pipeline but the failure rate: the completion count is the one quantity
 whose behaviour across the parameter space cannot be predicted from the design
-and determines whether the experiment as specified is worth its 5000 hours.
+and determines whether the experiment as specified is worth its 436 hours.

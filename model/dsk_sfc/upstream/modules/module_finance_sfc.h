@@ -3,7 +3,6 @@
 
 #include <iostream>
 #include <algorithm>
-#include <vector>
 #include <iomanip>
 #include <stdlib.h>
 #include <time.h>
@@ -77,7 +76,6 @@ extern Matrix           DebtServiceToSales2_bank;
 extern Matrix           BankMatch_2;
 extern Matrix           BankMatch_1;
 extern RowVector        DebtServiceToSales2_temp; 
-extern std::vector<int> DS2_order;
 extern int              DS2_min_index; 
 extern Matrix           DS2_rating;
 extern Matrix           DebtService_2;

@@ -287,6 +287,20 @@ RowVector        DebtServiceToSales2;                        // C-firms' debt se
 Matrix           DebtService_2;                              // C-firms' debt service
 Real             DS2_min;                                    // Minimum debt service to sales ratio
 RowVector        DebtServiceToSales2_temp;                   // Temporary storage for C-firms' debt service to sales ratio
+std::vector<int> DS2_order;                                  // firm indices being ranked by debt service
+std::vector<double> scrap_p1;                                // SCRAPPING's per-firm supplier price and the three terms it subtracts
+std::vector<double> scrap_wage;
+std::vector<double> scrap_energy;
+std::vector<double> scrap_emission;
+std::vector<int> scrap_supplier_ok;
+std::vector<double> weight_labprod2;                         // MACH's per-firm shock factors, one value per period rather than per vintage
+std::vector<double> weight_eneff2;
+std::vector<int> held_supplier;                              // COSTPROD's shortlist of the vintages the firm holds
+std::vector<int> held_vintage;
+std::vector<int> marked_supplier;                            // The machines SCRAPPING marked, per firm, for CANCMACH to work through
+std::vector<int> marked_vintage;
+std::vector<int> marked_count;
+int marked_capacity;
 RowVector        k;                                          // Ranking of C-firms' debt service to sales ratio
 RowVector        r_deb_h;                                    // Borrowing rate charged to individual C-firms
 RowVector        FirmDefaultProbability;                     // Probability of default of individual C-firms estimated by banks

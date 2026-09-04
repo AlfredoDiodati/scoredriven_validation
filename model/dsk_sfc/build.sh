@@ -32,7 +32,7 @@ if [ "$1" = "--upstream" ]; then
     trap 'rm -rf "$source_dir"' EXIT
     cp -a "$PWD/." "$source_dir/"
     cp "$PWD/upstream/dsk_sfc_main.cpp" "$PWD/upstream/dsk_sfc_globalvars.h" "$source_dir/"
-    cp "$PWD/upstream/modules/module_finance_sfc.cpp" "$source_dir/modules/"
+    cp "$PWD/upstream/modules/module_finance_sfc.cpp" "$PWD/upstream/modules/module_finance_sfc.h" "$source_dir/modules/"
 fi
 
 obj="$(mktemp -d)"

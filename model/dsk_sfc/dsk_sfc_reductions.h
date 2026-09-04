@@ -49,4 +49,21 @@ static inline Real ColumnMinimum1(const Matrix& M, int col, int& index)
    return minval;
 }
 
+// Minimum over a block of whole rows, with GeneralMatrix::Minimum's own scan
+// and comparison, for the case where the rest of the matrix is known to hold
+// values that cannot win.
+static inline Real RowRangeMinimum(const Matrix& M, int firstRow, int lastRow)
+{
+   const int ncols = M.Ncols();
+   const Real* s = M.Store() + (size_t)(firstRow - 1) * ncols;
+   const size_t n = (size_t)(lastRow - firstRow + 1) * ncols;
+   Real minval = *s++;
+   for (size_t k = 1; k < n; k++)
+   {
+      const Real a = *s++;
+      if (minval > a) minval = a;
+   }
+   return minval;
+}
+
 #endif
