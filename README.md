@@ -45,6 +45,12 @@ which puts the experiment at roughly 9800 core-hours: 73 days of the desktop it
 was measured on. It now takes 0.528 seconds, 147 core-hours, 1.7 days - 65 times
 faster.
 
+Those are one machine's numbers - an 8-core AMD Ryzen 7 4800H with 7.5 GB, built
+with g++ 15.2.1 - and they do not carry to another without being measured again.
+`docs/DSK_MODEL_CHANGES.md` gives the full specification and says which parts of
+it each figure depends on; the cache size in particular decides how much of the
+speedup survives when several runs share a machine.
+
 None of that came from changing what the model computes. It came from how the
 program stores its data and how often it repeats itself:
 

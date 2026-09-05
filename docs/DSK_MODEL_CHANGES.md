@@ -71,7 +71,8 @@ paper over here.
 ## Why any of this
 
 The experiment is a million runs. At the speed upstream ships, that is 73 days
-of this machine; at the speed here it is 1.7. Nothing else about the model is
+of the machine specified in the next section; at the speed here it is 1.7, and
+both figures belong to that machine alone. Nothing else about the model is
 touched, and nothing that touches a number is allowed: every change below
 produces output identical to upstream's, byte for byte, which is what
 `tests/dsk_build_equivalence.c` checks rather than assumes.
@@ -408,8 +409,9 @@ that costs more than a store in the middle of the existing loop.
 The round above ran into a wall that was not in the code: one run kept getting
 faster and the throughput of eight concurrent runs stopped moving. Two changes
 worth 9.8% and 4.9% each left saturated throughput where it was. Eight runs at
-once were thrashing a shared 8 MB cache with about 4 MB of live machine arrays
-apiece, so the constraint had stopped being instructions and become memory.
+once were thrashing the L3: four of them share an 8 MiB slice, and each held
+about 4 MB of live machine array, so the constraint had stopped being
+instructions and become memory.
 
 Three of the nine arrays indexed `[period][supplier][firm]` - 19 MB each, 2.4
 million doubles - turned out to exist only so that one function could destroy a
@@ -864,9 +866,9 @@ and not for that one.
 ## Why it would not have helped anyway
 
 Even a parallelisation that did speed up one run would not shorten this
-experiment. Concurrent independent runs on this machine - a Ryzen 7 4800H, 8
-cores with two threads each, 7 GB - in runs per minute, ten runs per concurrent
-process, seeds 1 upward, nothing else running:
+experiment. Concurrent independent runs on the machine described above, in runs
+per minute, ten runs per concurrent process, seeds 1 upward, nothing else
+running:
 
 | concurrent runs | this build | upstream's |
 |---:|---:|---:|
@@ -907,8 +909,8 @@ the machine during that batch.
 
 Memory is the other limit, and for most of this work it was the binding one. A
 run peaked at 165 MB resident in both builds, so sixteen at once was 2.6 GB on a
-7 GB machine, and eight at once held far more live machine array than the shared
-8 MB cache. Dropping three of the nine machine arrays took this build to 74 MB
-against upstream's 166, and that with the ageing sweep gone is where the jump
-from 221 to 418 runs a minute came from. On a cluster the same figure decides
-how many jobs fit on a node.
+7.5 GB machine, and eight at once held far more live machine array than the
+8 MiB L3 slice each group of four cores shares. Dropping three of the nine
+machine arrays took this build to 74 MB against upstream's 166, and that with
+the ageing sweep gone is where the jump from 221 to 418 runs a minute came from.
+On a cluster the same figure decides how many jobs fit on a node.

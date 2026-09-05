@@ -354,19 +354,25 @@ smooth and growth rates are noise, but the fit would then have to transform
 what it reads, which is not what the fit is for. The full experiment is
 $1000 \times 1000 = 10^6$ model executions.
 
+Every figure in this section was measured on one machine: an AMD Ryzen 7 4800H,
+8 cores with 2 threads each, 32 KiB of L1 data and 512 KiB of L2 per core, two
+8 MiB L3 slices with four cores on each, 7.5 GB of memory, g++ 15.2.1 on Linux
+6.19.14. None of it carries to another machine without being measured again, and
+the L3 in particular is what the concurrency figures below turn on.
+
 One 600-step run of the build this project uses takes 0.528 seconds: seed 1 at
 the baseline calibration, this build and upstream's alternated three times each
-on an idle machine, median reported, upstream 34.33 seconds against it. So the
-serial arithmetic is
-$10^{6} \times 0.630\ \text{s} = 0.63 \times 10^{6}\ \text{s}$, about 147
+on an idle machine already warmed, median reported, upstream 34.33 seconds
+against it. Warming matters: the governor idles to 1.4 GHz and the first runs
+after a pause come in half as fast again. So the serial arithmetic is
+$10^{6} \times 0.528\ \text{s} = 0.53 \times 10^{6}\ \text{s}$, about 147
 core-hours, against roughly 9800 for the build upstream ships.
 `docs/DSK_MODEL_CHANGES.md` records what was changed to get there and what the
 changes are tested to leave alone.
 
 Core-hours are not what the queue charges, because the runs do not scale with
-the cores. Measured on the machine this was prepared on - a Ryzen 7 4800H,
-eight cores with two threads each, 7 GB - ten runs per concurrent process,
-seeds counting up, nothing else running:
+the cores. On the same machine, ten runs per concurrent process, seeds counting
+up, nothing else running:
 
 | concurrent runs | runs per minute |
 |---:|---:|
