@@ -354,11 +354,11 @@ smooth and growth rates are noise, but the fit would then have to transform
 what it reads, which is not what the fit is for. The full experiment is
 $1000 \times 1000 = 10^6$ model executions.
 
-One 600-step run of the build this project uses takes 0.677 seconds: seed 1 at
+One 600-step run of the build this project uses takes 0.528 seconds: seed 1 at
 the baseline calibration, this build and upstream's alternated three times each
-on an idle machine, median reported, upstream 35.28 seconds against it. So the
+on an idle machine, median reported, upstream 34.33 seconds against it. So the
 serial arithmetic is
-$10^{6} \times 0.677\ \text{s} = 0.68 \times 10^{6}\ \text{s}$, about 188
+$10^{6} \times 0.630\ \text{s} = 0.63 \times 10^{6}\ \text{s}$, about 147
 core-hours, against roughly 9800 for the build upstream ships.
 `docs/DSK_MODEL_CHANGES.md` records what was changed to get there and what the
 changes are tested to leave alone.
@@ -370,21 +370,22 @@ seeds counting up, nothing else running:
 
 | concurrent runs | runs per minute |
 |---:|---:|
-| 1 | 89.8 |
-| 4 | 279.4 |
-| 8 | 320.8 |
-| 16 | 281.5 |
+| 1 | 111.5 |
+| 4 | 341.6 |
+| 8 | 417.9 |
+| 16 | 356.0 |
 
 Throughput peaks at eight and falls at sixteen, which is what running two
 threads on each of eight cores does when both threads want memory. A million
-runs at 321 a minute is 2.2 days of this machine. The ratio between one run and
-saturated throughput is the number to carry to a cluster: a run is 52 times
-faster than upstream's but saturated throughput is 4.2 times what it was,
+runs at 418 a minute is 1.7 days of this machine. The ratio between one run and
+saturated throughput is the number to carry to a cluster: a run is 65 times
+faster than upstream's but saturated throughput is 5.5 times what it was,
 because concurrent runs compete for one memory system. Which of the two a change
 moves depends on what it removes: changes that took out instructions stopped
 raising throughput entirely at about 220 runs a minute, and the ones that took
 out memory - three of the model's nine machine arrays, and its footprint from
-163 MB to 74 - raised it to 321 while barely touching the single-run time.
+163 MB to 74, and the per-period ageing of every machine - raised it to 418
+while barely touching the single-run time.
 Re-measure the table on the target machine before committing anything to a
 queue, and note that the footprint decides how many runs fit on a node as much
 as the rate decides how fast they go.
@@ -406,4 +407,4 @@ Before the full design, run a handful of configurations at the corners of the
 box with a few replications each. What that pilot checks is not correctness of
 the pipeline but the failure rate: the completion count is the one quantity
 whose behaviour across the parameter space cannot be predicted from the design
-and determines whether the experiment as specified is worth its 188 hours.
+and determines whether the experiment as specified is worth its 147 hours.

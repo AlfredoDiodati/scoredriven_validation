@@ -40,9 +40,9 @@ opinion about it.
 ### Made to run a million times
 
 The validation needs 1000 parameter configurations simulated 1000 times each. At
-the speed the published code runs, one 600-period simulation takes 35.3 seconds,
+the speed the published code runs, one 600-period simulation takes 34.3 seconds,
 which puts the experiment at roughly 9800 core-hours: 73 days of the desktop it
-was measured on. It now takes 0.677 seconds, 188 core-hours, 2.2 days - 52 times
+was measured on. It now takes 0.528 seconds, 147 core-hours, 1.7 days - 65 times
 faster.
 
 None of that came from changing what the model computes. It came from how the
@@ -95,7 +95,7 @@ them; `docs/DSK_MODEL_CHANGES.md` names exactly what that leaves uncovered.
 
 That is a stronger guarantee than statistical agreement. Two runs that agree byte
 for byte cannot be told apart by any test, so the question of whether the faster
-version drifts away from the published one does not arise. Fourteen further
+version drifts away from the published one does not arise. Seventeen further
 changes were tried, measured, and dropped for not being faster.
 `docs/DSK_MODEL_CHANGES.md` holds the whole record: every change, every timing
 and the setup it was taken under, every rejected attempt, and what the test does

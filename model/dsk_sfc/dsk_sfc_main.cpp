@@ -1177,7 +1177,7 @@ void RESIZE(void)
   Emiss_TOT=0;
 
   //One block each, zeroed, instead of T times N1 separate row allocations.
-  age.resize3(T,N1,N2);
+  acquired.resize3(T,N1,N2);
   //Only ADJUSTEMISSENLAB reads these, and only the two flag_capshocks branches
   //in PRODMACH reach it. With that flag off nothing reads them, so nothing
   //allocates them either: two arrays of 19 MB that would otherwise be faulted
@@ -1896,7 +1896,7 @@ void INITIALIZE(int Exseed)
           g_c2[0][i-1][j-1]++;
           g_c3[0][i-1][j-1]++;
         }
-				age[0][i-1][j-1]=age0;
+				acquired[0][i-1][j-1]=1-age0;
         n_mach(j)--;
 			}
 		}
@@ -2262,14 +2262,17 @@ void MACH(void)
   //g_c2 and g_c3 are read in one place, ADJUSTEMISSENLAB, which is reached only
   //from the two flag_capshocks branches in PRODMACH. With that flag off nothing
   //reads them, so they are refreshed only when something will.
+  //g itself is not copied here. The weighted-average loop below reads every one
+  //of these counts anyway, so it takes them from gtemp and writes g as it goes,
+  //which reads the live vintages once for the period instead of once to copy
+  //and once to use.
   const int capital_shocks_run=(flag_capshocks!=0);
-  for (tt=t0; tt<=t; tt++)
+  if (capital_shocks_run)
   {
-    const double* source=gtemp[tt-1][0].p;
-    const std::size_t bytes=(std::size_t)N1*N2*sizeof(double);
-    std::memcpy(g[tt-1][0].p, source, bytes);
-    if (capital_shocks_run)
+    for (tt=t0; tt<=t; tt++)
     {
+      const double* source=gtemp[tt-1][0].p;
+      const std::size_t bytes=(std::size_t)N1*N2*sizeof(double);
       std::memcpy(g_c2[tt-1][0].p, source, bytes);
       std::memcpy(g_c3[tt-1][0].p, source, bytes);
     }
@@ -2356,6 +2359,10 @@ void MACH(void)
       const double A_ef_it=A_ef(tt,i);
       const double w_2=w(2);
       const double c_en_2=c_en(2);
+      //This vintage's counts, and where the period's snapshot of them goes. The
+      //loop below reads each one from gtemp and writes it to g on the way past,
+      //which is the copy that used to be a pass of its own.
+      const VintageRow<double> gtemp_it=gtemp[tt-1][i-1];
       const VintageRow<double> g_it=g[tt-1][i-1];
 
       //The five running totals and the firm's machine count, reached through
@@ -2382,7 +2389,9 @@ void MACH(void)
       {
         for (; j+3<=N2; j+=4)
         {
-          if (g_it[j-1]==0 && g_it[j]==0 && g_it[j+1]==0 && g_it[j+2]==0)
+          const double v0=gtemp_it[j-1], v1=gtemp_it[j], v2=gtemp_it[j+1], v3=gtemp_it[j+2];
+          g_it[j-1]=v0; g_it[j]=v1; g_it[j+1]=v2; g_it[j+2]=v3;
+          if (v0==0 && v1==0 && v2==0 && v3==0)
           {
             continue;
           }
@@ -2412,7 +2421,8 @@ void MACH(void)
 
       for (; j<=N2; j++)
       {
-        const double g_itj=g_it[j-1];
+        const double g_itj=gtemp_it[j-1];
+        g_it[j-1]=g_itj;
         if (weights_sparse && g_itj==0)
         {
           continue;
@@ -2488,12 +2498,12 @@ void BROCHURE(void)
   }
   
   //K-firms send brochures to potential customers
-	for (i=1; i<=N1; i++)  
-	{							        
+	for (i=1; i<=N1; i++)
+	{
 		//Count number of C-Firms matched to K-Firm i
     for (j=1; j<=N2; j++)
     {
-			nclient(i)+=Match(j,i);  
+			nclient(i)+=Match(j,i);
     }
 
     //Number of brochures sent is a function of number of existing clients
@@ -2516,21 +2526,36 @@ void BROCHURE(void)
 	}
 
   //C-firms choose their preferred supplier of machine tools
+  //
+  //The prices, productivities and matches below are reached through their own
+  //storage. Each of the 4000 firm-supplier pairs a period asks for about ten of
+  //them, and every one of those calls tests its subscripts and can throw.
+  {
+  const double w_2=w(2);
+  const double c_en_2=c_en(2);
+  const double* p1_s=p1.Store();
+  const double* A1_s=A1.Store();
+  const double* A1_en_s=A1_en.Store();
+  const double* A1_ef_s=A1_ef.Store();
+  double* supl_s=supl.Store();
+  double* Match_s=Match.Store();
+
   for (j=1; j<=N2; j++)
 	{
 		//current supplier of j as integer
-    indsupl=int(supl(j));
+    indsupl=int(supl_s[j-1]);
+    double* match_j=Match_s+(size_t)(j-1)*N1;
 		for (i=1; i<=N1; i++)
 		{
-			if (A1(i) > 0)
+			if (A1_s[i-1] > 0)
 			{
         //If j has received a brochure from i and i's technology is more convenient, j switches
-        if (Match(j,i)==1 && p1(i)+(w(2)/A1(i)+c_en(2)/A1_en(i)+t_CO2*A1_ef(i)/A1_en(i))*b < p1(indsupl)+(w(2)/A1(indsupl)+ c_en(2)/A1_en(indsupl)+t_CO2*A1_ef(indsupl)/A1_en(indsupl))*b)
+        if (match_j[i-1]==1 && p1_s[i-1]+(w_2/A1_s[i-1]+c_en_2/A1_en_s[i-1]+t_CO2*A1_ef_s[i-1]/A1_en_s[i-1])*b < p1_s[indsupl-1]+(w_2/A1_s[indsupl-1]+ c_en_2/A1_en_s[indsupl-1]+t_CO2*A1_ef_s[indsupl-1]/A1_en_s[indsupl-1])*b)
         {
           indsupl=i;
         }
 			}
-			else 
+			else
       {
         //Technology offered by i should imply a positive labour productivity
         std::cerr << "\n\n ERROR: A1(i) = 0 in period " << t << " for K-firm "<< i << endl;
@@ -2539,18 +2564,19 @@ void BROCHURE(void)
       }
     }
     //Update supplier of j
-		supl(j)=indsupl;
-		
+		supl_s[j-1]=indsupl;
+
     //Reset the K-Firm C-Firm network by setting the entries of all i from which j has received
     //brochures but which j did not choose as its supplier to zero
     for (i=1; i<=N1; i++)
 		{
 			if (i != indsupl)
       {
-				Match(j,i)=0;
+				match_j[i-1]=0;
       }
 		}
 	}
+  }
 
   //Update the number of clients of each K-Firm
 	nclient=0;
@@ -2727,7 +2753,7 @@ void SCRAPPING(void)
         double scrapped_for_age=0;
 
         //If a machine has reached its maximum age, it is scrapped, unless the firm has only 1 machine remaining
-        if (g[tt-1][i-1][j-1] > 0 && age[tt-1][i-1][j-1] > (agemax))
+        if (g[tt-1][i-1][j-1] > 0 && t-acquired[tt-1][i-1][j-1] > (agemax))
 			  {
           scrapped_for_age=min(g[tt-1][i-1][j-1],(K_temp(j)-1));
           if (scrapped_for_age > 0)
@@ -2810,14 +2836,28 @@ void COSTPROD(void)
     vintage_cost.resize(N1*n_vintage);
     held_machines.resize(N1*n_vintage);
   }
+  //The productivities of a vintage and j's own two shock factors, reached
+  //through their own storage rather than through a bounds-checked accessor
+  //apiece: the loop below makes about fourteen of those calls on every one of
+  //its passes, and the factors are the same number every time.
+  const double w_2=w(2);
+  const double c_en_2=c_en(2);
+  const double labprod2=1-shocks_labprod2(j);
+  const double eneff2=1-shocks_eneff2(j);
+  const double* A_s=A.Store();
+  const double* A_en_s=A_en.Store();
+  const double* A_ef_s=A_ef.Store();
+  double* A2e_s=A2e.Store();
+  double* A2e_en_s=A2e_en.Store();
+  double* A2e_ef_s=A2e_ef.Store();
+  double* c2e_s=c2e.Store();
+
   {
-    const double w_2=w(2);
-    const double labprod2=1-shocks_labprod2(j);
     for (int entry=0; entry<n_held; entry++)
     {
       const int supplier=held_supplier[held_base+entry];
       const int vintage=held_vintage[held_base+entry];
-      vintage_cost[entry]=w_2/(labprod2*A(vintage,supplier))
+      vintage_cost[entry]=w_2/(labprod2*A_s[(size_t)(vintage-1)*N1+(supplier-1)])
                          +vintage_energy[(supplier-1)*n_vintage+(vintage-t0)]
                          +vintage_emission[(supplier-1)*n_vintage+(vintage-t0)];
       held_machines[entry]=g[vintage-1][supplier-1][j-1];
@@ -2846,21 +2886,26 @@ void COSTPROD(void)
 
     if (nmachprod>0)
     {
+      const size_t chosen_vintage=(size_t)(tmin-1)*N1+(imin-1);
+      const double A_chosen=A_s[chosen_vintage];
+      const double A_en_chosen=A_en_s[chosen_vintage];
+      const double A_ef_chosen=A_ef_s[chosen_vintage];
+
       if (held_machines[chosen] >= nmp_temp)
       {
-        A2e(j)+=(1-shocks_labprod2(j))*A(tmin,imin)*nmp_temp/nmachprod;
-        A2e_en(j)+=(1-shocks_eneff2(j))*A_en(tmin,imin)*nmp_temp/nmachprod;
-        A2e_ef(j)+=A_ef(tmin,imin)*nmp_temp/nmachprod;
-        c2e(j)+=(w(2)/((1-shocks_labprod2(j))*A(tmin,imin))+c_en(2)/((1-shocks_eneff2(j))*A_en(tmin,imin))+t_CO2*A_ef(tmin,imin)/((1-shocks_eneff2(j))*A_en(tmin,imin)))*nmp_temp/nmachprod;
+        A2e_s[j-1]+=labprod2*A_chosen*nmp_temp/nmachprod;
+        A2e_en_s[j-1]+=eneff2*A_en_chosen*nmp_temp/nmachprod;
+        A2e_ef_s[j-1]+=A_ef_chosen*nmp_temp/nmachprod;
+        c2e_s[j-1]+=(w_2/(labprod2*A_chosen)+c_en_2/(eneff2*A_en_chosen)+t_CO2*A_ef_chosen/(eneff2*A_en_chosen))*nmp_temp/nmachprod;
         held_machines[chosen]-= nmp_temp;
         nmp_temp=0;
       }
       else
       {
-        A2e(j)+=(1-shocks_labprod2(j))*A(tmin,imin)*held_machines[chosen]/nmachprod;
-        A2e_en(j)+=(1-shocks_eneff2(j))*A_en(tmin,imin)*held_machines[chosen]/nmachprod;
-        A2e_ef(j)+=A_ef(tmin,imin)*held_machines[chosen]/nmachprod;
-        c2e(j)+=(w(2)/((1-shocks_labprod2(j))*A(tmin,imin))+c_en(2)/((1-shocks_eneff2(j))*A_en(tmin,imin))+t_CO2*A_ef(tmin,imin)/((1-shocks_eneff2(j))*A_en(tmin,imin)))*held_machines[chosen]/nmachprod;
+        A2e_s[j-1]+=labprod2*A_chosen*held_machines[chosen]/nmachprod;
+        A2e_en_s[j-1]+=eneff2*A_en_chosen*held_machines[chosen]/nmachprod;
+        A2e_ef_s[j-1]+=A_ef_chosen*held_machines[chosen]/nmachprod;
+        c2e_s[j-1]+=(w_2/(labprod2*A_chosen)+c_en_2/(eneff2*A_en_chosen)+t_CO2*A_ef_chosen/(eneff2*A_en_chosen))*held_machines[chosen]/nmachprod;
         nmp_temp-=held_machines[chosen];
         held_machines[chosen]=0;
       }
@@ -3360,7 +3405,7 @@ void PRODMACH(void)
 		if (I(j) > 0)
 		{
 			if (gtemp[t-1][indsupl-1][j-1] == I(j)/dim_mach){
-        age[t-1][indsupl-1][j-1]=0;
+        acquired[t-1][indsupl-1][j-1]=t;
       }
 		}
 	}
@@ -3765,7 +3810,7 @@ void CANCMACH(void)
       const int entry=(j-1)*marked_capacity+marked;
       i=marked_supplier[entry];
       tt=marked_vintage[entry];
-      if (scrapmax > 0 && marked_machines[entry] > 0 && age[tt-1][i-1][j-1]>(agemax))
+      if (scrapmax > 0 && marked_machines[entry] > 0 && t-acquired[tt-1][i-1][j-1]>(agemax))
       {
         if (marked_machines[entry] >= scrapmax)
         {
@@ -5228,9 +5273,9 @@ void ENTRYEXIT(void)
           {
             if (gtemp[tt-1][i-1][j-1]>0 && n_mach_exit2>0 && C(tt,i)<=min_secondhand)
             {
-              markdownCapital=max(0.0,(1-(double)age[tt-1][i-1][j-1]/(agemax)));
+              markdownCapital=max(0.0,(1-(double)(t-acquired[tt-1][i-1][j-1])/(agemax)));
               g_secondhand[tt-1][i-1]+=min(n_mach_exit2,gtemp[tt-1][i-1][j-1]);
-              age_secondhand[tt-1][i-1]=age[tt-1][i-1][j-1];
+              age_secondhand[tt-1][i-1]=t-acquired[tt-1][i-1][j-1];
               g_secondhand_p[tt-1][i-1]=markdownCapital*g_price[tt-1][i-1][j-1];
               if(baddebt_2_temp>0)
               {
@@ -5528,7 +5573,7 @@ void ENTRYEXIT(void)
                 g_c2[tt-1][rni-1][j-1]+=n_mach_resid;
                 g_c3[tt-1][rni-1][j-1]+=n_mach_resid;
               }
-              age[tt-1][rni-1][j-1]=age_secondhand[tt-1][rni-1];
+              acquired[tt-1][rni-1][j-1]=t-age_secondhand[tt-1][rni-1];
               n_mach(j)+=n_mach_resid;
               CapitalStock(1,j)+=n_mach_resid*g_secondhand_p[tt-1][rni-1];
               g_price[tt-1][rni-1][j-1]=g_secondhand_p[tt-1][rni-1];
@@ -5545,7 +5590,7 @@ void ENTRYEXIT(void)
                 g_c2[tt-1][rni-1][j-1]+=g_secondhand[tt-1][rni-1];
                 g_c3[tt-1][rni-1][j-1]+=g_secondhand[tt-1][rni-1];
               }
-              age[tt-1][rni-1][j-1]=age_secondhand[tt-1][rni-1];
+              acquired[tt-1][rni-1][j-1]=t-age_secondhand[tt-1][rni-1];
               n_mach(j)+=g_secondhand[tt-1][rni-1];
               CapitalStock(1,j)+=g_secondhand[tt-1][rni-1]*g_secondhand_p[tt-1][rni-1];
               g_price[tt-1][rni-1][j-1]=g_secondhand_p[tt-1][rni-1];
@@ -5566,12 +5611,37 @@ void ENTRYEXIT(void)
       scrap_age(j)=0;
       deltaCapitalStock(1,j)=0;
       //Set the newly entering firm's cost, mark-up and price
-      c2(j)=0;						
-      for (i=1; i<=N1; i++)
+      //The entrant's unit cost over the machines it has just been given. It
+      //holds a handful of vintages out of the several hundred in the window,
+      //and the rest contribute a cost multiplied by a machine count of zero,
+      //which leaves the total where it was. That is only so while the two shock
+      //factors are non-zero, since with a zero one the term would be a NaN, so
+      //when either is zero every term is added as before.
+      c2(j)=0;
       {
-        for (tt=t0; tt<=t; tt++)
+        const double w_2=w(2);
+        const double c_en_2=c_en(2);
+        const double labprod2=1-shocks_labprod2(j);
+        const double eneff2=1-shocks_eneff2(j);
+        const double n_machj=n_mach(j);
+        const double* A_s=A.Store();
+        const double* A_en_s=A_en.Store();
+        const double* A_ef_s=A_ef.Store();
+        double* c2_s=c2.Store();
+        const int entrant_sparse=(labprod2!=0 && eneff2!=0);
+
+        for (i=1; i<=N1; i++)
         {
-          c2(j)+=(w(2)/((1-shocks_labprod2(j))*A(tt,i))+c_en(2)/((1-shocks_eneff2(j))*A_en(tt,i))+t_CO2*A_ef(tt,i)/((1-shocks_eneff2(j))*A_en(tt,i)))*g[tt-1][i-1][j-1]/n_mach(j);
+          for (tt=t0; tt<=t; tt++)
+          {
+            const double machines=g[tt-1][i-1][j-1];
+            if (entrant_sparse && machines==0)
+            {
+              continue;
+            }
+            const size_t vintage=(size_t)(tt-1)*N1+(i-1);
+            c2_s[j-1]+=(w_2/(labprod2*A_s[vintage])+c_en_2/(eneff2*A_en_s[vintage])+t_CO2*A_ef_s[vintage]/(eneff2*A_en_s[vintage]))*machines/n_machj;
+          }
         }
       }
       mu2(1,j)=mi2;
@@ -6769,23 +6839,14 @@ void UPDATE(void)
   }
 
   //Machines held get a period older. Doing this for every firm at once rather
-  //than inside the loop above runs down contiguous memory instead of across it
-  //once per firm; each entry is still incremented exactly once.
-  //Every entry is aged, not only the ones a firm still holds. An age is read
-  //in three places and each asks for it only where the firm's count of that
-  //machine is positive, and the three places a count rises from zero all set
-  //the age at the same entry, so ageing an entry nobody holds changes no value
-  //that is ever read. What it saves is the machine counts: this used to read
-  //all 52 million of them a run to decide, and now reads none.
-  for (tt=t0; tt<=t; tt++)
-  {
-    int* ages=age[tt-1][0].p;
-    const int n_entries=N1*N2;
-    for (int entry=0; entry<n_entries; entry++)
-    {
-      ages[entry]=ages[entry]+1;
-    }
-  }
+  //Machines are not aged here. What is stored for each of them is the period it
+  //was acquired in, and its age is the current period less that, so every
+  //machine grows a period older when the period does. This used to be a pass
+  //over every firm's every vintage, reading and rewriting all of them, and the
+  //three places that read an age set the acquisition period instead: the
+  //purchase in PRODMACH, the two second-hand transfers in ENTRYEXIT, and the
+  //initial stock, whose machines start at a drawn age and so are recorded as
+  //having been acquired that many periods before the first.
 
 	for (i=1; i<=NB; i++)
   {

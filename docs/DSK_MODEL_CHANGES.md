@@ -71,10 +71,43 @@ paper over here.
 ## Why any of this
 
 The experiment is a million runs. At the speed upstream ships, that is 73 days
-of this machine; at the speed here it is 2.2. Nothing else about the model is
+of this machine; at the speed here it is 1.7. Nothing else about the model is
 touched, and nothing that touches a number is allowed: every change below
 produces output identical to upstream's, byte for byte, which is what
 `tests/dsk_build_equivalence.c` checks rather than assumes.
+
+## The machine every number here was measured on
+
+Every timing, cycle count and throughput figure below comes from one machine.
+None of them travels to another without being measured again, and the cache
+sizes in particular are what several of the explanations rest on.
+
+| | |
+|---|---|
+| processor | AMD Ryzen 7 4800H, 8 cores, 2 threads each, 1 socket |
+| clock | 1.4 GHz minimum, 2.9 GHz maximum, `schedutil` scaling |
+| L1 data | 32 KiB per core (256 KiB over 8) |
+| L2 | 512 KiB per core (4 MiB over 8) |
+| L3 | two slices of 8 MiB, four cores sharing each |
+| memory | 7.5 GB, one NUMA node |
+| compiler | g++ (GCC) 15.2.1 |
+| kernel | Linux 6.19.14 |
+
+Two of those decide how the figures should be read.
+
+The L3 is what makes the difference between the work that raised throughput and
+the work that did not. Four runs share each 8 MiB slice, and one run's live
+machine arrays were about 4 MB before they were cut down, so four concurrent
+runs wanted roughly 16 MB of a slice that holds 8. That is why removing arrays
+moved throughput by tens of per cent while removing instructions moved it not at
+all, and it is also why the single-run column and the throughput column in the
+tables below disagree as often as they do.
+
+The clock is what makes a single run hard to time at all now. The governor idles
+down to 1.4 GHz and takes five or six runs to come back up, so the first runs
+after any pause come in around 0.85 s against a settled 0.51 s. Every A/B in the
+later rounds was taken with the machine already warm and the first pairs
+discarded; at these run lengths an unwarmed comparison is measuring the governor.
 
 ## What was changed
 
@@ -143,9 +176,28 @@ by then had stopped agreeing with the A/B results.
 | `ALLOCATECREDIT()` reads the ranking `LOANRATES()` made | 0.778 s | 0.740 s |
 | `g_c` replaced by a per-firm scratch | 0.717 s | 0.663 s |
 | `g_pb` and `C_pb` too, `g_c2` and `g_c3` not allocated | 0.664 s | 0.642 s |
+| the age derived rather than stored and aged | 0.630 s | 0.638 s |
+| the period's snapshot taken on the way past | 0.751 s | 0.727 s |
+| `COSTPROD()` reaching storage rather than accessors | 0.634 s | 0.590 s |
+| `BROCHURE()` doing the same | 0.600 s | 0.569 s |
+| an entrant skipping the vintages it does not hold | 0.571 s | 0.553 s |
+| `LOANRATES()` reaching storage rather than accessors | 0.532 s | 0.516 s |
+
+Two of those rows are worth reading with the throughput column beside them.
+Deriving the age is noise on one run and 16% on eight concurrent, because it
+removes 422 MB of read-modify-write traffic a run and no arithmetic at all.
+Folding the snapshot into the loop that reads it removes a second read of the
+live vintages and moves both.
 
 End to end, upstream and this build alternated three times each in the same
-thermal state: 35.28 s against 0.677 s, 52.1x.
+thermal state: 34.33 s against 0.528 s, 65.0x.
+
+| measure | upstream | here |
+|---|---:|---:|
+| one 600-step run | 34.33 s | 0.528 s |
+| saturated throughput, eight concurrent | 9.5 a minute | 415 a minute |
+| peak resident memory | 166 MB | 74 MB |
+| a million runs | 73 days | 1.7 days |
 
 Two flags are deliberately absent. `-O3` measured no faster. `-march=native`
 lets the compiler contract a multiply and an add into one instruction, which
@@ -391,6 +443,90 @@ throughput is what a million runs is billed in. The memory figure travels
 further than this machine: at 74 MB instead of 163 twice as many runs fit on a
 cluster node, which is what decides how a job array is packed.
 
+### And once more in LOANRATES
+
+Ranking each bank's borrowers writes and reads a column of 200 entries three
+times over per bank per period, all of it through bounds-checked matrix
+accessors. Reaching the storage directly is worth 3% of the run, and nothing at
+all on throughput - an instruction-side change, which by now is what a flat
+throughput column means.
+
+Converting the rate-setting loop below it, which tests the same match matrix
+2000 times a period, measured nothing on its own over four settled pairs. It is
+kept because it uses the pointers the rest of the function already declares, so
+it costs a reader nothing; had it needed anything of its own it would have gone.
+
+### The same two questions, asked in three more places
+
+Once `COSTPROD()` had been dealt with the profile pointed at `BROCHURE()` and
+`ENTRYEXIT()`, and both wanted one of the two questions that have run through
+all of this work.
+
+`BROCHURE()` has every C-firm compare its supplier against each of the 20
+K-firms, and each of those 4000 comparisons a period asks for about ten prices,
+productivities and matches through bounds-checked accessors. Reaching their
+storage directly: 0.600 s to 0.569 s, faster in eight of nine pairs.
+
+An entering firm then works out its unit cost over every vintage in the window,
+several hundred of them, when it has just been given a handful of second-hand
+machines and holds nothing of the rest. Those contribute a cost multiplied by a
+machine count of zero and are skipped, on the same condition as `MACH()`'s: only
+while the two shock factors are non-zero, since with a zero one the term would
+be a NaN rather than a zero. 0.571 s to 0.553 s.
+
+Together they took saturated throughput from 385.7 to 417.9 runs a minute.
+
+### Bounds checks on the hot path, again
+
+`COSTPROD()` was 10% of the run and its inner loop makes about ten floating
+point operations a pass, which does not account for the 250 cycles a pass it was
+taking. The accessors do: `Matrix::operator()` in newmat tests both subscripts
+and throws on either, and the loop calls it about fourteen times a pass -
+the vintage's three productivities, the firm's two shock factors and the four
+running totals - ten million calls a run. The factors are the same number every
+time, and the productivities are the same three for the whole pass.
+
+They now come from the arrays' own storage, hoisted once per firm for the
+factors and once per pass for the productivities. 0.634 s to 0.590 s, faster in
+all nine alternating pairs, and throughput 380.2 to 385.7 a minute. This is the
+same change as `raw storage in MACH()` in the first round; it was worth finding
+twice because the profile only pointed here after everything above it had gone.
+
+### The snapshot taken on the way past
+
+`MACH()` copied `gtemp` into `g` and then read `g` straight back in the
+weighted-average loop, so the live vintages were read once to copy them and
+again to use them. The loop now takes each count from `gtemp` and writes `g` as
+it goes. The copy is still a plain load and store of four at a time, which the
+compiler vectorises as the memcpy did, and it happens before the test that skips
+empty groups so every count is still copied. 0.751 s to 0.727 s, and throughput
+373.4 to 380.2 a minute.
+
+### An age that is derived rather than stored
+
+Every machine carried its age, and `UPDATE()` walked every firm's every vintage
+once a period to add one to all of them. What is stored now is the period the
+machine was acquired in, and its age is the current period less that, so a
+machine grows a period older when the period does and nothing has to be written.
+
+The three places that read an age set the acquisition period instead: the
+purchase in `PRODMACH()`, the two second-hand transfers in `ENTRYEXIT()`, and the
+initial stock, whose machines start at a drawn age and so are recorded as
+acquired that many periods before the first. The one thing to get right is which
+side of `UPDATE()` a read happens on - all three are before it - which fixes the
+initial stock's offset at one period rather than none.
+
+| measure | before | after |
+|---|---:|---:|
+| one 600-step run | 0.630 s | 0.638 s |
+| saturated throughput, eight concurrent | 320.8 a minute | 373.4 a minute |
+
+The single-run column is noise and the throughput column is 16%. That is the
+second time the same shape has appeared: the change removes 422 MB of
+read-modify-write traffic a run and no arithmetic at all, so it does nothing for
+a run that has the machine to itself and a great deal for eight that do not.
+Anything measured only on one run at a time would have been thrown away here.
+
 ### Ranking borrowers, again
 
 Two functions rank each bank's borrowers by debt service, and between them they
@@ -559,6 +695,23 @@ to another.
 worth 9% in `MACH()`, applied to the other sparse scan: 8.97% of the run before,
 9.30% after, which is nothing. The two scans are limited by different things.
 
+*Counting each supplier's clients along memory instead of across it.* Three
+loops count how many firms are matched to each K-firm, and they walk `Match`
+with the supplier fixed, which reads 160 bytes apart because the matrix is
+stored with the firm as its row. Turning the loops round reads it consecutively,
+and it is slower: the block in `ENTRYEXIT()` went from 3.10% of the run to
+3.65%, measured with a cycle counter because at 0.64 s a run the wall clock
+cannot resolve it - nine pairs said 2% slower and twelve in the reverse order
+said 0.5% faster.
+
+The reason is worth keeping, because it is the limit of the rule that got most
+of the wins above. With the supplier outermost, `nclient(i)` is one accumulator
+the compiler keeps in a register for the whole inner loop, and the only cost is
+a fixed-stride read the prefetcher handles. With the supplier innermost the
+reads are consecutive but the accumulator becomes twenty of them, each a
+load-add-store to memory. Reading along memory is worth having only when it does
+not cost you the register.
+
 *Working out each supplier's offer once in `BROCHURE()`.* The comparison that
 picks a machine supplier rebuilds a four-division cost expression for both
 candidates on each of 4000 firm-supplier pairs a period, and every operand is
@@ -717,21 +870,21 @@ process, seeds 1 upward, nothing else running:
 
 | concurrent runs | this build | upstream's |
 |---:|---:|---:|
-| 1 | 89.8 | 1.4 |
-| 4 | 279.4 | 3.5 |
-| 8 | 320.8 | 3.6 |
-| 16 | 281.5 | 9.5 |
+| 1 | 111.5 | 1.4 |
+| 4 | 341.6 | 3.5 |
+| 8 | 417.9 | 3.6 |
+| 16 | 356.0 | 9.5 |
 
-The machine saturates near 321 runs a minute at eight concurrent, which is a
-million runs in 2.2 days. Sixteen is slower than eight, which is what running
+The machine saturates near 418 runs a minute at eight concurrent, which is a
+million runs in 1.7 days. Sixteen is slower than eight, which is what running
 two threads on each of eight cores does when both threads want memory. The
 experiment is a million independent runs, so the cores are already full and
 making one run use several of them cannot raise that number. It would only
 shorten a single run's latency, which nothing here needs.
 
 Note what does not carry over, because this is now the binding constraint. One
-run is 52 times faster than upstream's, and saturated throughput is 4.2 times
-what it was before this work - 321 against the 76 measured at the same point in
+run is 65 times faster than upstream's, and saturated throughput is 5.5 times
+what it was before this work - 418 against the 76 measured at the same point in
 the history.
 
 The two do not move together, and which one a change moves says what it removed.
@@ -756,5 +909,6 @@ Memory is the other limit, and for most of this work it was the binding one. A
 run peaked at 165 MB resident in both builds, so sixteen at once was 2.6 GB on a
 7 GB machine, and eight at once held far more live machine array than the shared
 8 MB cache. Dropping three of the nine machine arrays took this build to 74 MB
-against upstream's 166, which is where the jump from 221 to 321 runs a minute
-came from. On a cluster the same figure decides how many jobs fit on a node.
+against upstream's 166, and that with the ageing sweep gone is where the jump
+from 221 to 418 runs a minute came from. On a cluster the same figure decides
+how many jobs fit on a node.

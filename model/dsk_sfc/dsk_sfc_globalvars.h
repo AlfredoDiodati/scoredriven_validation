@@ -346,7 +346,7 @@ RowVector        Pi2;                                        // C-firms' profit
 RowVector        n_mach_entry;                               // Number of machines of entering firms
 RowVector        scrap_age;                                  // Number of machines scrapped due to age
 
-Vintage3D<int> age;                                          // Age of exiting machines
+Vintage3D<int> acquired;                                     // The period each machine was acquired in; its age is the current period less this
 Vintage3D<double> g_c2;                                      // Needed for shocks to capital stock
 Vintage3D<double> g_c3;                            
 std::vector<double> vintage_cost;

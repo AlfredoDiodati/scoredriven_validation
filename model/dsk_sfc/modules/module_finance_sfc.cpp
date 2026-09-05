@@ -30,15 +30,22 @@ void LOANRATES(void)
     DebtServiceToSales2(j)=DebtService_2(2,j)/(S2(2,j)+tolerance);
   }
 
+  //The matrices below are reached through their own storage. Each bank writes
+  //and reads a column of 200 entries three times over, and every one of those
+  //accesses tests its subscripts and can throw.
+  const double* ratio_s=DebtServiceToSales2.Store();
+  double* bank_ratio_s=DebtServiceToSales2_bank.Store();
+  const double* match_s=BankMatch_2.Store();
+
   //Iterate over all banks
-  for (i=1; i<=NB; ++i)            
+  for (i=1; i<=NB; ++i)
   {
-    for (j=1; j<=N2; ++j)    
-    {	
+    for (j=1; j<=N2; ++j)
+    {
       //For every bank i, add the debt service ratios of all C-Firms to column i of the matrix
       //DebtServiceToSales2_bank; even if j is not a customer of i
-      DebtServiceToSales2_bank(j,i)=DebtServiceToSales2(j);
-    } 
+      bank_ratio_s[(size_t)(j-1)*NB+(i-1)]=ratio_s[j-1];
+    }
     //Iterate again over all C-Firms; if j is not a customer of bank i, set the corresponding value of
     //DebtServiceToSales2_bank to the maximum across the column plus one
     //Thereby, all firms which are not customers of j will appear at the end of the ranking
@@ -49,23 +56,25 @@ void LOANRATES(void)
     //column is scanned once for the bank rather than once for each of its
     //roughly 180 non-customers.
     Real column_maximum=ColumnMaximum(DebtServiceToSales2_bank,i);
-    for (j=1; j<=N2; ++j)    
-    {	
-      if (BankMatch_2(j,i)==0)
+    for (j=1; j<=N2; ++j)
+    {
+      if (match_s[(size_t)(j-1)*NB+(i-1)]==0)
       {
         column_maximum=column_maximum+1;
-        DebtServiceToSales2_bank(j,i)=column_maximum;
-      }   
-    } 
-  } 
+        bank_ratio_s[(size_t)(j-1)*NB+(i-1)]=column_maximum;
+      }
+    }
+  }
 
 
+  double* temp_s=DebtServiceToSales2_temp.Store();
+  double* rating_s=DS2_rating.Store();
   for (i=1; i<=NB; ++i)            
   {
     //Store the ranking of bank i in a temporary storage vector
     for (j=1; j<=N2; ++j)   
     {
-      DebtServiceToSales2_temp(j) = DebtServiceToSales2_bank(j,i);
+      temp_s[j-1] = bank_ratio_s[(size_t)(j-1)*NB+(i-1)];
     }
 
     //Rank the bank's borrowers by debt service ratio, lowest first. Written as
@@ -82,7 +91,7 @@ void LOANRATES(void)
     int sortable=1;
     for (j=1; j<=N2; ++j)
     {
-      const double v=DebtServiceToSales2_temp(j);
+      const double v=temp_s[j-1];
       if (std::isnan(v)) { sortable=0; break; }
     }
 
@@ -93,7 +102,7 @@ void LOANRATES(void)
       //1400 comparisons a bank's ranking takes.
       for (j=1; j<=N2; ++j)
       {
-        DS2_ranked[j-1].first=DebtServiceToSales2_temp(j);
+        DS2_ranked[j-1].first=temp_s[j-1];
         DS2_ranked[j-1].second=j;
       }
       std::sort(DS2_ranked.begin(), DS2_ranked.begin()+N2,
@@ -108,7 +117,7 @@ void LOANRATES(void)
       //ALLOCATECREDIT works through its customers in.
       for (j=1; j<=N2; ++j)
       {
-        DS2_rating(DS2_ranked[j-1].second,i)=j;
+        rating_s[(size_t)(DS2_ranked[j-1].second-1)*NB+(i-1)]=j;
         DS2_by_rank[(i-1)*N2+(j-1)]=DS2_ranked[j-1].second;
       }
     }
@@ -130,7 +139,7 @@ void LOANRATES(void)
     for (i=1; i<=NB; ++i)
     {
       //Only enter here if C-Firm j is a customer of bank i
-      if(BankMatch_2(j,i)==1)
+      if(match_s[(size_t)(j-1)*NB+(i-1)]==1)
       {
         //Calculate the default probability of j as perceived by bank i
         if(NW_2(1,j) == 0)
@@ -154,7 +163,7 @@ void LOANRATES(void)
           //Original DSK rule whereby mark-up depends on the quartile of the distribution of debt service ratios
           //among customers of i in which j is located
           //Extract the rank of firm j in the ranking of bank i
-          k(j)= DS2_rating(j,i);
+          k(j)= rating_s[(size_t)(j-1)*NB+(i-1)];
           //Determine to which quartile it belongs and set the mark-up accordingly
           if(k(j) <= NL_2(i)*0.25)
           {  

@@ -1,7 +1,7 @@
 Invoking model/dsk_sfc/dsk_SFC through a short and a long path.
 
-short path  /tmp/dsk_long_path_190146/s
-long path   /tmp/dsk_long_path_190146/a_directory_deep_enough_that_the_old_sixtyfour_byte_name_buffers_overflowed
+short path  /tmp/dsk_long_path_223079/s
+long path   /tmp/dsk_long_path_223079/a_directory_deep_enough_that_the_old_sixtyfour_byte_name_buffers_overflowed
 the long run's error file name is 137 bytes, against the 64 the
 buffers held before the fix
 
