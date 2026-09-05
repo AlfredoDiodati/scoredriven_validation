@@ -1,10 +1,11 @@
 upstream build: /home/dioda/Documents/_py/scoredriven_validation/bin/dsk_SFC_upstream
 this project's: /home/dioda/Documents/_py/scoredriven_validation/model/dsk_sfc/dsk_SFC
 inputs:         /home/dioda/Documents/_py/scoredriven_validation/model/dsk_sfc/dsk_sfc_inputs.json
+scratch:        /tmp/dsk_fox_8492, 1 characters of padding so upstream writes
 seeds 1 to 2, run with -f 1, comparing every file both runs write
 
-  seed 1    13 files identical, 28155388 bytes
-  seed 2    13 files identical, 28155388 bytes
+  seed 1    14 files identical, 28155388 bytes
+  seed 2    14 files identical, 28155388 bytes
 
-26 files compared over 2 seeds
+28 files compared over 2 seeds
 PASSED

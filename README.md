@@ -89,23 +89,49 @@ program stores its data and how often it repeats itself:
 ### Why the results are still the published model's
 
 Every change has to leave the model's output identical to the published code's,
-byte for byte. `make test-dsk_build_equivalence` compiles their unmodified
-source, runs both programs over the same seeds, and compares all 3 MB of each
-run's output; a change that moves a single digit does not go in.
+byte for byte. `make model-upstream` compiles the authors' unmodified source,
+the tests run both programs on the same seeds, and the files they write must
+match exactly. A change that moves a single digit does not go in.
 
-Three tests do that, in the three directions a mistake could hide: the aggregate
-output over five seeds, the twelve per-firm files the model writes under `-f 1`,
-and four points of the parameter design away from the baseline calibration. All
-three run with the model's shock channels off, which is how the experiment runs
-them; `docs/DSK_MODEL_CHANGES.md` names exactly what that leaves uncovered.
+Six tests, each answering one question:
 
-That is a stronger guarantee than statistical agreement. Two runs that agree byte
-for byte cannot be told apart by any test, so the question of whether the faster
-version drifts away from the published one does not arise. Seventeen further
-changes were tried, measured, and dropped for not being faster.
-`docs/DSK_MODEL_CHANGES.md` holds the whole record: every change, every timing
-and the setup it was taken under, every rejected attempt, and what the test does
-and does not cover.
+- **Does the economy-wide output match?** The 83-column results file, compared
+  byte for byte. The unmodified program is also run twice per seed and required
+  to agree with itself, since a reference that varied between runs would make
+  every other comparison meaningless.
+- **Does the per-firm output match?** Totals can stay the same while individual
+  firms change. Under `-f 1` the model writes the state of every firm and bank,
+  14 files and 28 MB a run, and all of it is compared.
+- **Does it still match away from the default parameters?** Four points of the
+  thousand-row parameter design, including the corners of the box it covers.
+  The parameters decide which branches the code takes.
+- **Does the faster version read memory it does not own?** The same source
+  compiled under AddressSanitizer and UndefinedBehaviorSanitizer, at three
+  parameter settings. Comparing output cannot find an index that runs one place
+  past the end of an array and happens to read a plausible number.
+- **How small a difference would those comparisons actually catch?** The files
+  are printed to ten decimals, so in principle a smaller difference could hide
+  in the rounding. Measured rather than assumed: each input parameter is nudged
+  by smaller and smaller amounts until the output changes. For eight of the nine
+  parameters, changing them by a factor of 1.000000000000001 is enough, and the
+  change reaches the output within a few simulated periods. That is the last
+  digit a double-precision number can hold, so there is no room left underneath
+  it for a difference to hide.
+- **Does the one bug that was fixed stay fixed?** The published code writes
+  output filenames into 64-byte buffers and corrupts memory past about 26
+  characters of directory path, which is shorter than a cluster scratch
+  directory.
+
+All of them run with the model's shock channels off, which is how the experiment
+runs it. `docs/DSK_MODEL_CHANGES.md` explains each test in full and names
+exactly what none of them covers.
+
+Byte equality is a stronger guarantee than statistical agreement. Two runs that
+write the same file cannot be told apart by any test, so the question of whether
+the faster version drifts away from the published one does not arise. Seventeen
+further changes were tried, measured, and dropped for not being faster. The same
+document holds the whole record: every change, every timing and the setup it was
+taken under, and every rejected attempt.
 
 ### Using the simulator
 
@@ -266,18 +292,22 @@ Results are written to `out/`, never printed.
     make study        parameter recovery from known truths, over sample sizes,
                       model shapes and parameter regimes
 
-The simulator has two of its own, and they are the gate on any change
-to it:
+The simulator has six of its own, and they are the gate on any change to it:
 
-    make test-dsk_build_equivalence         every byte of the aggregate output
-                                           matches upstream, over five seeds
+    make test-dsk_build_equivalence         every byte of the economy-wide output
+                                           matches upstream, over three seeds
     make test-dsk_full_output_equivalence   the same for the twelve per-firm
                                            files the model writes under -f 1
-    make test-dsk_design_equivalence        the same away from the baseline, at
-                                           four points of the design
+    make test-dsk_design_equivalence        the same away from the default
+                                           parameters, at four points of the design
+    make test-dsk_memory_safety             every run under AddressSanitizer and
+                                           UndefinedBehaviorSanitizer is clean
+    make test-dsk_ulp_sensitivity           how small a difference in the
+                                           arithmetic those comparisons can see
     make test-dsk_long_path                 the filename bug stays fixed
 
-`test-dsk_build_equivalence` builds the reference itself, so it takes about
-three minutes: the unmodified binary carries no optimisation and one of its runs
-is 35 seconds.
+`test-dsk_build_equivalence` builds the reference itself and then runs it seven
+times for three seeds - once to check the scratch path works, twice per seed to
+check it repeats itself - so it takes about four and a half minutes. The
+unmodified binary carries no optimisation and one of its runs is 35 seconds.
 

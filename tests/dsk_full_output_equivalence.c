@@ -36,6 +36,8 @@ out/dsk_full_output_equivalence.txt.
 #include <errno.h>
 #include <assert.h>
 
+#include "tests/dsk_upstream_scratch.h"
+
 #define MODIFIED "model/dsk_sfc/dsk_SFC"
 #define UPSTREAM "bin/dsk_SFC_upstream"
 #define INPUTS "model/dsk_sfc/dsk_sfc_inputs.json"
@@ -44,21 +46,6 @@ out/dsk_full_output_equivalence.txt.
 #define DEFAULT_SEEDS 2
 #define MAX_FILES 64
 
-static void make_directory(const char *path) {
-    if (mkdir(path, 0755) != 0) assert(errno == EEXIST && "dsk_full_output_equivalence: mkdir failed");
-}
-
-/* Each build runs through a symlink in its own directory: the model writes its
-   output beside the path it was invoked as. */
-static void prepare(const char *dir, const char *executable) {
-    make_directory(dir);
-
-    char link[1024];
-    snprintf(link, sizeof link, "%s/dsk_SFC", dir);
-    unlink(link);
-    assert(symlink(executable, link) == 0 && "dsk_full_output_equivalence: cannot link a build into place");
-}
-
 static int run(const char *dir, const char *inputs, int seed) {
     char command[8192];
     snprintf(command, sizeof command, "\"%s/dsk_SFC\" \"%s\" -r %s -s %d -f 1 -c 0 -v 0 >/dev/null 2>&1",
@@ -66,13 +53,15 @@ static int run(const char *dir, const char *inputs, int seed) {
     return system(command);
 }
 
-/* The regular files directly inside one run's output directory, sorted, so two
-   runs' listings can be compared name by name. */
+/* The files one run wrote under its output directory, sorted, so two runs'
+   listings can be compared name by name. One level of subdirectory is walked
+   because the error log sits in output/errors/, and a run that fails has to
+   fail the same way in both builds. */
 static int list_output(const char *dir, char names[MAX_FILES][256]) {
-    char path[1024];
-    snprintf(path, sizeof path, "%s/output", dir);
+    char root[1024];
+    snprintf(root, sizeof root, "%s/output", dir);
 
-    DIR *handle = opendir(path);
+    DIR *handle = opendir(root);
     assert(handle && "dsk_full_output_equivalence: a run produced no output directory");
 
     int count = 0;
@@ -81,13 +70,34 @@ static int list_output(const char *dir, char names[MAX_FILES][256]) {
         if (entry->d_name[0] == '.') continue;
 
         char full[1400];
-        snprintf(full, sizeof full, "%s/%.255s", path, entry->d_name);
+        snprintf(full, sizeof full, "%s/%.255s", root, entry->d_name);
         struct stat info;
-        if (stat(full, &info) != 0 || !S_ISREG(info.st_mode)) continue;
+        if (stat(full, &info) != 0) continue;
 
-        assert(count < MAX_FILES && "dsk_full_output_equivalence: more output files than expected");
-        snprintf(names[count], sizeof names[0], "%s", entry->d_name);
-        count++;
+        if (S_ISREG(info.st_mode)) {
+            assert(count < MAX_FILES && "dsk_full_output_equivalence: more output files than expected");
+            snprintf(names[count], sizeof names[0], "%s", entry->d_name);
+            count++;
+            continue;
+        }
+        if (!S_ISDIR(info.st_mode)) continue;
+
+        DIR *inner = opendir(full);
+        if (!inner) continue;
+        struct dirent *below;
+        while ((below = readdir(inner)) != NULL) {
+            if (below->d_name[0] == '.') continue;
+
+            char deep[1700];
+            snprintf(deep, sizeof deep, "%s/%.255s", full, below->d_name);
+            struct stat below_info;
+            if (stat(deep, &below_info) != 0 || !S_ISREG(below_info.st_mode)) continue;
+
+            assert(count < MAX_FILES && "dsk_full_output_equivalence: more output files than expected");
+            snprintf(names[count], sizeof names[0], "%.120s/%.120s", entry->d_name, below->d_name);
+            count++;
+        }
+        closedir(inner);
     }
     closedir(handle);
 
@@ -140,23 +150,16 @@ int main(int argc, char **argv) {
            "dsk_full_output_equivalence: bin/dsk_SFC_upstream is not built - run make model-upstream");
     assert(realpath(INPUTS, inputs) && "dsk_full_output_equivalence: the model's own inputs JSON is missing");
 
-    const char *scratch = getenv("TMPDIR");
-    if (!scratch) scratch = "/tmp";
-
-    char root[512], upstream_dir[640], modified_dir[640];
-    snprintf(root, sizeof root, "%s/dsk_full_%d", scratch, (int)getpid());
-    make_directory(root);
-    snprintf(upstream_dir, sizeof upstream_dir, "%s/upstream", root);
-    snprintf(modified_dir, sizeof modified_dir, "%s/modified", root);
-
-    prepare(upstream_dir, upstream);
-    prepare(modified_dir, modified);
+    DskScratch scratch = dsk_scratch_open("fo", RUN_NAME, inputs, upstream, modified, n_seeds);
+    const char *upstream_dir = scratch.upstream, *modified_dir = scratch.modified;
 
     FILE *report = fopen(REPORT, "w");
     assert(report && "dsk_full_output_equivalence: cannot open the report path");
     fprintf(report, "upstream build: %s\n", upstream);
     fprintf(report, "this project's: %s\n", modified);
     fprintf(report, "inputs:         %s\n", inputs);
+    fprintf(report, "scratch:        %s, %d characters of padding so upstream writes\n",
+            scratch.root, scratch.padding);
     fprintf(report, "seeds 1 to %d, run with -f 1, comparing every file both runs write\n\n", n_seeds);
 
     int failures = 0, files_compared = 0;

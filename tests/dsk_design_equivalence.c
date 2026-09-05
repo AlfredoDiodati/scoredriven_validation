@@ -44,6 +44,8 @@ is given as the first argument.
 #include <errno.h>
 #include <assert.h>
 
+#include "tests/dsk_upstream_scratch.h"
+
 #define MODIFIED "model/dsk_sfc/dsk_SFC"
 #define UPSTREAM "bin/dsk_SFC_upstream"
 #define INPUTS "model/dsk_sfc/dsk_sfc_inputs.json"
@@ -52,19 +54,6 @@ is given as the first argument.
 #define RUN_NAME "design"
 #define N_POINTS 4
 #define DEFAULT_SEEDS 1
-
-static void make_directory(const char *path) {
-    if (mkdir(path, 0755) != 0) assert(errno == EEXIST && "dsk_design_equivalence: mkdir failed");
-}
-
-static void prepare(const char *dir, const char *executable) {
-    make_directory(dir);
-
-    char link[1024];
-    snprintf(link, sizeof link, "%s/dsk_SFC", dir);
-    unlink(link);
-    assert(symlink(executable, link) == 0 && "dsk_design_equivalence: cannot link a build into place");
-}
 
 /* The baseline parameter file with the nine design parameters overwritten,
    which is what applications/abm_system_simulate.c writes for a run. */
@@ -172,23 +161,18 @@ int main(int argc, char **argv) {
         point[3][p] = (double)AT(column[p], design.r / 2, 0);
     }
 
-    const char *scratch = getenv("TMPDIR");
-    if (!scratch) scratch = "/tmp";
-
-    char root[512], upstream_dir[640], modified_dir[640], point_json[720];
-    snprintf(root, sizeof root, "%s/dsk_design_%d", scratch, (int)getpid());
-    make_directory(root);
-    snprintf(upstream_dir, sizeof upstream_dir, "%s/upstream", root);
-    snprintf(modified_dir, sizeof modified_dir, "%s/modified", root);
-
-    prepare(upstream_dir, upstream);
-    prepare(modified_dir, modified);
+    DskScratch scratch = dsk_scratch_open("de", RUN_NAME, base_json, upstream, modified, n_seeds);
+    const char *upstream_dir = scratch.upstream, *modified_dir = scratch.modified;
+    const char *root = scratch.root;
+    char point_json[720];
 
     FILE *report = fopen(REPORT, "w");
     assert(report && "dsk_design_equivalence: cannot open the report path");
     fprintf(report, "upstream build: %s\n", upstream);
     fprintf(report, "this project's: %s\n", modified);
     fprintf(report, "design:         %s, %d configurations\n", DESIGN, design.r);
+    fprintf(report, "scratch:        %s, %d characters of padding so upstream writes\n",
+            scratch.root, scratch.padding);
     fprintf(report, "%d parameter points, seeds 1 to %d, comparing exit status, results and error log\n\n",
             N_POINTS, n_seeds);
 

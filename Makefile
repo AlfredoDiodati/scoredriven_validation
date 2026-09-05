@@ -75,7 +75,8 @@ endif
 HEADERS :=
 TEST_HEADERS :=
 TEST_STEMS := qvarma_correctness dsk_long_path dsk_build_equivalence \
-               dsk_full_output_equivalence dsk_design_equivalence
+               dsk_full_output_equivalence dsk_design_equivalence \
+               dsk_memory_safety dsk_ulp_sensitivity
 # Where the wall time of a t-QVARMA fit goes, and what each way of speeding it
 # up is worth. Measured 2026-08-29 against a 500,000-fit run of
 # abm_system_fit_qvarma; out/fit_speedup_options.txt collects the numbers and
@@ -291,18 +292,26 @@ $(foreach cap,$(SCALE_ITERATION_CAPS),$(eval $(call scale_fit_target_for_cap,$(c
 # own vendored dependencies, and restating that here would be a second place
 # for it to go wrong. model-upstream builds the unmodified reference the
 # equivalence test compares against, from the copies in model/dsk_sfc/upstream.
-.PHONY: model model-upstream
+.PHONY: model model-upstream model-sanitized
 model:
 	./model/dsk_sfc/build.sh
 
 model-upstream: | $(BIN)
 	./model/dsk_sfc/build.sh --upstream $(BIN)/dsk_SFC_upstream
 
-# Both DSK tests run the simulator, so the binaries have to exist first.
+# This project's own code under AddressSanitizer and UndefinedBehaviorSanitizer,
+# for the memory-safety test: comparing outputs cannot find an index that runs
+# off the end of an array and reads a plausible number.
+model-sanitized: | $(BIN)
+	./model/dsk_sfc/build.sh --sanitize $(BIN)/dsk_SFC_sanitized
+
+# Every DSK test runs the simulator, so the binaries have to exist first.
 test-dsk_long_path: model
 test-dsk_build_equivalence: model model-upstream
 test-dsk_full_output_equivalence: model model-upstream
 test-dsk_design_equivalence: model model-upstream app-abm_system_design
+test-dsk_memory_safety: model model-sanitized app-abm_system_design
+test-dsk_ulp_sensitivity: model
 
 applications: $(APPLICATION_BINARIES) | $(OUT)
 	@for binary in $(APPLICATION_BINARIES); do ./$$binary || exit 1; done

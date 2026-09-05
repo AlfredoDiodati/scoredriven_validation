@@ -20,10 +20,15 @@ at upstream's flags and nothing in the working tree is disturbed.
     make model              the simulator this project runs
     make model-upstream     bin/dsk_SFC_upstream, unmodified, upstream's flags
 
-    make test-dsk_build_equivalence         the aggregate output matches upstream
-    make test-dsk_full_output_equivalence   so do the per-firm files under -f 1
-    make test-dsk_design_equivalence        so does the model away from the baseline
-    make test-dsk_long_path                 the bug fix has its own test
+    make test-dsk_build_equivalence         same economy-wide output as upstream
+    make test-dsk_full_output_equivalence   same per-firm output too
+    make test-dsk_design_equivalence        same away from the default parameters
+    make test-dsk_memory_safety             no out-of-bounds access under the sanitizers
+    make test-dsk_ulp_sensitivity           how small a difference those comparisons catch
+    make test-dsk_long_path                 the filename bug stays fixed
+
+"Proving the model was not changed" below explains what each one does and what
+none of them covers.
 
 ## The program, and how it is invoked
 
@@ -749,78 +754,275 @@ bytes and requires both that it completes and that its output matches a run
 from a short path, since a name that overflowed into a neighbouring global
 could have changed a number as easily as crashed.
 
-## What the tests establish
+## Proving the model was not changed
 
-`tests/dsk_build_equivalence.c` runs this project's build and the unmodified one
-over the same seeds and compares every byte of the results file. Equality, not
-similarity: two runs that agree byte for byte are indistinguishable under any
-test that could be applied to them, so no test statistic is needed while it
-holds. When it stops holding, the test reports the worst absolute and relative
-gap with the period and column it sits at, which is what separates arithmetic
-that moved slightly from a model that moved.
+Everything above is a speed change. None of it is allowed to change a number the
+model produces. The way that is checked here is the strictest one available: the
+two programs must write the same bytes. Not similar numbers, not numbers that
+pass a statistical test - the same file.
 
-Two more tests widen that in the two directions the aggregate comparison leaves
-open, and both are worth running before any further change to the model.
+That standard is worth stating plainly, because it removes a whole category of
+argument. If two runs produce identical files, there is no test anyone could
+apply that would tell them apart, so no test statistic is needed and no
+tolerance has to be chosen. The moment the files stop being identical the check
+fails, and the reason has to be found before anything is kept.
 
-`tests/dsk_full_output_equivalence.c` runs the model with `-f 1`, which writes
-twelve files of per-firm quantities instead of the one file of economy-wide
-totals: each K-firm's and C-firm's productivity, energy efficiency,
-environmental friendliness and net worth, each bank's net worth, and each
-C-firm's debt. 13 files and 28 MB a run against 3 MB, and per firm rather than
-summed, so a change that moved one firm's machines to another firm while leaving
-the totals alone would pass the aggregate comparison and fail this one. That is
-the failure this test exists for, because several of the changes above rest on
-an argument about which values are ever read.
+The reference the files are compared against is the original authors' code,
+unchanged, compiled at the flags they ship. `make model-upstream` builds it from
+`model/dsk_sfc/upstream/`, which holds their version of every file this project
+touched. `make model` builds the version this project runs. Both come from the
+same vendored tree and neither reaches the network.
 
-`tests/dsk_design_equivalence.c` runs the model away from the baseline
-calibration. Every change above was measured and checked at the one parameter
-vector the model ships with, and the experiment runs a thousand others, where
-different numbers of firms enter and exit and the machine arrays are sparse in
-different places - which is what several of those changes turn on. It takes four
-points of `dataset/abm_system_design.csv`: the design's column-wise minima and
-maxima, which are the corners of the box it actually reached, and two rows the
-experiment will really simulate. Each point is compared on three things: the
-exit status, the results file and the error log. A parameter vector the model
-refuses to simulate is a valid outcome and still a comparison, as long as both
-builds refuse it the same way.
+Six tests. Each answers one question.
 
+| test | question it answers |
+|---|---|
+| `dsk_build_equivalence` | do the two programs produce the same economy-wide results file? |
+| `dsk_full_output_equivalence` | do they produce the same per-firm files, not just the same totals? |
+| `dsk_design_equivalence` | do they still agree away from the default parameter settings? |
+| `dsk_memory_safety` | does the faster version read or write memory it does not own? |
+| `dsk_ulp_sensitivity` | how small a difference would those file comparisons actually catch? |
+| `dsk_long_path` | does the filename bug that was fixed stay fixed? |
+
+    make test-dsk_build_equivalence
     make test-dsk_full_output_equivalence
     make test-dsk_design_equivalence
+    make test-dsk_memory_safety
+    make test-dsk_ulp_sensitivity
+    make test-dsk_long_path
 
-`make asan` builds every test with AddressSanitizer and UndefinedBehaviorSanitizer
-and runs it, these three included. That is what catches the class of mistake
-where a test itself is wrong rather than the model: writing
-`tests/dsk_design_equivalence.c` produced one, freeing a `Mat` that
-`df_col_numeric` had returned as a view into the dataframe rather than as
-memory of its own, and under the sanitizer it reports as `bad-free` at the line
-that did it instead of as a bare abort.
+All six pass. What follows is what each one actually does.
 
-### The one thing these tests do not cover
+### The economy-wide output
 
-All three run with the model's seven shock flags at zero. That is how
-`dsk_sfc_inputs.json` ships and how every run of this project's experiment is
-configured - `applications/abm_system_simulate.c` writes only the `params`
-block, never `flags` - and `docs/ABM_SYSTEM_SIMULATION.md` sets out why they
-should stay there. The gap is deliberate and is not going to be closed, because
-a test at settings the experiment will not use would guard code the experiment
-will not run.
+`tests/dsk_build_equivalence.c` runs both programs on the same seed and compares
+the results file byte for byte. That file has 83 columns and one row per
+simulated period: GDP, consumption, investment, unemployment, prices, emissions
+and so on. Three seeds by default, more if a count is given.
 
-What that leaves untested is specific and worth naming, in case someone later
-wants the shock scenarios. Two changes have a branch that only executes with a
-flag on:
+Each seed does three things rather than one.
 
-- `MACH()` skips the firm-vintage pairs with no machines only while every
-  firm's two shock factors are non-zero, and adds every term as before when one
-  is not. `shocks_labprod2` and `shocks_eneff2` are written only inside
+First it runs the original twice and requires the two runs to match each other.
+The whole argument rests on the original being a fixed reference, and a
+reference that varied between runs would make every comparison below meaningless
+without anything noticing.
+
+Then it compares the results file. If the files differ, the test reports the
+worst absolute and worst relative gap together with the period and column they
+sit in. That distinguishes the two things a failure could be: arithmetic that
+moved slightly in the last digits, or a model that took a different path.
+
+Then it compares the error log. A run that stops early explains itself there and
+nowhere else, so without this two runs that failed for different reasons could
+have compared equal on a short results file.
+
+### The per-firm output
+
+The results file is totals. A change that moved one firm's machines to another
+firm, leaving the economy-wide sums untouched, would pass the comparison above.
+Several of the speed changes rest on an argument about which values are ever
+read, and that is exactly the kind of mistake such an argument makes.
+
+`tests/dsk_full_output_equivalence.c` closes that. It runs both programs with
+`-f 1`, which writes the state of every individual firm instead of the sums:
+each capital-good and consumption-good firm's productivity, energy efficiency,
+environmental friendliness and net worth, each bank's net worth, each
+consumption-good firm's debt. Fourteen files and 28 MB a run against 3 MB.
+
+Every file both runs write is compared byte for byte, the error log included,
+and the two runs must have written the same set of filenames. Two seeds by
+default.
+
+### Away from the default parameters
+
+Every speed change was measured at the one parameter setting the model ships
+with. The experiment runs a thousand others, and the parameters decide how many
+firms enter and leave, how many machines a firm holds, and therefore which
+branches the code takes. Several of the changes turn on precisely that.
+
+`tests/dsk_design_equivalence.c` runs both programs at four points of
+`dataset/abm_system_design.csv`: the smallest and the largest value the design
+reached in each of the nine parameters, which are the corners of the box, and
+two rows the experiment will really simulate. Each point is compared on the exit
+status, the results file and the error log.
+
+A parameter setting the model refuses to simulate is a valid outcome and still a
+comparison, as long as both programs refuse it the same way at the same period.
+
+### Reading memory that is not yours
+
+Comparing output cannot find every kind of mistake. Several speed changes
+replaced array subscripts with pointer arithmetic, and two of them carry an
+index that is -1 until a candidate is found. An index that runs off the end of
+an array reads whatever happens to sit beside it, and on the handful of seeds
+the comparisons cover that could be a plausible number that produces matching
+output. The defect would then surface somewhere in the million runs the
+experiment performs, and nothing here would have warned about it.
+
+`tests/dsk_memory_safety.c` asks the compiler instead of the output.
+`bin/dsk_SFC_sanitized`, built by `make model-sanitized`, is the same source
+compiled under AddressSanitizer and UndefinedBehaviorSanitizer, which check
+every access against the bounds of the object it belongs to and also report
+signed overflow, bad shifts and invalid conversions. Any report is a failure
+even when the numbers are right. Three seeds at three parameter settings.
+
+The sanitized build's results are also compared against the ordinary build's, so
+a build whose sanitizers were silent because they were never switched on cannot
+pass.
+
+This test was checked against a deliberately broken build before it was
+believed. An out-of-bounds read was added to `COSTPROD()` in a scratch copy of
+the model, and the test reported a heap buffer overflow at all three parameter
+settings. A test that has only ever passed proves nothing.
+
+### What "identical" is worth
+
+The comparisons above are of printed files, and printed files are rounded. The
+results file is written at ten decimal places and the per-firm files at four, so
+a difference smaller than the last printed digit would not appear in any of
+them. That is a fair objection, and the answer to it is a measurement rather
+than an argument.
+
+`tests/dsk_ulp_sensitivity.c` makes the measurement. It multiplies one input
+parameter by `1+eps` and walks `eps` up from `1e-16`, which is the size of a
+rounding error in a double-precision number, until the results file stops
+matching the unperturbed run. The smallest `eps` that shows up, and the period
+at which it first shows up, are what the test records.
+
+Setup: the baseline `dsk_sfc_inputs.json`, shock flags off, 600 periods, seeds 1
+and 2, one parameter changed at a time and the other eight held at their
+baseline values, `eps` taken from the ladder 1e-16, 1e-15, ... up to 1e-2, and
+the comparison the whole results file byte for byte. The change reaches the
+model through the parameter JSON, which is written at seventeen significant
+digits and so carries a change of this size intact. 47 model runs.
+
+| parameter | smallest change that shows | first period it shows in, seeds 1 and 2 |
+|---|---|---|
+| chi | 1e-15 | 2, 3 |
+| alfa | 1e-15 | 2, 3 |
+| kappa | 1e-15 | 5, 8 |
+| taylor | 1e-15 | 14, 27 |
+| taylor1 | 1e-15 | 40, 60 |
+| psi3 | 1e-15 | 55, 114 |
+| taylor2 | 1e-14 | 7, 60 |
+| psi1 | 1e-14 | 361, 114 |
+| Gamma | 1e-3 | 200, 200 |
+
+Eight of the nine parameters are resolved at `1e-15` or `1e-14`. A double
+carries about sixteen significant digits, so those are changes at the very last
+digit the number can hold, and they reach the printed output within a few
+periods. There is no room left for a difference in the arithmetic to hide behind
+the rounding: the model amplifies a change that small rather than absorbing it.
+Identical files mean identical arithmetic.
+
+`Gamma` is the exception and it is not a limit of the output. It reaches the
+model in exactly one place, `int(ROUND(nclient(i)*Gamma))` in `BROCHURE()`, where
+the product is rounded to a whole number of clients. A change smaller than half
+a client produces the identical integer and therefore the identical run. No
+output format could resolve that, because there is nothing to resolve.
+
+### The filename bug
+
+`tests/dsk_long_path.c` covers the one behaviour change this project made on
+purpose, described under "Filename buffers too small for a real path" above. The
+original builds every output filename in a fixed 64-byte buffer, so past about
+26 characters of directory the writes run past the end of it and into the
+variables that follow. On a cluster the scratch directory is exactly that long,
+and a million runs would have failed. This project widened those buffers to
+`PATH_MAX`.
+
+The test checks the fix from both directions: the simulator must complete from a
+path far past the old limit, and it must produce the same output it produces
+from a short path, since a name that overflowed into a neighbouring variable
+could have changed a number as easily as crashed.
+
+### The tests were reviewed as well
+
+The tests are the whole evidence for the claim that this build computes what the
+original computes, so they were audited in their own right. Three defects came
+out of that, all now fixed, and one gap that needed measuring rather than fixing
+(the precision measurement above).
+
+**The reference program was not running at all in the directory the tests gave
+it.** The original copies the output directory path into a buffer it sizes at
+exactly the path's length:
+
+    char pathname[outstr.length()];
+    char* filepath=strcpy(pathname,outstr.c_str());
+
+`strcpy` writes the terminating byte one past the end of that array on every
+single run. Whether that matters depends on what the compiler placed next to the
+array, which depends on the length of the path. So the original writes its files
+at some directory names and writes nothing at all - reporting nothing, exiting
+successfully - at others. This project fixed the bug, so only the reference
+build is affected, and only the tests run it.
+
+At the paths the tests were using, the reference wrote nothing. The tests
+stopped with "a run produced no results file" rather than passing wrongly, since
+each one deletes an output file as it reads it and so has nothing stale left to
+read, but the message named no cause and the comparison was not happening.
+`tests/dsk_upstream_scratch.h` now lengthens the scratch directory name one
+character at a time until the reference demonstrably writes a results file
+there, and every report states how much padding that took. One character, as it
+turns out. The same header refuses a path too long for the 64-byte filename
+buffers, which is the separate bug above.
+
+**Nothing checked that the reference repeats itself.** Added, as described
+above.
+
+**Two tests did not compare the error log, and one of them said it did.**
+`tests/dsk_full_output_equivalence.c` listed only the files sitting directly in
+the output directory, and the error log is one level down in `output/errors/`.
+It now walks that level, which took the files compared per seed from 13 to 14.
+`tests/dsk_build_equivalence.c` reads it too.
+
+`make asan` builds every test itself under AddressSanitizer and
+UndefinedBehaviorSanitizer and runs it. That is what catches a mistake in a test
+rather than in the model: writing `tests/dsk_design_equivalence.c` produced one,
+freeing a `Mat` that `df_col_numeric` had returned as a view into the dataframe
+rather than as memory of its own. Under the sanitizer it reports as `bad-free`
+at the line responsible instead of as a bare abort.
+
+### What these tests do not cover
+
+Stated plainly, because a reader should not have to work it out.
+
+**Coverage is a sample, not a proof.** Three seeds for the economy-wide
+comparison, two for the per-firm files, one seed at each of four parameter
+points for the design comparison, three seeds at three points under the
+sanitizers. The experiment runs a thousand parameter settings times a thousand
+seeds. What the tests establish is that the two programs agree everywhere they
+have been compared. They are not a proof over the whole space, and no feasible
+test would be.
+
+**The sanitizers see only the code that runs.** A branch a run never takes is
+not checked by them either.
+
+**The shock flags are off.** All the comparisons run with the model's seven
+shock flags at zero. That is how `dsk_sfc_inputs.json` ships, and how every run
+of this project's experiment is configured:
+`applications/abm_system_simulate.c` writes only the `params` block and never
+the `flags` block. `docs/ABM_SYSTEM_SIMULATION.md` sets out why they should stay
+there. The gap is deliberate: a test at settings the experiment will not use
+would guard code the experiment will not run.
+
+What that leaves unchecked is specific, and matters only to someone who later
+wants the shock scenarios:
+
+- `MACH()` skips the firm-vintage pairs holding no machines only while every
+  firm's two shock factors are zero, and adds every term as before when one is
+  not. `shocks_labprod2` and `shocks_eneff2` are written only inside
   `if(flag_prodshocks2==1)` and `==2` in `modules/module_climate_sfc.cpp`, so
-  with that flag at zero they hold the zero they are initialised to and the skip
-  is always taken. The fallback has never run.
+  with that flag off they keep the zero they were initialised to and the skip is
+  always taken. The other path has never run.
 - `PRODMACH()`'s restructured loop sits beside the `flag_capshocks` block, and
   `ENTRYEXIT()` and `MACH()` both skip work on `g_c2` and `g_c3` under the same
   flag. None of those branches has run either.
+- `LOANRATES()` has a fallback for the case where no borrower can be ranked.
+  That has never run either.
 
-Anyone turning a shock flag on should add points at those flag settings to these
-tests first, and check that byte equality still holds there.
+Anyone turning a shock flag on should add points at those settings to these
+tests first, and confirm the files are still identical there.
 
 ## Parallelising inside a single run: tried, measured, not kept
 

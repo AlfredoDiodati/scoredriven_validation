@@ -1,0 +1,31 @@
+build: /home/dioda/Documents/_py/scoredriven_validation/model/dsk_sfc/dsk_SFC
+one parameter at a time multiplied by 1+eps, eps walked from 1e-16 to 0.01
+the threshold is the smallest eps whose results file stops matching the
+unperturbed run; the results file prints ten decimal places per column
+at least 67% of the parameter and seed pairs must resolve 1e-13 or finer
+
+  seed 1, 600 periods
+    Gamma    threshold 0.001    first differs at period 200
+    chi      threshold 1e-15    first differs at period 2
+    psi1     threshold 1e-14    first differs at period 361
+    psi3     threshold 1e-15    first differs at period 55
+    alfa     threshold 1e-15    first differs at period 2
+    taylor1  threshold 1e-15    first differs at period 40
+    taylor2  threshold 1e-14    first differs at period 7
+    taylor   threshold 1e-15    first differs at period 14
+    kappa    threshold 1e-15    first differs at period 5
+
+  seed 2, 600 periods
+    Gamma    threshold 0.001    first differs at period 200
+    chi      threshold 1e-15    first differs at period 3
+    psi1     threshold 1e-14    first differs at period 114
+    psi3     threshold 1e-15    first differs at period 114
+    alfa     threshold 1e-15    first differs at period 3
+    taylor1  threshold 1e-15    first differs at period 60
+    taylor2  threshold 1e-15    first differs at period 60
+    taylor   threshold 1e-15    first differs at period 27
+    kappa    threshold 1e-15    first differs at period 8
+
+47 model runs; 16 of 18 pairs resolve 1e-13 or finer, a share of 0.89
+coarsest threshold 0.001; 0 pairs unmoved by the whole ladder
+PASSED

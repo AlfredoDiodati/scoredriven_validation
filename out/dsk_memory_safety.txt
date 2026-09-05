@@ -1,0 +1,22 @@
+sanitized build: /home/dioda/Documents/_py/scoredriven_validation/bin/dsk_SFC_sanitized
+ordinary build:  /home/dioda/Documents/_py/scoredriven_validation/model/dsk_sfc/dsk_SFC
+AddressSanitizer and UndefinedBehaviorSanitizer, seeds 1 to 3
+at 3 parameter points; any report is a failure
+
+  baseline calibration
+    seed 1    clean, 2988600 bytes matching the ordinary build
+    seed 2    clean, 2988600 bytes matching the ordinary build
+    seed 3    clean, 2988600 bytes matching the ordinary build
+
+  lowest of each parameter
+    seed 1    clean, 2988600 bytes matching the ordinary build
+    seed 2    clean, 2988600 bytes matching the ordinary build
+    seed 3    clean, 2988600 bytes matching the ordinary build
+
+  highest of each parameter
+    seed 1    clean, 2988600 bytes matching the ordinary build
+    seed 2    clean, 2988600 bytes matching the ordinary build
+    seed 3    clean, 2988600 bytes matching the ordinary build
+
+9 runs under the sanitizers
+PASSED

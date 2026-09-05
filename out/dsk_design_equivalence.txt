@@ -1,6 +1,7 @@
 upstream build: /home/dioda/Documents/_py/scoredriven_validation/bin/dsk_SFC_upstream
 this project's: /home/dioda/Documents/_py/scoredriven_validation/model/dsk_sfc/dsk_SFC
 design:         dataset/abm_system_design.csv, 1000 configurations
+scratch:        /tmp/dsk_dex_8539, 1 characters of padding so upstream writes
 4 parameter points, seeds 1 to 1, comparing exit status, results and error log
 
   lowest of each parameter
