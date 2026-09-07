@@ -199,6 +199,92 @@ minute. `docs/ABM_SYSTEM_SIMULATION.md` has the setup behind those numbers.
 - Python with `polars`, `plotly` and `kaleido`, for the figures only; plotly
   writes the PDFs through kaleido
 
+### The platform everything here was run on
+
+One machine, and nothing in this repository has been run on any other:
+
+    $ uname -srmo
+    Linux 6.19.14-arch1-1 x86_64 GNU/Linux
+    $ cat /etc/os-release | head -2
+    NAME="EndeavourOS"
+    PRETTY_NAME="EndeavourOS"
+    $ g++ --version | head -1
+    g++ (GCC) 15.2.1 20260209
+    $ gcc --version | head -1
+    gcc (GCC) 15.2.1 20260209
+    $ ldd --version | head -1
+    ldd (GNU libc) 2.43
+    $ make --version | head -1
+    GNU Make 4.4.1
+    $ bash --version | head -1
+    GNU bash, version 5.3.9(1)-release (x86_64-pc-linux-gnu)
+
+The hardware is an AMD Ryzen 7 4800H, 8 cores with 2 threads each, 7.5 GB of
+memory; `docs/ABM_SYSTEM_SIMULATION.md` gives the cache layout, which is what
+the throughput figures turn on.
+
+Every timing, every equivalence test and the million-run experiment itself were
+produced there. macOS and Windows are untested. What follows is what would have
+to change, read off the code rather than tried, so treat it as a starting point
+and not as instructions known to work.
+
+### macOS
+
+The simulator's own source already expects to be built there: it selects the
+three-argument `mkdir` under `__APPLE__` exactly as it does under `__linux__`.
+One thing it does not do on macOS is time a run out. The authors guard
+
+    signal(SIGALRM, catchAlarm);
+    alarm(T*2);
+
+with `#ifdef __linux__` and say in their own comment that it works on Linux
+only. A run that gets stuck on Linux is killed after `2T` seconds and recorded
+as a failure; on macOS it would hang, and the driver waiting on it would wait
+with it.
+
+What has to change to build and run:
+
+- `model/dsk_sfc/build.sh` passes `-msse`, which is an x86 flag. On an Apple
+  Silicon machine it has to go. On an Intel Mac it can stay.
+- The same script calls `nproc`, which is GNU coreutils and is not present.
+  `sysctl -n hw.ncpu` is the equivalent, or install coreutils and use `gnproc`.
+- `applications/abm_system_simulate_all.sh` uses `readlink -f`, `stat -c`,
+  `md5sum`, `du -sh`, `date -d @epoch` and `systemd-inhibit`. Only the last is
+  optional in the script, which already skips it when it is missing; the other
+  five are GNU spellings that BSD userland writes differently (`stat -f`,
+  `md5`, `date -r`). Installing GNU coreutils with Homebrew and putting its
+  `gnubin` on the PATH is the shortest route. Without the inhibitor the machine
+  can sleep mid-run, which loses at most the batch in flight but stops the
+  clock, so disable sleep another way for a run of this length.
+- OpenMP is not in Apple's clang. `brew install libomp` and point the compiler
+  at it, or build with `brew`'s gcc.
+
+The driver `bin/abm_system_simulate` itself uses no Linux-only interface. It is
+the shell launcher around it and the build script that carry the GNU
+assumptions.
+
+### Windows
+
+The simulator has a `#else` branch calling the one-argument `mkdir`, so the
+authors intended it to compile there, but nothing else in this repository
+does. The Makefile, both shell scripts and the driver's use of `symlink` and
+`fork` through `system` are POSIX.
+
+The route that needs no porting is WSL2 with a Linux distribution inside it,
+where everything above applies unchanged. Running natively under MSYS2 or
+Cygwin would need the Makefile and `abm_system_simulate_all.sh` rewritten and
+is not something to attempt for a first run.
+
+### If you reproduce the simulation elsewhere
+
+Expect the same statistics, not the same bytes. The model calls `log`, `exp`
+and `pow` from the C library, and those are allowed to differ in the last bit
+between one library and another. The equality the tests in
+`docs/DSK_MODEL_CHANGES.md` establish is between two builds on one machine; it
+is not a claim about two machines. A run on another platform that gives
+different digits in a late decimal place is behaving as expected, and one that
+gives visibly different series is not.
+
 ## Built on et_al
 
 This project depends on [et_al](https://github.com/AlfredoDiodati/et_al.): nothing general is implemented here. The auxiliary model

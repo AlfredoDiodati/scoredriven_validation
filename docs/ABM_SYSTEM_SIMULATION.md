@@ -471,6 +471,32 @@ A round-trip check was run against the pilot archives: every one of the 320
 replications was read back with `abm_system_read_replicate`, and all of them
 came back at the expected 5 by 400 shape with no missing or infinite value.
 
+### Platforms other than the one this was run on
+
+Everything in this document was measured on one machine: Linux 6.19.14-arch1-1
+x86_64 (EndeavourOS), g++ 15.2.1, glibc 2.43, GNU Make 4.4.1, bash 5.3.9, on an
+AMD Ryzen 7 4800H. macOS and Windows are untested here. The README's
+Requirements section lists what would have to change on each, read off the code
+rather than tried.
+
+Two points matter for the simulation specifically.
+
+The model times a stuck run out after `2T` seconds through `alarm()`, and the
+authors guard that with `#ifdef __linux__` because it works nowhere else. On
+macOS or Windows a run that hangs would hang indefinitely, and the driver
+waiting on it would wait with it. Whatever runs this on those platforms needs
+its own timeout.
+
+`applications/abm_system_simulate_all.sh` is written against GNU userland:
+`readlink -f`, `stat -c`, `md5sum`, `du -sh`, `date -d @epoch` and
+`systemd-inhibit`. The inhibitor is already optional, the rest are not.
+`bin/abm_system_simulate` itself uses no Linux-only interface, so on a platform
+without GNU tools it can be driven by whatever launcher that platform prefers,
+one process per stretch of the design.
+
+Reproducing the experiment elsewhere should give the same statistics, not the
+same bytes: the model calls `log`, `exp` and `pow` from the C library, and two
+libraries may differ in the last bit.
 
 ### What the full run actually did
 
