@@ -1,0 +1,33 @@
+1000 x 1000 DSK experiment, launched 2026-09-05 12:03:25
+
+configurations   1 to 1000 (1000)
+replications     1000 per configuration
+shards           8 concurrent processes
+output           dataset/abm_system, compressed .npz, 10 replications per archive
+
+model            /home/dioda/Documents/_py/scoredriven_validation/model/dsk_sfc/dsk_SFC, built 2026-09-05 09:45:25.626144900 +0200
+driver           /home/dioda/Documents/_py/scoredriven_validation/bin/abm_system_simulate, built 2026-09-05 11:52:34.492428695 +0200
+design           dataset/abm_system_design.csv  md5 c844833d45ae7e18df857527ffefbab3
+base parameters  model/dsk_sfc/dsk_sfc_inputs.json  md5 146ba0f0f0e50f15c4a883c2e054415e
+host             Linux 6.19.14-arch1-1 x86_64, 16 hardware threads
+scratch          /tmp
+
+shard ranges
+  shard  1  configurations    1 to  125  out/abm_system_simulate/shard_01.log
+  shard  2  configurations  126 to  250  out/abm_system_simulate/shard_02.log
+  shard  3  configurations  251 to  375  out/abm_system_simulate/shard_03.log
+  shard  4  configurations  376 to  500  out/abm_system_simulate/shard_04.log
+  shard  5  configurations  501 to  625  out/abm_system_simulate/shard_05.log
+  shard  6  configurations  626 to  750  out/abm_system_simulate/shard_06.log
+  shard  7  configurations  751 to  875  out/abm_system_simulate/shard_07.log
+  shard  8  configurations  876 to 1000  out/abm_system_simulate/shard_08.log
+
+finished 2026-09-07 05:41:43
+wall clock       149898 s (41.64 h)
+shards failing   0 of 8
+archives on disk 100000
+stored size      15G
+throughput       400.3 runs per minute over the whole launch
+
+completion per configuration is in out/abm_system_simulate_manifest.txt,
+and the reason for every rejected replication in out/abm_system_simulate.

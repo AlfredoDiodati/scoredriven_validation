@@ -185,6 +185,12 @@ int main(int argc, char **argv) {
     const char *model_inputs = getenv("DSK_BASE_JSON");
     if (!model_inputs) model_inputs = MODEL_INPUTS;
 
+    /* applications/abm_system_fit_qvarma.c fits every subdirectory of the output
+       directory whatever wrote it, so a run of this design cannot share one with
+       the older .Rdata-derived dataset. */
+    const char *output_dir = getenv("ABM_SYSTEM_OUTPUT_DIR");
+    if (!output_dir) output_dir = OUTPUT_DIR;
+
     char executable[PATH_MAX];
     assert(realpath(model, executable) &&
            "abm_system_simulate: the model is not built - run make model");
@@ -214,12 +220,12 @@ int main(int argc, char **argv) {
     unlink(local_exe);
     assert(symlink(executable, local_exe) == 0 && "abm_system_simulate: cannot link the executable into scratch");
 
-    make_directory(OUTPUT_DIR);
+    make_directory(output_dir);
     make_directory(REPORT_DIR);
 
     for (int cop = first_cop; cop <= last_cop; cop++) {
         char cop_dir[256];
-        snprintf(cop_dir, sizeof cop_dir, "%s/cop_%04d", OUTPUT_DIR, cop);
+        snprintf(cop_dir, sizeof cop_dir, "%s/cop_%04d", output_dir, cop);
         make_directory(cop_dir);
 
         char json_path[512];

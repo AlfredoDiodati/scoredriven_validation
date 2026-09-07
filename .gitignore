@@ -54,3 +54,13 @@ model/dsk_sfc/output/
 # unpacked from. The unpacked form is already ignored above and the README
 # says where it comes from.
 *.zip
+# The older .Rdata-derived copy of the simulated dataset, 112 MB, moved out of
+# dataset/abm_system/ so the design runs could take its place. It is derived
+# data like the archives that replaced it, and `make app-abm_system_extract`
+# rebuilds it from dataset/simulated/.
+dataset/abm_system_rdata/
+
+# What nohup writes when the simulation launcher is started detached. The
+# launcher's own record is out/abm_system_simulate_all_provenance.txt and the
+# per-shard logs beside it.
+nohup.out

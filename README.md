@@ -146,16 +146,32 @@ invoked as:
 The whole experiment goes through the driver rather than through that command:
 
     make app-abm_system_design            draws dataset/abm_system_design.csv
-    make app-abm_system_simulate          runs the design, writes the archives
+    make bin/abm_system_simulate          builds the driver, does not run it
+
+    ./applications/abm_system_simulate_all.sh          the whole design, 8 at a time
+    ./applications/abm_system_simulate_all.sh 8 1 16 20   a pilot, 16 configurations
+
+Building the driver and running it are separate because with no arguments it
+simulates the whole design, a million model runs and about two days of one
+machine. That is not something a make target should start.
 
 `abm_system_simulate` takes an optional first, last and replication count
 (`./bin/abm_system_simulate 1 10 100` is configurations 1 to 10, 100
 replications each), so one invocation is the whole design on one machine and one
 configuration per job on a cluster. It writes
-`dataset/abm_system/cop_NNNN/batch_NNN.npz`, ten replications to an archive, and
-skips any archive already on disk, which is what makes an interrupted run
-resumable. `DSK_EXECUTABLE` and `DSK_BASE_JSON` override which binary and which
-baseline parameter file it uses.
+`dataset/abm_system/cop_NNNN/batch_NNN.npz`, ten replications to a compressed
+archive, and skips any archive already on disk, which is what makes an
+interrupted run resumable and a re-submitted job harmless. `DSK_EXECUTABLE`,
+`DSK_BASE_JSON` and `ABM_SYSTEM_OUTPUT_DIR` override which binary, which
+baseline parameter file and which output directory it uses.
+
+`abm_system_simulate_all.sh` runs several of those over disjoint stretches of
+the design, because one process is serial and this machine finishes most runs
+per minute with eight at once. It holds the machine awake for the duration and
+writes what it used and what it produced to
+`out/abm_system_simulate_all_provenance.txt`. The full experiment has been run:
+1,000,000 replications, none rejected, 41.6 hours and 15 GB at 400 runs a
+minute. `docs/ABM_SYSTEM_SIMULATION.md` has the setup behind those numbers.
 
 ## Layout
 
@@ -166,8 +182,11 @@ baseline parameter file it uses.
     tests/            what verifies the auxiliary model still computes what it
                       claims to, and what verifies this copy of the simulator still
                       matches upstream byte for byte
-    dataset/          us_real.csv, the raw US series; the ABM's own simulated
-                      output goes here too but is not tracked
+    dataset/          us_real.csv, the raw US series, and the parameter design.
+                      The simulated output goes here too but is not tracked:
+                      abm_system/ is what the fitting stage reads, and
+                      abm_system_rdata/ is the older .Rdata-derived copy, kept
+                      out of the way so only one of the two is ever fitted
     out/              every result, written here rather than printed
     docs/             the write-up and the reference documentation
 
@@ -262,7 +281,6 @@ earlier ones.
 
     make app-us_prepare_data              the five US variables, 1973Q1 to 2019Q4
     make app-us_qvarma_employment_change  the auxiliary model on the real data
-    make app-abm_system_extract           the simulated data into the same layout
     make app-abm_system_fit_qvarma        one fit per simulated replication
     make app-abm_system_mse_qvarma        impulse responses and the loss table
     make app-abm_system_mcs               the confidence set itself
@@ -270,15 +288,18 @@ earlier ones.
 
     python applications/abm_system_winner_irf_plots.py
 
-`app-abm_system_extract` is the older route into the simulated dataset: it reads
-the 108 `.Rdata` files under `dataset/simulated/` and converts them. The
-Latin hypercube experiment described in `docs/ABM_SYSTEM_SIMULATION.md` replaces
-it with `app-abm_system_design` and `app-abm_system_simulate`, which produce the
-same archives from the simulator directly. That replacement has not been made in
-the Makefile: `app-abm_system_fit_qvarma` still depends on
-`app-abm_system_extract`, and `abm_system_fit_qvarma` fits every subdirectory of
-`dataset/abm_system/` regardless of what wrote it, so the two datasets must not
-sit there at once.
+The simulated dataset those fits read is not built by any of these. It comes
+from the Latin hypercube experiment above, run by
+`applications/abm_system_simulate_all.sh`, which takes about forty hours and so
+is not something a make target starts.
+
+There is an older route to the same layout, `make app-abm_system_extract`, which
+converts the 108 `.Rdata` files under `dataset/simulated/` instead of running the
+simulator. Use one or the other, never both: `abm_system_fit_qvarma` fits every
+subdirectory of `dataset/abm_system/` regardless of what wrote it, so two
+datasets sitting there at once would be fitted together with nothing in the
+results to say so. `dataset/abm_system_rdata/` currently holds the older one,
+moved aside so the design runs could take its place.
 
 The fitting step is the long one. Every fit is cached to its own file the moment
 it finishes, so an interrupted run resumes rather than starting over.

@@ -242,7 +242,17 @@ $(BIN)/abm_system_simulate: applications/abm_system_simulate.c $(HEADERS) $(APPL
 # run has to regenerate it first rather than trust whatever an earlier run
 # left behind.
 app-us_qvarma_employment_change: app-us_prepare_data
-app-abm_system_fit_qvarma: app-abm_system_extract
+
+# app-abm_system_fit_qvarma has no prerequisite that builds its dataset. It fits
+# every subdirectory of dataset/abm_system whatever wrote it, and the two writers
+# cannot share that directory: applications/abm_system_extract.c produces
+# EstimationSeries* from the .Rdata files under dataset/simulated, and
+# applications/abm_system_simulate.c produces cop_* from the parameter design.
+# Naming either one here would add its dataset on top of whichever is already
+# there, and the fits would run over both without saying so. The design route
+# also takes about forty hours, which is not something make should start;
+# applications/abm_system_simulate_all.sh runs it.
+
 # abm_system_scale_extract deliberately does not appear as a prerequisite of
 # app-abm_system_scale_fit_qvarma: it writes 21 GB and takes tens of minutes, so
 # rerunning the throughput test must not rebuild the dataset it reads.

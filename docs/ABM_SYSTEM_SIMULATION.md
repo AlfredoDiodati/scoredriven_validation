@@ -409,8 +409,94 @@ invoked as - concurrent tasks sharing one
 directory would overwrite each other's results and put a million small writes on
 a shared filesystem.
 
-Before the full design, run a handful of configurations at the corners of the
-box with a few replications each. What that pilot checks is not correctness of
-the pipeline but the failure rate: the completion count is the one quantity
-whose behaviour across the parameter space cannot be predicted from the design
-and determines whether the experiment as specified is worth its 147 hours.
+
+### Running it
+
+`bin/abm_system_simulate` is the whole experiment in one process, which is the
+serial 147 core-hours. `applications/abm_system_simulate_all.sh` is that
+process run several times over disjoint stretches of the design, at the
+concurrency the table above says this machine peaks at:
+
+    ./applications/abm_system_simulate_all.sh                   8 shards, the whole design, 1000 replications
+    ./applications/abm_system_simulate_all.sh 8 1 16 20         a pilot: 16 configurations, 20 replications
+
+The script splits the configuration range into contiguous shards, starts one
+process per shard, holds the machine awake for the duration with
+`systemd-inhibit`, waits, and writes
+`out/abm_system_simulate_all_provenance.txt`: which model binary and which
+design were used with their checksums, the shard boundaries, the wall time, the
+number of archives on disk and the size they take. One log per shard goes to
+`out/abm_system_simulate/`.
+
+Nothing about how results are stored is decided there. Every process writes
+through `abm_system_write_batch`, so the archives are the same compressed `.npz`
+files with the same six columns whichever route produced them.
+
+The script refuses to start if the output directory already holds
+subdirectories this experiment did not write. `dataset/abm_system` currently
+holds the hundred directories the older `.Rdata` route produced, and
+`applications/abm_system_fit_qvarma.c` fits every subdirectory it finds without
+being able to tell the two datasets apart. Either move the old one aside or set
+`ABM_SYSTEM_OUTPUT_DIR` to somewhere else.
+
+### The pilot, and what it projects
+
+Sixteen configurations at twenty replications each, 320 model runs, eight
+shards, on the machine described above, otherwise idle:
+
+| quantity | measured |
+|---|---|
+| completed | 320 of 320 |
+| failed | 0 |
+| wall clock | 49 s |
+| throughput | 392 runs a minute, launch to exit |
+| stored | 4.6 MB, 32 archives |
+
+Per replication that is 14.8 kB stored. Scaling the two that scale:
+
+- $10^6$ replications at 392 a minute is 42.5 hours, about 1.8 days.
+- $10^6$ replications at 14.8 kB is 14.1 GB.
+
+The 392 is below the 418 in the table above because it includes process start,
+the design read and the final accounting over a 49-second window; over days
+those disappear. The failure rate is the number the pilot exists for, and at
+these sixteen configurations it is zero. It is a rate over sixteen points of the
+design, not over all thousand, and the configurations that fail, if any do, will
+be the extreme ones.
+
+Rerunning the same command finished in 0 seconds and reported 320 replications
+skipped, which is what resumability looks like from outside.
+
+A round-trip check was run against the pilot archives: every one of the 320
+replications was read back with `abm_system_read_replicate`, and all of them
+came back at the expected 5 by 400 shape with no missing or infinite value.
+
+
+### What the full run actually did
+
+Launched 2026-09-05 12:03, finished 2026-09-07 05:41, on the machine described
+above with nothing else running on it.
+
+| quantity | measured |
+|---|---|
+| configurations | 1000 of 1000 |
+| replications | 1,000,000 completed, 0 failed |
+| wall clock | 149,898 s, 41.64 h |
+| throughput | 400.3 runs a minute, launch to exit |
+| archives | 100,000, one per ten replications |
+| stored | 15 GB |
+
+The projections from the pilot were 42.5 hours and 14.1 GB against 41.6 and 15,
+so the rate carried and the size was 6% light. Not one replication was rejected:
+no configuration in the design produced a run that exited badly, wrote to the
+model's error log, came back the wrong shape, or contained a missing or infinite
+value. `out/abm_system_simulate_all_provenance.txt` holds the same numbers
+alongside the checksums of the design and the model binary that produced them.
+
+What a pilot checks is not correctness of the pipeline but the failure rate: the
+completion count is the one quantity whose behaviour across the parameter space
+cannot be predicted from the design, and it decides whether the experiment as
+specified is worth its 147 hours. Sixteen contiguous rows are a weaker probe of
+that than the corners of the box would be, so a second pilot at the design rows
+holding the extreme parameter values is worth the two minutes before committing
+two days.
