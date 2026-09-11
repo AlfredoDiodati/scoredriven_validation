@@ -1,29 +1,25 @@
 /*
-The driftless t-QVARMA half of the joint loss table - see abm_system_mse.c
-for the drift model's own half and for why this is two files rather than
-one (qvarma.h and qvarma_d.h cannot both be included in the same
-translation unit, being two independent models that happen to define
-identically-named types - docs/MODEL_TEMPLATE.md's own entry 16). This file
-never includes qvarma_d.h and never will.
+The loss matrix the Model Confidence Set runs on: how far each ABM
+configuration's simulated dynamics sit from the real US data's, measured
+through the auxiliary model.
 
 The comparison object is the impulse response function, not the fitted
-parameters themselves - this is the point of the whole file, and it changed
-from an earlier version that compared flatten_estimated's constrained
-parameter vectors directly. That matched neither the procedure this project
-is actually replicating (a thesis using the same Model Confidence Set
-protocol over local-projection IRFs - "Evaluating Nonlinear Simulation
-Models with Model Confidence Sets", Fabiano, Pisa/Sant'Anna) nor what a
-loss between two fitted models is supposed to measure: two QVARMA fits with
-different-looking coefficients can still imply nearly identical dynamics,
-and two with similar-looking coefficients can imply very different ones -
-the IRF is the object whose distance actually answers "do these two models
-behave alike", which raw parameter distance does not.
+parameters themselves. That is the point of the whole file, and it changed
+from an earlier version that compared constrained parameter vectors directly.
+Parameter distance matched neither the procedure this project replicates (a
+thesis using the same Model Confidence Set protocol over local-projection
+IRFs - "Evaluating Nonlinear Simulation Models with Model Confidence Sets",
+Fabiano, Pisa/Sant'Anna) nor what a loss between two fitted models is supposed
+to measure: two QVARMA fits with different-looking coefficients can imply
+nearly identical dynamics, and two with similar-looking coefficients can imply
+very different ones. The IRF is the object whose distance answers "do these
+two models behave alike", which raw parameter distance does not.
 
-For each of the two auxiliary specs (p1q1r2, p1q1r4):
-  1. Fit the real-data QVARMA (out/us_qvarma_employment_change_p1q1rN_fit.json,
-     applications/us_qvarma_employment_change.c's own grid) and compute its
+For the auxiliary spec p1q1r2:
+  1. Fit the real-data QVARMA (out/us_qvarma_spec_choice_p1q1r2_fit.json,
+     applications/us_qvarma_spec_choice.c's own grid) and compute its
      own impulse response function via qvarma.h's impulse_responses.
-  2. For every one of the 10,800 simulated fits
+  2. For every simulated fit
      applications/abm_system_fit_qvarma.c already wrote to
      out/abm_system_fit_qvarma/, compute that fit's own impulse response
      function the same way.
@@ -32,9 +28,8 @@ For each of the two auxiliary specs (p1q1r2, p1q1r4):
      model, horizon 0 first - the same "vectorize and stack across
      horizons" step the thesis's own protocol uses (its Sec 3.3, step 3).
   4. Loss is the mean absolute error between the real model's IRF vector
-     and each simulated model's IRF vector - absolute rather than squared
-     for the same reason abm_system_mse.c uses stats_mae rather than
-     stats_mse: a squared difference lets one badly-behaved fit's IRF
+     and each simulated model's IRF vector, absolute rather than squared
+     because a squared difference lets one badly-behaved fit's IRF
      dominate both the mean and the bootstrap variance abm_system_mcs.c
      estimates from, which is exactly what left every model
      indistinguishable from every other one before this file used absolute
@@ -53,30 +48,37 @@ case, arrived at after the fact rather than during the fit itself, so it is
 checked and skipped here (counted as missing, same as an unreadable cache
 file) rather than left to the library's own assert.
 
-This file additionally reads abm_system_mse.c's own output
-(out/abm_system_mse_qvarmad_joint.csv) - but no longer joins it into a
-combined table, since that file's own loss is still parameter-vector MAE,
-not IRF MAE, and joining two different loss definitions side by side would
-mislabel them as comparable. See "Requires" below for what this file still
-depends on abm_system_mse.c for.
+Requires out/abm_system_fit_qvarma/ to already hold every replicate's fit (run
+applications/abm_system_fit_qvarma.c to completion first),
+out/us_qvarma_spec_choice_p1q1r2_fit.json to exist
+(applications/us_qvarma_spec_choice.c, run separately) and out/us_system.csv to
+exist (applications/us_prepare_data.c), which load_us_system reads directly to
+rebuild the real data's own K x ESTIMATION_PERIODS block the same way
+applications/us_qvarma_spec_choice.c itself does.
 
-Requires out/abm_system_fit_qvarma/ to already hold every replicate's fit
-(run applications/abm_system_fit_qvarma.c to completion first), both
-out/us_qvarma_employment_change_p1q1r2_fit.json and ..._p1q1r4_fit.json to
-exist (applications/us_qvarma_employment_change.c's own grid, run
-separately), and out/us_system.csv to exist (applications/us_prepare_data.c),
-which load_us_system reads directly to rebuild the real data's own
-K x ESTIMATION_PERIODS block the same way
-applications/us_qvarma_employment_change.c itself does.
+Output: out/abm_system_mse_qvarma_joint.csv, the loss matrix
+applications/abm_system_mcs.c reads. One row per replicate and one column per
+configuration, plus a leading "replicate" column, so over the design experiment
+that is 1000 rows and 1001 columns. Each column is named for its configuration
+and the spec it was fitted under, and every numeric column except "replicate"
+is a model to the confidence set.
 
-Output: out/abm_system_mse_qvarma_joint.csv, a 108 x 201 table - a leading
-"replicate" column (0-107) followed by the 100 p1q1r2 columns then the 100
-p1q1r4 columns, each labeled with qvarma and its own spec -
-abm_system_mcs.c's own input. A cell is NaN when that (sample, replicate,
-spec) cache is missing, unreadable, or has nu <= 2, rather than silently
-skipped or aborting the whole run; out/abm_system_mse_qvarma_manifest.txt
-records exactly which cells that happened for, if any, plus a per-spec
-count.
+The matrix has no holes, which is a requirement rather than a nicety: et_al's
+mcs asserts a finite loss matrix because one NaN in a model's column loses
+every comparison that model takes part in, and the p-values that come back look
+ordinary. A cell can go missing when a fit will not load, when its nu is not
+above two, or when its impulse response comes back non-finite. Where that
+happens the replicate is dropped from every column rather than the
+configuration from every row, since a missing cell belongs to one
+(configuration, replicate) pair and dropping the row is the direction that does
+not change which models are being compared.
+out/abm_system_mse_qvarma_manifest.txt names every missing cell and counts the
+replicates dropped.
+
+The fits are used as they stand, converged or not. About a third of them
+converged and the rest stopped because the line search could not move;
+docs/ABM_SYSTEM_MCS_VALIDATION.md records the measurement that their
+log-likelihoods are not distinguishable from the converged ones.
 
 Not part of make applications - buildable on its own via
 make app-abm_system_mse_qvarma, same as abm_system_fit_qvarma.c itself.
@@ -104,24 +106,30 @@ Nothing printed.
 #define MU_STAR_STATIONARY_ONLY 1
 #define P 1
 #define Q 1
-#define N_REPLICATES 108
+/* Replications per configuration, counted off the fit cache rather than fixed
+   here: the .Rdata dataset had 108 and the design experiment has 1000. */
+static int n_replicates = 0;
 #define HORIZON 20
 #define IRF_DIM (K * K * (HORIZON + 1))
 
-#define FIT_DIR "out/abm_system_fit_qvarma"
-#define INPUT_DIR "dataset/abm_system"
-#define OUTPUT_PATH "out/abm_system_mse_qvarma_joint.csv"
+#define FIT_DIR_DEFAULT "out/abm_system_fit_qvarma"
+#define INPUT_DIR_DEFAULT "dataset/abm_system"
+#define OUTPUT_PATH_DEFAULT "out/abm_system_mse_qvarma_joint.csv"
+
+/* Overridable so the whole pass can be run over a couple of configurations,
+   which is how the parallel loop was checked against the serial one. */
+static const char *FIT_DIR;
+static const char *INPUT_DIR;
+static const char *OUTPUT_PATH;
 #define MODEL_LABEL "qvarma"
 
 /* label names the cache files already on disk (save_fit's own naming,
    applications/abm_system_fit_qvarma.c); column_label is what a column of
    this file's own output is called, distinct from label so it cannot
-   collide with abm_system_mse.c's identically-shaped p1q1r2/p1q1r4
-   columns should the two ever be compared side by side again. */
+   name the spec a column was fitted under. */
 typedef struct { int r; const char *label; const char *column_label; const char *real_fit_path; } Spec;
 static const Spec spec_list[] = {
-    { 2, "p1q1r2", MODEL_LABEL "_p1q1r2", "out/us_qvarma_employment_change_p1q1r2_fit.json" },
-    { 4, "p1q1r4", MODEL_LABEL "_p1q1r4", "out/us_qvarma_employment_change_p1q1r4_fit.json" }
+    { 2, "p1q1r2", MODEL_LABEL "_p1q1r2", "out/us_qvarma_spec_choice_p1q1r2_fit.json" }
 };
 #define N_SPECS ((int)(sizeof spec_list / sizeof spec_list[0]))
 
@@ -131,7 +139,7 @@ static QvarmaParams spec_shape(int r) {
     return m;
 }
 
-/* Real data, applications/us_qvarma_employment_change.c's own build_block:
+/* Real data, applications/us_qvarma_spec_choice.c's own build_block:
    growth/change of GDP, energy demand and employment, inflation, and the
    interest rate in levels - identical row convention to what
    dataset/abm_system/'s own simulated series already use (both feed the
@@ -185,6 +193,29 @@ static int try_compute_irf(const QvarmaParams *m, Mat y, Vec *out) {
     return 1;
 }
 
+
+/* How many replicates the fit cache holds for one sample, so the table's shape
+   comes from the data rather than from a constant that has to be remembered. */
+static int count_replicates(const char *sample, const char *label) {
+    char dir[512];
+    snprintf(dir, sizeof dir, "%s/%s", FIT_DIR, sample);
+
+    DIR *handle = opendir(dir);
+    assert(handle && "abm_system_mse_qvarma: cannot open a sample's fit directory");
+
+    char suffix[64];
+    snprintf(suffix, sizeof suffix, "_%s_fit.json", label);
+
+    int n = 0;
+    struct dirent *entry;
+    while ((entry = readdir(handle)) != NULL)
+        if (strstr(entry->d_name, suffix)) n++;
+    closedir(handle);
+
+    assert(n > 0 && "abm_system_mse_qvarma: a sample directory holds no fit for this spec");
+    return n;
+}
+
 typedef struct { char *name; int index; } SampleEntry;
 
 /* dataset/abm_system/EstimationSeriesSample1_<N>'s own <N>, so column order
@@ -231,68 +262,124 @@ static SampleEntry *list_samples(const char *dir, int *count) {
    its own copy here rather than shared, same reason qvarma.h and
    qvarma_d.h stay two files: this project's own convention is that
    independent scripts do not import functions from one another. */
+/* One replicate's five series, out of the compressed archive holding it.
+   abm_system.h's own reader is what applications/abm_system_fit_qvarma.c and
+   applications/abm_system_simulate.c go through, so the three cannot disagree
+   about the layout. An earlier version of this file read a per-replicate CSV,
+   which is not what the dataset has ever contained. */
 static void read_y(const char *sample, int replicate, Mat *y_out) {
-    char csv_path[560];
-    snprintf(csv_path, sizeof csv_path, "%s/%s/replicate_%03d.csv", INPUT_DIR, sample, replicate);
-    DataFrame df = df_read_csv(csv_path, csv_read_options_default());
-    Mat y = mat_new(K, df.r);
-    static const char *row_name[K] = {
-        "GDP_growth", "EN_growth", "Employment_change", "Inflation", "InterestRate"
-    };
-    for (int k = 0; k < K; k++) {
-        Mat column = df_col_numeric(&df, row_name[k]);
-        for (int t = 0; t < df.r; t++) AT(y, k, t) = AT(column, t, 0);
-    }
-    df_free(&df);
+    char dir[560];
+    snprintf(dir, sizeof dir, "%s/%s", INPUT_DIR, sample);
+    Mat y = abm_system_read_replicate(dir, replicate);
+    assert(y.r == K && "abm_system_mse_qvarma: a replicate has the wrong number of series");
     *y_out = y;
 }
 
 /* One spec's loss table: "replicate" plus one suffixed column per sample -
    the suffix is what keeps this spec's columns from colliding with the
    other spec's once both are joined. real_y is applications/
-   us_qvarma_employment_change.c's own real-data block, shared across both
+   us_qvarma_spec_choice.c's own real-data block, shared across both
    specs since the data does not depend on which spec is being fit. */
 static DataFrame build_spec_losses(Spec spec, Mat real_y, const SampleEntry *samples, int n_samples,
                                    FILE *manifest) {
     QvarmaParams real = spec_shape(spec.r);
     int loaded = qvarma_load_params(&real, spec.real_fit_path);
     assert(loaded && "abm_system_mse_qvarma: could not load the real-data fit - run "
-                      "us_qvarma_employment_change.c's grid first");
+                      "us_qvarma_spec_choice.c's grid first");
     Vec real_irf;
     int real_ok = try_compute_irf(&real, real_y, &real_irf);
     assert(real_ok && "abm_system_mse_qvarma: the real-data fit's own nu <= 2 - "
                        "its impulse response function cannot be computed at all");
 
-    Mat values = mat_new(N_REPLICATES, n_samples + 1);
-    QvarmaParams working = spec_shape(spec.r);
+    Mat values = mat_new(n_replicates, n_samples + 1);
     int n_missing = 0;
 
-    for (int row = 0; row < N_REPLICATES; row++) {
-        AT(values, row, 0) = (mreal)row;
-        for (int col = 0; col < n_samples; col++) {
-            char cache_path[560];
-            snprintf(cache_path, sizeof cache_path, "%s/%s/replicate_%03d_%s_fit.json",
-                     FIT_DIR, samples[col].name, row, spec.label);
-            Mat sim_y;
-            Vec sim_irf;
-            int ok = qvarma_load_params(&working, cache_path);
-            if (ok) {
-                read_y(samples[col].name, row, &sim_y);
-                ok = try_compute_irf(&working, sim_y, &sim_irf);
-                mat_free(sim_y);
-            }
-            if (ok) {
-                AT(values, row, col + 1) = stats_mae(real_irf, sim_irf);
-                mat_free(sim_irf);
-            } else {
+    /* One task per replicate, so the thousand rows spread over the machine's
+       threads and every column of a row is computed by the thread that owns it.
+       Each thread carries its own parameter block because qvarma_load_params
+       writes into it; values is written one distinct cell at a time, and the
+       manifest is the only shared sink, taken under a lock because a missing
+       cell is rare enough that contention for it never arises. */
+    #pragma omp parallel reduction(+:n_missing)
+    {
+        QvarmaParams working = spec_shape(spec.r);
+
+        #pragma omp for schedule(dynamic)
+        for (int row = 0; row < n_replicates; row++) {
+            AT(values, row, 0) = (mreal)row;
+            for (int col = 0; col < n_samples; col++) {
+                char cache_path[560];
+                snprintf(cache_path, sizeof cache_path, "%s/%s/replicate_%03d_%s_fit.json",
+                         FIT_DIR, samples[col].name, row, spec.label);
+                Mat sim_y;
+                Vec sim_irf;
+                int ok = qvarma_load_params(&working, cache_path);
+                if (ok) {
+                    read_y(samples[col].name, row, &sim_y);
+                    ok = try_compute_irf(&working, sim_y, &sim_irf);
+                    mat_free(sim_y);
+                }
+                if (ok) {
+                    mreal loss = stats_mae(real_irf, sim_irf);
+                    mat_free(sim_irf);
+                    /* An impulse response can come back with a non-finite entry
+                       even from parameters that loaded and passed the nu test,
+                       and one such cell is enough to make the whole confidence
+                       set refuse to run: et_al's mcs asserts a finite loss
+                       matrix, because a hole in one model's column loses every
+                       comparison it takes part in and the p-values give no sign
+                       of it. */
+                    if (!MISNAN(loss) && !MISINF(loss)) {
+                        AT(values, row, col + 1) = loss;
+                        continue;
+                    }
+                }
                 AT(values, row, col + 1) = (mreal)NAN;
                 n_missing++;
+                #pragma omp critical
                 fprintf(manifest, "%s missing: %s replicate %03d\n", spec.label,
                         samples[col].name, row);
             }
         }
+
+        qvarma_params_free(&working);
     }
-    qvarma_params_free(&working);
+
+    /* The confidence set needs a rectangle with no holes. et_al's mcs asserts
+       that, because a model whose column carries one NaN loses every
+       comparison it takes part in and the p-values report nothing unusual: a
+       hole eliminates a model rather than being visible as a hole. A cell can
+       only be missing here when a fit would not load or its impulse response
+       came back non-finite, and both are properties of one (configuration,
+       replicate) pair rather than of a whole configuration. Dropping the
+       replicate keeps every configuration in the comparison and costs one
+       observation from all of them, which is the direction that does not
+       silently change which models are being compared. */
+    int keep = 0;
+    int *usable = (int*)malloc((size_t)n_replicates * sizeof(int));
+    for (int row = 0; row < n_replicates; row++) {
+        usable[row] = 1;
+        for (int col = 0; col < n_samples; col++)
+            if (MISNAN(AT(values, row, col + 1))) { usable[row] = 0; break; }
+        if (usable[row]) keep++;
+    }
+    assert(keep > 0 && "abm_system_mse_qvarma: every replicate has a missing cell");
+
+    if (keep < n_replicates) {
+        Mat kept = mat_new(keep, n_samples + 1);
+        int at = 0;
+        for (int row = 0; row < n_replicates; row++) {
+            if (!usable[row]) continue;
+            for (int col = 0; col <= n_samples; col++) AT(kept, at, col) = AT(values, row, col);
+            at++;
+        }
+        mat_free(values);
+        values = kept;
+        fprintf(manifest, "%s: %d of %d replicates dropped for holding a missing cell\n",
+                spec.label, n_replicates - keep, n_replicates);
+    }
+    free(usable);
+
 
     char **col_names = (char**)malloc((size_t)(n_samples + 1) * sizeof(char*));
     col_names[0] = frame_strdup("replicate");
@@ -307,7 +394,7 @@ static DataFrame build_spec_losses(Spec spec, Mat real_y, const SampleEntry *sam
     mat_free(values);
 
     fprintf(manifest, "%s: %d of %d cells missing\n\n", spec.label, n_missing,
-            N_REPLICATES * n_samples);
+            n_replicates * n_samples);
 
     qvarma_params_free(&real);
     mat_free(real_irf);
@@ -315,6 +402,13 @@ static DataFrame build_spec_losses(Spec spec, Mat real_y, const SampleEntry *sam
 }
 
 int main(void) {
+    FIT_DIR = getenv("ABM_SYSTEM_FIT_DIR");
+    if (!FIT_DIR) FIT_DIR = FIT_DIR_DEFAULT;
+    INPUT_DIR = getenv("ABM_SYSTEM_INPUT_DIR");
+    if (!INPUT_DIR) INPUT_DIR = INPUT_DIR_DEFAULT;
+    OUTPUT_PATH = getenv("ABM_SYSTEM_LOSS_PATH");
+    if (!OUTPUT_PATH) OUTPUT_PATH = OUTPUT_PATH_DEFAULT;
+
     int n_samples;
     SampleEntry *samples = list_samples(FIT_DIR, &n_samples);
     assert(n_samples > 0 && "abm_system_mse_qvarma: no sample directories under out/abm_system_fit_qvarma/");
@@ -323,26 +417,28 @@ int main(void) {
     Mat real_y = build_real_block(original);
     mat_free(original);
 
-    FILE *manifest = fopen("out/abm_system_mse_qvarma_manifest.txt", "w");
-    assert(manifest && "abm_system_mse_qvarma: cannot open the manifest path for writing");
-    fprintf(manifest, "%d samples, %d replicates each, %d specs, joined on replicate, "
-                       "loss = MAE between stacked impulse response vectors (horizon %d)\n\n",
-            n_samples, N_REPLICATES, N_SPECS, HORIZON);
+    n_replicates = count_replicates(samples[0].name, spec_list[0].label);
 
-    assert(N_SPECS == 2 && "abm_system_mse_qvarma: the join step below is written for exactly two specs");
-    DataFrame left = build_spec_losses(spec_list[0], real_y, samples, n_samples, manifest);
-    DataFrame right = build_spec_losses(spec_list[1], real_y, samples, n_samples, manifest);
+    char manifest_path[640];
+    snprintf(manifest_path, sizeof manifest_path, "%.600s_manifest.txt", OUTPUT_PATH);
+    FILE *manifest = fopen(manifest_path, "w");
+    assert(manifest && "abm_system_mse_qvarma: cannot open the manifest path for writing");
+    fprintf(manifest, "%d samples, %d replicates each, %d spec, "
+                       "loss = MAE between stacked impulse response vectors (horizon %d)\n\n",
+            n_samples, n_replicates, N_SPECS, HORIZON);
+
+    /* One table per spec, and with one spec there is nothing to join it to.
+       The join that stood here paired the r = 2 and r = 4 columns on the
+       replicate index; if a second spec goes back into spec_list, it comes
+       back with it. */
+    assert(N_SPECS == 1 && "abm_system_mse_qvarma: written for one spec - restore the join for more");
+    DataFrame losses = build_spec_losses(spec_list[0], real_y, samples, n_samples, manifest);
     mat_free(real_y);
 
-    DataFrame own_half = df_join(&left, &right, "replicate", JOIN_INNER);
-    assert(own_half.r == N_REPLICATES &&
-           "abm_system_mse_qvarma: every replicate exists in both specs' tables, so an inner "
-           "join on replicate should keep all of them - something upstream disagrees");
-    df_write_csv(&own_half, OUTPUT_PATH, csv_write_options_default());
+    assert(losses.r > 0 && "abm_system_mse_qvarma: the loss table has no rows");
+    df_write_csv(&losses, OUTPUT_PATH, csv_write_options_default());
 
-    df_free(&left);
-    df_free(&right);
-    df_free(&own_half);
+    df_free(&losses);
 
     fclose(manifest);
     for (int i = 0; i < n_samples; i++) free(samples[i].name);

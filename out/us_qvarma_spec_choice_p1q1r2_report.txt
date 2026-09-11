@@ -2,6 +2,7 @@ t-QVARMA(1,1,2)
 K 5, K_star 3, R 1, warmup per component, Phi_star bound 1.0000
 mu_star restricted to the 3 stationary series
 iterations 1023, converged yes, gradient_norm 0.00471282
+stopping reason: not recorded by the cache this was loaded from
 log_likelihood -882.142403, per_period -4.717339, parameters 42
 aic 9.883876, bic 10.609580, hannan_quinn 10.177931
 C_1 0.595420

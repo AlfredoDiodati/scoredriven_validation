@@ -1,4 +1,4 @@
-t-QVARMA (no drift), same Fisher-relation partition with Employment differenced as us_qvarmad_employment_change.c: GDP_growth, EN_growth, Employment_change I(0), Inflation and InterestRate co-integrated (K_star 3, K_dagger 2, R 1 - forced) - built to compare against that file's own drift-carrying fit, not to re-search the grid
+t-QVARMA (no drift), Fisher-relation partition: GDP_growth, EN_growth, Employment_change I(0), Inflation and InterestRate co-integrated (K_star 3, K_dagger 2, R 1 - forced). Two candidates compared to choose the auxiliary specification the ABM pipeline fits; not the experiment itself
 (GDP_growth, EN_growth, Employment_change, Inflation, InterestRate), 1973Q2 to 2019Q4, 187 quarters
 
 spec       params        aic        bic        hqc        log_lik   gradient    niter    C_1 genuine_max

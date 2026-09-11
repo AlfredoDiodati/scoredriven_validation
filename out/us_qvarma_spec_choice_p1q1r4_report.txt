@@ -2,6 +2,7 @@ t-QVARMA(1,1,4)
 K 5, K_star 3, R 1, warmup per component, Phi_star bound 1.0000
 mu_star restricted to the 3 stationary series
 iterations 6956, converged yes, gradient_norm 0.136125
+stopping reason: not recorded by the cache this was loaded from
 log_likelihood -866.227696, per_period -4.632234, parameters 46
 aic 9.756446, bic 10.551264, hannan_quinn 10.078507
 C_1 0.659873
@@ -55,7 +56,7 @@ alpha3[0,0]               -0.011462       0.018039       0.018039
 alpha3[1,0]                0.034293       0.046667       0.046667
 alpha4[0,0]                0.011622       0.016575       0.016575
 alpha4[1,0]                0.038087       0.050312       0.050312
-beta1[0,1]                17.321309      24.143944      24.143944
+beta1[0,1]                17.321309      24.143943      24.143943
 
 c
 0.656371

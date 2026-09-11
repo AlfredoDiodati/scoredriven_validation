@@ -64,3 +64,15 @@ dataset/abm_system_rdata/
 # launcher's own record is out/abm_system_simulate_all_provenance.txt and the
 # per-shard logs beside it.
 nohup.out
+
+# The simulated dataset packed into one archive for sharing, 15 GB. The dataset
+# it packs is ignored above for the same reason.
+dataset/abm_system.tar.gz
+
+# The loss table, 1000 replicates by 1000 configurations, 20 MB. Rebuilt by
+# make app-abm_system_mse_qvarma from the fit cache. The confidence set it feeds,
+# out/abm_system_mcs_joint.csv and .txt, is small and kept.
+out/abm_system_mse_qvarma_joint.csv
+
+# Python's bytecode cache, written when the plotting script runs.
+__pycache__/

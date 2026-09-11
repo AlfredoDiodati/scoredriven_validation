@@ -1,0 +1,5 @@
+nohup: ignoring input
+cc -O2 -march=native -Wall -Wextra -std=c11 -DMAT_DOUBLE -DMAT_DOUBLE -fopenmp -I/usr/local/include/et_al. -I/usr/include/openblas -fopenmp -I. applications/us_prepare_data.c -o bin/us_prepare_data -lm -lopenblas
+./bin/us_prepare_data
+./bin/us_qvarma_spec_choice
+./bin/abm_system_mse_qvarma

@@ -1,7 +1,9 @@
 """
 Figures for out/abm_system_winner_irf.csv, which
 applications/abm_system_winner_irf.c writes: the impulse responses of the
-model the Model Confidence Set kept.
+model the Model Confidence Set kept. The script stops without drawing if that
+file names a different configuration from the one
+out/abm_system_mcs_joint.csv keeps now.
 
 The same responses are drawn twice, under two identifications, because the
 two answer different questions and neither one's shock labels mean what the
@@ -59,6 +61,8 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 IRF_PATH = Path("out/abm_system_winner_irf.csv")
+MANIFEST_PATH = Path("out/abm_system_winner_irf_manifest.txt")
+MCS_PATH = Path("out/abm_system_mcs_joint.csv")
 OUT_DIR = Path("out/abm_system_winner_irf_plots")
 
 # Slots 1 to 3 of the data-visualization reference palette, the subset
@@ -179,6 +183,32 @@ RECURSIVE = Orientation(
     banded=False,
     line_label="Response under the recursive (Cholesky) orientation",
 )
+
+
+def check_winning_configuration():
+    """The configuration the impulse responses belong to, as the manifest beside
+    them names it, checked against the one the confidence set keeps now. The
+    two are written by different runs, and drawing a model an earlier run
+    selected would give figures that look right and describe the wrong
+    configuration."""
+    drawn = None
+    for line in MANIFEST_PATH.read_text().splitlines():
+        if line.startswith("winning model"):
+            drawn = line.split()[-1]
+    if drawn is None:
+        raise SystemExit(f"{MANIFEST_PATH} names no winning model")
+    kept = (
+        pl.read_csv(MCS_PATH, columns=["model", "mean_loss", "in_set"], infer_schema_length=None)
+        .filter(pl.col("in_set") == 1)
+        .sort("mean_loss")
+        .get_column("model")[0]
+    )
+    if drawn != kept:
+        raise SystemExit(
+            f"{IRF_PATH} holds the impulse responses of {drawn}, but {MCS_PATH} "
+            f"keeps {kept}: run applications/abm_system_winner_irf.c first"
+        )
+    return drawn
 
 
 def load_curves():
@@ -660,6 +690,7 @@ def figure_impact(curves, orientation):
 
 
 def main():
+    check_winning_configuration()
     curves = load_curves()
     for orientation in (SIGN_RESTRICTED, RECURSIVE):
         orientation.directory.mkdir(parents=True, exist_ok=True)

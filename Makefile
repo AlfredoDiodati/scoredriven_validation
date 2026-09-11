@@ -114,9 +114,10 @@ APPLICATION_STEMS := us_prepare_data abm_system_design
 # budget is built below from SCALE_ITERATION_CAPS instead, and the generic
 # app-<stem> rule - which would build one unnamed binary at the default budget -
 # would give a second way to write the same tree.
-EXPERIMENT_STEMS := us_qvarma_employment_change \
+EXPERIMENT_STEMS := us_qvarma_spec_choice \
                      abm_system_extract abm_system_fit_qvarma \
                      abm_system_mse_qvarma abm_system_mcs \
+                     abm_system_mcs_statistic_comparison \
                      abm_system_winner_irf \
                      abm_system_scale_extract
 # Whatever the application scripts share, so editing it rebuilds them.
@@ -241,7 +242,7 @@ $(BIN)/abm_system_simulate: applications/abm_system_simulate.c $(HEADERS) $(APPL
 # us_data.h reads out/us_system.csv rather than the raw file, so a standalone
 # run has to regenerate it first rather than trust whatever an earlier run
 # left behind.
-app-us_qvarma_employment_change: app-us_prepare_data
+app-us_qvarma_spec_choice: app-us_prepare_data
 
 # app-abm_system_fit_qvarma has no prerequisite that builds its dataset. It fits
 # every subdirectory of dataset/abm_system whatever wrote it, and the two writers
@@ -256,7 +257,7 @@ app-us_qvarma_employment_change: app-us_prepare_data
 # abm_system_scale_extract deliberately does not appear as a prerequisite of
 # app-abm_system_scale_fit_qvarma: it writes 21 GB and takes tens of minutes, so
 # rerunning the throughput test must not rebuild the dataset it reads.
-app-abm_system_mse_qvarma: app-us_qvarma_employment_change
+app-abm_system_mse_qvarma: app-us_qvarma_spec_choice
 app-abm_system_mcs: app-abm_system_mse_qvarma
 app-abm_system_winner_irf: app-abm_system_mcs
 

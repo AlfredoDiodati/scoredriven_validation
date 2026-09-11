@@ -1,20 +1,49 @@
 /*
-The t-QVARMA (no drift) counterpart to us_qvarmad_employment_change.c, same
-data, same partition, same two specs that file's own grid settled on -
-(p,q,r) = (1,1,2) and (1,1,4) - so the two can be compared directly: same
-build_block, same build_start convention, same residual battery, with a
-mean squared error check added (docs/MODEL_TEMPLATE.md entry 16 is why this
-is its own file rather than qvarma_d.h with the drift term switched off:
-qvarma.h and qvarma_d.h define the same names, so a translation unit uses
-one or the other, never both).
+Which t-QVARMA specification the rest of this project fits, and the evidence
+for that choice.
 
-Data construction, partition, residual checks: identical to
-us_qvarmad_employment_change.c's own - see that file's own header comment.
-Cached per spec: out/us_qvarma_employment_change_p<p>q<q>r<r>_fit.json.
-Output: out/us_qvarma_employment_change.txt,
-out/us_qvarma_employment_change_p<p>q<q>r<r>_report.txt,
-out/us_qvarma_employment_change_p<p>q<q>r<r>_residuals.csv. In
-EXPERIMENT_STEMS. Nothing printed.
+This is not the experiment. The experiment is the Latin hypercube over the ABM
+in docs/ABM_SYSTEM_SIMULATION.md, and the pipeline that consumes it is
+abm_system_fit_qvarma -> abm_system_mse_qvarma -> abm_system_mcs ->
+abm_system_winner_irf. This file runs once, on the real US data, and its job is
+to justify one decision those four take as given: that the auxiliary model is
+t-QVARMA(1,1,2) with the Fisher-relation partition, and not one of the
+alternatives.
+
+It fits two candidates, (p,q,r) = (1,1,2) and (1,1,4), to the US series that
+applications/us_prepare_data.c builds, under the partition the auxiliary model
+uses throughout: GDP growth, energy growth and the change in employment I(0),
+inflation and the interest rate co-integrated, so K_star 3, K_dagger 2, R 1.
+For each it reports the information criteria, whether the fit reached a genuine
+maximum, and a battery of residual checks - mean, contemporaneous covariance
+against nu/(nu-2) Sigma, autocorrelation with Ljung-Box, the quadratic form
+against its F reference, and the mean squared residual.
+
+The r = 2 fit is also an input rather than only a diagnostic:
+applications/abm_system_mse_qvarma.c reads
+out/us_qvarma_spec_choice_p1q1r2_fit.json and computes its impulse response
+function, which is the benchmark every simulated replicate's own response is
+compared against. r = 4 was in the pipeline as a second auxiliary spec until it
+lost the Model Confidence Set, which put no r = 4 configuration in the
+surviving set; docs/ABM_SYSTEM_MCS_VALIDATION.md records that run. It is still
+fitted here because dropping it would remove the comparison the choice rests
+on, and it costs one fit.
+
+The two candidates are not a fresh grid search. They are what a 9-point grid
+over (p,q,r) settled on in the drift-carrying t-QVARMA study this work follows;
+that study's own code is not part of this repository. What is re-run here is the
+driftless comparison between the two, on the same data and the same partition,
+so the choice rests on output in out/ rather than on a citation.
+
+Output, none of it printed:
+    out/us_qvarma_spec_choice.txt                     the comparison table and
+                                                      the residual battery
+    out/us_qvarma_spec_choice_p<p>q<q>r<r>_fit.json   the fitted parameters,
+                                                      also the cache
+    out/us_qvarma_spec_choice_p<p>q<q>r<r>_report.txt qvarma.h's own report
+    out/us_qvarma_spec_choice_p<p>q<q>r<r>_residuals.csv
+
+In EXPERIMENT_STEMS, so `make app-us_qvarma_spec_choice` runs it.
 */
 
 #include "us_data.h"
@@ -64,9 +93,9 @@ static mreal first_difference_sd(Mat y, int row) {
 }
 
 typedef struct { int p, q, r; } Spec;
-/* The two specs us_qvarmad_employment_change.c's own 9-point grid settled
-   on, not a fresh grid search here - this file exists to compare against
-   that choice, not to re-litigate it. */
+/* The two candidates the drift-carrying study's 9-point grid over (p,q,r)
+   settled on. This file re-runs the comparison between them driftless rather
+   than searching the grid again. */
 static const Spec spec_grid[] = { { 1, 1, 2 }, { 1, 1, 4 } };
 #define N_SPECS ((int)(sizeof spec_grid / sizeof spec_grid[0]))
 
@@ -127,12 +156,12 @@ static void write_residual_csv(Mat residual, const char *path) {
 
 static void run_spec(Mat y, Spec spec, Fitted *out) {
     char cache_path[128], report_path[128], residual_path[128];
-    snprintf(cache_path, sizeof cache_path, "out/us_qvarma_employment_change_p%dq%dr%d_fit.json",
+    snprintf(cache_path, sizeof cache_path, "out/us_qvarma_spec_choice_p%dq%dr%d_fit.json",
              spec.p, spec.q, spec.r);
     snprintf(report_path, sizeof report_path,
-             "out/us_qvarma_employment_change_p%dq%dr%d_report.txt", spec.p, spec.q, spec.r);
+             "out/us_qvarma_spec_choice_p%dq%dr%d_report.txt", spec.p, spec.q, spec.r);
     snprintf(residual_path, sizeof residual_path,
-             "out/us_qvarma_employment_change_p%dq%dr%d_residuals.csv", spec.p, spec.q, spec.r);
+             "out/us_qvarma_spec_choice_p%dq%dr%d_residuals.csv", spec.p, spec.q, spec.r);
 
     QvarmaParams start = build_start(y, spec);
     QvarmaFitOptions options = qvarma_default_fit_options();
@@ -293,13 +322,13 @@ int main(void) {
     #pragma omp parallel for schedule(dynamic)
     for (int i = 0; i < N_SPECS; i++) run_spec(y, spec_grid[i], &fitted[i]);
 
-    FILE *out = fopen("out/us_qvarma_employment_change.txt", "w");
+    FILE *out = fopen("out/us_qvarma_spec_choice.txt", "w");
     assert(out && "cannot open the output path for writing");
-    fprintf(out, "t-QVARMA (no drift), same Fisher-relation partition with Employment "
-                 "differenced as us_qvarmad_employment_change.c: GDP_growth, EN_growth, "
+    fprintf(out, "t-QVARMA (no drift), Fisher-relation partition: GDP_growth, EN_growth, "
                  "Employment_change I(0), Inflation and InterestRate co-integrated "
-                 "(K_star 3, K_dagger 2, R 1 - forced) - built to compare against that "
-                 "file's own drift-carrying fit, not to re-search the grid\n");
+                 "(K_star 3, K_dagger 2, R 1 - forced). Two candidates compared to choose "
+                 "the auxiliary specification the ABM pipeline fits; not the experiment "
+                 "itself\n");
     fprintf(out, "(GDP_growth, EN_growth, Employment_change, Inflation, InterestRate), "
                  "1973Q2 to 2019Q4, %d quarters\n\n", PERIODS);
 

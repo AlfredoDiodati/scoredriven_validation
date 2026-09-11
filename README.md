@@ -9,9 +9,13 @@ between two economies is the distance between the impulse responses their fits
 imply, and the Model Confidence Set of Hansen, Lunde and Nason (2011) decides
 which configurations survive.
 
+The ten steps that produce the result, from simulation to figures, and the
+files each one writes are listed under "The main pipeline" below.
+
 `docs/ABM_SYSTEM_MCS_VALIDATION.md` describes the validation procedure: what is
 compared against what, why the comparison runs on impulse responses rather than
-on fitted parameters, and the settings the confidence set is computed under.
+on fitted parameters, the settings the confidence set is computed under, and
+the result on the design experiment.
 `docs/DATA_DOCUMENTATION.md` records where the US series come from and how each
 one is transformed. `docs/ABM_SYSTEM_SIMULATION.md` describes the design the
 simulations run over and how they are stored, and
@@ -143,7 +147,8 @@ invoked as:
 
     ./model/dsk_sfc/dsk_SFC model/dsk_sfc/dsk_sfc_inputs.json -r myrun -s 1 -f 0 -c 0 -v 0
 
-The whole experiment goes through the driver rather than through that command:
+The whole experiment goes through the driver rather than through that command;
+these are steps 1 and 3 of "The main pipeline" below:
 
     make app-abm_system_design            draws dataset/abm_system_design.csv
     make bin/abm_system_simulate          builds the driver, does not run it
@@ -359,38 +364,128 @@ The figures are the one part that leaves C:
 `make uninstall-core` in the et_al clone, with the same `PREFIX`, reverses the
 install and removes the model tier with it.
 
-## Running the pipeline
+## The main pipeline
 
-Each step reads what the previous one wrote, so the order matters. The Makefile
-already encodes the dependencies, so asking for a later step builds and runs the
-earlier ones.
+Ten steps take the project from the parameter design to the figures of the
+configuration the Model Confidence Set keeps. Each step reads what the steps
+before it wrote.
 
-    make app-us_prepare_data              the five US variables, 1973Q1 to 2019Q4
-    make app-us_qvarma_employment_change  the auxiliary model on the real data
-    make app-abm_system_fit_qvarma        one fit per simulated replication
-    make app-abm_system_mse_qvarma        impulse responses and the loss table
-    make app-abm_system_mcs               the confidence set itself
-    make app-abm_system_winner_irf        the surviving model's responses, with bands
+| step | script | command |
+|---|---|---|
+| 1. Draw the parameter design | `applications/abm_system_design.c` | `make app-abm_system_design` |
+| 2. Build the simulator | `model/dsk_sfc/` | `make model` |
+| 3. Simulate every configuration | `applications/abm_system_simulate_all.sh`, which runs `applications/abm_system_simulate.c` | `make bin/abm_system_simulate`, then `./applications/abm_system_simulate_all.sh` |
+| 4. Prepare the US data | `applications/us_prepare_data.c` | `make app-us_prepare_data` |
+| 5. Fit the auxiliary model to the US data | `applications/us_qvarma_spec_choice.c` | `make app-us_qvarma_spec_choice` |
+| 6. Fit the auxiliary model to every simulation | `applications/abm_system_fit_qvarma.c` | `make app-abm_system_fit_qvarma` |
+| 7. Build the loss table | `applications/abm_system_mse_qvarma.c` | `make app-abm_system_mse_qvarma` |
+| 8. Run the Model Confidence Set | `applications/abm_system_mcs.c` | `make app-abm_system_mcs` |
+| 9. Compute the winning configuration's impulse responses | `applications/abm_system_winner_irf.c` | `make app-abm_system_winner_irf` |
+| 10. Draw the figures | `applications/abm_system_winner_irf_plots.py` | `python applications/abm_system_winner_irf_plots.py` |
 
-    python applications/abm_system_winner_irf_plots.py
+What each step is for:
 
-The simulated dataset those fits read is not built by any of these. It comes
-from the Latin hypercube experiment above, run by
-`applications/abm_system_simulate_all.sh`, which takes about forty hours and so
-is not something a make target starts.
+1. Draws the 1000 parameter configurations the experiment compares, a Latin
+   hypercube over nine of the model's parameters.
+   `docs/ABM_SYSTEM_SIMULATION.md` describes the design.
+2. Builds the DSK simulator described above.
+3. Runs the simulator 1000 times for each configuration and keeps the five
+   series the auxiliary model is fitted on. It took 41.6 hours here, which is
+   why no make target starts it.
+4. Builds the five US series from `dataset/us_real.csv`.
+   `docs/DATA_DOCUMENTATION.md` describes the transformations.
+5. Fits the t-QVARMA to the US data. It fits (1,1,2) and (1,1,4) and reports
+   both, which is how (1,1,2) was chosen; the (1,1,2) fit is the benchmark every
+   simulation is compared against.
+6. Fits the t-QVARMA(1,1,2) to each of the 1,000,000 simulated replicates. It
+   caches every fit as it finishes and resumes from the cache, so it can be run
+   several times; it was run eight times here, hours each.
+7. Turns every fit into an impulse response and measures its distance from the
+   US one.
+8. Finds the configurations whose distance cannot be told apart from the
+   smallest. `docs/ABM_SYSTEM_MCS_VALIDATION.md` has the settings and the result.
+9. Averages the winning configuration's fits over its replicates and computes
+   that model's impulse responses, with the sign-restricted bands of Blazsek,
+   Escribano and Licht (2023).
+10. Draws those responses. It stops without drawing if step 9's output belongs
+    to a different configuration from the one step 8 keeps now.
 
-There is an older route to the same layout, `make app-abm_system_extract`, which
-converts the 108 `.Rdata` files under `dataset/simulated/` instead of running the
-simulator. Use one or the other, never both: `abm_system_fit_qvarma` fits every
-subdirectory of `dataset/abm_system/` regardless of what wrote it, so two
-datasets sitting there at once would be fitted together with nothing in the
-results to say so. `dataset/abm_system_rdata/` currently holds the older one,
-moved aside so the design runs could take its place.
+`make app-<name>` also reruns the steps listed as its prerequisites in the
+Makefile: step 5 reruns 4; step 7 reruns 4 and 5; step 8 reruns 4, 5 and 7; step
+9 reruns 4, 5, 7 and 8. So `make app-abm_system_winner_irf` rebuilds the loss
+table and the confidence set before the impulse responses. Steps 1, 3 and 6 are
+never rerun that way. To run one step alone
+on what is already on disk, build its binary and run it, for example
+`make bin/abm_system_mcs && ./bin/abm_system_mcs`.
 
-The fitting step is the long one. Every fit is cached to its own file the moment
-it finishes, so an interrupted run resumes rather than starting over.
+Times on this machine for the steps after the fitting: the loss table takes
+minutes, the confidence set 14 seconds, the impulse responses 21 seconds and the
+figures 35 seconds.
 
-Results are written to `out/`, never printed.
+The figures use Python with `polars`, `plotly` and `kaleido`; everything else is
+C. Results are written to files, never printed.
+
+### Outputs of the main pipeline
+
+| file | step | what it holds |
+|---|---|---|
+| `dataset/abm_system_design.csv` | 1 | the 1000 configurations, one row each, nine parameters |
+| `out/abm_system_design.txt` | 1 | what the last run of step 1 did |
+| `dataset/abm_system/cop_NNNN/batch_NNN.npz` | 3 | the five simulated series, ten replicates per compressed archive; 15 GB, not tracked by git |
+| `out/abm_system_simulate_all_provenance.txt` | 3 | checksums of the model and the design, shard ranges, wall time, stored size |
+| `out/abm_system_simulate_manifest.txt` | 3 | replicates completed and rejected, per configuration |
+| `out/abm_system_simulate/` | 3 | one log per shard, and the reason for any rejected replicate |
+| `out/us_system.csv` | 4 | the US series |
+| `out/us_qvarma_spec_choice_p1q1r2_fit.json` | 5 | the US benchmark fit |
+| `out/us_qvarma_spec_choice.txt` | 5 | the (1,1,2) against (1,1,4) comparison, with residual checks |
+| `out/abm_system_fit_qvarma/cop_NNNN/replicate_NNN_p1q1r2_fit.json` | 6 | one fitted parameter set per replicate, which is also the cache; not tracked by git |
+| `out/abm_system_fit_qvarma/cop_NNNN/lineage.txt` | 6 | which replicates took another replicate's parameters |
+| `out/abm_system_fit_qvarma_manifest.txt` | 6 | per fit: log-likelihood, gradient, convergence, cumulative iterations, why the solver stopped |
+| `out/abm_system_mse_qvarma_joint.csv` | 7 | the loss table: one row per replicate, one column per configuration |
+| `out/abm_system_mse_qvarma_joint.csv_manifest.txt` | 7 | missing cells and dropped replicates |
+| `out/abm_system_mcs_joint.txt` | 8 | the confidence set, as a readable report |
+| `out/abm_system_mcs_joint.csv` | 8 | per configuration: mean loss, MCS p-value, whether it is in the set, the round it was eliminated in |
+| `out/abm_system_winner_irf.csv` | 9 | the winner's impulse responses: one row per component, horizon, shock and response, with the band |
+| `out/abm_system_winner_irf_theta.json` | 9 | the averaged parameter set |
+| `out/abm_system_winner_irf_manifest.txt` | 9 | which configuration, how many fits were averaged and converged, how many rotations were accepted |
+| `out/abm_system_winner_irf_plots/sign_restricted/` | 10 | the figures under the paper's sign restrictions |
+| `out/abm_system_winner_irf_plots/recursive/` | 10 | the figures under the recursive ordering |
+
+`docs/ABM_SYSTEM_MCS_VALIDATION.md` lists every figure and what it shows.
+
+### Not part of the main pipeline
+
+Scripts in `applications/` that the ten steps do not use:
+
+- `abm_system_mcs_statistic_comparison.c` reruns step 8 under both statistics
+  et_al implements, as a check, and writes
+  `out/abm_system_mcs_statistic_comparison.txt` and `.csv`.
+- `abm_system_extract.c` is the older way to fill `dataset/abm_system/`: it
+  converts the 108 `.Rdata` files under `dataset/simulated/` instead of running
+  the simulator. Use one or the other, never both: step 6 fits every
+  subdirectory of `dataset/abm_system/` regardless of what wrote it, so two
+  datasets sitting there at once would be fitted together with nothing in the
+  results to say so. `dataset/abm_system_rdata/` holds the older one, moved
+  aside so the design runs could take its place.
+- `abm_system_scale_extract.c`, `abm_system_scale_fit_qvarma.c` and
+  `abm_system_scale_iteration_comparison.c` are a throughput study of the
+  fitting step on a separate 500 by 1000 dataset.
+
+Files in `out/` the ten steps do not write:
+
+- `out/abm_system_mcs_statistic_comparison.*`, from the check above.
+- `out/abm_system_extract_manifest.txt`, from the older route above.
+- `out/abm_system_scale_*`, `out/fit_speedup_options.txt` and the shell scripts
+  `out/hold_awake.sh`, `out/record_run_walltime.sh` and
+  `out/run_scale_fit_detached*.sh`, from the throughput study.
+- `out/abm_system_fit_qvarma_before_resume/`,
+  `out/abm_system_fit_qvarma_manifest_before_resume.txt` and
+  `out/abm_system_mse_qvarma_manifest.txt`, left from the run on the older
+  dataset in August 2026.
+- `out/dsk_*`, `out/qvarma_*`, `out/correctness_*` and
+  `out/small_call_scaling.txt`, written by the tests and studies below.
+- `out/*.log`, what each step wrote to the terminal when it was run in the
+  background.
 
 ## Tests
 

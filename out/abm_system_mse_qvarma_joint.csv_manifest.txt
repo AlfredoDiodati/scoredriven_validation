@@ -1,0 +1,4 @@
+1000 samples, 1000 replicates each, 1 spec, loss = MAE between stacked impulse response vectors (horizon 20)
+
+p1q1r2: 0 of 1000000 cells missing
+

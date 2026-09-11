@@ -1,11 +1,12 @@
 /*
 Model Confidence Set (Hansen, Lunde and Nason 2011), over
-out/abm_system_mse_qvarma_joint.csv: the mean absolute error between each of
-the two driftless t-QVARMA real-data fits' own impulse response function
-(p1q1r2, p1q1r4) and every one of the 10,800 simulated replicates' own IRF,
-200 (sample, spec) pairs ("models", every numeric column except
-"replicate") x 108 replicates ("observations", the rows), one MCS run over
-all 200 at once. Which of the 200 combinations cannot be statistically
+out/abm_system_mse_qvarma_joint.csv: the mean absolute error between the
+driftless t-QVARMA real-data fit's own impulse response function (p1q1r2)
+and every simulated replicate's own IRF. Every numeric column except
+"replicate" is a "model", one per configuration of the design, and every row
+is an "observation", one per replicate. Over the design experiment that is
+1000 models and 1000 replicates in one MCS run. Which configurations cannot be
+statistically
 distinguished from the one with the smallest average loss - using MCS_TR
 (every pairwise differential, rejects when any two models look different
 from each other), not et_al.'s own default MCS_TMAX (each model against the
@@ -46,7 +47,7 @@ qvarma, squared-error run unable to reject anything. Absolute error still
 counts that same replicate, linearly rather than squared, so it can no
 longer single-handedly swamp every other observation.
 
-The 108 replicates are independent Monte Carlo draws, not a time series -
+The replicates are independent Monte Carlo draws, not a time series -
 there is no serial dependence for a block bootstrap to protect against, so
 it is switched off:
 
@@ -73,13 +74,12 @@ the plain sample variance, rather than what independent replicates actually
 call for.
 
 One joint run over both specs, not one per spec: out/abm_system_mse_qvarma_joint.csv
-already has both specs' columns side by side, each labeled with its own
-spec (applications/abm_system_mse_qvarma.c builds it that way, joining the
-two specs' own loss tables on "replicate" via et_al.'s frame/join.h), so
+already carries one column per configuration, each labeled with the spec it
+was fitted under (applications/abm_system_mse_qvarma.c builds it that way), so
 every column of it except "replicate" is a model this file's own mcs() call
-treats uniformly - it does not know or care that half of them came from
-p1q1r2 and half from p1q1r4, which is exactly what a joint MCS across both
-specs means.
+treats uniformly. It reads however many columns the file holds, so restoring a
+second spec upstream needs no change here: the columns simply double and the
+MCS runs jointly across both.
 
 Requires out/abm_system_mse_qvarma_joint.csv to exist
 (applications/abm_system_mse_qvarma.c). Output:
@@ -111,8 +111,9 @@ int main(void) {
     df_free(&raw);
 
     MCSOptions opt = mcs_options_default();
-    opt.bootstrap = 2000;                    /* the library default - see this file's own
-                                                 header comment on why it is set explicitly */
+    /* Five times the library default of 2000, so a round p-value is resolved to
+       1/10000 rather than 1/2000. */
+    opt.bootstrap = 10000;
     opt.block_length = 1;                    /* iid bootstrap - see this file's own header comment */
     opt.variance = MCS_VARIANCE_BOOTSTRAP;   /* also the library default, set explicitly - see
                                                  this file's own header comment */
@@ -131,7 +132,7 @@ int main(void) {
     mcs_fwrite_options(report, &losses, opt);
     fprintf(report, "\n");
     mcs_fwrite_report(report, "MCS over t-QVARMA (driftless) impulse-response MAE, "
-                              "p1q1r2 and p1q1r4 joint, 200 models x 108 replicates, "
+                              "p1q1r2, one model per configuration, "
                               "iid bootstrap, bootstrap variance, MCS_TR statistic",
                       &losses, &res);
     fclose(report);

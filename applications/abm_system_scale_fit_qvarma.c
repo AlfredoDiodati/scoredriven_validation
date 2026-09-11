@@ -10,7 +10,7 @@ dataset/abm_system_scale/ - 500 folders of 1000 - with the single spec the
 pipeline settled on: t-QVARMA(1,1,2), K_star 3, R 1, shared beta, the same
 K_dagger 2 partition and the same build_start convention
 applications/abm_system_fit_qvarma.c and
-applications/us_qvarma_employment_change.c use. One spec, not the two of
+applications/us_qvarma_spec_choice.c use. One spec, not the two of
 abm_system_fit_qvarma.c, because 500 x 1000 is the size being timed and r
 = 4 is not part of it.
 

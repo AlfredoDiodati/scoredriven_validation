@@ -3,9 +3,9 @@ The impulse response function of the model the Model Confidence Set kept,
 with the sign-restricted confidence bands of Blazsek, Escribano and Licht
 (2023), section 4.3.
 
-applications/abm_system_mcs.c reduces the 200 candidate models (100 ABM
-parameterizations times the two driftless t-QVARMA specs p1q1r2 and p1q1r4)
-to the handful the data cannot separate, and writes them to
+applications/abm_system_mcs.c reduces the candidate models, one per ABM
+parameterization fitted under the driftless t-QVARMA spec p1q1r2, to the
+handful the data cannot separate, and writes them to
 out/abm_system_mcs_joint.csv with their mean IRF loss against the real-data
 fit. This file takes the surviving model with the smallest mean loss and
 produces the object the whole comparison exists to look at - that model's
@@ -35,10 +35,10 @@ The steps, in the order main() runs them:
      score Jacobian of (21), which depends on the data and not only on the
      parameters. The averaged parameter set does not belong to any one
      replicate, so D is averaged the same way the parameters were: computed
-     on each of the 108 replicates at the averaged parameters and averaged
-     over them. Every replicate has the same number of periods, so this is
-     exactly the D of the pooled sample - one average over 108 x 400
-     observations rather than 108 separate ones.
+     on each replicate at the averaged parameters and averaged over them.
+     Every replicate has the same number of periods, so this is exactly the D
+     of the pooled sample - one average over all of them rather than one per
+     replicate.
   5. Bands by 4.3: ten million random rotations Q, kept when the impact
      matrix carries the signs of the paper's Table 1, and the 10, 50 and 90
      percent percentiles of the responses over the kept rotations.
@@ -59,11 +59,10 @@ else. A shock is labelled by the column it occupies, and only the first
 three columns carry a label at all.
 
 What the fitted models being averaged actually are matters for reading the
-result: 105 of this sample's own 108 fits stopped at
-applications/abm_system_fit_qvarma.c's own 2000-iteration cap rather than
-converging, which the manifest records per replicate. The average is over
-what those runs reached, and it is not the average of 108 maximum-likelihood
-estimates.
+result: most of the fits did not converge by the solver's test, and the
+manifest records how many of the averaged ones did. The average is over what
+those fits reached, which is not the same thing as an average of
+maximum-likelihood estimates.
 
 Output:
 
@@ -123,7 +122,7 @@ convenience rather than for a reader of the CSV itself.
 
 Requires out/abm_system_mcs_joint.csv (applications/abm_system_mcs.c),
 out/abm_system_fit_qvarma/ (applications/abm_system_fit_qvarma.c) and
-dataset/abm_system/ (applications/abm_system_extract.c). Nothing printed.
+dataset/abm_system/ (applications/abm_system_simulate_all.sh). Nothing printed.
 */
 
 #include "abm_system.h"
@@ -142,7 +141,9 @@ dataset/abm_system/ (applications/abm_system_extract.c). Nothing printed.
 #define MU_STAR_STATIONARY_ONLY 1
 #define P 1
 #define Q 1
-#define N_REPLICATES 108
+/* Replications per configuration, counted off the winning sample's own fit
+   cache, so the averages cover what is on disk. */
+static int n_replicates = 0;
 #define HORIZON 20
 
 /* Ten times the paper's own million draws, at its own 10 and 90 percent
@@ -180,6 +181,29 @@ static const char *series_name[K] = {
 static const char *component_name[QVARMA_N_IMPULSE_COMPONENTS] = {
     "contemporaneous", "stationary", "cointegrated", "total", "cumulative"
 };
+
+
+/* How many replicates the fit cache holds for one sample, so the averages
+   below cover what is on disk rather than a count fixed in this file. */
+static int count_replicates(const char *sample, const char *label) {
+    char dir[512];
+    snprintf(dir, sizeof dir, "%s/%s", FIT_DIR, sample);
+
+    DIR *handle = opendir(dir);
+    assert(handle && "abm_system_winner_irf: cannot open the winning sample's fit directory");
+
+    char suffix[64];
+    snprintf(suffix, sizeof suffix, "_%s_fit.json", label);
+
+    int n = 0;
+    struct dirent *entry;
+    while ((entry = readdir(handle)) != NULL)
+        if (strstr(entry->d_name, suffix)) n++;
+    closedir(handle);
+
+    assert(n > 0 && "abm_system_winner_irf: the winning sample holds no fit for its own spec");
+    return n;
+}
 
 static QvarmaParams spec_shape(int r) {
     QvarmaParams m = qvarma_params_new(K, K_STAR, P, Q, r, R, SHARED_BETA, WARMUP_LONGEST);
@@ -259,21 +283,14 @@ static int accumulate_theta(const char *path, int n, Vec total, int *converged) 
     return 1;
 }
 
-/* One replicate's own K x T series, same convention
-   applications/abm_system_mse_qvarma.c's own read_y uses. */
+/* One replicate's own K x T series, out of the compressed archive holding it,
+   through the reader applications/abm_system_fit_qvarma.c and
+   applications/abm_system_mse_qvarma.c use. */
 static Mat read_y(const char *sample, int replicate) {
-    char csv_path[560];
-    snprintf(csv_path, sizeof csv_path, "%s/%s/replicate_%03d.csv", INPUT_DIR, sample, replicate);
-    DataFrame df = df_read_csv(csv_path, csv_read_options_default());
-    Mat y = mat_new(K, df.r);
-    static const char *row_name[K] = {
-        "GDP_growth", "EN_growth", "Employment_change", "Inflation", "InterestRate"
-    };
-    for (int k = 0; k < K; k++) {
-        Mat column = df_col_numeric(&df, row_name[k]);
-        for (int t = 0; t < df.r; t++) AT(y, k, t) = AT(column, t, 0);
-    }
-    df_free(&df);
+    char dir[560];
+    snprintf(dir, sizeof dir, "%s/%s", INPUT_DIR, sample);
+    Mat y = abm_system_read_replicate(dir, replicate);
+    assert(y.r == K && "abm_system_winner_irf: a replicate has the wrong number of series");
     return y;
 }
 
@@ -336,11 +353,13 @@ int main(void) {
                       "set of %d\n", (double)winner.mean_loss, winner.n_in_set, winner.n_models);
     fprintf(manifest, "source         %s\n\n", MCS_PATH);
 
+    n_replicates = count_replicates(winner.sample, winner.spec_label);
+
     QvarmaParams m = spec_shape(winner.r);
     int n = qvarma_n_theta(&m);
     Vec average = mat_new(n, 1);
     int n_loaded = 0, n_converged = 0;
-    for (int replicate = 0; replicate < N_REPLICATES; replicate++) {
+    for (int replicate = 0; replicate < n_replicates; replicate++) {
         char cache_path[560];
         snprintf(cache_path, sizeof cache_path, "%s/%s/replicate_%03d_%s_fit.json",
                  FIT_DIR, winner.sample, replicate, winner.spec_label);
@@ -357,9 +376,10 @@ int main(void) {
     for (int i = 0; i < n; i++) average.d[i] /= (mreal)n_loaded;
 
     fprintf(manifest, "averaged over  %d of %d replicates, %d parameters each, in the "
-                      "unconstrained space\n", n_loaded, N_REPLICATES, n);
-    fprintf(manifest, "converged      %d of the %d averaged fits; the rest stopped at the "
-                      "fitting script's own iteration cap\n\n", n_converged, n_loaded);
+                      "unconstrained space\n", n_loaded, n_replicates, n);
+    fprintf(manifest, "converged      %d of the %d averaged fits; the rest did not converge by "
+                      "the solver's test, and out/abm_system_fit_qvarma_manifest.txt says why "
+                      "each stopped\n\n", n_converged, n_loaded);
 
     qvarma_params_from_theta(average, &m);
     qvarma_save_params(&m, THETA_PATH);
@@ -372,7 +392,7 @@ int main(void) {
        Jacobian of the pooled sample. */
     Mat D = mat_new(K, K);
     int n_series = 0, n_periods = 0;
-    for (int replicate = 0; replicate < N_REPLICATES; replicate++) {
+    for (int replicate = 0; replicate < n_replicates; replicate++) {
         Mat y = read_y(winner.sample, replicate);
         Mat own = qvarma_mean_score_jacobian(&m, y);
         for (int i = 0; i < K * K; i++) D.d[i] += own.d[i];
