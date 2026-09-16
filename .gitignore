@@ -76,3 +76,6 @@ out/abm_system_mse_qvarma_joint.csv
 
 # Python's bytecode cache, written when the plotting script runs.
 __pycache__/
+
+# temporary files
+_temp/

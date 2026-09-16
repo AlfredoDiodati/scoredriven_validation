@@ -209,12 +209,22 @@ of 2026-09-11.
 
 Mean loss per configuration runs from 0.11816 to 0.16329, average 0.13083.
 
-**The confidence set contains one configuration, `cop_0191`, and no test
-accepted it.** Every round rejected down to the last two models; the last round,
-`cop_0191` against `cop_0148`, rejected with p = 0.0011, meaning 11 of the
-10,000 resamples produced a larger statistic than the observed one. et_al's
-`mcs` reports this as a set reached by exhaustion rather than by an accepted
-test, and its confidence level carries no meaning in that case.
+**The confidence set contains one configuration, `cop_0191`.** Each round tests
+whether every configuration still in the set has the same expected loss, and
+drops the worst one when that is rejected. Every round rejected down to the last
+two models; the last round, `cop_0191` against `cop_0148`, rejected with
+p = 0.0011, meaning 11 of the 10,000 resamples produced a larger statistic than
+the observed one. That p-value is the evidence against `cop_0148` having the same
+expected loss as `cop_0191`, and `cop_0148` is the one dropped. With one
+configuration left there is nothing to compare it with, and its MCS p-value is 1
+by construction.
+
+Hansen, Lunde and Nason's coverage result holds in this case as in any other:
+the set contains the configurations with the smallest expected loss with
+probability asymptotically at least `1 - alpha`, and when that configuration is
+unique the set converges to it. A set of one is what the procedure returns when
+the data separate the best configuration from all the others. et_al's `mcs`
+reports it with `converged = 0`, which records only that no round was accepted.
 
 The configurations eliminated last, with their losses over the 1000 replicates:
 
@@ -279,7 +289,6 @@ the seed, so both are scored on the same 10,000 resamples. Output:
 | | `MCS_TR` | `MCS_TMAX` |
 |---|---|---|
 | confidence set | `cop_0191` | `cop_0191` |
-| decided by an accepted test | no | no |
 | last round's p-value | 0.0011 | 0.0011 |
 | time inside `mcs` | 11.9 s | 7.9 s |
 
@@ -445,10 +454,6 @@ comments above is the step's own time. `./bin/abm_system_mcs` and
 
 ## Open questions
 
-- **A set of one reached by exhaustion.** No round of the MCS accepted, so the
-  set has no confidence level, and at 1000 replicates per configuration the test
-  separates mean losses differing by about 0.0005. Whether that is the result to
-  report, or whether the comparison should be posed differently, is not decided.
 - **The fits that did not converge.** 64.8% of the fits did not converge by the
   solver's test, 62.1% of them because the line search could not lower the
   objective. The evidence above is that the line-search-stopped fits'
