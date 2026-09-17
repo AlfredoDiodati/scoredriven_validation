@@ -1,4 +1,61 @@
 #include "module_macro_sfc.h"
+#include "../dsk_sfc_bulk_cancellation.h"
+
+#include <vector>
+
+extern std::ofstream Errors;
+
+//Past this many machines to cancel for one firm, LABOR() draws the cancellations
+//as counts instead of one machine per random draw. No 600-period run comes near
+//it: over 192 runs at 64 parameter settings the largest count was 86, and
+//docs/DSK_LONG_HORIZON.md has the measurement. Below it the loop runs exactly as
+//upstream wrote it.
+static const double bulk_cancellation_threshold=10000;
+
+//Cancels ceil(reduction) machines of K-firm i's customers' orders, with the
+//distribution of the loop in LABOR(), and leaves reduction where the loop would.
+static void CANCEL_ORDERS_IN_BULK(void)
+{
+	std::vector<int> customer;
+	std::vector<double> capacity;
+	double total_capacity=0;
+	for (int firm=1; firm<=N2; firm++)
+	{
+		if (Match(firm,i) == 1 && I(firm)>0)
+		{
+			customer.push_back(firm);
+			capacity.push_back(ceil(I(firm)/dim_mach));
+			total_capacity+=capacity.back();
+		}
+	}
+
+	const double to_cancel=ceil(reduction);
+	if (total_capacity<to_cancel)
+	{
+		//The loop in LABOR() would never end here.
+		std::cerr << "\n\n ERROR: Orders cannot absorb the reduction in output of K-firm " << i << " in period " << t << endl;
+		Errors << "\n Orders cannot absorb the reduction in output of K-firm " << i << " in period " << t << endl;
+		exit(EXIT_FAILURE);
+	}
+
+	std::vector<double> cancelled(customer.size());
+	draw_uniform_cancellations(capacity.data(),(int)customer.size(),to_cancel,cancelled.data(),p_seed);
+
+	for (size_t k=0; k<customer.size(); k++)
+	{
+		if (cancelled[k]>0)
+		{
+			const int firm=customer[k];
+			I(firm)-=cancelled[k]*dim_mach;
+			if (I(firm)<EI(1,firm))
+			{
+				EI(1,firm)=I(firm);
+			}
+			SI(firm)=I(firm)-EI(1,firm);
+		}
+	}
+	reduction-=to_cancel;
+}
 
 void LABOR(void)				
 {		
@@ -43,6 +100,10 @@ void LABOR(void)
        			Ld1(i)=Ld1(i)*LSe/(LD1tot+LD2tot);
 				Q1(i)=floor(Ld1(i)*((1-shocks_labprod1(i))*A1p(i)));
 				reduction=Qpast-Q1(i);
+				if (reduction>bulk_cancellation_threshold)
+				{
+					CANCEL_ORDERS_IN_BULK();
+				}
 				while(reduction>0)
 				{
 					ranj=int(ran1(p_seed)*N1*N2)%N2+1;

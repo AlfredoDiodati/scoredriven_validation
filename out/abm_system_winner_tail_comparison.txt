@@ -1,0 +1,31 @@
+q_t/K, the per-period quadratic form of the residual over K = 5, at each fit's own parameters
+US: 187 quarters, 1973Q2 to 2019Q4. cop_0191: 1000 replicates of 400 periods, one row per group is the median over its fits
+
+  residuals                      fits     mean  variance   largest    >2       >3       >5       >8   
+  reference, Gaussian: chi-squared(5)/5                    mean 1, variance 0.400; shares: 0.0752 0.0104 0.0001 0.0000
+  reference, F(5, 7.20), the US fit's nu: mean 1.385, variance 2.445
+  US, nu free (7.20)                1    1.649     6.181     15.21   0.1711   0.1390   0.0856   0.0535
+  US, nu held at 2853               1    1.003     1.348      7.81   0.1390   0.0588   0.0214   0.0000
+  cop_0191, all fits             1000    1.002     0.678      6.48   0.0925   0.0275   0.0050   0.0000
+  cop_0191, nu below 1e3          313    1.005     0.709      6.80   0.0925   0.0300   0.0050   0.0000
+  cop_0191, nu 1e3 to 1e4         512    1.001     0.662      6.41   0.0925   0.0275   0.0050   0.0000
+  cop_0191, nu above 1e4          175    1.000     0.697      6.34   0.0925   0.0300   0.0050   0.0000
+
+fits of cop_0191 at or above the US value with nu held near Gaussian: variance 21, largest 292, share above 5 5, of 1000
+
+the 12 largest US values of q_t/K at the nu-free fit, with the whitened residual z_t by series
+  quarter     q_t/K         GDP      energy  employment   inflation    interest
+  1980Q3      15.21       -0.62       -0.31       -0.10        0.20        8.69
+  1980Q1      12.27       -0.66       -0.55       -2.38        3.70       -6.42
+  1974Q4      11.03       -1.08       -0.35       -3.67        3.14       -5.53
+  1975Q1      10.86       -2.50       -0.92       -6.37        1.37       -2.18
+  2008Q4      10.54       -4.05        0.60       -0.63       -5.94        0.41
+  1981Q1      10.05        2.09       -2.37       -2.56        1.22        5.68
+  1979Q4       8.85       -0.55        0.26       -0.85        2.61        6.03
+  1980Q2       8.82       -4.59       -1.69       -2.86        2.91       -1.86
+  1978Q2       8.79        5.76       -0.00       -2.57        2.03       -0.34
+  2009Q1       8.68       -2.59       -1.59       -4.87       -2.54        2.00
+  1974Q1       7.83       -2.16       -2.29       -0.37        3.31        4.26
+  1981Q3       6.13        1.22        0.25       -0.31        1.28       -5.23
+
+share of the US sum of q_t carried by each whitened series, nu-free fit: GDP 0.189 energy 0.144 employment 0.189 inflation 0.199 interest 0.278

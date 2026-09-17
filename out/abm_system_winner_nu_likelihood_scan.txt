@@ -1,0 +1,20 @@
+cop_0191: 1000 fitted replicates, log-likelihood with nu changed and every other parameter at the fit
+nu times a factor means nu' = 2 + (nu - 2) * factor; change = log-likelihood at nu' minus at the fitted nu
+smooth: both 1% moves change it by less than 1; knife-edge: either by more than 100
+
+class          fits     nu p10     nu p50     nu p90  mean loss    q/K max p50 q/K max +1% p50
+smooth          432      405.5       2189  4.339e+05    0.11821          6.356          6.357
+between         141      911.5       2740  1.153e+04    0.11827          6.389          6.408
+knife-edge      427      345.2       1444       6424    0.11808          6.678          18.18
+
+log-likelihood change, quantiles over all 1000 fits
+nu moved to                 p10          p25          p50          p75          p90
+nu x 0.5                  -7888        -3242       -793.4       -3.708    -0.009664
+nu x 0.9                  -7628        -3353       -532.8     -0.04774   -0.0005985
+nu x 0.99                 -3244        -1103       -9.247   -0.0003914   -3.374e-05
+nu x 1.01                 -3266        -1128       -9.196   -0.0003676    1.483e-05
+nu x 1.1                  -8652        -3962       -571.4     -0.03253    9.314e-05
+nu x 2               -2.456e+04   -1.188e+04        -4268       -1.008    0.0002038
+nu = 7.19892              -4681        -4310        -3930        -3550        -3087
+nu = 100                 -892.6       -609.9       -385.6       -233.9         -122
+nu = 1e+06           -5.558e+06       -3e+06   -3.075e+05       -4.247    -0.001651

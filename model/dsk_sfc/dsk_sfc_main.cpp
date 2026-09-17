@@ -5283,7 +5283,11 @@ void ENTRYEXIT(void)
                 baddebt_2_temp-=min(n_mach_exit2,gtemp[tt-1][i-1][j-1])*g_secondhand_p[tt-1][i-1];
               }
               n_mach_exit2-=min(n_mach_exit2,gtemp[tt-1][i-1][j-1]);
-              C_secondhand(tt,i)=1000000;
+              //Upstream marks a sold vintage with 1000000, which stops being larger
+              //than every unit cost once prices have grown far enough, and the loop
+              //then never sells another machine. Infinity is what the rest of the
+              //matrix already holds.
+              C_secondhand(tt,i)=std::numeric_limits<double>::infinity();
               min_secondhand=RowRangeMinimum(C_secondhand,t0,t);
             }
           }

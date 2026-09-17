@@ -118,7 +118,14 @@ void CLIMATEBOX(void)
     //Initial guess for gradient 
     Caa(1)=(Cayy(1)-Cay(1))/(Caxx(1)-Cax(1));
 
-    i=1; 
+    i=1;
+    //At a carbon total large enough, the nearby point above rounds onto the
+    //guess itself, the gradient is 0/0, and no iteration can improve the guess.
+    if (Caxx(1)==Cax(1))
+    {
+        Cax(niterclim) = Cax(1);
+    }
+    else
     do
     {
         Cax(i+1)=Cax(i)-Cay(i)/Caa(i);
@@ -127,7 +134,16 @@ void CLIMATEBOX(void)
         {
             Cax(niterclim) = Cax(i+1);
             break;
-        } 
+        }
+        //Once the carbon total is large enough that neighbouring doubles lie
+        //further apart than the tolerance above, the iterate can stop moving
+        //while the test is still unmet. It cannot move again, and the slope
+        //below would then be worked out from two equal points as 0/0.
+        if (Cax(i+1)==Cax(i))
+        {
+            Cax(niterclim) = Cax(i+1);
+            break;
+        }
         Caxx(i+1)=Cax(i+1)-2*Cay(i)/Caa(i);
         Cayy(i+1)=Ctot1-Caxx(i+1)-Conref*(1-ConrefT*Tmixed(2))*pow((Caxx(i+1)/Cat0),1/(rev0+revC*log(Caxx(i+1)/Cat0)));
         Caa(i+1)=(Cayy(i+1)-Cay(i+1))/(Caxx(i+1)-Cax(i+1));

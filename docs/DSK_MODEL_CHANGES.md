@@ -4,16 +4,18 @@
 agent-based model.
 
 Upstream is `https://github.com/CoMoS-SA/Reissl_2025.git` at commit
-`611ff9cb44348baa55be1bc315eefe2c117ccd44`. Five of its files differ here -
+`611ff9cb44348baa55be1bc315eefe2c117ccd44`. Seven of its files differ here -
 `dsk_sfc_main.cpp`, `dsk_sfc_globalvars.h`, `modules/module_finance_sfc.cpp`,
-`modules/module_finance_sfc.h` and `CMakeLists.txt` - and
+`modules/module_finance_sfc.h`, `modules/module_climate_sfc.cpp`,
+`modules/module_macro_sfc.cpp` and `CMakeLists.txt` - and
 `model/dsk_sfc/upstream/` holds their original versions so the difference can
-be built and compared without going back to the network. Two headers are new,
-`dsk_sfc_vintage.h` and `dsk_sfc_reductions.h`; nothing upstream includes
-them.
+be built and compared without going back to the network. Three headers are new,
+`dsk_sfc_vintage.h`, `dsk_sfc_reductions.h` and `dsk_sfc_bulk_cancellation.h`;
+nothing upstream includes them. The two modules and the last header are the
+long-horizon fixes `docs/DSK_LONG_HORIZON.md` describes.
 
 Nothing compiles or links against `model/dsk_sfc/upstream/`. `build.sh
---upstream` copies a scratch tree, drops those five files over their modified
+--upstream` copies a scratch tree, drops those files over their modified
 counterparts in it, and builds that, so the reference binary is upstream's code
 at upstream's flags and nothing in the working tree is disturbed.
 
@@ -26,9 +28,16 @@ at upstream's flags and nothing in the working tree is disturbed.
     make test-dsk_memory_safety             no out-of-bounds access under the sanitizers
     make test-dsk_ulp_sensitivity           how small a difference those comparisons catch
     make test-dsk_long_path                 the filename bug stays fixed
+    make test-dsk_bulk_cancellation_distribution
+                                            bulk order cancellation draws what the loop draws
 
 "Proving the model was not changed" below explains what each one does and what
 none of them covers.
+
+Every comparison here runs 600 periods. What happens past that, including two
+upstream bugs that stop longer runs and the changes made for them, is in
+`docs/DSK_LONG_HORIZON.md`. None of those changes is reached by a 600-period
+run, which is what the six comparisons below confirm.
 
 ## The program, and how it is invoked
 

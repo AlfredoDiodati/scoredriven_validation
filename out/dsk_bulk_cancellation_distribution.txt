@@ -1,0 +1,24 @@
+Counts of cancellations per customer: the loop in LABOR(), the bulk draw
+that replaces it past the threshold, and a deliberately wrong sampler,
+each against the exact distribution. Pass: every outcome with exact
+probability at least 0.0001 within 5 binomial standard deviations.
+
+small: capacities 1 2 4, 5 to cancel, 5 outcomes compared
+  loop     400000 replications  worst z   0.93 at (0, 2, 3)  pass
+  bulk     400000 replications  worst z   1.70 at (1, 2, 2)  pass
+  wrong    400000 replications  worst z 461.36 at (1, 2, 2)  rejected, as it must be
+
+capped: capacities 30 45 300, 100 to cancel, 191 outcomes compared
+  loop      40000 replications  worst z   3.06 at (21, 43)  pass
+  bulk     400000 replications  worst z   2.48 at (30, 30)  pass
+  wrong     40000 replications  worst z  57.01 at (30, 35)  rejected, as it must be
+
+many: capacities 1000 1000 1000 1000 1000 1000 ... (40 customers), 30 to cancel, 6 outcomes compared
+  loop     100000 replications  worst z   1.28 at (2)  pass
+  bulk     400000 replications  worst z   1.35 at (3)  pass
+  wrong  not compared: with nothing capped it has the right distribution
+
+huge: capacities 2e9 2e9 3e9, 5e9 to cancel, 2000 replications of the bulk draw
+  inconsistent counts 0, worst z of a mean count 1.04  pass
+
+PASSED

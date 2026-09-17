@@ -88,6 +88,12 @@ BENCH_STEMS := qvarma_fit_cost qvarma_fit_io qvarma_iteration_budget \
                 small_call_scaling
 STUDY_STEMS := qvarma_recovery_study qvarma_stuck_fits qvarma_conditioning \
                 qvarma_convergence_test
+# Robustness checks on the result of the main pipeline, not steps of it. Each reads
+# what the pipeline already wrote to out/ and dataset/ and never rebuilds it.
+STUDY_STEMS += us_qvarma_nu_sensitivity abm_system_winner_diagnostics \
+               abm_system_winner_nu_profile abm_system_winner_nu_likelihood_scan \
+               abm_system_winner_tail_comparison abm_system_tail_origin \
+               abm_system_seed_correlation abm_system_winner_normality
 EXAMPLE_STEMS :=
 # _old/ holds the previous attempt and is deliberately not built; _old/README.md
 # says why it was left.
@@ -126,6 +132,8 @@ BIN := bin
 OUT := out
 
 TEST_BINARIES := $(addprefix $(BIN)/,$(TEST_STEMS))
+# The one C++ test, built by its own rule further down.
+TEST_BINARIES += $(BIN)/dsk_bulk_cancellation_distribution
 BENCH_BINARIES := $(addprefix $(BIN)/,$(BENCH_STEMS))
 STUDY_BINARIES := $(addprefix $(BIN)/,$(STUDY_STEMS))
 EXAMPLE_BINARIES := $(addprefix $(BIN)/,$(EXAMPLE_STEMS))
@@ -315,6 +323,18 @@ model-upstream: | $(BIN)
 # off the end of an array and reads a plausible number.
 model-sanitized: | $(BIN)
 	./model/dsk_sfc/build.sh --sanitize $(BIN)/dsk_SFC_sanitized
+
+# dsk_bulk_cancellation_distribution does not run the simulator. It calls the
+# bulk cancellation header and the model's own random number generators directly,
+# which are C++, so it is compiled here rather than by the rule for tests/%.c.
+DSK_RANDOM_SOURCES := model/dsk_sfc/auxiliary/ran1.cpp model/dsk_sfc/auxiliary/bnldev.cpp \
+                      model/dsk_sfc/auxiliary/gammln.cpp
+$(BIN)/dsk_bulk_cancellation_distribution: tests/dsk_bulk_cancellation_distribution.cpp \
+                                           model/dsk_sfc/dsk_sfc_bulk_cancellation.h $(DSK_RANDOM_SOURCES) | $(BIN)
+	g++ -std=c++11 -O2 -I. $< $(DSK_RANDOM_SOURCES) -o $@
+.PHONY: test-dsk_bulk_cancellation_distribution
+test-dsk_bulk_cancellation_distribution: $(BIN)/dsk_bulk_cancellation_distribution | $(OUT)
+	./$(BIN)/dsk_bulk_cancellation_distribution
 
 # Every DSK test runs the simulator, so the binaries have to exist first.
 test-dsk_long_path: model

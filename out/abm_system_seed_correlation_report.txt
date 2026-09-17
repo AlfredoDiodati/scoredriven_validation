@@ -1,0 +1,19 @@
+per-replicate losses from out/abm_system_mse_qvarma_joint.csv: 1000 replicates x 1000 configurations, 499500 pairs
+same seed: replicate n of both configurations. shifted: replicate n against replicate n + 1, the
+reference for no shared randomness. Under independence the standard deviation is about 0.032.
+
+over all pairs                          mean       p05       p25       p50       p75       p95
+loss correlation, same seed           0.0017   -0.0431   -0.0181   -0.0015    0.0186    0.0546
+loss correlation, shifted seed       -0.0001   -0.0449   -0.0197   -0.0031    0.0167    0.0522
+variance ratio, same seed             0.9988    0.9609    0.9899    1.0007    1.0103    1.0306
+pairs with correlation above 2/sqrt(1000) = 0.063: same seed 3.27%, shifted 2.93%
+
+last pair of the confidence set: cop_0191_qvarma_p1q1r2 (kept) and cop_0148_qvarma_p1q1r2 (eliminated last)
+  loss correlation, same seed 0.0201, shifted -0.0120
+  mean loss difference -0.000503
+  standard error of that difference treating replicates as independent 0.000151 (3.34 standard errors)
+  standard error from the paired differences, which uses the shared seeds  0.000149 (3.37 standard errors)
+
+correlation against distance in the design, 71357 pairs (every 7-th), parameters scaled to [0,1]
+  Spearman rank correlation, distance against loss correlation: 0.0009
+  mean loss correlation by distance quartile (nearest first): 0.0021 0.0017 0.0016 0.0019

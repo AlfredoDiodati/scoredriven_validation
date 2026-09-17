@@ -1,0 +1,21 @@
+t-QVARMA(1,1,2) on the US data, K_star 3, K_dagger 2, R 1, 1973Q2 to 2019Q4, 187 quarters
+impulse responses: total component, horizons 0 to 20, stacked into 525 elements
+
+parameter sets
+  benchmark  nu 7.1989 free, log-likelihood -882.1424, gradient norm 0.004713, converged yes
+  winner     nu 2853.3980, from out/abm_system_winner_irf_theta.json
+  swapped    benchmark with nu set to the winner's, nothing re-estimated
+  refitted   nu held at the winner's, the other 41 coordinates re-estimated from the benchmark
+             log-likelihood -943.9522, gradient norm over the free coordinates 0.002304,
+             converged yes (function decrease below tolerance), 687 iterations in the run that wrote it
+  likelihood ratio, 2 (benchmark - refitted): 123.6195
+
+distance from the benchmark response, mean absolute error in the loss's units
+  swapped    all 0.03233   horizon 0 0.02902   horizons 1-20 0.03249   median ratio after impact 1.283
+  refitted   all 0.05286   horizon 0 0.03777   horizons 1-20 0.05362   median ratio after impact 0.524
+  median ratio: refitted or swapped response over benchmark response, element by element,
+  horizons 1 to 20, over the benchmark elements with absolute value above 0.001
+
+scale the confidence set works on, from out/abm_system_mcs_joint.csv
+  mean loss over 1000 configurations: smallest 0.11816 (cop_0191_qvarma_p1q1r2), largest 0.16329, range 0.04512
+  gap between the two smallest mean losses (cop_0191_qvarma_p1q1r2, cop_0148_qvarma_p1q1r2): 0.00050

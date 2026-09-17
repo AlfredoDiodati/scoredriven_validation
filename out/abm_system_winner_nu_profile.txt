@@ -1,0 +1,21 @@
+cop_0191: 8 replicates, t-QVARMA(1,1,2) refitted with nu held at each grid value, other 41 coordinates free,
+starting from the replicate's own cached fit with nu replaced; solver cap 20000 iterations
+gain = refit log-likelihood - own fit log-likelihood; loss = MAE of the stacked total IRF, horizons 0-20, against the US benchmark
+a gain above 0.01 counts as the held nu finding a higher likelihood than the pipeline's fit
+
+all replicates, own mean loss 0.11791
+     held nu   gain p10   gain p50   gain p90    higher  mean loss change p50 change p90 converged
+     7.19892  -2265.490   -258.752    -93.021    0/8       0.11346   -0.00582    0.00017    2/8   
+          10   -355.628   -156.335    -48.079    0/8       0.11441   -0.00468    0.00166    4/8   
+          30   -220.110   -119.055    -76.598    0/8       0.11550   -0.00210    0.00049    5/8   
+         100    -63.793    -40.151    -17.368    0/8       0.11728   -0.00055    0.00017    8/8   
+        1000   -468.456      0.731      4.163    4/8       0.11803    0.00002    0.00047    3/8   
+       10000  -3938.360      2.824      6.561    5/8       0.11789    0.00001    0.00039    7/8   
+      100000 -24258.841      2.917      4.464    5/8       0.11790   -0.00000    0.00019    6/8   
+       1e+06  -5384.432      2.954      4.347    5/8       0.11799    0.00000    0.00046    7/8   
+
+median gain by the replicate's own fitted nu
+  group                  fits   7.19892        10        30       100      1000     10000    100000     1e+06
+  own nu below 1e3          2  -976.359  -237.692  -174.166   -25.572     2.028     1.782     1.787     1.696
+  own nu 1e3 to 1e4         5  -197.436  -142.302  -115.987   -56.314    -5.430     1.640     2.758     2.391
+  own nu above 1e4          1  -388.449  -356.217  -205.351   -42.748     4.407     5.275     3.077     3.517
