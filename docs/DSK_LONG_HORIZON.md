@@ -227,6 +227,46 @@ machines to agree exactly can fail the same way. It is the first of the limits
 that come from the model's levels growing without bound, and it arrives much
 earlier than the overflows below.
 
+**Changed.** Nothing in the model depends on how big one machine is, so
+`model/dsk_sfc/dsk_sfc_machine_lots.h` makes machines bigger: once a firm holds
+more than 2^40 of them it doubles the output a machine makes and halves every
+count, which buys back the headroom the counts had been growing into. It can be
+done as often as needed, and on `cop_0191`, seed 1, it fires six times between
+period 9,374 and period 11,000.
+
+What moves with the lot: counts halve; the output one machine makes and the
+payback threshold, which is in units of output, double; money for one machine -
+the price of a machine, its production cost, the capital goods price index and
+the price each machine was bought at - doubles; machines per worker and per unit
+of energy, in use and in the innovation and imitation draws, halve. Capacity is
+a count times the output a machine makes, so it and everything derived from it
+are unchanged.
+
+Two things make it work. It happens at one point in the period, straight after
+`MACH()`, because that is where the machine state is self-contained: the working
+copy and the holdings agree entry by entry, last period's investment has already
+been added to capacity, and nothing is yet marked for scrapping. Elsewhere in
+the period the capacity carried between periods and the holdings would be left
+disagreeing by a machine, which shows up as a firm with negative investment in
+the model's own error log. And the stocks the model keeps in step with the
+holdings - a firm's machine count, its capacity, and the value of its capital at
+the prices it paid - are re-derived from the rounded holdings rather than left
+to drift.
+
+Unlike redenominating money, this cannot be exact: halving an odd count leaves
+half a machine. At the ceiling a holding is around 1e12 machines, so the rounding
+moves it by about one part in 1e12. `tests/dsk_machine_lot_rebase.c` measures
+what that does: in the period of the first rebase, real GDP, consumption,
+investment, employment and the capital stock are within 6e-12 of a run that
+never rebased, and every period before it is identical. After it the two runs
+are different paths, which is what the model does with any perturbation - its
+own `dsk_ulp_sensitivity` test shows a change of one part in 1e15 reaching the
+output within a few periods - so what the test compares from there on is the
+process: mean growth of real GDP and of the price level over the following 1,600
+periods agree within half a standard error.
+
+With this, a run reaches period 14,000, past the 12,908 where it used to stop.
+
 ### World emissions grow by a fixed factor every year, forever
 
 `CLIMATEBOX()` multiplies the rest of the world's emissions, `Emiss_global`, by
@@ -243,6 +283,45 @@ The same growth is why the carbon stocks in the first section reach the
 millions: atmospheric carbon at period 1,640 is 1,205,648 against a
 pre-industrial 590 in the model's own units, and the temperature anomaly is
 28 degrees.
+
+### Redenominating the money side
+
+Nothing in the model depends on the unit money is counted in, so the answer to
+prices and money stocks that grow without limit is to change the unit:
+`model/dsk_sfc/dsk_sfc_redenomination.h` divides every money quantity by a power
+of two once the wage passes a ceiling, the way a currency reform drops zeros. A
+power of two is exact in binary floating point and exactly reversible, so only
+the exponents change. The ceiling is 2^512 and the step 2^256 unless the
+parameter file names others, and a 600-period run never comes near either, so
+the equivalence tests against upstream still compare identical files.
+
+What counts as money is a list of 214 variables in that header, and it is the
+whole difficulty. `tests/dsk_redenomination_invariance.c` is what makes the list
+honest: it runs the model with the ceiling low enough to fire several times and
+requires every value in the results file to come back either unchanged or scaled
+by exactly the factor applied, which fails if a money variable is left out or a
+real one is included. Getting it to pass took six rounds, and what it caught is
+worth recording, because none of it was visible by reading the declarations:
+
+- Four of my classifications were wrong. Consumption demand `D2`, its
+  temporaries and `l2` are quantities, not money: `Qd = De + Ne - N` adds demand
+  to inventories. `RDin` and `RDim` are R&D staff, not spending: they are
+  `Ld1rd`, the money `RD` divided by the wage. `dw` and `dw2` are wage growth
+  rates. Each wrong entry broke the model as thoroughly as a missing one.
+- Three absolute amounts of money were written as bare numbers in the code, and
+  each one silently changes what the model does once the unit changes. Sales
+  carry `+ tolerance` to keep a ratio finite (`module_finance_sfc.cpp`), the run
+  aborts if the price index falls below `0.01`, and consumption is shared out
+  `while (Cres >= 1)`. They are now `sales_tolerance`, `cpi_floor` and
+  `consumption_residual_floor`, set to the same values, and redenominated with
+  everything else.
+- One coefficient is per unit of money: the energy sector's chance of a
+  successful innovation is `1-exp(-o1_en*RD_en)` with `RD_en` a share of
+  revenue, so `o1_en` moves the other way. Its two manufacturing counterparts
+  multiply R&D staff instead and are left alone.
+
+This does not touch the machine counts, which pass what a double counts exactly
+around period 11,500, nor the emissions.
 
 ### The price level grows without limit
 
@@ -261,6 +340,41 @@ measured.
 
 This limit and the machine counts above are not bugs. The model is written in
 levels that grow, and no local repair removes them.
+
+## What the long-horizon work costs
+
+None of it is meant to make the model slower, and the experiment is billed in
+runs a minute, so both were measured.
+
+Setup: three builds - the commit before this work (`0a8d6e74`), the commit with
+the first three fixes (`dcf3b4a6`), and the working tree with the redenomination
+and the machine lots on top - each built by `model/dsk_sfc/build.sh` from its own
+copy of the tree, all reading the same `dsk_sfc_inputs.json` (md5 checked equal),
+600 periods. One batch ran them in that order and a second in the reverse order,
+because this machine drifts several per cent over a session. Single runs: seed 1,
+eight and twelve rounds, the first two discarded, median reported. Throughput:
+eighty runs, eight processes of ten seeds each, four rounds, median reported.
+Nothing else was running.
+
+| | before | first three fixes | redenomination and lots |
+|---|---:|---:|---:|
+| one run, forward batch | 547 ms | 549 ms | 563 ms |
+| one run, reversed batch | 521 ms | 529 ms | 528 ms |
+| throughput, forward batch | 394 a minute | 378 | 378 |
+| throughput, reversed batch | 390 a minute | 379 | 377 |
+
+Read it this way. The single-run differences change sign between the two batches
+and are noise at this resolution. The throughput difference does not: the first
+three fixes cost about 3% of saturated throughput in both orders and in every
+round, whatever position the build ran in, and the redenomination and the lots
+add about 1% more, which is at the edge of what these four rounds resolve. Over
+the million-run experiment 4% is about an hour and a half.
+
+Where that 3% sits has not been traced. The fixes add a comparison per carbon
+iteration, a comparison per rationing event and one changed constant, none of
+which accounts for it on its own; a shift in code layout under link-time
+optimisation would. It was measured rather than argued, and it buys runs that
+do not stop at period 2,788.
 
 ## Two costs that decide whether a long run is practical
 

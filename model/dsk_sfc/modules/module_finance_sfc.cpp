@@ -27,7 +27,7 @@ void LOANRATES(void)
   {
     //Compute debt service to sales; Add tolerance (small value) to ensure model does not break if
     //S2(2,j)=0
-    DebtServiceToSales2(j)=DebtService_2(2,j)/(S2(2,j)+tolerance);
+    DebtServiceToSales2(j)=DebtService_2(2,j)/(S2(2,j)+sales_tolerance);
   }
 
   //The matrices below are reached through their own storage. Each bank writes

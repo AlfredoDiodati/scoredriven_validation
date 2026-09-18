@@ -1,0 +1,24 @@
+Counting machines in lots, against a run that does not, seed 1.
+
+reference  11000 periods, exit 0, 0 bytes of errors
+lots       11000 periods, exit 0, 0 bytes of errors, 6 rebases
+long       14000 periods, exit 0, 0 bytes of errors
+
+first rebase at period 9374, a machine makes 80 afterwards
+
+periods 1 to 9373, before the first rebase: 0 values differ  
+
+period 9374, in which the first rebase happens:
+  real GDP       3.600005351e+15 against 3.600005351e+15, relative gap 4.278e-12  
+  consumption    3.163436893e+15 against 3.163436893e+15, relative gap 1.301e-12  
+  investment     2.706932194e+14 against 2.706932194e+14, relative gap 5.852e-11  
+  employment     0.9410991651 against 0.9410991651, relative gap 0.000e+00  
+  capital stock  4.391500683e+15 against 4.391500684e+15, relative gap 6.549e-12  
+
+real GDP     growth over periods 9405 to 11000: mean 0.2449% against 0.2245%, 0.3 standard errors apart, spread 1.9625% against 1.8545%  
+price level  growth over periods 9405 to 11000: mean 0.4799% against 0.4891%, 0.4 standard errors apart, spread 0.6600% against 0.6133%  
+
+the 14000-period run completed, past period 12908 where the model without lots
+stops advancing
+
+PASSED

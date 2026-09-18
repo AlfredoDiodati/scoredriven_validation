@@ -1,5 +1,7 @@
 #include "dsk_sfc_include.h"
 #include "dsk_sfc_reductions.h"
+#include "dsk_sfc_redenomination.h"
+#include "dsk_sfc_machine_lots.h"
 using namespace std;
 
 int main(int argc, char *argv[])
@@ -214,6 +216,13 @@ int main(int argc, char *argv[])
     MACH();
     if(verbose){cout << "Exiting function MACH in period " << t << endl;}
 
+    /* The machine state is self-contained here and nowhere else in the period:
+       MACH has just brought the working copy and the holdings into line, the
+       capacity carried from last period has already been added, and nothing is
+       yet marked for scrapping, so changing what one machine means touches only
+       quantities the rebase restates itself. */
+    REBASE_MACHINE_LOT_IF_NEEDED();
+
     //Banks determine maximum amount they are willing to lend
     TOTCREDIT();
     if(verbose){cout << "Exiting function TOTCREDIT in period " << t << endl;}
@@ -349,6 +358,8 @@ int main(int argc, char *argv[])
 
     OVERBOOST();
 
+    REDENOMINATE_IF_NEEDED();
+
     if(verbose){cout << "Exiting function OVERBOOST; end of period " << t << endl;}
   }
   Errors.close();
@@ -402,6 +413,22 @@ void SETPARAMS(const rapidjson::Document& inputs)
       deltami2=inputs["params"][0]["deltami2"].GetDouble();
       w_min=inputs["params"][0]["w_min"].GetDouble();
       pmin=inputs["params"][0]["pmin"].GetDouble();
+      if (inputs["params"][0].HasMember("redenomination_ceiling_exponent"))
+      {
+        redenomination_ceiling_exponent=inputs["params"][0]["redenomination_ceiling_exponent"].GetInt();
+      }
+      if (inputs["params"][0].HasMember("redenomination_step_exponent"))
+      {
+        redenomination_step_exponent=inputs["params"][0]["redenomination_step_exponent"].GetInt();
+      }
+      if (inputs["params"][0].HasMember("machine_lot_ceiling_exponent"))
+      {
+        machine_lot_ceiling_exponent=inputs["params"][0]["machine_lot_ceiling_exponent"].GetInt();
+      }
+      if (inputs["params"][0].HasMember("machine_lot_step_exponent"))
+      {
+        machine_lot_step_exponent=inputs["params"][0]["machine_lot_step_exponent"].GetInt();
+      }
       u=inputs["params"][0]["u"].GetDouble();
       alfa=inputs["params"][0]["alfa"].GetDouble();
       b=inputs["params"][0]["b"].GetDouble();
@@ -1510,6 +1537,9 @@ void INITIALIZE(int Exseed)
   p_seed=&seed;		
   //Tolerance level used to check deviations from stock-flow consistency		
   tolerance=1e-06;
+  sales_tolerance=1e-06;
+  cpi_floor=0.01;
+  consumption_residual_floor=1.0;
   //Numbers of agents as doubles
   N1r=double(N1);
 	N2r=double(N2);
@@ -4309,7 +4339,7 @@ void PROFIT(void)
     cpi(1)+=p2(j)*f2(1,j);					
   }
 	
-  if (cpi(1) < 0.01)									
+  if (cpi(1) < cpi_floor)									
 	{
 		std::cerr << "\n\n ERROR: CPI < 0.01 in period " << t << endl;
     Errors << "\n CPI < 0.01 in period " << t << endl;
@@ -4913,7 +4943,7 @@ void ALLOC(void)
 	}
 
   //Consumption demand is distributed among C-firms based on market shares
-	while (Cres >= 1 && ftot(1) > 0)		
+	while (Cres >= consumption_residual_floor && ftot(1) > 0)		
 	{
     Cresb=Cres;
 		for (j=1; j<=N2; j++)

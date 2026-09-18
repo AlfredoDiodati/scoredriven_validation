@@ -9,10 +9,11 @@ Upstream is `https://github.com/CoMoS-SA/Reissl_2025.git` at commit
 `modules/module_finance_sfc.h`, `modules/module_climate_sfc.cpp`,
 `modules/module_macro_sfc.cpp` and `CMakeLists.txt` - and
 `model/dsk_sfc/upstream/` holds their original versions so the difference can
-be built and compared without going back to the network. Three headers are new,
-`dsk_sfc_vintage.h`, `dsk_sfc_reductions.h` and `dsk_sfc_bulk_cancellation.h`;
-nothing upstream includes them. The two modules and the last header are the
-long-horizon fixes `docs/DSK_LONG_HORIZON.md` describes.
+be built and compared without going back to the network. Five headers are new,
+`dsk_sfc_vintage.h`, `dsk_sfc_reductions.h`, `dsk_sfc_bulk_cancellation.h`,
+`dsk_sfc_redenomination.h` and `dsk_sfc_machine_lots.h`;
+nothing upstream includes them. The three modules and the last two headers are
+the long-horizon work `docs/DSK_LONG_HORIZON.md` describes.
 
 Nothing compiles or links against `model/dsk_sfc/upstream/`. `build.sh
 --upstream` copies a scratch tree, drops those files over their modified
@@ -30,6 +31,8 @@ at upstream's flags and nothing in the working tree is disturbed.
     make test-dsk_long_path                 the filename bug stays fixed
     make test-dsk_bulk_cancellation_distribution
                                             bulk order cancellation draws what the loop draws
+    make test-dsk_redenomination_invariance changing the unit money is counted in changes nothing else
+    make test-dsk_machine_lot_rebase        counting machines in bigger lots leaves the economy where it was
 
 "Proving the model was not changed" below explains what each one does and what
 none of them covers.

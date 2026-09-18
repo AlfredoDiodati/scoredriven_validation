@@ -33,6 +33,9 @@ int              n;                                          // Counter
 int              iterations;                                 // Counter
 double           pareto_rv;                                  // Pareto random number
 double           tolerance;                                  // Tolerance level for deviations from accounting consistency
+double           consumption_residual_floor;                 // Consumption is shared out until less than this much money is left, which makes it an amount of money and redenominated with the rest
+double           cpi_floor;                                  // The price index this run refuses to go below, an amount of money and redenominated with the rest
+double           sales_tolerance;                            // The same small number added to sales to keep a ratio finite, which is an amount of money and is redenominated with the rest
 double           deviation;                                  // Deviation from accounting consistency
 double           parber;                                     // Input for draw from Bernoulli
 double           rnd;                                        // Random number
@@ -643,6 +646,21 @@ double           counter_bankfailure;                        // Number of failin
    makes it. At 64 bytes a run from any directory deeper than about 26
    characters wrote past the end of these: silently into the next global under
    an unoptimised build, and into a crash under an optimised one. */
+// How large the wage is allowed to grow before the money side of the model is
+// divided by a power of two, and the power it is divided by, both as exponents
+// of two. dsk_sfc_redenomination.h explains why. Read from the parameter file
+// when it names them; the defaults leave the wage room to grow for tens of
+// thousands of periods and are never reached by a 600-period run.
+// How many machines one firm may hold before machines are counted in bigger
+// lots, and how many times the lot is doubled when that happens, both as
+// exponents of two. dsk_sfc_machine_lots.h explains why. The defaults are
+// reached around period 10,000 of a run and never by a 600-period one.
+int machine_lot_ceiling_exponent=40;
+int machine_lot_step_exponent=1;
+
+int redenomination_ceiling_exponent=512;
+int redenomination_step_exponent=256;
+
 char filename1[PATH_MAX];                                          // File "results" (inv_res)
 char filename2[PATH_MAX];                                          // File "A1" (inv_prod1)
 char filename3[PATH_MAX];                                          // File "A2" (inv_prod2)

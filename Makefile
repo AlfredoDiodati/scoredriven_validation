@@ -76,7 +76,8 @@ HEADERS :=
 TEST_HEADERS :=
 TEST_STEMS := qvarma_correctness dsk_long_path dsk_build_equivalence \
                dsk_full_output_equivalence dsk_design_equivalence \
-               dsk_memory_safety dsk_ulp_sensitivity
+               dsk_memory_safety dsk_ulp_sensitivity dsk_redenomination_invariance \
+               dsk_machine_lot_rebase
 # Where the wall time of a t-QVARMA fit goes, and what each way of speeding it
 # up is worth. Measured 2026-08-29 against a 500,000-fit run of
 # abm_system_fit_qvarma; out/fit_speedup_options.txt collects the numbers and
@@ -343,6 +344,8 @@ test-dsk_full_output_equivalence: model model-upstream
 test-dsk_design_equivalence: model model-upstream app-abm_system_design
 test-dsk_memory_safety: model model-sanitized app-abm_system_design
 test-dsk_ulp_sensitivity: model
+test-dsk_redenomination_invariance: model
+test-dsk_machine_lot_rebase: model
 
 applications: $(APPLICATION_BINARIES) | $(OUT)
 	@for binary in $(APPLICATION_BINARIES); do ./$$binary || exit 1; done

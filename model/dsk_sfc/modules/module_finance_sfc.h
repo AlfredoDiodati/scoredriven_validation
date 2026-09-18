@@ -62,6 +62,7 @@ extern double           b2inf;
 extern int              i;
 extern int              j;
 extern double           tolerance;
+extern double           sales_tolerance;
 extern RowVector        BankCredit;
 extern RowVector        BaselBankCredit;
 extern Matrix           NW_b;

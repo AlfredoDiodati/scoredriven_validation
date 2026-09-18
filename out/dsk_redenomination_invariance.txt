@@ -1,0 +1,9 @@
+Dividing the money side of the model by powers of two, against a run that does not.
+
+600 periods, seeds 1 to 2, ceiling 2^4, step 2^2, 83 columns compared per period.
+Each value must be unchanged or scaled by exactly the factor applied by that period.
+
+seed 1: 2 redenominations, 46401 values unchanged, 3399 scaled, 0 neither  passed
+seed 2: 2 redenominations, 46070 values unchanged, 3730 scaled, 0 neither  passed
+
+PASSED
