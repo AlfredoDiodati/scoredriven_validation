@@ -33,6 +33,7 @@ int              n;                                          // Counter
 int              iterations;                                 // Counter
 double           pareto_rv;                                  // Pareto random number
 double           tolerance;                                  // Tolerance level for deviations from accounting consistency
+double           good_unit_floor;                            // One unit of the consumption good, used as a floor under expected demand and unsatisfied demand, and rescaled when the good's unit changes
 double           consumption_residual_floor;                 // Consumption is shared out until less than this much money is left, which makes it an amount of money and redenominated with the rest
 double           cpi_floor;                                  // The price index this run refuses to go below, an amount of money and redenominated with the rest
 double           sales_tolerance;                            // The same small number added to sales to keep a ratio finite, which is an amount of money and is redenominated with the rest
@@ -655,6 +656,12 @@ double           counter_bankfailure;                        // Number of failin
 // lots, and how many times the lot is doubled when that happens, both as
 // exponents of two. dsk_sfc_machine_lots.h explains why. The defaults are
 // reached around period 10,000 of a run and never by a 600-period one.
+// How large real GDP may grow before the consumption good is counted in a
+// bigger unit, and the power of two it grows by, as exponents of two.
+// dsk_sfc_good_unit.h explains why.
+int good_unit_ceiling_exponent=256;
+int good_unit_step_exponent=128;
+
 int machine_lot_ceiling_exponent=40;
 int machine_lot_step_exponent=1;
 

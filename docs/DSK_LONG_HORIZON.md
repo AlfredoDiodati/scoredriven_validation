@@ -341,6 +341,53 @@ measured.
 This limit and the machine counts above are not bugs. The model is written in
 levels that grow, and no local repair removes them.
 
+**Changed.** The money side is redenominated, as the section above describes,
+and real output is now counted in a bigger unit the same way.
+
+### Counting the good in a bigger unit
+
+Real GDP and the capital stock grow about 0.24% a period and pass the largest
+double near period 291,000, a wall of their own once money and machines are
+dealt with. `model/dsk_sfc/dsk_sfc_good_unit.h` answers it the same way:
+once real GDP passes a ceiling, the consumption good is counted in a unit twice
+as large. Quantities of the good and the capacity to make it divide, along with
+how much of it a machine makes, the payback threshold, which is an amount of the
+good, and output per worker and per unit of energy; the money price of a unit
+multiplies. Machines, money stocks, labour, energy and emissions are counted in
+their own units and do not move.
+
+Unlike the machine lots this is exact. Nothing here has to stay a whole number:
+what the model keeps whole is machines, and a machine count is a ratio of two
+quantities that both divide.
+
+Two things had to be dealt with before it was.
+
+One unit of the good is used as a floor in four places - expected demand, a
+firm's output in the credit queue, and unsatisfied demand twice - written as the
+bare number 1. It is now `good_unit_floor`, set to 1 and rescaled with the unit.
+
+Upstream's mean productivity adds the consumption firms' output per worker to
+the capital firms' machines per worker, and its energy counterpart does the same
+with output and machines per unit of energy. Those are amounts of different
+things, so they have no single unit and cannot be divided: they are set instead
+to what the model itself computes in the new unit. The wage rule reads the
+growth of that average, and setting it this way is what keeps that growth from
+jumping when the unit changes. `Am1`, the capital firms' own mean, is machines
+per worker throughout and does not move.
+
+What is left shows up in the output and is the model's, not the rescaling's. At
+a change, 79 of the 83 columns come back exactly unchanged, divided or
+multiplied; the four the mixed average reaches - the two mean productivities,
+the real wage and R&D staffing - move by up to 1.5e-3.
+
+`tests/dsk_good_unit_invariance.c` requires exactly that, over 2,000 periods and
+two seeds with the ceiling set low enough to fire eight times: identical before
+the first change, the columns above accounted for at the change, no other column
+moving, and mean growth of real GDP over the rest of the run within four
+standard errors of a run that never changed the unit. Measured: 0.2596% against
+0.2615% for seed 1, and 0.2709% against 0.2734% for seed 2, both zero standard
+errors apart once the series is put back in its original unit.
+
 ## What the long-horizon work costs
 
 None of it is meant to make the model slower, and the experiment is billed in

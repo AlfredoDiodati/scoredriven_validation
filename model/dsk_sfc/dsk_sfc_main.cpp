@@ -2,6 +2,7 @@
 #include "dsk_sfc_reductions.h"
 #include "dsk_sfc_redenomination.h"
 #include "dsk_sfc_machine_lots.h"
+#include "dsk_sfc_good_unit.h"
 using namespace std;
 
 int main(int argc, char *argv[])
@@ -359,6 +360,7 @@ int main(int argc, char *argv[])
     OVERBOOST();
 
     REDENOMINATE_IF_NEEDED();
+    RESCALE_GOOD_IF_NEEDED();
 
     if(verbose){cout << "Exiting function OVERBOOST; end of period " << t << endl;}
   }
@@ -428,6 +430,14 @@ void SETPARAMS(const rapidjson::Document& inputs)
       if (inputs["params"][0].HasMember("machine_lot_step_exponent"))
       {
         machine_lot_step_exponent=inputs["params"][0]["machine_lot_step_exponent"].GetInt();
+      }
+      if (inputs["params"][0].HasMember("good_unit_ceiling_exponent"))
+      {
+        good_unit_ceiling_exponent=inputs["params"][0]["good_unit_ceiling_exponent"].GetInt();
+      }
+      if (inputs["params"][0].HasMember("good_unit_step_exponent"))
+      {
+        good_unit_step_exponent=inputs["params"][0]["good_unit_step_exponent"].GetInt();
       }
       u=inputs["params"][0]["u"].GetDouble();
       alfa=inputs["params"][0]["alfa"].GetDouble();
@@ -1540,6 +1550,7 @@ void INITIALIZE(int Exseed)
   sales_tolerance=1e-06;
   cpi_floor=0.01;
   consumption_residual_floor=1.0;
+  good_unit_floor=1.0;
   //Numbers of agents as doubles
   N1r=double(N1);
 	N2r=double(N2);
@@ -2634,7 +2645,7 @@ void INVEST(void)
     De(j)=alfa*De(j)+(1-alfa)*D2(2,j);
     if (De(j)<=0)
     {
-        De(j)=1;
+        De(j)=good_unit_floor;
     }
 
     //Desired inventories                    
@@ -3150,7 +3161,7 @@ void ALLOCATECREDIT(void)
 						    Q2(rated_firm_2)=(BankCredit(i)-Loans_2(1,rated_firm_2)+Deposits_2(1,rated_firm_2))/c2e(rated_firm_2);
 
                 //If production needs to be scaled back too much, firm exits
-                if (Q2(rated_firm_2) < 1)
+                if (Q2(rated_firm_2) < good_unit_floor)
 						    {
                   if (Loans_2(1,rated_firm_2)>Deposits_2(1,rated_firm_2)) 
                   {
@@ -4967,7 +4978,7 @@ void ALLOC(void)
           Cresb-=D_temp2(j)*p2(j);
           if(n==1)
           {
-						l2(j)=1;
+						l2(j)=good_unit_floor;
           }		
           Q2temp(j)-=D_temp2(j);		
 				}								
@@ -4982,7 +4993,7 @@ void ALLOC(void)
           f_temp2(j)=0;
           if(n==1)
           {
-            l2(j)=1+(D_temp2(j)-Q2temp(j));
+            l2(j)=good_unit_floor+(D_temp2(j)-Q2temp(j));
           }
           Q2temp(j)=0;
 				}
@@ -5728,7 +5739,7 @@ void ENTRYEXIT(void)
         if (exiting_2(j)==1)
         { 
           D2(1,j)=min(K(j),f2(1,j)*CurrentDemand);
-          l2(j)=1+(f2(1,j)*CurrentDemand-D2(1,j));
+          l2(j)=good_unit_floor+(f2(1,j)*CurrentDemand-D2(1,j));
           De(j)=D2(1,j);
           S2(1,j)=p2(j)*D2(1,j);
           mol(j)=S2(1,j)-D2(1,j)*c2(j);
@@ -5779,7 +5790,7 @@ void ENTRYEXIT(void)
         if (exiting_2(j)==1)
         { 
           D2(1,j)=min(K(j),f2(1,j)*CurrentDemand);
-          l2(j)=1+(f2(1,j)*CurrentDemand-D2(1,j));
+          l2(j)=good_unit_floor+(f2(1,j)*CurrentDemand-D2(1,j));
           De(j)=D2(1,j);
           S2(1,j)=p2(j)*D2(1,j);
           mol(j)=S2(1,j)-D2(1,j)*c2(j);

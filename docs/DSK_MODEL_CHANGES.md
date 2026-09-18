@@ -9,9 +9,9 @@ Upstream is `https://github.com/CoMoS-SA/Reissl_2025.git` at commit
 `modules/module_finance_sfc.h`, `modules/module_climate_sfc.cpp`,
 `modules/module_macro_sfc.cpp` and `CMakeLists.txt` - and
 `model/dsk_sfc/upstream/` holds their original versions so the difference can
-be built and compared without going back to the network. Five headers are new,
+be built and compared without going back to the network. Six headers are new,
 `dsk_sfc_vintage.h`, `dsk_sfc_reductions.h`, `dsk_sfc_bulk_cancellation.h`,
-`dsk_sfc_redenomination.h` and `dsk_sfc_machine_lots.h`;
+`dsk_sfc_redenomination.h`, `dsk_sfc_machine_lots.h` and `dsk_sfc_good_unit.h`;
 nothing upstream includes them. The three modules and the last two headers are
 the long-horizon work `docs/DSK_LONG_HORIZON.md` describes.
 
@@ -33,6 +33,8 @@ at upstream's flags and nothing in the working tree is disturbed.
                                             bulk order cancellation draws what the loop draws
     make test-dsk_redenomination_invariance changing the unit money is counted in changes nothing else
     make test-dsk_machine_lot_rebase        counting machines in bigger lots leaves the economy where it was
+    make test-dsk_good_unit_invariance      counting the good in a bigger unit changes nothing else
+    make test-dsk_dataset_reproduction      the same output as the authors' build and as the experiment's archives
 
 "Proving the model was not changed" below explains what each one does and what
 none of them covers.
@@ -795,6 +797,7 @@ Six tests. Each answers one question.
 | `dsk_memory_safety` | does the faster version read or write memory it does not own? |
 | `dsk_ulp_sensitivity` | how small a difference would those file comparisons actually catch? |
 | `dsk_long_path` | does the filename bug that was fixed stay fixed? |
+| `dsk_dataset_reproduction` | does it still compute what the authors compute, and still produce the archives the experiment ran on? |
 
     make test-dsk_build_equivalence
     make test-dsk_full_output_equivalence
@@ -994,6 +997,38 @@ rather than in the model: writing `tests/dsk_design_equivalence.c` produced one,
 freeing a `Mat` that `df_col_numeric` had returned as a view into the dataframe
 rather than as memory of its own. Under the sanitizer it reports as `bad-free`
 at the line responsible instead of as a bare abort.
+
+### Where the experiment actually ran
+
+The comparisons above run at the model's own parameter settings and at four
+points of the design. `tests/dsk_dataset_reproduction.c` runs where the
+experiment ran, and against two references at once.
+
+For a sample of (configuration, replication) pairs it runs this build and the
+authors' build on the same configuration and seed - seeds are the replication
+number plus one, the same in every configuration, as the experiment was run -
+and requires the 83-column results file and the error log to match byte for
+byte. It then rebuilds the five series from this build's results file exactly as
+`applications/abm_system_simulate.c` does and requires every one of the 5 x 400
+numbers to equal the one stored in `dataset/abm_system`, which was written by
+the simulator as it stood when the 1000 x 1000 experiment was run. Equality, not
+a tolerance: the stored values came through the same arithmetic from the same
+printed file.
+
+It also requires that no long-horizon mechanism fired. A run that redenominates,
+changes the machine lot or changes the good's unit writes a log beside its
+results file, and a 600-period run must write none, which is the direct check
+that those mechanisms are out of reach at the horizon the experiment used.
+
+The upstream build is unoptimised, about 35 seconds a run, so the pairs are
+spread over the cores with OpenMP.
+
+Measured on 2026-09-18, twice. 20 configurations spread across the design and 5
+replications of each, 100 pairs, 8 threads, 11.2 minutes; then 40 configurations
+and 8 replications of each, 320 pairs, 12 threads, 34.2 minutes. Both times:
+every results file and every error log identical to the authors' build, every
+run reproducing the stored archives exactly, and no long-horizon log written.
+That is 320 of the experiment's million pairs, and 640,000 stored numbers.
 
 ### What these tests do not cover
 

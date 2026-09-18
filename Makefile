@@ -77,7 +77,8 @@ TEST_HEADERS :=
 TEST_STEMS := qvarma_correctness dsk_long_path dsk_build_equivalence \
                dsk_full_output_equivalence dsk_design_equivalence \
                dsk_memory_safety dsk_ulp_sensitivity dsk_redenomination_invariance \
-               dsk_machine_lot_rebase
+               dsk_machine_lot_rebase dsk_good_unit_invariance \
+               dsk_dataset_reproduction
 # Where the wall time of a t-QVARMA fit goes, and what each way of speeding it
 # up is worth. Measured 2026-08-29 against a 500,000-fit run of
 # abm_system_fit_qvarma; out/fit_speedup_options.txt collects the numbers and
@@ -337,6 +338,14 @@ $(BIN)/dsk_bulk_cancellation_distribution: tests/dsk_bulk_cancellation_distribut
 test-dsk_bulk_cancellation_distribution: $(BIN)/dsk_bulk_cancellation_distribution | $(OUT)
 	./$(BIN)/dsk_bulk_cancellation_distribution
 
+# dsk_dataset_reproduction runs both builds over a sample of the design and
+# compares against the archives the experiment produced. The upstream build is
+# unoptimised, about 35 seconds a run, so the sample is spread over the cores
+# with OpenMP, which the rule for tests/%.c does not enable.
+$(BIN)/dsk_dataset_reproduction: tests/dsk_dataset_reproduction.c $(APPLICATION_HEADERS) \
+                                 $(ETAL_INSTALLED_HEADERS) | $(BIN)
+	$(CC) $(CFLAGS) -fopenmp $(ETAL_CFLAGS) $(INCLUDES) $< -o $@ $(ETAL_LIBS)
+
 # Every DSK test runs the simulator, so the binaries have to exist first.
 test-dsk_long_path: model
 test-dsk_build_equivalence: model model-upstream
@@ -346,6 +355,8 @@ test-dsk_memory_safety: model model-sanitized app-abm_system_design
 test-dsk_ulp_sensitivity: model
 test-dsk_redenomination_invariance: model
 test-dsk_machine_lot_rebase: model
+test-dsk_good_unit_invariance: model
+test-dsk_dataset_reproduction: model model-upstream
 
 applications: $(APPLICATION_BINARIES) | $(OUT)
 	@for binary in $(APPLICATION_BINARIES); do ./$$binary || exit 1; done
