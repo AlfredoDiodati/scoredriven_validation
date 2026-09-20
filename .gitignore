@@ -19,8 +19,9 @@ out/abm_system_fit_qvarma.log
 out/*.log
 
 # Everything else under out/ is small, human-readable and worth keeping: the
-# fitted parameters on the real data, the loss table, the confidence set and
-# the figures.
+# fitted parameters on the real data, the confidence sets, the manifests and
+# the figures. The loss tables themselves are the exception and are ignored
+# further down, being 19 MB each.
 
 *.o
 *.so
@@ -70,10 +71,17 @@ nohup.out
 # it packs is ignored above for the same reason.
 dataset/abm_system.tar.gz
 
-# The loss table, 1000 replicates by 1000 configurations, 20 MB. Rebuilt by
-# make app-abm_system_irf_loss from the fit cache. The confidence set it feeds,
-# out/abm_system_mcs.csv and .txt, is small and kept.
+# The loss tables, each 1000 replicates by 1000 configurations and about 19 MB.
+# The first is rebuilt by make app-abm_system_irf_loss from the fit cache, the
+# other two by make app-abm_system_score_loss from the dataset and the
+# real-data fit. None of the three is reproducible from a fresh clone, because
+# the fit cache and the dataset are ignored above for the same reason. What
+# they feed is kept: the confidence sets, out/abm_system_mcs.* and
+# out/abm_system_mcs_statistic_comparison*.*, and the manifests beside the
+# tables, are all small.
 out/abm_system_irf_loss.csv
+out/abm_system_score_loss.csv
+out/abm_system_score_loss_weighted.csv
 
 # Python's bytecode cache, written when the plotting script runs.
 __pycache__/
