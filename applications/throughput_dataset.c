@@ -1,8 +1,8 @@
 /*
 Builds the 500 x 1000 dataset the throughput test of
-applications/abm_system_scale_fit_qvarma.c runs on: 500 folders of 1000
+applications/throughput_fit.c runs on: 500 folders of 1000
 five-variable series each, 500,000 in total, in the same
-t-QVARMA(1,1,2) layout applications/abm_system_extract.c writes and read
+t-QVARMA(1,1,2) layout applications/abm_system_convert_rdata.c writes and read
 back by the same df_read_csv call.
 
 The conversion itself is abm_system.h's own abm_system_slice, unchanged -
@@ -13,7 +13,7 @@ perturbed copies of themselves.
 
 Layout, so which source a given series came from is never in question.
 Each of the 100 source files gets five folders under
-dataset/abm_system_scale/:
+dataset/throughput/:
 
     EstimationSeriesSample1_7/          series_000..107 original
                                         series_108..999 perturbed
@@ -60,12 +60,12 @@ Cost, before running it: 500,000 files of about 42 KB (five %.17g fields
 per row, 400 rows) is roughly 21 GB on disk and 500,000 inodes. It is a
 full rewrite every time, not a resume.
 
-out/abm_system_scale_extract_manifest.txt records, per source file, how
+out/throughput_dataset_manifest.txt records, per source file, how
 many replicates it held, how many periods each has after the burn-in and
 differencing, and how many folders and series were written from it.
 
 Not part of `make applications` or of the abm_system chain: it writes to
-dataset/, not out/, it takes tens of minutes, and abm_system_scale_fit_qvarma
+dataset/, not out/, it takes tens of minutes, and throughput_fit
 deliberately does not depend on it in the Makefile so that rerunning the
 fits does not rewrite 21 GB. Run it explicitly, once. Nothing printed.
 */
@@ -80,7 +80,7 @@ fits does not rewrite 21 GB. Run it explicitly, once. Nothing printed.
 #include <errno.h>
 
 #define SIMULATED_DIR "dataset/simulated"
-#define OUTPUT_DIR "dataset/abm_system_scale"
+#define OUTPUT_DIR "dataset/throughput"
 
 #define FOLDERS_PER_SAMPLE 5
 #define SERIES_PER_FOLDER 1000
@@ -93,7 +93,7 @@ static const char *row_name[ABM_SYSTEM_K] = {
 };
 
 static void make_directory(const char *path) {
-    if (mkdir(path, 0755) != 0) assert(errno == EEXIST && "abm_system_scale_extract: mkdir failed");
+    if (mkdir(path, 0755) != 0) assert(errno == EEXIST && "throughput_dataset: mkdir failed");
 }
 
 static int compare_basenames(const void *a, const void *b) {
@@ -105,7 +105,7 @@ static int compare_basenames(const void *a, const void *b) {
    not depend on readdir order. Caller must free each entry and the array. */
 static char **list_rdata_basenames(const char *dir, int *count) {
     DIR *handle = opendir(dir);
-    assert(handle && "abm_system_scale_extract: cannot open dataset/simulated/");
+    assert(handle && "throughput_dataset: cannot open dataset/simulated/");
 
     char **names = NULL;
     int n = 0, cap = 0;
@@ -148,7 +148,7 @@ int main(void) {
 
     int n_files;
     char **basenames = list_rdata_basenames(SIMULATED_DIR, &n_files);
-    assert(n_files > 0 && "abm_system_scale_extract: no .Rdata files found under dataset/simulated/");
+    assert(n_files > 0 && "throughput_dataset: no .Rdata files found under dataset/simulated/");
 
     int *n_replicates = malloc((size_t)n_files * sizeof(int));
     int *n_periods = malloc((size_t)n_files * sizeof(int));
@@ -160,7 +160,7 @@ int main(void) {
 
         RData d = abm_system_read(rdata_path);
         int n_rep = abm_system_n_replicates(&d);
-        assert(n_rep > 0 && "abm_system_scale_extract: a source file holds no replicates");
+        assert(n_rep > 0 && "throughput_dataset: a source file holds no replicates");
         n_replicates[f] = n_rep;
         n_periods[f] = abm_system_n_periods(&d);
 
@@ -199,9 +199,9 @@ int main(void) {
         free(original);
     }
 
-    FILE *manifest = fopen("out/abm_system_scale_extract_manifest.txt", "w");
+    FILE *manifest = fopen("out/throughput_dataset_manifest.txt", "w");
     assert(manifest && "cannot open the manifest path for writing");
-    fprintf(manifest, "source file -> dataset/abm_system_scale/<source>[_noise1..%d]/series_<000..%d>.csv\n",
+    fprintf(manifest, "source file -> dataset/throughput/<source>[_noise1..%d]/series_<000..%d>.csv\n",
             FOLDERS_PER_SAMPLE - 1, SERIES_PER_FOLDER - 1);
     fprintf(manifest, "%d source files found under %s\n\n", n_files, SIMULATED_DIR);
     fprintf(manifest, "series_i is an original replicate when it is in the source's own first\n"

@@ -5,7 +5,7 @@ replication) pair, the five series the auxiliary model is fitted on:
 
     dataset/abm_system/cop_0001/batch_000.npz
 
-That is the layout and the five series applications/abm_system_extract.c
+That is the layout and the five series applications/abm_system_convert_rdata.c
 produces from the older .Rdata dataset, so applications/abm_system_fit_qvarma.c
 reads either without knowing which wrote it and no extraction pass is needed
 after this one. Both writers go through abm_system_write_batch, so the layout

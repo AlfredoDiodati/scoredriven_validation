@@ -13,7 +13,7 @@ export LC_ALL=C
 #
 # Nothing here decides how results are stored. Each process writes compressed
 # .npz archives through abm_system_write_batch, ten replications to an archive,
-# which is the same layout applications/abm_system_extract.c produces and
+# which is the same layout applications/abm_system_convert_rdata.c produces and
 # applications/abm_system_fit_qvarma.c reads.
 #
 # Resuming is re-running. An archive already on disk is skipped whole, so an

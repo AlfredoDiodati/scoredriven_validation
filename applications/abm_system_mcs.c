@@ -1,6 +1,6 @@
 /*
 Model Confidence Set (Hansen, Lunde and Nason 2011), over
-out/abm_system_mse_qvarma_joint.csv: the mean absolute error between the
+out/abm_system_irf_loss.csv: the mean absolute error between the
 driftless t-QVARMA real-data fit's own impulse response function (p1q1r2)
 and every simulated replicate's own IRF. Every numeric column except
 "replicate" is a "model", one per configuration of the design, and every row
@@ -15,13 +15,13 @@ everyone else) - see the opt.stat assignment below for why this file asks
 for TR specifically.
 
 The comparison object is the impulse response function, not the fitted
-model's own parameters - see abm_system_mse_qvarma.c's own header comment
+model's own parameters - see abm_system_irf_loss.c's own header comment
 for why (in short: two fits with different-looking coefficients can imply
 nearly identical dynamics and vice versa, so a parameter distance does not
 answer the question this test needs answered, "do these two models behave
 alike"). This changed from an earlier version that fed this file a
 constrained-parameter distance instead; the switch is in
-abm_system_mse_qvarma.c, not here - this file only ever consumes whatever
+abm_system_irf_loss.c, not here - this file only ever consumes whatever
 loss the joint csv holds, whatever it is computed from.
 
 The drift-carrying t-QVARMAd is deliberately excluded. Both model families
@@ -33,7 +33,7 @@ never switched from parameter distance to IRF distance and its code is not
 part of this repository, so the two are not comparable side by side even if
 it were wanted. docs/ABM_SYSTEM_MCS_VALIDATION.md records that run.
 
-Absolute error, not squared: abm_system_mse_qvarma.c computes loss as mean
+Absolute error, not squared: abm_system_irf_loss.c computes loss as mean
 absolute error (et_al.'s stats_mae), not mean squared error (stats_mse,
 used originally, for both the earlier parameter-distance version and the
 first version of the IRF distance). A squared difference turns one
@@ -71,19 +71,19 @@ HAC adjustment" to be expressed as a zero-lag HAC estimate, functionally
 the plain sample variance, rather than what independent replicates actually
 call for.
 
-One joint run over both specs, not one per spec: out/abm_system_mse_qvarma_joint.csv
+One joint run over both specs, not one per spec: out/abm_system_irf_loss.csv
 already carries one column per configuration, each labeled with the spec it
-was fitted under (applications/abm_system_mse_qvarma.c builds it that way), so
+was fitted under (applications/abm_system_irf_loss.c builds it that way), so
 every column of it except "replicate" is a model this file's own mcs() call
 treats uniformly. It reads however many columns the file holds, so restoring a
 second spec upstream needs no change here: the columns simply double and the
 MCS runs jointly across both.
 
-Requires out/abm_system_mse_qvarma_joint.csv to exist
-(applications/abm_system_mse_qvarma.c). Output:
-out/abm_system_mcs_joint.txt
+Requires out/abm_system_irf_loss.csv to exist
+(applications/abm_system_irf_loss.c). Output:
+out/abm_system_mcs.txt
 (mcs_fwrite_report's own table: every model's mean loss, MCS p-value, and
-whether it survived) and out/abm_system_mcs_joint.csv (the same as data,
+whether it survived) and out/abm_system_mcs.csv (the same as data,
 via mcs_pvalue_frame). In EXPERIMENT_STEMS. Nothing printed.
 */
 
@@ -92,7 +92,7 @@ via mcs_pvalue_frame). In EXPERIMENT_STEMS. Nothing printed.
 #include <string.h>
 #include <assert.h>
 
-#define LOSS_PATH "out/abm_system_mse_qvarma_joint.csv"
+#define LOSS_PATH "out/abm_system_irf_loss.csv"
 
 int main(void) {
     /* Every numeric column except "replicate" (the row index, not a
@@ -126,7 +126,7 @@ int main(void) {
     opt.stat = MCS_TR;
     MCSResult res = mcs(&losses, opt);
 
-    FILE *report = fopen("out/abm_system_mcs_joint.txt", "w");
+    FILE *report = fopen("out/abm_system_mcs.txt", "w");
     assert(report && "abm_system_mcs: cannot open the report path for writing");
     mcs_fwrite_options(report, &losses, opt);
     fprintf(report, "\n");
@@ -137,7 +137,7 @@ int main(void) {
     fclose(report);
 
     DataFrame pvalues = mcs_pvalue_frame(&losses, &res);
-    df_write_csv(&pvalues, "out/abm_system_mcs_joint.csv", csv_write_options_default());
+    df_write_csv(&pvalues, "out/abm_system_mcs.csv", csv_write_options_default());
     df_free(&pvalues);
 
     mcs_free(&res);

@@ -1,6 +1,6 @@
 winning model  cop_0191_qvarma_p1q1r2
 mean IRF loss  0.1181627182, the smallest of the 1 models in the confidence set of 1000
-source         out/abm_system_mcs_joint.csv
+source         out/abm_system_mcs.csv
 
 averaged over  1000 of 1000 replicates, 42 parameters each, in the unconstrained space
 converged      449 of the 1000 averaged fits; the rest did not converge by the solver's test, and out/abm_system_fit_qvarma_manifest.txt says why each stopped

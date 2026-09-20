@@ -7,14 +7,16 @@ seed 1: 8 unit changes, first at period 21
   periods 1 to 21, before it: 0 values differ  
   period 22, the first written in the new unit: 79 of 83 columns exactly unchanged,
     divided or multiplied
-    4 of the 4 columns the mixed-unit mean productivity reaches moved, worst by 1.47e-03  
+    4 of the 4 columns the mixed-unit mean productivity reaches moved, worst mean productivity
+    by 1.47e-03  
   real GDP growth over periods 52 to 2000: mean 0.2596% against 0.2615%, 0.0 standard errors apart  
 
 seed 2: 8 unit changes, first at period 21
   periods 1 to 21, before it: 0 values differ  
   period 22, the first written in the new unit: 79 of 83 columns exactly unchanged,
     divided or multiplied
-    4 of the 4 columns the mixed-unit mean productivity reaches moved, worst by 1.49e-03  
+    4 of the 4 columns the mixed-unit mean productivity reaches moved, worst mean productivity
+    by 1.49e-03  
   real GDP growth over periods 52 to 2000: mean 0.2709% against 0.2734%, 0.0 standard errors apart  
 
 

@@ -4,10 +4,10 @@ parameter set averaged over its replicates has nu near 2853 while the US fit has
 nu near 7.2.
 
 Reads every cached fit under out/abm_system_fit_qvarma/ and recomputes each
-replicate's impulse response exactly as applications/abm_system_mse_qvarma.c
+replicate's impulse response exactly as applications/abm_system_irf_loss.c
 does: total component, horizons 0 to 20, stacked into 525 elements, loss the
 mean absolute error against the US benchmark's. The recomputed losses are
-checked against out/abm_system_mse_qvarma_joint.csv before anything else is
+checked against out/abm_system_irf_loss.csv before anything else is
 reported. Nothing is fitted.
 
 Four questions, one section of the report each:
@@ -32,10 +32,10 @@ horizon, to show which elements the win comes from.
 
 The winner is the configuration in the confidence set with the smallest mean
 loss, and the runner-up the one with the largest elimination round, both read
-from out/abm_system_mcs_joint.csv.
+from out/abm_system_mcs.csv.
 
 Requires out/us_qvarma_spec_choice_p1q1r2_fit.json, out/us_system.csv,
-out/abm_system_mse_qvarma_joint.csv, out/abm_system_mcs_joint.csv, the fit cache
+out/abm_system_irf_loss.csv, out/abm_system_mcs.csv, the fit cache
 and dataset/abm_system/. None are Makefile prerequisites, because rebuilding
 the loss table reruns a million impulse responses.
 
@@ -92,8 +92,8 @@ Output, none of it printed:
 #define FIT_DIR "out/abm_system_fit_qvarma"
 #define INPUT_DIR "dataset/abm_system"
 #define BENCHMARK_FIT_PATH "out/us_qvarma_spec_choice_p1q1r2_fit.json"
-#define LOSS_TABLE_PATH "out/abm_system_mse_qvarma_joint.csv"
-#define CONFIDENCE_SET_PATH "out/abm_system_mcs_joint.csv"
+#define LOSS_TABLE_PATH "out/abm_system_irf_loss.csv"
+#define CONFIDENCE_SET_PATH "out/abm_system_mcs.csv"
 #define REPORT_PATH "out/abm_system_winner_diagnostics.txt"
 #define PARAMETERS_PATH "out/abm_system_winner_diagnostics_parameters.csv"
 #define CONFIGURATIONS_PATH "out/abm_system_winner_diagnostics_configurations.csv"
@@ -157,7 +157,7 @@ static Mat build_us_block(void) {
 }
 
 /* Returns 0 when nu is not above two or a response is not finite, the two
-   cases applications/abm_system_mse_qvarma.c counts as a missing cell. */
+   cases applications/abm_system_irf_loss.c counts as a missing cell. */
 static int stacked_total_irf(const QvarmaParams *m, Mat y, mreal *out) {
     if (!(m->nu > 2)) return 0;
     Mat D = qvarma_mean_score_jacobian(m, y);

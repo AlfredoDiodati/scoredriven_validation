@@ -18,7 +18,7 @@ Every run below used the build `make model` produces, the parameter file
 `model/dsk_sfc/dsk_sfc_inputs.json` with the nine design parameters of one row
 of `dataset/abm_system_design.csv` written into it, the horizon `T` overwritten,
 and `-f 0 -c 0 -v 0`. The row is `cop_0191`, the only configuration left in
-`out/abm_system_mcs_joint.txt`, unless a table says otherwise. Runs were made
+`out/abm_system_mcs.txt`, unless a table says otherwise. Runs were made
 one or four at a time on the machine `docs/DSK_MODEL_CHANGES.md` describes, with
 nothing else of note running.
 

@@ -18,7 +18,7 @@ so. This script refuses to start when the directory it is about to write
 into already holds cop_* directories, which is the same refusal
 applications/abm_system_simulate_all.sh makes in the other direction.
 
-ABM_SYSTEM_EXTRACT_DIR overrides where the archives go. It defaults to
+ABM_SYSTEM_RDATA_DIR overrides where the archives go. It defaults to
 dataset/abm_system_rdata, which is where this route's output was moved when
 the design runs took dataset/abm_system over, so a plain run now rebuilds
 that copy in place rather than landing on top of the design experiment.
@@ -42,7 +42,7 @@ replicate index each row belongs to, so a reader takes one replicate out of
 it through abm_system_read_replicate without needing to know how the
 archives were filled. tests/abm_system_layout.c checks that round trip.
 
-out/abm_system_extract_manifest.txt records, per source file: its own
+out/abm_system_convert_rdata_manifest.txt records, per source file: its own
 sample number, how many replicates it held, and how many periods each
 replicate has after the burn-in and differencing - the actual counts, not
 an assumption, since dataset/simulated/'s own 100 files were not all
@@ -54,7 +54,7 @@ overwrites everything it already wrote), no handling for a file whose
 own asserts. The output directory is regenerated from dataset/simulated/
 every time this runs, never edited by hand.
 
-In EXPERIMENT_STEMS, so `make app-abm_system_extract` runs it. Not part of
+In EXPERIMENT_STEMS, so `make app-abm_system_convert_rdata` runs it. Not part of
 `make applications`: it writes to dataset/, not out/, and is meant to be
 run explicitly, once, before the fitting stage, not on every routine build.
 Nothing printed.
@@ -77,7 +77,7 @@ Nothing printed.
 static const char *OUTPUT_DIR;
 
 static void make_directory(const char *path) {
-    if (mkdir(path, 0755) != 0) assert(errno == EEXIST && "abm_system_extract: mkdir failed");
+    if (mkdir(path, 0755) != 0) assert(errno == EEXIST && "abm_system_convert_rdata: mkdir failed");
 }
 
 /* Refuses a directory the design experiment already wrote into. The fitting
@@ -101,7 +101,7 @@ static int output_dir_is_free(const char *dir) {
                 "applications/abm_system_fit_qvarma.c fits every subdirectory it finds and\n"
                 "cannot tell two datasets apart, so this script will not add to that one.\n\n"
                 "Write somewhere else instead:\n\n"
-                "  ABM_SYSTEM_EXTRACT_DIR=dataset/abm_system_rdata ./bin/abm_system_extract\n",
+                "  ABM_SYSTEM_RDATA_DIR=dataset/abm_system_rdata ./bin/abm_system_convert_rdata\n",
                 dir);
     }
     return !occupied;
@@ -113,7 +113,7 @@ static int output_dir_is_free(const char *dir) {
    each entry and the array itself. */
 static char **list_rdata_basenames(const char *dir, int *count) {
     DIR *handle = opendir(dir);
-    assert(handle && "abm_system_extract: cannot open dataset/simulated/");
+    assert(handle && "abm_system_convert_rdata: cannot open dataset/simulated/");
 
     char **names = NULL;
     int n = 0, cap = 0;
@@ -124,11 +124,11 @@ static char **list_rdata_basenames(const char *dir, int *count) {
         if (n == cap) {
             cap = cap ? cap * 2 : 16;
             char **grown = realloc(names, (size_t)cap * sizeof(char*));
-            assert(grown && "abm_system_extract: out of memory listing source files");
+            assert(grown && "abm_system_convert_rdata: out of memory listing source files");
             names = grown;
         }
         names[n] = malloc(len - 6 + 1);
-        assert(names[n] && "abm_system_extract: out of memory copying a source name");
+        assert(names[n] && "abm_system_convert_rdata: out of memory copying a source name");
         memcpy(names[n], entry->d_name, len - 6);
         names[n][len - 6] = '\0';
         n++;
@@ -139,7 +139,7 @@ static char **list_rdata_basenames(const char *dir, int *count) {
 }
 
 int main(void) {
-    OUTPUT_DIR = getenv("ABM_SYSTEM_EXTRACT_DIR");
+    OUTPUT_DIR = getenv("ABM_SYSTEM_RDATA_DIR");
     if (!OUTPUT_DIR) OUTPUT_DIR = OUTPUT_DIR_DEFAULT;
 
     if (!output_dir_is_free(OUTPUT_DIR)) return 1;
@@ -147,9 +147,9 @@ int main(void) {
 
     int n_files;
     char **basenames = list_rdata_basenames(SIMULATED_DIR, &n_files);
-    assert(n_files > 0 && "abm_system_extract: no .Rdata files found under dataset/simulated/");
+    assert(n_files > 0 && "abm_system_convert_rdata: no .Rdata files found under dataset/simulated/");
 
-    FILE *manifest = fopen("out/abm_system_extract_manifest.txt", "w");
+    FILE *manifest = fopen("out/abm_system_convert_rdata_manifest.txt", "w");
     assert(manifest && "cannot open the manifest path for writing");
     fprintf(manifest, "source file -> %s/<source>/batch_<000..>.npz\n", OUTPUT_DIR);
     fprintf(manifest, "%d source files found under %s\n\n", n_files, SIMULATED_DIR);

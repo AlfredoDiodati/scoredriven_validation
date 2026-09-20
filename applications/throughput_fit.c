@@ -5,8 +5,8 @@ per simulated dataset, so what decides whether that loop is feasible is
 the wall time of the whole battery, not the cost of one fit. This script
 runs the battery and writes the two timestamps that answer the question.
 
-Fits every series applications/abm_system_scale_extract.c wrote under
-dataset/abm_system_scale/ - 500 folders of 1000 - with the single spec the
+Fits every series applications/throughput_dataset.c wrote under
+dataset/throughput/ - 500 folders of 1000 - with the single spec the
 pipeline settled on: t-QVARMA(1,1,2), K_star 3, R 1, shared beta, the same
 K_dagger 2 partition and the same build_start convention
 applications/abm_system_fit_qvarma.c and
@@ -17,7 +17,7 @@ abm_system_fit_qvarma.c, because 500 x 1000 is the size being timed and r
 Every fitted parameter set is written the moment that one optimization
 returns, by the fit's own worker thread, never batched: 500,000 fits are
 500,000 independent writes to
-out/abm_system_scale_fit_qvarma_i<cap>/<folder>/series_<NNN>_p1q1r2_fit.json,
+out/throughput_fit_i<cap>/<folder>/series_<NNN>_p1q1r2_fit.json,
 mirroring the input layout exactly so which series a cached fit belongs
 to is never in question. An interrupted run therefore keeps everything it
 had finished.
@@ -29,12 +29,12 @@ the cap rather than at the gradient tolerance, so what a larger budget buys
 themselves have to answer, which means two budgets have to coexist on disk
 rather than one overwriting the other. Set the budget at compile time
 (-DMAX_ITERATIONS=4000); the Makefile generates one target per entry in
-SCALE_ITERATION_CAPS and names the binary after the cap too, so make cannot
+THROUGHPUT_ITERATION_CAPS and names the binary after the cap too, so make cannot
 serve a binary built at one budget for a request at another.
-applications/abm_system_scale_iteration_comparison.c reads two such trees
+applications/throughput_iteration_budget.c reads two such trees
 and reports the difference.
 
-out/abm_system_scale_fit_qvarma_i<cap>_timing.txt is the point of the
+out/throughput_fit_i<cap>_timing.txt is the point of the
 script. It is opened and the start timestamp flushed before the first fit
 begins, a progress line is appended every PROGRESS_EVERY completed fits,
 and the end timestamp, the elapsed wall time and the throughput are
@@ -72,14 +72,14 @@ before the next task starts. What scales with the battery is the summary,
 four arrays of one entry per fit, about 12 MB at 500,000, and the task
 list at 4 MB. Nothing else is held across tasks.
 
-out/abm_system_scale_fit_qvarma_i<cap>_manifest.txt records log-likelihood,
+out/throughput_fit_i<cap>_manifest.txt records log-likelihood,
 gradient norm, iterations, convergence and whether the fit was estimated
 or reused, one line per fit. Written once at the end, a summary of what
 the individual JSONs already hold rather than a substitute for them, and
 about 45 MB at this size.
 
-Requires dataset/abm_system_scale/ to already exist. Deliberately not made
-to depend on app-abm_system_scale_extract in the Makefile: that step writes
+Requires dataset/throughput/ to already exist. Deliberately not made
+to depend on app-throughput_dataset in the Makefile: that step writes
 21 GB and rerunning the fits must not rewrite it. Nothing printed.
 */
 
@@ -123,13 +123,13 @@ to depend on app-abm_system_scale_extract in the Makefile: that step writes
 #define STRINGIFY(x) STRINGIFY_(x)
 #define BUDGET_SUFFIX "_i" STRINGIFY(MAX_ITERATIONS)
 
-#define INPUT_DIR "dataset/abm_system_scale"
-#define OUTPUT_DIR "out/abm_system_scale_fit_qvarma" BUDGET_SUFFIX
-#define TIMING_PATH "out/abm_system_scale_fit_qvarma" BUDGET_SUFFIX "_timing.txt"
-#define MANIFEST_PATH "out/abm_system_scale_fit_qvarma" BUDGET_SUFFIX "_manifest.txt"
+#define INPUT_DIR "dataset/throughput"
+#define OUTPUT_DIR "out/throughput_fit" BUDGET_SUFFIX
+#define TIMING_PATH "out/throughput_fit" BUDGET_SUFFIX "_timing.txt"
+#define MANIFEST_PATH "out/throughput_fit" BUDGET_SUFFIX "_manifest.txt"
 
 static void make_directory(const char *path) {
-    if (mkdir(path, 0755) != 0) assert(errno == EEXIST && "abm_system_scale_fit_qvarma: mkdir failed");
+    if (mkdir(path, 0755) != 0) assert(errno == EEXIST && "throughput_fit: mkdir failed");
 }
 
 static int compare_names(const void *a, const void *b) {
@@ -138,7 +138,7 @@ static int compare_names(const void *a, const void *b) {
 
 static char **list_subdirs(const char *dir, int *count) {
     DIR *handle = opendir(dir);
-    assert(handle && "abm_system_scale_fit_qvarma: cannot open dataset/abm_system_scale/ - run abm_system_scale_extract first");
+    assert(handle && "throughput_fit: cannot open dataset/throughput/ - run throughput_dataset first");
 
     char **names = NULL;
     int n = 0, cap = 0;
@@ -165,7 +165,7 @@ static int count_series(const char *folder) {
     char path[600];
     snprintf(path, sizeof path, "%s/%s", INPUT_DIR, folder);
     DIR *handle = opendir(path);
-    assert(handle && "abm_system_scale_fit_qvarma: cannot open a folder under dataset/abm_system_scale/");
+    assert(handle && "throughput_fit: cannot open a folder under dataset/throughput/");
     int n = 0;
     struct dirent *entry;
     while ((entry = readdir(handle)) != NULL)
@@ -249,7 +249,7 @@ int main(void) {
 
     int n_folders;
     char **folders = list_subdirs(INPUT_DIR, &n_folders);
-    assert(n_folders > 0 && "abm_system_scale_fit_qvarma: no folders under dataset/abm_system_scale/");
+    assert(n_folders > 0 && "throughput_fit: no folders under dataset/throughput/");
 
     int *n_series = malloc((size_t)n_folders * sizeof(int));
     long total_tasks = 0;
@@ -260,7 +260,7 @@ int main(void) {
         make_directory(out_dir);
         total_tasks += n_series[f];
     }
-    assert(total_tasks > 0 && "abm_system_scale_fit_qvarma: no series found to fit");
+    assert(total_tasks > 0 && "throughput_fit: no series found to fit");
 
     Task *tasks = malloc((size_t)total_tasks * sizeof(Task));
     long t_idx = 0;

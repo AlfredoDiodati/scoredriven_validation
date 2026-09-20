@@ -14,11 +14,9 @@ out/abm_system_fit_qvarma/
 out/abm_system_fit_qvarma_manifest.txt
 out/abm_system_fit_qvarma.log
 
-# The copy of those fits kept from before the resume logic existed, 86 MB in
-# 21,600 files, and its own 2 MB manifest. Both are snapshots of a run, not
-# results, and `make app-abm_system_fit_qvarma` produces the current ones.
-out/abm_system_fit_qvarma_before_resume/
-out/abm_system_fit_qvarma_manifest_before_resume.txt
+# What a step wrote to the terminal when it was run in the background. The
+# result is the file the step writes to out/, not the scrollback beside it.
+out/*.log
 
 # Everything else under out/ is small, human-readable and worth keeping: the
 # fitted parameters on the real data, the loss table, the confidence set and
@@ -34,14 +32,14 @@ vgcore.*
 
 # The 500 x 1000 throughput dataset, about 21 GB of CSV, and the 500,000 fits
 # and 45 MB manifest the throughput test writes from it. Both are regenerated
-# by `make app-abm_system_scale_extract` and
-# `make app-abm_system_scale_fit_qvarma`. The timing file those runs produce,
-# out/abm_system_scale_fit_qvarma_timing.txt, is the result and is kept.
-dataset/abm_system_scale/
-out/abm_system_scale_fit_qvarma_i*/
-out/abm_system_scale_fit_qvarma_i*_manifest.txt
-out/abm_system_scale_extract_manifest.txt
-out/abm_system_scale_iteration_comparison_i*.csv
+# by `make app-throughput_dataset` and
+# `make app-throughput_fit`. The timing file those runs produce,
+# out/throughput_fit_i<cap>_timing.txt, is the result and is kept.
+dataset/throughput/
+out/throughput_fit_i*/
+out/throughput_fit_i*_manifest.txt
+out/throughput_dataset_manifest.txt
+out/throughput_iteration_budget_i*.csv
 
 # The vendored simulator's own build products. model/dsk_sfc is source; the
 # binary comes from `make model` and its runs write an output/ beside it.
@@ -59,7 +57,7 @@ model/dsk_sfc/output/
 *.zip
 # The older .Rdata-derived copy of the simulated dataset, 112 MB, moved out of
 # dataset/abm_system/ so the design runs could take its place. It is derived
-# data like the archives that replaced it, and `make app-abm_system_extract`
+# data like the archives that replaced it, and `make app-abm_system_convert_rdata`
 # rebuilds it from dataset/simulated/.
 dataset/abm_system_rdata/
 
@@ -73,9 +71,9 @@ nohup.out
 dataset/abm_system.tar.gz
 
 # The loss table, 1000 replicates by 1000 configurations, 20 MB. Rebuilt by
-# make app-abm_system_mse_qvarma from the fit cache. The confidence set it feeds,
-# out/abm_system_mcs_joint.csv and .txt, is small and kept.
-out/abm_system_mse_qvarma_joint.csv
+# make app-abm_system_irf_loss from the fit cache. The confidence set it feeds,
+# out/abm_system_mcs.csv and .txt, is small and kept.
+out/abm_system_irf_loss.csv
 
 # Python's bytecode cache, written when the plotting script runs.
 __pycache__/

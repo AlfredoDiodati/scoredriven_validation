@@ -4,7 +4,7 @@ for that choice.
 
 This is not the experiment. The experiment is the Latin hypercube over the ABM
 in docs/ABM_SYSTEM_SIMULATION.md, and the pipeline that consumes it is
-abm_system_fit_qvarma -> abm_system_mse_qvarma -> abm_system_mcs ->
+abm_system_fit_qvarma -> abm_system_irf_loss -> abm_system_mcs ->
 abm_system_winner_irf. This file runs once, on the real US data, and its job is
 to justify one decision those four take as given: that the auxiliary model is
 t-QVARMA(1,1,2) with the Fisher-relation partition, and not one of the
@@ -20,7 +20,7 @@ against nu/(nu-2) Sigma, autocorrelation with Ljung-Box, the quadratic form
 against its F reference, and the mean squared residual.
 
 The r = 2 fit is also an input rather than only a diagnostic:
-applications/abm_system_mse_qvarma.c reads
+applications/abm_system_irf_loss.c reads
 out/us_qvarma_spec_choice_p1q1r2_fit.json and computes its impulse response
 function, which is the benchmark every simulated replicate's own response is
 compared against. r = 4 was in the pipeline as a second auxiliary spec until it

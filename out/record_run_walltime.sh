@@ -5,7 +5,7 @@
 # before the manifest is written, and which records nothing at all if the
 # process is killed. This covers the whole process either way.
 PID="$1"; CAP="$2"; START_EPOCH="$3"
-STAMP=out/abm_system_scale_fit_qvarma_i${CAP}_provenance.txt
+STAMP=out/throughput_fit_i${CAP}_provenance.txt
 while kill -0 "$PID" 2>/dev/null; do sleep 20; done
 END_EPOCH=$(date +%s)
 ELAPSED=$((END_EPOCH - START_EPOCH))
@@ -19,6 +19,6 @@ ELAPSED=$((END_EPOCH - START_EPOCH))
          $((ELAPSED/3600)) $((ELAPSED%3600/60)) $((ELAPSED%60))
   echo "  covers the folder scan, all 500,000 fits and the manifest write;"
   echo "  the timing file's own 'elapsed' covers the fit loop alone."
-  grep -h "^elapsed" out/abm_system_scale_fit_qvarma_i${CAP}_timing.txt 2>/dev/null |
+  grep -h "^elapsed" out/throughput_fit_i${CAP}_timing.txt 2>/dev/null |
     sed 's/^/  fit loop only:   /'
 } >> "$STAMP"

@@ -39,7 +39,7 @@ an exact reparameterization of the same model, so every cell is the same
 statistical problem seen in different units, and any criterion whose reading
 changes across a row is measuring the units.
 
-Writes out/qvarma_convergence_test.txt.
+Writes out/qvarma_convergence_criteria.txt.
 */
 #include "applications/abm_system.h"
 #include <et_al./sd/qvarma.h>
@@ -374,7 +374,7 @@ int main(void) {
         cell[index] = out;
     }
 
-    FILE *report = fopen("out/qvarma_convergence_test.txt", "w");
+    FILE *report = fopen("out/qvarma_convergence_criteria.txt", "w");
     assert(report);
     fprintf(report, "t-QVARMA(1,1,2), K = %d, K_star = %d, R = %d, simulated from a fixed truth "
                     "with nu = 8.\n", K, K_STAR, R);

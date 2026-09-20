@@ -55,7 +55,7 @@ exist (applications/us_prepare_data.c), which load_us_system reads directly to
 rebuild the real data's own K x ESTIMATION_PERIODS block the same way
 applications/us_qvarma_spec_choice.c itself does.
 
-Output: out/abm_system_mse_qvarma_joint.csv, the loss matrix
+Output: out/abm_system_irf_loss.csv, the loss matrix
 applications/abm_system_mcs.c reads. One row per replicate and one column per
 configuration, plus a leading "replicate" column, so over the design experiment
 that is 1000 rows and 1001 columns. Each column is named for its configuration
@@ -71,8 +71,11 @@ happens the replicate is dropped from every column rather than the
 configuration from every row, since a missing cell belongs to one
 (configuration, replicate) pair and dropping the row is the direction that does
 not change which models are being compared.
-out/abm_system_mse_qvarma_manifest.txt names every missing cell and counts the
-replicates dropped.
+The manifest is named after the loss table rather than after this script, so
+the two cannot be separated: the default is
+out/abm_system_irf_loss_manifest.txt, and pointing
+ABM_SYSTEM_LOSS_PATH somewhere else moves both. It names every missing cell and
+counts the replicates dropped.
 
 The fits are used as they stand, converged or not. About a third of them
 converged and the rest stopped because the line search could not move;
@@ -80,7 +83,7 @@ docs/ABM_SYSTEM_MCS_VALIDATION.md records the measurement that their
 log-likelihoods are not distinguishable from the converged ones.
 
 Not part of make applications - buildable on its own via
-make app-abm_system_mse_qvarma, same as abm_system_fit_qvarma.c itself.
+make app-abm_system_irf_loss, same as abm_system_fit_qvarma.c itself.
 Nothing printed.
 */
 
@@ -114,7 +117,7 @@ static int n_replicates = 0;
 
 #define FIT_DIR_DEFAULT "out/abm_system_fit_qvarma"
 #define INPUT_DIR_DEFAULT "dataset/abm_system"
-#define OUTPUT_PATH_DEFAULT "out/abm_system_mse_qvarma_joint.csv"
+#define OUTPUT_PATH_DEFAULT "out/abm_system_irf_loss.csv"
 
 /* Overridable so the whole pass can be run over a couple of configurations,
    which is how the parallel loop was checked against the serial one. */
@@ -201,7 +204,7 @@ static int count_replicates(const char *sample, const char *label) {
     snprintf(dir, sizeof dir, "%s/%s", FIT_DIR, sample);
 
     DIR *handle = opendir(dir);
-    assert(handle && "abm_system_mse_qvarma: cannot open a sample's fit directory");
+    assert(handle && "abm_system_irf_loss: cannot open a sample's fit directory");
 
     char suffix[64];
     snprintf(suffix, sizeof suffix, "_%s_fit.json", label);
@@ -212,7 +215,7 @@ static int count_replicates(const char *sample, const char *label) {
         if (strstr(entry->d_name, suffix)) n++;
     closedir(handle);
 
-    assert(n > 0 && "abm_system_mse_qvarma: a sample directory holds no fit for this spec");
+    assert(n > 0 && "abm_system_irf_loss: a sample directory holds no fit for this spec");
     return n;
 }
 
@@ -223,7 +226,7 @@ typedef struct { char *name; int index; } SampleEntry;
    sort's "_10" before "_2". */
 static int trailing_index(const char *name) {
     const char *underscore = strrchr(name, '_');
-    assert(underscore && "abm_system_mse_qvarma: a sample directory name has no trailing _<N>");
+    assert(underscore && "abm_system_irf_loss: a sample directory name has no trailing _<N>");
     return atoi(underscore + 1);
 }
 
@@ -233,7 +236,7 @@ static int compare_sample_entries(const void *a, const void *b) {
 
 static SampleEntry *list_samples(const char *dir, int *count) {
     DIR *handle = opendir(dir);
-    assert(handle && "abm_system_mse_qvarma: cannot open out/abm_system_fit_qvarma/ - run abm_system_fit_qvarma first");
+    assert(handle && "abm_system_irf_loss: cannot open out/abm_system_fit_qvarma/ - run abm_system_fit_qvarma first");
 
     SampleEntry *entries = NULL;
     int n = 0, cap = 0;
@@ -247,12 +250,12 @@ static SampleEntry *list_samples(const char *dir, int *count) {
         if (n == cap) {
             cap = cap ? cap * 2 : 16;
             SampleEntry *grown = realloc(entries, (size_t)cap * sizeof(SampleEntry));
-            assert(grown && "abm_system_mse_qvarma: out of memory listing samples");
+            assert(grown && "abm_system_irf_loss: out of memory listing samples");
             entries = grown;
         }
         size_t len = strlen(entry->d_name);
         entries[n].name = malloc(len + 1);
-        assert(entries[n].name && "abm_system_mse_qvarma: out of memory copying a sample name");
+        assert(entries[n].name && "abm_system_irf_loss: out of memory copying a sample name");
         memcpy(entries[n].name, entry->d_name, len + 1);
         entries[n].index = trailing_index(entry->d_name);
         n++;
@@ -272,7 +275,7 @@ static void read_y(const char *sample, int replicate, Mat *y_out) {
     char dir[560];
     snprintf(dir, sizeof dir, "%s/%s", INPUT_DIR, sample);
     Mat y = abm_system_read_replicate(dir, replicate);
-    assert(y.r == K && "abm_system_mse_qvarma: a replicate has the wrong number of series");
+    assert(y.r == K && "abm_system_irf_loss: a replicate has the wrong number of series");
     *y_out = y;
 }
 
@@ -285,11 +288,11 @@ static DataFrame build_spec_losses(Spec spec, Mat real_y, const SampleEntry *sam
                                    FILE *manifest) {
     QvarmaParams real = spec_shape(spec.r);
     int loaded = qvarma_load_params(&real, spec.real_fit_path);
-    assert(loaded && "abm_system_mse_qvarma: could not load the real-data fit - run "
+    assert(loaded && "abm_system_irf_loss: could not load the real-data fit - run "
                       "us_qvarma_spec_choice.c's grid first");
     Vec real_irf;
     int real_ok = try_compute_irf(&real, real_y, &real_irf);
-    assert(real_ok && "abm_system_mse_qvarma: the real-data fit's own nu <= 2 - "
+    assert(real_ok && "abm_system_irf_loss: the real-data fit's own nu <= 2 - "
                        "its impulse response function cannot be computed at all");
 
     Mat values = mat_new(n_replicates, n_samples + 1);
@@ -364,7 +367,7 @@ static DataFrame build_spec_losses(Spec spec, Mat real_y, const SampleEntry *sam
             if (MISNAN(AT(values, row, col + 1))) { usable[row] = 0; break; }
         if (usable[row]) keep++;
     }
-    assert(keep > 0 && "abm_system_mse_qvarma: every replicate has a missing cell");
+    assert(keep > 0 && "abm_system_irf_loss: every replicate has a missing cell");
 
     if (keep < n_replicates) {
         Mat kept = mat_new(keep, n_samples + 1);
@@ -412,7 +415,7 @@ int main(void) {
 
     int n_samples;
     SampleEntry *samples = list_samples(FIT_DIR, &n_samples);
-    assert(n_samples > 0 && "abm_system_mse_qvarma: no sample directories under out/abm_system_fit_qvarma/");
+    assert(n_samples > 0 && "abm_system_irf_loss: no sample directories under out/abm_system_fit_qvarma/");
 
     Mat original = load_us_system();
     Mat real_y = build_real_block(original);
@@ -421,9 +424,14 @@ int main(void) {
     n_replicates = count_replicates(samples[0].name, spec_list[0].label);
 
     char manifest_path[640];
-    snprintf(manifest_path, sizeof manifest_path, "%.600s_manifest.txt", OUTPUT_PATH);
+    /* Named after the loss table with its extension dropped, so the pair reads
+       as <stem>.csv and <stem>_manifest.txt rather than as a path with two
+       extensions stuck together. */
+    size_t stem = strlen(OUTPUT_PATH);
+    if (stem > 4 && strcmp(OUTPUT_PATH + stem - 4, ".csv") == 0) stem -= 4;
+    snprintf(manifest_path, sizeof manifest_path, "%.*s_manifest.txt", (int)stem, OUTPUT_PATH);
     FILE *manifest = fopen(manifest_path, "w");
-    assert(manifest && "abm_system_mse_qvarma: cannot open the manifest path for writing");
+    assert(manifest && "abm_system_irf_loss: cannot open the manifest path for writing");
     fprintf(manifest, "%d samples, %d replicates each, %d spec, "
                        "loss = MAE between stacked impulse response vectors (horizon %d)\n\n",
             n_samples, n_replicates, N_SPECS, HORIZON);
@@ -432,11 +440,11 @@ int main(void) {
        The join that stood here paired the r = 2 and r = 4 columns on the
        replicate index; if a second spec goes back into spec_list, it comes
        back with it. */
-    assert(N_SPECS == 1 && "abm_system_mse_qvarma: written for one spec - restore the join for more");
+    assert(N_SPECS == 1 && "abm_system_irf_loss: written for one spec - restore the join for more");
     DataFrame losses = build_spec_losses(spec_list[0], real_y, samples, n_samples, manifest);
     mat_free(real_y);
 
-    assert(losses.r > 0 && "abm_system_mse_qvarma: the loss table has no rows");
+    assert(losses.r > 0 && "abm_system_irf_loss: the loss table has no rows");
     df_write_csv(&losses, OUTPUT_PATH, csv_write_options_default());
 
     df_free(&losses);

@@ -19,9 +19,9 @@ periods at the fitted nu and at nu one per cent higher. A fit is called
                  than SMOOTH_LIMIT
     knife-edge   when either changes it by more than KNIFE_EDGE_LIMIT
     between      otherwise
-Each fit's loss is read from out/abm_system_mse_qvarma_joint.csv.
+Each fit's loss is read from out/abm_system_irf_loss.csv.
 
-Requires out/abm_system_mcs_joint.csv, out/abm_system_mse_qvarma_joint.csv, the
+Requires out/abm_system_mcs.csv, out/abm_system_irf_loss.csv, the
 fit cache and dataset/abm_system/. None are Makefile prerequisites, because
 rebuilding them reruns a million fits.
 
@@ -53,8 +53,8 @@ Output, none of it printed:
 
 #define FIT_DIR "out/abm_system_fit_qvarma"
 #define INPUT_DIR "dataset/abm_system"
-#define CONFIDENCE_SET_PATH "out/abm_system_mcs_joint.csv"
-#define LOSS_TABLE_PATH "out/abm_system_mse_qvarma_joint.csv"
+#define CONFIDENCE_SET_PATH "out/abm_system_mcs.csv"
+#define LOSS_TABLE_PATH "out/abm_system_irf_loss.csv"
 #define REPORT_PATH "out/abm_system_winner_nu_likelihood_scan.txt"
 #define TABLE_PATH "out/abm_system_winner_nu_likelihood_scan.csv"
 

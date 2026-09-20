@@ -3,7 +3,7 @@ Which shared resource the taped evaluation contends on, tested away from et_al
 so the answer does not depend on anything the tape does: a tight loop of small
 cblas_dgemm calls, a tight loop of malloc and free at the tape's block size,
 and a loop of pure arithmetic, each at one and four threads. Not part of the
-pipeline; run explicitly. Writes out/small_call_scaling.txt.
+pipeline; run explicitly. Writes out/fit_contention_source.txt.
 
 The shapes are the ones the qvarma filter issues: 5x5 times 5x1, and 5x5 times
 5x5, several thousand per evaluation.
@@ -36,7 +36,7 @@ static void keep_the_arena_resident(void) {
 int main(void) {
     keep_the_arena_resident();
     openblas_set_num_threads(1);
-    FILE *report = fopen("out/small_call_scaling.txt", "w");
+    FILE *report = fopen("out/fit_contention_source.txt", "w");
     /* Per job rather than shared, so each loop runs long enough to time: a
        dgemm call is three hundred times a malloc and five hundred times the
        arithmetic, and the same count for all three leaves two of them at a

@@ -13,8 +13,8 @@
 #     scanned, stops it before the manifest is written, and writes nothing if
 #     the process is killed
 CAP="$1"
-BIN=./bin/abm_system_scale_fit_qvarma_i${CAP}
-STAMP=out/abm_system_scale_fit_qvarma_i${CAP}_provenance.txt
+BIN=./bin/throughput_fit_i${CAP}
+STAMP=out/throughput_fit_i${CAP}_provenance.txt
 START_EPOCH=$(date +%s)
 {
   echo "et_al headers this run compiled against"
@@ -32,8 +32,13 @@ START_EPOCH=$(date +%s)
 # The machine suspended under the first 8000-iteration attempt at 01:58 on
 # 2026-09-01, 296,337 fits in, and was rebooted before it could resume. A
 # battery of this length has to hold the machine awake for its own duration.
-systemd-inhibit --what=sleep:idle --who="abm_system_scale_fit_qvarma_i${CAP}" \
-                --why="500,000-fit battery, hours long" $BIN
+#
+# Every type that can stop one, not just sleep. logind handles the lid through
+# its own inhibitor type, handle-lid-switch, and this machine is configured
+# HandleLidSwitch=suspend and HandleLidSwitchExternalPower=suspend, so a
+# sleep-only inhibitor leaves a closed lid free to kill the run.
+systemd-inhibit --what=handle-lid-switch:sleep:idle:shutdown --who="throughput_fit_i${CAP}" \
+                --why="500,000-fit battery, hours long" --mode=block $BIN
 STATUS=$?
 END_EPOCH=$(date +%s)
 ELAPSED=$((END_EPOCH - START_EPOCH))
@@ -47,7 +52,7 @@ ELAPSED=$((END_EPOCH - START_EPOCH))
          $((ELAPSED/3600)) $((ELAPSED%3600/60)) $((ELAPSED%60))
   echo "  covers the folder scan, all 500,000 fits and the manifest write;"
   echo "  the timing file's own 'elapsed' covers the fit loop alone."
-  grep -h "^elapsed" out/abm_system_scale_fit_qvarma_i${CAP}_timing.txt 2>/dev/null |
+  grep -h "^elapsed" out/throughput_fit_i${CAP}_timing.txt 2>/dev/null |
     sed 's/^/  fit loop only:   /'
   echo "  exit status      $STATUS"
 } >> "$STAMP"

@@ -178,8 +178,8 @@ configuration's path distribution - only the variance reduction is lost.
 
 ### It was measured, and the gain is nothing
 
-`tests/abm_system_seed_correlation.c` reads
-`out/abm_system_mse_qvarma_joint.csv`, 1000 replicates by 1000 configurations,
+`studies/abm_system_seed_correlation.c` reads
+`out/abm_system_irf_loss.csv`, 1000 replicates by 1000 configurations,
 and computes the Pearson correlation of the per-replicate losses for every one
 of the 499,500 configuration pairs. The reference for no shared randomness is
 the same correlation with the second configuration's rows shifted down by one,
@@ -324,7 +324,7 @@ Replications are written ten at a time into one `.npz` archive:
 holding six members: the five series, `GDP_growth`, `EN_growth`,
 `Employment_change`, `Inflation` and `InterestRate`, stacked one replication
 after another down the rows, and `replicate`, the index each row belongs to.
-That is exactly what `applications/abm_system_extract.c` produces from the
+That is exactly what `applications/abm_system_convert_rdata.c` produces from the
 older `.Rdata` dataset and exactly what `applications/abm_system_fit_qvarma.c`
 reads, so the fit does not know or care which of the two wrote a given file,
 and there is no extraction pass after this one. Both writers and every reader
@@ -489,7 +489,7 @@ cannot tell one dataset from another.
 It refuses an output directory holding subdirectories this experiment did not
 write. `dataset/abm_system` now holds the thousand `cop_NNNN` directories of the
 design run; the hundred the older `.Rdata` route produced were moved to
-`dataset/abm_system_rdata`, which is where `applications/abm_system_extract.c`
+`dataset/abm_system_rdata`, which is where `applications/abm_system_convert_rdata.c`
 writes by default now and which it refuses to leave. Either move an old dataset
 aside or set `ABM_SYSTEM_OUTPUT_DIR` to somewhere else.
 

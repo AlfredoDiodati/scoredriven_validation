@@ -3,7 +3,7 @@ Whether applications/abm_system.h stores and returns what it says it does.
 
 That header is the one place the layout of the simulated dataset is defined.
 Two writers go through it - applications/abm_system_simulate.c from the model
-and applications/abm_system_extract.c from the .Rdata files - and four readers
+and applications/abm_system_convert_rdata.c from the .Rdata files - and four readers
 come back out of it: the fitting stage, the loss table, the winner's impulse
 responses and every robustness study. A disagreement there about units, about
 which row is which series, or about which period anchors the first difference

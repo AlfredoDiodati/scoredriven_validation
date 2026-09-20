@@ -6,17 +6,17 @@ with the sign-restricted confidence bands of Blazsek, Escribano and Licht
 applications/abm_system_mcs.c reduces the candidate models, one per ABM
 parameterization fitted under the driftless t-QVARMA spec p1q1r2, to the
 handful the data cannot separate, and writes them to
-out/abm_system_mcs_joint.csv with their mean IRF loss against the real-data
+out/abm_system_mcs.csv with their mean IRF loss against the real-data
 fit. This file takes the surviving model with the smallest mean loss and
 produces the object the whole comparison exists to look at - that model's
 own impulse responses, with bands - rather than one more table of losses.
 
 The steps, in the order main() runs them:
 
-  1. Read out/abm_system_mcs_joint.csv, keep the rows with in_set = 1, and
+  1. Read out/abm_system_mcs.csv, keep the rows with in_set = 1, and
      take the one with the smallest mean_loss. Its name carries both the ABM
      sample directory and the spec, "<sample>_qvarma_p1q1r<N>", the naming
-     applications/abm_system_mse_qvarma.c gave its own loss columns.
+     applications/abm_system_irf_loss.c gave its own loss columns.
   2. Read every replicate_<NNN>_p1q1r<N>_fit.json that sample's directory
      under out/abm_system_fit_qvarma/ holds, one per replicate.
   3. Average theta over those replicates, coordinate by coordinate, in the
@@ -120,7 +120,7 @@ applications/abm_system_winner_irf_plots.py reads the CSV and writes the
 figures; it is the only consumer, and nothing here is written for its
 convenience rather than for a reader of the CSV itself.
 
-Requires out/abm_system_mcs_joint.csv (applications/abm_system_mcs.c),
+Requires out/abm_system_mcs.csv (applications/abm_system_mcs.c),
 out/abm_system_fit_qvarma/ (applications/abm_system_fit_qvarma.c) and
 dataset/abm_system/ (applications/abm_system_simulate_all.sh). Nothing printed.
 */
@@ -157,7 +157,7 @@ static int n_replicates = 0;
 #define BAND_DRAWS 10000000
 #define BAND_SEED 20260822
 
-#define MCS_PATH "out/abm_system_mcs_joint.csv"
+#define MCS_PATH "out/abm_system_mcs.csv"
 #define FIT_DIR "out/abm_system_fit_qvarma"
 #define INPUT_DIR "dataset/abm_system"
 #define IRF_PATH "out/abm_system_winner_irf.csv"
@@ -240,7 +240,7 @@ static Winner find_winner(void) {
         w.n_in_set++;
         if (best < 0 || AT(mean_loss, i, 0) < AT(mean_loss, best, 0)) best = i;
     }
-    assert(best >= 0 && "abm_system_winner_irf: no model in out/abm_system_mcs_joint.csv "
+    assert(best >= 0 && "abm_system_winner_irf: no model in out/abm_system_mcs.csv "
                         "is in the confidence set");
 
     const char *marker = strstr(name[best], "_qvarma_p");
@@ -286,7 +286,7 @@ static int accumulate_theta(const char *path, int n, Vec total, int *converged) 
 
 /* One replicate's own K x T series, out of the compressed archive holding it,
    through the reader applications/abm_system_fit_qvarma.c and
-   applications/abm_system_mse_qvarma.c use. */
+   applications/abm_system_irf_loss.c use. */
 static Mat read_y(const char *sample, int replicate) {
     char dir[560];
     snprintf(dir, sizeof dir, "%s/%s", INPUT_DIR, sample);

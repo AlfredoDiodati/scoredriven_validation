@@ -1,6 +1,6 @@
 /*
 Whether independent processes fit faster than the OpenMP threads
-tests/qvarma_thread_scaling.c times, which separates contention on something
+benchmarks/qvarma_thread_scaling.c times, which separates contention on something
 shared inside one process from a limit of the machine itself. A benchmark, not
 a correctness gate.
 
@@ -8,7 +8,7 @@ Each copy fits the same number of replicates single threaded, so the four-copy
 run does four times the work of the one-copy run and the speedup column is
 copies times the one-copy time over the four-copy time. Copies are separate
 processes rather than threads because OpenBLAS's buffer table, which
-tests/small_call_scaling.c shows is the contended resource, is one structure
+benchmarks/fit_contention_source.c shows is the contended resource, is one structure
 per process.
 
 The spec is t-QVARMA(1,1,2) only, the one the ABM pipeline fits.

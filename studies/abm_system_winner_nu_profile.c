@@ -31,7 +31,7 @@ replicate and the held nu. The data fingerprint and parameter shape stored in it
 invalidate it when either changes; --refit estimates every one again. An
 optional first argument limits the run to the first N replicates, for a pilot.
 
-Requires out/abm_system_mcs_joint.csv, out/us_qvarma_spec_choice_p1q1r2_fit.json,
+Requires out/abm_system_mcs.csv, out/us_qvarma_spec_choice_p1q1r2_fit.json,
 out/us_system.csv, the fit cache and dataset/abm_system/. None are Makefile
 prerequisites, because rebuilding them reruns a million fits.
 
@@ -71,7 +71,7 @@ Output, none of it printed:
 #define FIT_DIR "out/abm_system_fit_qvarma"
 #define INPUT_DIR "dataset/abm_system"
 #define BENCHMARK_FIT_PATH "out/us_qvarma_spec_choice_p1q1r2_fit.json"
-#define CONFIDENCE_SET_PATH "out/abm_system_mcs_joint.csv"
+#define CONFIDENCE_SET_PATH "out/abm_system_mcs.csv"
 #define PROFILE_DIR "out/abm_system_winner_nu_profile"
 #define REPORT_PATH "out/abm_system_winner_nu_profile.txt"
 #define TABLE_PATH "out/abm_system_winner_nu_profile.csv"

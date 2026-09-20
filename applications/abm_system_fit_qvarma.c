@@ -13,7 +13,7 @@ spec_list held t-QVARMA(1,1,4) alongside r = 2 while the dataset was the 10,800
 replicates the .Rdata route produced. r = 4 was dropped because it lost the
 Model Confidence Set: the joint run over both specs put no r = 4 configuration
 in the surviving set at all, which docs/ABM_SYSTEM_MCS_VALIDATION.md records.
-Adding it back is one entry in spec_list; applications/abm_system_mse_qvarma.c
+Adding it back is one entry in spec_list; applications/abm_system_irf_loss.c
 asserts on exactly one spec and has to match whatever this list holds.
 
 A cached fit is reused only when it converged. An unconverged one is treated
@@ -132,7 +132,7 @@ whoever consumes out/abm_system_fit_qvarma_manifest.txt next.
 Not part of `make applications` or EXPERIMENT_STEMS - meant to be run
 explicitly, once (or resumed after an interruption), not on every routine
 build. Requires dataset/abm_system/ to already exist
-(`make bin/abm_system_extract && ./bin/abm_system_extract` first). Nothing
+(`make bin/abm_system_convert_rdata && ./bin/abm_system_convert_rdata` first). Nothing
 printed.
 */
 
@@ -180,7 +180,7 @@ static void make_directory(const char *path) {
 
 static char **list_subdirs(const char *dir, int *count) {
     DIR *handle = opendir(dir);
-    assert(handle && "abm_system_fit_qvarma: cannot open dataset/abm_system/ - run abm_system_extract first");
+    assert(handle && "abm_system_fit_qvarma: cannot open dataset/abm_system/ - run abm_system_convert_rdata first");
 
     char **names = NULL;
     int n = 0, cap = 0;

@@ -40,7 +40,7 @@ idea to the DSK agent-based model, using state-dependent local projections
    already-averaged scalar has none of).
 
 Steps 1-6 above are what `applications/abm_system_fit_qvarma.c`,
-`applications/abm_system_mse_qvarma.c` and `applications/abm_system_mcs.c`
+`applications/abm_system_irf_loss.c` and `applications/abm_system_mcs.c`
 implement, with QVARMA standing in for LP. Two points where this project's own
 procedure deliberately differs from the thesis:
 
@@ -67,7 +67,7 @@ here.
 
 ## Why the comparison object is the IRF, not the fitted parameters
 
-An earlier version of `abm_system_mse_qvarma.c` compared each fit's
+An earlier version of `abm_system_irf_loss.c` compared each fit's
 `flatten_estimated` constrained-parameter vector directly against the
 real-data fit's own, via `stats_mse`/`stats_mae`. This does not answer the
 question a validation measure needs answered: two QVARMA fits with
@@ -88,7 +88,7 @@ The comparison object is `.total[0..20]` (`contemporaneous + stationary +
 cointegrated`, `ImpulseOptions.horizon = 20`), one combined K x K response
 matrix per horizon, matching the thesis's own single `IR_h` per horizon rather
 than its three separate components. Stacked horizon 0 first into one
-length-`K*K*(H+1)` = `5*5*21` = 525 vector (`abm_system_mse_qvarma.c`'s own
+length-`K*K*(H+1)` = `5*5*21` = 525 vector (`abm_system_irf_loss.c`'s own
 `flatten_total_irf`).
 
 A fit whose own `nu <= 2` cannot have its IRF computed at all -
@@ -124,12 +124,12 @@ t-QVARMAd. Its loss was never switched from parameter distance to IRF distance,
 and a joint MCS over both families under squared parameter loss kept every
 model, for the reason in the section above. Its code is not part of this
 repository, and the MCS here reads only the driftless t-QVARMA losses in
-`out/abm_system_mse_qvarma_joint.csv`.
+`out/abm_system_irf_loss.csv`.
 
 ## Grouping: one model per configuration
 
 A CoP is one ABM parameter configuration. Each contributes one column to
-`out/abm_system_mse_qvarma_joint.csv`, named `cop_NNNN_qvarma_p1q1r2`, and each
+`out/abm_system_irf_loss.csv`, named `cop_NNNN_qvarma_p1q1r2`, and each
 row is one replicate. `abm_system_mcs.c` runs one MCS over all columns at once:
 1000 models against 1000 observations.
 
@@ -147,7 +147,7 @@ for it.
 
 Restoring it is one entry in `spec_list` in
 `applications/abm_system_fit_qvarma.c` and one in
-`applications/abm_system_mse_qvarma.c`, plus the join that used to pair the two
+`applications/abm_system_irf_loss.c`, plus the join that used to pair the two
 loss tables on `replicate`. `abm_system_mcs.c` needs no change: it reads
 however many columns the file holds.
 
@@ -201,10 +201,10 @@ the replicates of one configuration averages 156.3.
 
 ## Result on the design experiment
 
-Setup: `out/abm_system_mse_qvarma_joint.csv` of 2026-09-10, 1000 configurations
+Setup: `out/abm_system_irf_loss.csv` of 2026-09-10, 1000 configurations
 by 1000 replicates, no missing cell; loss is the MAE between a fit's stacked
 impulse responses and the real-data fit's, horizon 20. MCS with the settings
-above. Output: `out/abm_system_mcs_joint.txt` and `out/abm_system_mcs_joint.csv`
+above. Output: `out/abm_system_mcs.txt` and `out/abm_system_mcs.csv`
 of 2026-09-11.
 
 Mean loss per configuration runs from 0.11816 to 0.16329, average 0.13083.
@@ -278,7 +278,7 @@ configuration is the closest of the thousand" and not "this configuration
 matches the US data".
 
 The scale that answers the second question is already computed.
-`tests/abm_system_winner_diagnostics.c` reports, in section 4 of
+`studies/abm_system_winner_diagnostics.c` reports, in section 4 of
 `out/abm_system_winner_diagnostics.txt`, the mean absolute US response over the
 525 stacked elements: 0.12228. That is the loss a model whose impulse responses
 were identically zero would score, since the loss is the mean absolute
@@ -291,7 +291,7 @@ difference against the US vector and a zero vector leaves the US vector itself.
 | median over the 1000 configurations | 0.13000 |
 | largest over the 1000 configurations | 0.16329 |
 
-Counted from `out/abm_system_mcs_joint.csv`: 35 of the 1000 configurations
+Counted from `out/abm_system_mcs.csv`: 35 of the 1000 configurations
 score below 0.12228 and the other 965 score above it. The winner beats the zero
 response by 3.4 per cent.
 
@@ -499,7 +499,7 @@ hardware threads, 7.1 GB of memory):
 
 ```
 make app-abm_system_fit_qvarma                   # step 6: 1,000,000 fits, resumable, hours per pass
-make app-abm_system_mse_qvarma                   # step 7: loss table, parallel over replicates
+make app-abm_system_irf_loss                   # step 7: loss table, parallel over replicates
 make app-abm_system_mcs                          # step 8: the MCS, about 14 s of it
 make app-abm_system_winner_irf                   # step 9: the winner's impulse responses, about 21 s of it
 python applications/abm_system_winner_irf_plots.py   # step 10: the figures, about 35 s

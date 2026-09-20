@@ -2,14 +2,14 @@
 What raising the solver budget from 2000 to 4000 iterations bought, over the
 same 500,000 series, and what it cost.
 
-86.85% of the fits applications/abm_system_scale_fit_qvarma.c wrote at a cap
+86.85% of the fits applications/throughput_fit.c wrote at a cap
 of 2000 stopped at the cap rather than at the gradient tolerance, so their
 estimates are wherever L-BFGS happened to be at iteration 2000 rather than at
 a maximum. Whether that matters is not answerable from the 2000-iteration run
 alone: it needs the same 500,000 fits at a larger budget and a comparison of
 the two, which is what this reads and reports.
 
-Both budgets are on disk as whole trees, out/abm_system_scale_fit_qvarma_i2000/
+Both budgets are on disk as whole trees, out/throughput_fit_i2000/
 and _i4000/, because the fitting script names every file it writes after its
 own cap. This opens both JSONs for each series and compares them. It fits
 nothing and writes nothing into either tree.
@@ -47,7 +47,7 @@ being computable: the density's own (nu + K)/2 log(1 + q/nu) term is a
 cancellation of two large quantities, and past nu of about 3.6e9 it loses
 decimal places, past about 5e11 it returns values with no relation to the
 likelihood at all. Measured on
-dataset/abm_system_scale/EstimationSeriesSample1_47_noise4/series_743.csv by
+dataset/throughput/EstimationSeriesSample1_47_noise4/series_743.csv by
 sweeping theta_nu at that series' own 2000-iteration estimate: the value sits
 at 393.788 - the Gaussian limit the t tends to - from nu of 6.6e7 through
 8.0e8, wobbles in the low decimals from 3.6e9, and by nu of 1.1e13 reads 616,
@@ -69,7 +69,7 @@ here.
 Wall time comes from the two runs' own timing files, quoted rather than
 recomputed.
 
-out/abm_system_scale_iteration_comparison_i<base>_i<high>.txt holds the summary
+out/throughput_iteration_budget_i<base>_i<high>.txt holds the summary
 and the .csv beside it one row per series, for whatever plot the summary does
 not answer. Both are named for the pair of budgets compared, which are
 compile-time constants, so one binary per pair writes one pair of files and
@@ -116,17 +116,17 @@ run, since a partial second budget is a normal state to want a comparison of.
 #define STRINGIFY_(x) #x
 #define STRINGIFY(x) STRINGIFY_(x)
 
-#define INPUT_DIR "dataset/abm_system_scale"
-#define BASE_DIR "out/abm_system_scale_fit_qvarma_i" STRINGIFY(BASE_ITERATIONS)
-#define HIGH_DIR "out/abm_system_scale_fit_qvarma_i" STRINGIFY(HIGH_ITERATIONS)
-#define BASE_TIMING "out/abm_system_scale_fit_qvarma_i" STRINGIFY(BASE_ITERATIONS) "_timing.txt"
-#define HIGH_TIMING "out/abm_system_scale_fit_qvarma_i" STRINGIFY(HIGH_ITERATIONS) "_timing.txt"
-#define BASE_PROVENANCE "out/abm_system_scale_fit_qvarma_i" STRINGIFY(BASE_ITERATIONS) "_provenance.txt"
-#define HIGH_PROVENANCE "out/abm_system_scale_fit_qvarma_i" STRINGIFY(HIGH_ITERATIONS) "_provenance.txt"
+#define INPUT_DIR "dataset/throughput"
+#define BASE_DIR "out/throughput_fit_i" STRINGIFY(BASE_ITERATIONS)
+#define HIGH_DIR "out/throughput_fit_i" STRINGIFY(HIGH_ITERATIONS)
+#define BASE_TIMING "out/throughput_fit_i" STRINGIFY(BASE_ITERATIONS) "_timing.txt"
+#define HIGH_TIMING "out/throughput_fit_i" STRINGIFY(HIGH_ITERATIONS) "_timing.txt"
+#define BASE_PROVENANCE "out/throughput_fit_i" STRINGIFY(BASE_ITERATIONS) "_provenance.txt"
+#define HIGH_PROVENANCE "out/throughput_fit_i" STRINGIFY(HIGH_ITERATIONS) "_provenance.txt"
 /* Named for the pair compared, so a second pair does not overwrite the first. */
-#define REPORT_PATH "out/abm_system_scale_iteration_comparison_i" STRINGIFY(BASE_ITERATIONS) \
+#define REPORT_PATH "out/throughput_iteration_budget_i" STRINGIFY(BASE_ITERATIONS) \
                     "_i" STRINGIFY(HIGH_ITERATIONS) ".txt"
-#define CSV_PATH "out/abm_system_scale_iteration_comparison_i" STRINGIFY(BASE_ITERATIONS) \
+#define CSV_PATH "out/throughput_iteration_budget_i" STRINGIFY(BASE_ITERATIONS) \
                  "_i" STRINGIFY(HIGH_ITERATIONS) ".csv"
 
 /* The named blocks of QvarmaParams, in the paper's own spelling where it has
@@ -143,7 +143,7 @@ static int compare_names(const void *a, const void *b) {
 
 static char **list_subdirs(const char *dir, int *count) {
     DIR *handle = opendir(dir);
-    assert(handle && "abm_system_scale_iteration_comparison: cannot open dataset/abm_system_scale/");
+    assert(handle && "throughput_iteration_budget: cannot open dataset/throughput/");
     char **names = NULL;
     int n = 0, cap = 0;
     struct dirent *entry;
@@ -169,7 +169,7 @@ static int count_series(const char *folder) {
     char path[600];
     snprintf(path, sizeof path, "%s/%s", INPUT_DIR, folder);
     DIR *handle = opendir(path);
-    assert(handle && "abm_system_scale_iteration_comparison: cannot open a folder under the dataset");
+    assert(handle && "throughput_iteration_budget: cannot open a folder under the dataset");
     int n = 0;
     struct dirent *entry;
     while ((entry = readdir(handle)) != NULL)
@@ -318,7 +318,7 @@ typedef struct { int folder_index, series; } Task;
 int main(void) {
     int n_folders;
     char **folders = list_subdirs(INPUT_DIR, &n_folders);
-    assert(n_folders > 0 && "abm_system_scale_iteration_comparison: no folders in the dataset");
+    assert(n_folders > 0 && "throughput_iteration_budget: no folders in the dataset");
 
     int *n_series = malloc((size_t)n_folders * sizeof(int));
     long total_tasks = 0;

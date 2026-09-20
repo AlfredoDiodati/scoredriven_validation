@@ -1,5 +1,5 @@
 t-QVARMA(1,1,2) at a solver budget of 2000 iterations against 4000,
-over the same 500000 series under dataset/abm_system_scale.
+over the same 500000 series under dataset/throughput.
 
 out/abm_system_scale_fit_qvarma_i2000
 out/abm_system_scale_fit_qvarma_i4000

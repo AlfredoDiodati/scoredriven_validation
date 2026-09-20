@@ -39,17 +39,27 @@
 #                                 already-settled work every time.
 #   make asan                     under AddressSanitizer and UndefinedBehaviorSanitizer
 #
-# Adding a test script means adding its stem to TEST_STEMS. A stem maps to
-# tests/<stem>.c, bin/<stem>, and the targets test-<stem> and
-# test-<stem>-stress, which are generated below rather than written by hand.
+# Three kinds of script, three directories, one stem list each. A stem maps to
+# <directory>/<stem>.c and bin/<stem>, and the targets below are generated from
+# the lists rather than written by hand.
+#
+#   tests/       pass or fail. A failure stops `make test` and the build.
+#   benchmarks/  how long something takes. Never part of `make test`: a function
+#                that returns the wrong answer quickly is not fast.
+#   studies/     a question about behaviour, answered into out/. No verdict, so
+#                nothing here can gate anything.
+#
+# The directory is what says which of the three a script is, so adding one means
+# putting it in the right tree and adding its stem to the matching list.
 
 CC ?= gcc
 CFLAGS ?= -O2 -march=native -Wall -Wextra -std=c11
 ETAL_CFLAGS := $(shell pkg-config --cflags et_al.-core)
 ETAL_LIBS := $(shell pkg-config --libs et_al.-core)
 # et_al.'s own -I covers <et_al./...> and the bare <frame/...> spellings. The
-# repository root is added for applications/abm_system.h, which the benchmarks
-# under tests/ include to fit the same series the pipeline fits.
+# repository root is added for applications/abm_system.h and for the tests' own
+# headers, which are included by their directory-qualified path so a reader can
+# see which tree a header comes from.
 INCLUDES := -I.
 
 # Every header under the installed et_al., so that reinstalling et_al. (its own
@@ -86,12 +96,12 @@ TEST_STEMS := abm_system_layout dsk_long_path dsk_build_equivalence \
 # Where the wall time of a t-QVARMA fit goes, and what each way of speeding it
 # up is worth. Measured 2026-08-29 against a 500,000-fit run of
 # abm_system_fit_qvarma; out/fit_speedup_options.txt collects the numbers and
-# the setup behind them. small_call_scaling is the only one that touches
+# the setup behind them. fit_contention_source is the only one that touches
 # neither et_al. nor this project: it times cblas and malloc on their own,
 # because that is what isolates which of the two the taped filter contends on.
 BENCH_STEMS := qvarma_fit_cost qvarma_fit_io qvarma_iteration_budget \
                 qvarma_taped_vs_fused qvarma_thread_scaling qvarma_process_scaling \
-                small_call_scaling
+                fit_contention_source
 # Robustness checks on the result of the main pipeline, not steps of it. Every
 # one of them reads what the pipeline already wrote to out/ and dataset/ and
 # never rebuilds it, so none can run on a fresh clone: `study` checks for the
@@ -103,7 +113,7 @@ BENCH_STEMS := qvarma_fit_cost qvarma_fit_io qvarma_iteration_budget \
 # abm_system_winner_normality reads, and us_qvarma_nu_sensitivity writes the
 # held-nu US fits abm_system_winner_tail_comparison reads. Each producer comes
 # before its consumer here and `study` runs them in this order.
-STUDY_STEMS := qvarma_stuck_fits qvarma_conditioning qvarma_convergence_test \
+STUDY_STEMS := qvarma_stuck_fits qvarma_conditioning qvarma_convergence_criteria \
                us_qvarma_nu_sensitivity abm_system_winner_diagnostics \
                abm_system_winner_nu_profile abm_system_winner_nu_likelihood_scan \
                abm_system_winner_tail_comparison abm_system_tail_origin \
@@ -121,17 +131,17 @@ STUDY_STEMS := qvarma_stuck_fits qvarma_conditioning qvarma_convergence_test \
 # `make app-<name>`.
 APPLICATION_STEMS := us_prepare_data abm_system_design
 #
-# abm_system_scale_fit_qvarma is deliberately not a stem here. Its solver budget
+# throughput_fit is deliberately not a stem here. Its solver budget
 # is a compile-time constant that names every file it writes, so one binary per
-# budget is built below from SCALE_ITERATION_CAPS instead, and the generic
+# budget is built below from THROUGHPUT_ITERATION_CAPS instead, and the generic
 # app-<stem> rule - which would build one unnamed binary at the default budget -
 # would give a second way to write the same tree.
 EXPERIMENT_STEMS := us_qvarma_spec_choice \
-                     abm_system_extract abm_system_fit_qvarma \
-                     abm_system_mse_qvarma abm_system_mcs \
+                     abm_system_convert_rdata abm_system_fit_qvarma \
+                     abm_system_irf_loss abm_system_mcs \
                      abm_system_mcs_statistic_comparison \
                      abm_system_winner_irf \
-                     abm_system_scale_extract
+                     throughput_dataset
 # Whatever the application scripts share, so editing it rebuilds them.
 APPLICATION_HEADERS := applications/us_data.h applications/abm_system.h
 BIN := bin
@@ -189,7 +199,7 @@ $(foreach stem,$(TEST_STEMS),$(eval $(call test_targets_for_stem,$(stem))))
 # not be swept into the aggregate test targets.
 define bench_target_for_stem
 .PHONY: bench-$(1)
-$(BIN)/$(1): tests/$(1).c $(HEADERS) $(BENCH_ETAL_HEADERS) | $(BIN)
+$(BIN)/$(1): benchmarks/$(1).c $(HEADERS) $(BENCH_ETAL_HEADERS) | $(BIN)
 	$(CC) $(BENCH_CFLAGS) $(BENCH_ETAL_CFLAGS) $(INCLUDES) $$< -o $$@ $(ETAL_LIBS)
 bench-$(1): $(BIN)/$(1) | $(OUT)
 	./$(BIN)/$(1)
@@ -204,7 +214,7 @@ bench-performance: $(BENCH_BINARIES) | $(OUT)
 # of `test` because they take minutes and have no pass or fail.
 define study_target_for_stem
 .PHONY: study-$(1)
-$(BIN)/$(1): tests/$(1).c $(HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
+$(BIN)/$(1): studies/$(1).c $(HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
 	$(CC) $(CFLAGS) -fopenmp $(ETAL_CFLAGS) $(INCLUDES) $$< -o $$@ $(ETAL_LIBS)
 study-$(1): $(BIN)/$(1) | $(OUT)
 	./$(BIN)/$(1)
@@ -222,8 +232,8 @@ study-inputs:
 	  echo "out/abm_system_fit_qvarma/ is missing. The studies read the fit cache and"; \
 	  echo "never rebuild it; make app-abm_system_fit_qvarma produces it."; \
 	  exit 1; }
-	@test -f out/abm_system_mcs_joint.csv || { \
-	  echo "out/abm_system_mcs_joint.csv is missing. The studies read the confidence"; \
+	@test -f out/abm_system_mcs.csv || { \
+	  echo "out/abm_system_mcs.csv is missing. The studies read the confidence"; \
 	  echo "set and never rebuild it; make app-abm_system_mcs produces it."; \
 	  exit 1; }
 
@@ -264,7 +274,7 @@ app-us_qvarma_spec_choice: app-us_prepare_data
 
 # app-abm_system_fit_qvarma has no prerequisite that builds its dataset. It fits
 # every subdirectory of dataset/abm_system whatever wrote it, and the two writers
-# cannot share that directory: applications/abm_system_extract.c produces
+# cannot share that directory: applications/abm_system_convert_rdata.c produces
 # EstimationSeries* from the .Rdata files under dataset/simulated, and
 # applications/abm_system_simulate.c produces cop_* from the parameter design.
 # Naming either one here would add its dataset on top of whichever is already
@@ -272,11 +282,11 @@ app-us_qvarma_spec_choice: app-us_prepare_data
 # also takes about forty hours, which is not something make should start;
 # applications/abm_system_simulate_all.sh runs it.
 
-# abm_system_scale_extract deliberately does not appear as a prerequisite of
-# app-abm_system_scale_fit_qvarma: it writes 21 GB and takes tens of minutes, so
+# throughput_dataset deliberately does not appear as a prerequisite of
+# app-throughput_fit: it writes 21 GB and takes tens of minutes, so
 # rerunning the throughput test must not rebuild the dataset it reads.
-app-abm_system_mse_qvarma: app-us_qvarma_spec_choice
-app-abm_system_mcs: app-abm_system_mse_qvarma
+app-abm_system_irf_loss: app-us_qvarma_spec_choice
+app-abm_system_mcs: app-abm_system_irf_loss
 app-abm_system_winner_irf: app-abm_system_mcs
 
 # One throughput run per solver budget. 86.85% of the 500,000 fits at a cap of
@@ -284,36 +294,36 @@ app-abm_system_winner_irf: app-abm_system_mcs
 # measured rather than assumed, which needs both budgets on disk at once. The
 # cap is in the binary's own name as well as in every file it writes, so make
 # cannot hand back a binary built at one budget for a request at another.
-SCALE_ITERATION_CAPS := 2000 4000 8000
+THROUGHPUT_ITERATION_CAPS := 2000 4000 8000
 
 # One comparison binary per pair of budgets, named for the pair, because the
 # budgets it reads are compile-time constants and its report is named for them
 # too. A pair is added here rather than passed on the command line so that make
 # cannot serve a binary built for one pair against a request for another.
-SCALE_COMPARISON_PAIRS := 2000_4000 4000_8000
+THROUGHPUT_BUDGET_PAIRS := 2000_4000 4000_8000
 
 define scale_comparison_for_pair
-.PHONY: app-abm_system_scale_iteration_comparison-i$(1)
-$(BIN)/abm_system_scale_iteration_comparison_i$(1): applications/abm_system_scale_iteration_comparison.c \
+.PHONY: app-throughput_iteration_budget-i$(1)
+$(BIN)/throughput_iteration_budget_i$(1): applications/throughput_iteration_budget.c \
                                                     $(APPLICATION_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
 	$(CC) $(CFLAGS) -DMAT_DOUBLE -fopenmp \
 	      -DBASE_ITERATIONS=$(word 1,$(subst _, ,$(1))) -DHIGH_ITERATIONS=$(word 2,$(subst _, ,$(1))) \
 	      $(ETAL_CFLAGS) $(INCLUDES) $$< -o $$@ $(ETAL_LIBS)
-app-abm_system_scale_iteration_comparison-i$(1): $(BIN)/abm_system_scale_iteration_comparison_i$(1) | $(OUT)
-	./$(BIN)/abm_system_scale_iteration_comparison_i$(1)
+app-throughput_iteration_budget-i$(1): $(BIN)/throughput_iteration_budget_i$(1) | $(OUT)
+	./$(BIN)/throughput_iteration_budget_i$(1)
 endef
-$(foreach pair,$(SCALE_COMPARISON_PAIRS),$(eval $(call scale_comparison_for_pair,$(pair))))
+$(foreach pair,$(THROUGHPUT_BUDGET_PAIRS),$(eval $(call scale_comparison_for_pair,$(pair))))
 
 define scale_fit_target_for_cap
-.PHONY: app-abm_system_scale_fit_qvarma-i$(1)
-$(BIN)/abm_system_scale_fit_qvarma_i$(1): applications/abm_system_scale_fit_qvarma.c \
+.PHONY: app-throughput_fit-i$(1)
+$(BIN)/throughput_fit_i$(1): applications/throughput_fit.c \
                                           $(APPLICATION_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
 	$(CC) $(CFLAGS) -DMAT_DOUBLE -DMAX_ITERATIONS=$(1) -fopenmp $(ETAL_CFLAGS) $(INCLUDES) \
 	      $$< -o $$@ $(ETAL_LIBS)
-app-abm_system_scale_fit_qvarma-i$(1): $(BIN)/abm_system_scale_fit_qvarma_i$(1) | $(OUT)
-	./$(BIN)/abm_system_scale_fit_qvarma_i$(1)
+app-throughput_fit-i$(1): $(BIN)/throughput_fit_i$(1) | $(OUT)
+	./$(BIN)/throughput_fit_i$(1)
 endef
-$(foreach cap,$(SCALE_ITERATION_CAPS),$(eval $(call scale_fit_target_for_cap,$(cap))))
+$(foreach cap,$(THROUGHPUT_ITERATION_CAPS),$(eval $(call scale_fit_target_for_cap,$(cap))))
 
 # The DSK simulator itself, vendored under model/dsk_sfc with the three
 # changes docs/DSK_MODEL_CHANGES.md records. Its own script builds it rather
@@ -372,17 +382,25 @@ applications: $(APPLICATION_BINARIES) | $(OUT)
 bench: $(BENCH_BINARIES) | $(OUT)
 	@for binary in $(BENCH_BINARIES); do ./$$binary || exit 1; done
 
-test: $(TEST_BINARIES) | $(OUT)
+# Ten of the eleven stems run the simulator, so every build they reach for has
+# to exist before the loop starts. The per-stem targets below declare the same
+# prerequisites, but an aggregate that only depended on the test binaries would
+# pass on a tree where a simulator build happened to be left over and fail on a
+# clean one.
+TEST_PREREQUISITES := model model-upstream model-sanitized app-abm_system_design
+
+test: $(TEST_PREREQUISITES) $(TEST_BINARIES) | $(OUT)
 	@for binary in $(TEST_BINARIES); do ./$$binary || exit 1; done
 
-test-stress: $(TEST_BINARIES) | $(OUT)
+test-stress: $(TEST_PREREQUISITES) $(TEST_BINARIES) | $(OUT)
 	@for binary in $(TEST_BINARIES); do STRESS=1 ./$$binary || exit 1; done
 
 # Sanitizers, per et_al.'s testing policy for allocation-heavy code. CFLAGS has
 # to be a make argument rather than a shell prefix, since the assignment above
 # is unconditional and would override an inherited environment variable.
-# Three of the stems run the simulator, so both builds have to exist first.
-asan: model model-upstream | $(BIN) $(OUT)
+# Most of the stems run the simulator, so every build they reach for has to
+# exist first, the same list `test` depends on.
+asan: $(TEST_PREREQUISITES) | $(BIN) $(OUT)
 	@for stem in $(TEST_STEMS); do \
 	  $(CC) -fsanitize=address,undefined -g -O1 -std=c11 -DMAT_DOUBLE \
 	        $(ETAL_CFLAGS) $(INCLUDES) tests/$$stem.c \

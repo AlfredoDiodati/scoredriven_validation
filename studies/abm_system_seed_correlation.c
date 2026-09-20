@@ -12,7 +12,7 @@ is smaller than the independent sum. In an agent-based model the parameters
 change how many random draws each period consumes, so the streams of two
 configurations fall out of step and the correlation can vanish.
 
-Reads out/abm_system_mse_qvarma_joint.csv, one row per replicate and one column
+Reads out/abm_system_irf_loss.csv, one row per replicate and one column
 per configuration, and for every pair of configurations computes the Pearson
 correlation of their per-replicate losses. The reference for no shared
 randomness is the same correlation with the rows of the second configuration
@@ -43,8 +43,8 @@ Reads only. Writes out/abm_system_seed_correlation_report.txt.
 #include <stdlib.h>
 #include <math.h>
 
-#define LOSS_TABLE_PATH "out/abm_system_mse_qvarma_joint.csv"
-#define CONFIDENCE_SET_PATH "out/abm_system_mcs_joint.csv"
+#define LOSS_TABLE_PATH "out/abm_system_irf_loss.csv"
+#define CONFIDENCE_SET_PATH "out/abm_system_mcs.csv"
 #define DESIGN_PATH "dataset/abm_system_design.csv"
 #define REPORT_PATH "out/abm_system_seed_correlation_report.txt"
 

@@ -2,7 +2,7 @@
 Whether the degrees of freedom nu change the impulse response function the Model
 Confidence Set compares configurations on.
 
-The loss in applications/abm_system_mse_qvarma.c is the mean absolute error
+The loss in applications/abm_system_irf_loss.c is the mean absolute error
 between the stacked total impulse responses of two t-QVARMA(1,1,2) fits,
 horizons 0 to 20. nu enters those responses through the contemporaneous scale
 (nu/(nu-2))^(1/2), through the factor ((nu-2) nu)^(1/2) Omega_inv D, and
@@ -30,7 +30,7 @@ configuration's replicates.
 The distance of swapped and refitted from benchmark is reported in the loss's
 own units, over all 525 elements and split into horizon 0 and horizons 1 to 20,
 beside the spread of mean losses across the configurations in
-out/abm_system_mcs_joint.csv, which is the scale the confidence set separates
+out/abm_system_mcs.csv, which is the scale the confidence set separates
 configurations on.
 
 The refitted fit is cached to out/us_qvarma_nu_sensitivity_nu<nu>_fit.json. The
@@ -39,7 +39,7 @@ data or the specification change, and the held nu, to four decimals, is in the
 file name. Pass --refit to estimate it again regardless.
 
 Requires out/us_qvarma_spec_choice_p1q1r2_fit.json (make
-app-us_qvarma_spec_choice), out/abm_system_mcs_joint.csv (make
+app-us_qvarma_spec_choice), out/abm_system_mcs.csv (make
 app-abm_system_mcs) and out/abm_system_winner_irf_theta.json (make
 app-abm_system_winner_irf). None is a Makefile prerequisite of this study,
 which only reads what the main pipeline already wrote.
@@ -71,7 +71,7 @@ Output, none of it printed:
 #define MAX_ITERATIONS 8000
 
 #define BENCHMARK_FIT_PATH "out/us_qvarma_spec_choice_p1q1r2_fit.json"
-#define CONFIDENCE_SET_PATH "out/abm_system_mcs_joint.csv"
+#define CONFIDENCE_SET_PATH "out/abm_system_mcs.csv"
 #define WINNER_PARAMS_PATH "out/abm_system_winner_irf_theta.json"
 #define REPORT_PATH "out/us_qvarma_nu_sensitivity.txt"
 
@@ -116,7 +116,7 @@ static QvarmaParams with_nu(const QvarmaParams *source, mreal nu) {
 }
 
 /* total[0..HORIZON], each K x K, stacked horizon 0 first: the vector the loss
-   in applications/abm_system_mse_qvarma.c is taken over. */
+   in applications/abm_system_irf_loss.c is taken over. */
 static Vec stacked_total_irf(const QvarmaParams *m, Mat y) {
     Mat D = qvarma_mean_score_jacobian(m, y);
     QvarmaImpulseOptions options = qvarma_default_impulse_options();
@@ -180,7 +180,7 @@ typedef struct {
    configurations the confidence set separated last. */
 static LossScale read_loss_scale(void) {
     FILE *probe = fopen(CONFIDENCE_SET_PATH, "r");
-    assert(probe && "us_qvarma_nu_sensitivity: out/abm_system_mcs_joint.csv is missing; run make app-abm_system_mcs");
+    assert(probe && "us_qvarma_nu_sensitivity: out/abm_system_mcs.csv is missing; run make app-abm_system_mcs");
     fclose(probe);
 
     DataFrame table = df_read_csv(CONFIDENCE_SET_PATH, csv_read_options_default());

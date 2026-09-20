@@ -105,7 +105,11 @@ byte for byte. `make model-upstream` compiles the authors' unmodified source,
 the tests run both programs on the same seeds, and the files they write must
 match exactly. A change that moves a single digit does not go in.
 
-Six tests, each answering one question:
+Eleven tests, each answering one question. The first six are the byte-equality
+gate; the last five came with the long-horizon work of
+`docs/DSK_LONG_HORIZON.md`, which added mechanisms that fire only past horizons
+no 600-period run reaches and so cannot be checked by comparison against
+upstream alone.
 
 - **Does the economy-wide output match?** The 83-column results file, compared
   byte for byte. The unmodified program is also run twice per seed and required
@@ -133,10 +137,22 @@ Six tests, each answering one question:
   output filenames into 64-byte buffers and corrupts memory past about 26
   characters of directory path, which is shorter than a cluster scratch
   directory.
+- **Does it still reproduce the dataset the experiment was run on?** A sample of
+  the design, run again against both builds and against the stored archives:
+  every one of the 5 x 400 numbers must equal the stored one exactly, not to a
+  tolerance.
+- **Do the three long-horizon rescalings leave the economy alone?** One test
+  each for counting money, machines and the consumption good in bigger units.
+  Redenominating money has to be exact; the machine lots round, so that one is
+  required to be small rather than exact and the bound is stated.
+- **Is the bulk cancellation draw the distribution it claims to be?** It calls
+  the header and the model's own generators directly rather than running the
+  simulator.
 
 All of them run with the model's shock channels off, which is how the experiment
 runs it. `docs/DSK_MODEL_CHANGES.md` explains each test in full and names
-exactly what none of them covers.
+exactly what none of them covers, and `docs/DSK_LONG_HORIZON.md` covers the last
+five.
 
 Byte equality is a stronger guarantee than statistical agreement. Two runs that
 write the same file cannot be told apart by any test, so the question of whether
@@ -192,16 +208,36 @@ minute. `docs/ABM_SYSTEM_SIMULATION.md` has the setup behind those numbers.
                       abm_system.h, which describe this project's own data
     model/dsk_sfc/    the DSK simulator itself, a copy of upstream's source
                       with the speed work of docs/DSK_MODEL_CHANGES.md applied
-    tests/            what verifies the auxiliary model still computes what it
-                      claims to, and what verifies this copy of the simulator still
-                      matches upstream byte for byte
+    tests/            pass or fail. A failure stops make test and the build
+    benchmarks/       how long something takes. Never part of make test: a
+                      function that returns the wrong answer quickly is not fast
+    studies/          a question about behaviour, answered into out/. No verdict,
+                      so nothing here gates anything
     dataset/          us_real.csv, the raw US series, and the parameter design.
                       The simulated output goes here too but is not tracked:
-                      abm_system/ is what the fitting stage reads, and
-                      abm_system_rdata/ is the older .Rdata-derived copy, kept
-                      out of the way so only one of the two is ever fitted
+                      abm_system/ is what the fitting stage reads,
+                      abm_system_rdata/ is the older .Rdata-derived copy kept out
+                      of the way so only one of the two is ever fitted, and
+                      throughput/ is the separate dataset the throughput study
+                      times fits on
     out/              every result, written here rather than printed
     docs/             the write-up and the reference documentation
+
+A script's directory says what kind of thing it is, and its name says what it
+does rather than how it was once done. Three conventions follow from that and
+are worth stating, because each of them was violated somewhere before:
+
+- A name states the question, not an abandoned answer. The loss table is
+  `abm_system_irf_loss`, not `abm_system_mse_qvarma`: the loss has been a mean
+  absolute error since squared error was measured and dropped, and a filename
+  that still said `mse` outlived the decision by months.
+- A suffix that distinguished two things is removed when only one is left.
+  `_joint` meant "over both auxiliary specifications" and survived the drop to
+  one spec on four output files.
+- A file under `tests/` does not repeat the word test in its name; the directory
+  already says that. The name states what is being verified, specifically enough
+  that a sibling covering a different aspect of the same subject cannot collide
+  with it, and a file a script writes is named after the script that wrote it.
 
 ## Requirements
 
@@ -386,7 +422,7 @@ before it wrote.
 | 4. Prepare the US data | `applications/us_prepare_data.c` | `make app-us_prepare_data` |
 | 5. Fit the auxiliary model to the US data | `applications/us_qvarma_spec_choice.c` | `make app-us_qvarma_spec_choice` |
 | 6. Fit the auxiliary model to every simulation | `applications/abm_system_fit_qvarma.c` | `make app-abm_system_fit_qvarma` |
-| 7. Build the loss table | `applications/abm_system_mse_qvarma.c` | `make app-abm_system_mse_qvarma` |
+| 7. Build the loss table | `applications/abm_system_irf_loss.c` | `make app-abm_system_irf_loss` |
 | 8. Run the Model Confidence Set | `applications/abm_system_mcs.c` | `make app-abm_system_mcs` |
 | 9. Compute the winning configuration's impulse responses | `applications/abm_system_winner_irf.c` | `make app-abm_system_winner_irf` |
 | 10. Draw the figures | `applications/abm_system_winner_irf_plots.py` | `python applications/abm_system_winner_irf_plots.py` |
@@ -449,10 +485,10 @@ C. Results are written to files, never printed.
 | `out/abm_system_fit_qvarma/cop_NNNN/replicate_NNN_p1q1r2_fit.json` | 6 | one fitted parameter set per replicate, which is also the cache; not tracked by git |
 | `out/abm_system_fit_qvarma/cop_NNNN/lineage.txt` | 6 | which replicates took another replicate's parameters |
 | `out/abm_system_fit_qvarma_manifest.txt` | 6 | per fit: log-likelihood, gradient, convergence, cumulative iterations, why the solver stopped |
-| `out/abm_system_mse_qvarma_joint.csv` | 7 | the loss table: one row per replicate, one column per configuration |
-| `out/abm_system_mse_qvarma_joint.csv_manifest.txt` | 7 | missing cells and dropped replicates |
-| `out/abm_system_mcs_joint.txt` | 8 | the confidence set, as a readable report |
-| `out/abm_system_mcs_joint.csv` | 8 | per configuration: mean loss, MCS p-value, whether it is in the set, the round it was eliminated in |
+| `out/abm_system_irf_loss.csv` | 7 | the loss table: one row per replicate, one column per configuration |
+| `out/abm_system_irf_loss_manifest.txt` | 7 | missing cells and dropped replicates |
+| `out/abm_system_mcs.txt` | 8 | the confidence set, as a readable report |
+| `out/abm_system_mcs.csv` | 8 | per configuration: mean loss, MCS p-value, whether it is in the set, the round it was eliminated in |
 | `out/abm_system_winner_irf.csv` | 9 | the winner's impulse responses: one row per component, horizon, shock and response, with the band |
 | `out/abm_system_winner_irf_theta.json` | 9 | the averaged parameter set |
 | `out/abm_system_winner_irf_manifest.txt` | 9 | which configuration, how many fits were averaged and converged, how many rotations were accepted |
@@ -468,7 +504,7 @@ Scripts in `applications/` that the ten steps do not use:
 - `abm_system_mcs_statistic_comparison.c` reruns step 8 under both statistics
   et_al implements, as a check, and writes
   `out/abm_system_mcs_statistic_comparison.txt` and `.csv`.
-- `abm_system_extract.c` is the older way to fill a dataset directory: it
+- `abm_system_convert_rdata.c` is the older way to fill a dataset directory: it
   converts the 108 `.Rdata` files under `dataset/simulated/` instead of running
   the simulator. Use one or the other, never both: step 6 fits every
   subdirectory of the dataset directory regardless of what wrote it, so two
@@ -476,26 +512,31 @@ Scripts in `applications/` that the ten steps do not use:
   results to say so. It writes `dataset/abm_system_rdata/`, which is where its
   output was moved when the design runs took `dataset/abm_system/` over, and it
   refuses to start if the directory it is about to write into already holds
-  `cop_*` directories. `ABM_SYSTEM_EXTRACT_DIR` overrides where it writes.
-- `abm_system_scale_extract.c`, `abm_system_scale_fit_qvarma.c` and
-  `abm_system_scale_iteration_comparison.c` are a throughput study of the
+  `cop_*` directories. `ABM_SYSTEM_RDATA_DIR` overrides where it writes.
+- `throughput_dataset.c`, `throughput_fit.c` and
+  `throughput_iteration_budget.c` are a throughput study of the
   fitting step on a separate 500 by 1000 dataset.
 
 Files in `out/` the ten steps do not write:
 
 - `out/abm_system_mcs_statistic_comparison.*`, from the check above.
-- `out/abm_system_extract_manifest.txt`, from the older route above.
-- `out/abm_system_scale_*`, `out/fit_speedup_options.txt` and the shell scripts
+- `out/abm_system_convert_rdata_manifest.txt`, from the older route above.
+- `out/throughput_*`, `out/fit_speedup_options.txt` and the shell scripts
   `out/hold_awake.sh`, `out/record_run_walltime.sh` and
-  `out/run_scale_fit_detached*.sh`, from the throughput study.
-- `out/abm_system_fit_qvarma_before_resume/`,
-  `out/abm_system_fit_qvarma_manifest_before_resume.txt` and
-  `out/abm_system_mse_qvarma_manifest.txt`, left from the run on the older
-  dataset in August 2026.
+  `out/run_throughput_fit_detached.sh`, from the throughput study. The scripts are
+  tooling rather than results and sit here only because that is where the study
+  was run from.
+- `out/dsk_dual_layout_experiment.txt`, the run behind one of the rejected
+  changes in `docs/DSK_MODEL_CHANGES.md`. Nothing writes it; it is kept because
+  the document cites it.
 - `out/dsk_*`, `out/qvarma_*`, `out/abm_system_layout_report.txt` and
-  `out/small_call_scaling.txt`, written by the tests and studies below.
-- `out/*.log`, what each step wrote to the terminal when it was run in the
-  background.
+  `out/fit_contention_source.txt`, written by the tests and studies below.
+
+Nothing under `out/` is a snapshot of a superseded run. The copies kept from
+before the resume logic existed, the throughput run from before an et_al fix,
+and the loss-table manifest under its old name were removed once the runs that
+replaced them were on disk: two names differing by a suffix, for the same step,
+is a worse problem than not having the older one.
 
 ## Tests
 

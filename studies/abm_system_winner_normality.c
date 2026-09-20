@@ -4,7 +4,7 @@ Set keeps are jointly normal across its replicates, on the unconstrained scale
 theta the optimizer steps.
 
 Reads out/abm_system_winner_diagnostics_winner_theta.csv, written by
-tests/abm_system_winner_diagnostics.c: one row per replicate, the d = 42
+studies/abm_system_winner_diagnostics.c: one row per replicate, the d = 42
 coordinates of theta and whether the fit converged. Nothing is fitted and no
 fit cache is read. The test is run twice, on every replicate and on the
 replicates whose fit converged.
@@ -61,7 +61,7 @@ Output, none of it printed:
 #include <float.h>
 
 #define THETA_PATH "out/abm_system_winner_diagnostics_winner_theta.csv"
-#define CONFIDENCE_SET_PATH "out/abm_system_mcs_joint.csv"
+#define CONFIDENCE_SET_PATH "out/abm_system_mcs.csv"
 #define REPORT_PATH "out/abm_system_winner_normality.txt"
 
 #define SIGNIFICANCE_LEVEL 0.05

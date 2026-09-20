@@ -2,7 +2,7 @@ The model as it stands against the authors' build and against the archives
 of the 1000 x 1000 experiment.
 
 20 configurations spread across the design, replications 0 to 4 of each,
-100 pairs, 600 periods, 16 threads, 9.6 minutes of wall clock.
+100 pairs, 600 periods, 16 threads, 9.7 minutes of wall clock.
 Seeds are the replication number plus one, the same in every configuration,
 as the experiment was run.
 

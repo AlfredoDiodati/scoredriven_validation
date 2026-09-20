@@ -1,5 +1,5 @@
 """
-Figures for the tables tests/abm_system_winner_diagnostics.c writes.
+Figures for the tables studies/abm_system_winner_diagnostics.c writes.
 
 Every histogram is over the fits of the configuration the Model Confidence Set
 kept, one fit per replicate. Each bar is coloured by the share of its fits whose
@@ -35,7 +35,7 @@ over the fits.
                     link then maps
 
 The script stops without drawing if the table names a different configuration
-from the one out/abm_system_mcs_joint.csv keeps now. Nothing is printed.
+from the one out/abm_system_mcs.csv keeps now. Nothing is printed.
 """
 
 import math
@@ -49,7 +49,7 @@ from plotly.subplots import make_subplots
 PARAMETERS_PATH = Path("out/abm_system_winner_diagnostics_parameters.csv")
 WINNER_PARAMETERS_PATH = Path("out/abm_system_winner_diagnostics_winner_parameters.csv")
 WINNER_THETA_PATH = Path("out/abm_system_winner_diagnostics_winner_theta.csv")
-MCS_PATH = Path("out/abm_system_mcs_joint.csv")
+MCS_PATH = Path("out/abm_system_mcs.csv")
 OUT_DIR = Path("out/abm_system_winner_diagnostics_plots")
 
 # The neutrals of applications/abm_system_winner_irf_plots.py, so the two sets

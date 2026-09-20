@@ -24,7 +24,7 @@ residual z_t = Omega_inv^-1 v_t series by series, to show which variable
 carries them.
 
 Requires the two US fit caches above, out/us_system.csv,
-out/abm_system_mcs_joint.csv, the fit cache and dataset/abm_system/.
+out/abm_system_mcs.csv, the fit cache and dataset/abm_system/.
 
 Output, none of it printed:
     out/abm_system_winner_tail_comparison.txt
@@ -57,7 +57,7 @@ Output, none of it printed:
 #define INPUT_DIR "dataset/abm_system"
 #define BENCHMARK_FIT_PATH "out/us_qvarma_spec_choice_p1q1r2_fit.json"
 #define WINNER_PARAMS_PATH "out/abm_system_winner_irf_theta.json"
-#define CONFIDENCE_SET_PATH "out/abm_system_mcs_joint.csv"
+#define CONFIDENCE_SET_PATH "out/abm_system_mcs.csv"
 #define REPORT_PATH "out/abm_system_winner_tail_comparison.txt"
 
 /* The US block starts one quarter after us_system.csv, lost to differencing. */

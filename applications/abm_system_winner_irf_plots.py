@@ -3,7 +3,7 @@ Figures for out/abm_system_winner_irf.csv, which
 applications/abm_system_winner_irf.c writes: the impulse responses of the
 model the Model Confidence Set kept. The script stops without drawing if that
 file names a different configuration from the one
-out/abm_system_mcs_joint.csv keeps now.
+out/abm_system_mcs.csv keeps now.
 
 The same responses are drawn twice, under two identifications, because the
 two answer different questions and neither one's shock labels mean what the
@@ -62,7 +62,7 @@ from plotly.subplots import make_subplots
 
 IRF_PATH = Path("out/abm_system_winner_irf.csv")
 MANIFEST_PATH = Path("out/abm_system_winner_irf_manifest.txt")
-MCS_PATH = Path("out/abm_system_mcs_joint.csv")
+MCS_PATH = Path("out/abm_system_mcs.csv")
 OUT_DIR = Path("out/abm_system_winner_irf_plots")
 
 # Slots 1 to 3 of the data-visualization reference palette, the subset

@@ -25,7 +25,7 @@ for the model that eventually consumes it - this is a data-conversion
 primitive, not a QVARMA of any kind, and does not fit anything or loop over
 replicates or files itself. It exists to be called from inside whichever
 script needs one (file, replicate) pair at a time -
-applications/abm_system_extract.c converts every one of them up front.
+applications/abm_system_convert_rdata.c converts every one of them up front.
 
 tests/abm_system_layout.c is what checks that the transformation below is
 the one this comment describes, that it agrees with the route the real data
@@ -234,7 +234,7 @@ static inline Mat abm_system_block(const char *path, int replicate) {
 
 
 /* How the transformed replicates are stored, which both writers -
-   applications/abm_system_extract.c from the .Rdata files and
+   applications/abm_system_convert_rdata.c from the .Rdata files and
    applications/abm_system_simulate.c from the model itself - and every reader
    go through, so the layout is written down once.
 

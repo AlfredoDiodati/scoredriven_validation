@@ -14,7 +14,7 @@ every elimination round under both statistics, and the two runs share a seed,
 so they are scored on the same resamples and a difference between them comes
 from the statistic.
 
-Reads out/abm_system_mse_qvarma_joint.csv. Writes
+Reads out/abm_system_irf_loss.csv. Writes
 out/abm_system_mcs_statistic_comparison.txt, a summary followed by the full
 report of each run, and out/abm_system_mcs_statistic_comparison.csv, one row
 per configuration with each statistic's MCS p-value, membership of the set and
@@ -31,7 +31,7 @@ In EXPERIMENT_STEMS. Nothing printed.
 #include <stdlib.h>
 #include <time.h>
 
-#define LOSS_PATH "out/abm_system_mse_qvarma_joint.csv"
+#define LOSS_PATH "out/abm_system_irf_loss.csv"
 #define REPORT_PATH "out/abm_system_mcs_statistic_comparison.txt"
 #define TABLE_PATH "out/abm_system_mcs_statistic_comparison.csv"
 #define N_LAST_STANDING 10

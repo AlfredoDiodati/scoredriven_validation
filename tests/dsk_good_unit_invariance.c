@@ -248,6 +248,7 @@ int main(int argc, char **argv) {
         const double printed = pow(10.0, -PRINTED_DECIMALS);
         int exact = 0, missed = 0, moved = 0, worst_column = 0;
         double worst_gap = 0, worst_moved = 0, worst_plain = 0, worst_scaled = 0;
+        const char *worst_moved_name = "none";
 
         for (int c = 0; c < MODEL_COLUMNS; c++) {
             double a = plain[row * MODEL_COLUMNS + c];
@@ -263,14 +264,18 @@ int main(int argc, char **argv) {
                 continue;
             }
 
-            int expected_to_move = 0;
-            for (int k = 0; k < MIXED_UNIT_COLUMNS; k++) expected_to_move |= mixed_unit_column[k] == c + 1;
+            int expected_index = -1;
+            for (int k = 0; k < MIXED_UNIT_COLUMNS; k++)
+                if (mixed_unit_column[k] == c + 1) expected_index = k;
 
             double scale = closest == divided ? fabs(a * factor) : (closest == multiplied ? fabs(a / factor) : fabs(a));
             double gap = scale != 0 ? closest / scale : closest;
-            if (expected_to_move) {
+            if (expected_index >= 0) {
                 moved++;
-                if (gap > worst_moved) worst_moved = gap;
+                if (gap > worst_moved) {
+                    worst_moved = gap;
+                    worst_moved_name = mixed_unit_name[expected_index];
+                }
             } else {
                 missed++;
                 if (gap > worst_gap) {
@@ -290,8 +295,10 @@ int main(int argc, char **argv) {
                 first_change, differing, differing ? "FAILED" : "");
         fprintf(report, "  period %d, the first written in the new unit: %d of %d columns exactly unchanged,\n"
                         "    divided or multiplied\n", row + 1, exact, MODEL_COLUMNS);
-        fprintf(report, "    %d of the %d columns the mixed-unit mean productivity reaches moved, worst by %.2e  %s\n",
-                moved, MIXED_UNIT_COLUMNS, worst_moved, worst_moved > WORST_ALLOWED ? "FAILED" : "");
+        fprintf(report, "    %d of the %d columns the mixed-unit mean productivity reaches moved, worst %s\n"
+                        "    by %.2e  %s\n",
+                moved, MIXED_UNIT_COLUMNS, worst_moved_name, worst_moved,
+                worst_moved > WORST_ALLOWED ? "FAILED" : "");
         if (missed)
             fprintf(report, "    column %d moved and should not have: %.10g against %.10g, %.2e away from a clean factor  FAILED\n",
                     worst_column, worst_plain, worst_scaled, worst_gap);
