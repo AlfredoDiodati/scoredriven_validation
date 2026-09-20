@@ -336,6 +336,47 @@ static inline Mat abm_system_read_replicate(const char *dir, int replicate) {
     return y;
 }
 
+/* Every replicate one archive holds, in the order it holds them. block and
+   replicate need room for ABM_SYSTEM_BATCH entries; the return value is how
+   many were filled, which is short when the batch's runs did not all succeed
+   and zero when the archive is not there. Caller must mat_free each block.
+
+   A caller sweeping every replicate of a configuration wants this rather than
+   abm_system_read_replicate in a loop: the archive is one deflate stream, so
+   asking it for one replicate at a time decompresses the whole thing ten
+   times over. */
+static inline int abm_system_read_batch(const char *dir, int batch, Mat *block, int *replicate) {
+    char path[512];
+    int written = snprintf(path, sizeof path, "%s/batch_%03d.npz", dir, batch);
+    assert(written > 0 && (size_t)written < sizeof path && "abm_system: batch path does not fit");
+
+    struct stat info;
+    if (stat(path, &info) != 0) return 0;
+
+    DataFrame df = df_read_npz(path);
+    Mat index = df_col_numeric(&df, abm_system_column_names()[ABM_SYSTEM_K]);
+
+    int count = 0;
+    for (int t = 0; t < df.r; ) {
+        int here = (int)AT(index, t, 0), start = t;
+        while (t < df.r && (int)AT(index, t, 0) == here) t++;
+        assert(count < ABM_SYSTEM_BATCH && "abm_system: an archive holds more replicates than a batch");
+
+        int periods = t - start;
+        Mat y = mat_new(ABM_SYSTEM_K, periods);
+        for (int k = 0; k < ABM_SYSTEM_K; k++) {
+            Mat column = df_col_numeric(&df, abm_system_column_names()[k]);
+            for (int j = 0; j < periods; j++) AT(y, k, j) = AT(column, start + j, 0);
+        }
+        block[count] = y;
+        replicate[count] = here;
+        count++;
+    }
+
+    df_free(&df);
+    return count;
+}
+
 /* Every replicate index stored under dir, ascending. Archives are visited in
    batch order rather than in the order readdir returns them, so a caller can
    rely on the order without sorting, and a batch that failed entirely is

@@ -1,0 +1,28 @@
+1000 configurations, 1000 replicates each, 400 periods each, spec p1q1r2
+q is the score of the t-QVARMA log-likelihood at the real-data estimate, evaluated on the simulated series
+theta from out/us_qvarma_spec_choice_p1q1r2_fit.json, 42 coordinates, unconstrained scale
+nothing is estimated here: no simulated series is fitted
+out/abm_system_score_loss.csv holds q'q
+out/abm_system_score_loss_weighted.csv holds the score statistic q' [T_sim I_1]^-1 q
+
+weighting
+  observed information at theta_US, -d2 logL/dtheta dtheta', differenced from the analytic gradient over 187 periods of real data
+  eigenvalues: smallest 1.165835e-01, largest 2.239173e+05, condition 1.921e+06
+  positive definite yes, 0 directions flat against a floor of 2.088e-09
+  scaled by T_sim / T_US = 400 / 187 before inversion, so the loss is on the chi-square scale
+  under the null that a replicate came from the auxiliary model at theta_US, chi-square with 42 degrees of freedom: mean 42, sd 9.17
+  that calibration holds under the null only - away from it the weighted loss is a distance in a fixed metric, not a per-cell p-value
+  how q'q splits over coordinates of theta, on cop_0001 replicate 0, total 3.5684e+07
+    Omega_inv[2,0]     share 0.6162  cumulative 0.6162
+    alpha2[0,0]        share 0.1021  cumulative 0.7183
+    alpha1[0,0]        share 0.0817  cumulative 0.8000
+    Omega_inv[2,2]     share 0.0702  cumulative 0.8702
+    Omega_inv[2,1]     share 0.0665  cumulative 0.9367
+  how the statistic splits over eigen-directions, on cop_0001 replicate 0, total 1.0038e+04
+    direction 23  eigenvalue 3.5700e+02  share 0.2038  cumulative 0.2038
+    direction 39  eigenvalue 6.0511e+03  share 0.1457  cumulative 0.3495
+    direction 24  eigenvalue 3.6598e+02  share 0.1174  cumulative 0.4669
+    direction  7  eigenvalue 2.5843e+01  share 0.1080  cumulative 0.5749
+    direction 25  eigenvalue 4.1613e+02  share 0.0868  cumulative 0.6617
+
+0 of 1000000 cells missing

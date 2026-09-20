@@ -24,6 +24,12 @@ files each one writes are listed under "The main pipeline" below.
 compared against what, why the comparison runs on impulse responses rather than
 on fitted parameters, the settings the confidence set is computed under, and
 the result on the design experiment.
+`docs/ABM_SYSTEM_SCORE_LOSS.md` describes a second route to the same confidence
+set, one that fits nothing to the simulated data: it scores each simulated
+series by the score of the auxiliary model's log-likelihood at the real data's
+own estimate, weighted by the inverse information matrix. It is the only one of
+the three losses this project computes under which the confidence set stops
+because an equivalence test is accepted rather than because elimination ran out.
 `docs/DATA_DOCUMENTATION.md` records where the US series come from and how each
 one is transformed. `docs/ABM_SYSTEM_SIMULATION.md` describes the design the
 simulations run over and how they are stored, and
@@ -497,13 +503,42 @@ C. Results are written to files, never printed.
 
 `docs/ABM_SYSTEM_MCS_VALIDATION.md` lists every figure and what it shows.
 
+### The second route to the confidence set, which fits nothing
+
+Steps 6 and 7 above cost a million fits. `applications/abm_system_score_loss.c`
+reaches a loss matrix without any of them: it holds the US estimate of step 5
+fixed and evaluates the score of the auxiliary model's log-likelihood on each
+simulated series, which measures how hard that series would pull the estimate
+away from where the US data put it. Two matrices come out of one pass, the
+plain sum of squares and the inverse-information-weighted score statistic, and
+`docs/ABM_SYSTEM_SCORE_LOSS.md` sets out what each one measures and why the
+weighted one is the one to use.
+
+    make app-abm_system_score_loss                    both matrices, about a minute
+    make app-abm_system_mcs_statistic_comparison      scores all three losses
+
+It replaces steps 6 and 7 and reads steps 3, 4 and 5. Under the weighted
+statistic the confidence set keeps `cop_0409` and `cop_0599` and stops because
+an equivalence test is accepted at p = 0.1026; under the impulse-response
+distance and under the unweighted sum of squares it eliminates everything down
+to one configuration without ever accepting a test. The three losses do not
+agree on which configuration is closest.
+
+| file | what it holds |
+|---|---|
+| `out/abm_system_score_loss.csv` | the unweighted loss table, same shape as step 7's |
+| `out/abm_system_score_loss_weighted.csv` | the score statistic, same shape |
+| `out/abm_system_score_loss_manifest.txt` | the information matrix's spectrum and conditioning, how the statistic splits over eigen-directions, and every missing cell |
+
 ### Not part of the main pipeline
 
 Scripts in `applications/` that the ten steps do not use:
 
 - `abm_system_mcs_statistic_comparison.c` reruns step 8 under both statistics
-  et_al implements, as a check, and writes
-  `out/abm_system_mcs_statistic_comparison.txt` and `.csv`.
+  et_al implements, as a check, over each of the three loss matrices, and writes
+  `out/abm_system_mcs_statistic_comparison.txt` and `.csv` for the
+  impulse-response loss, `..._score.*` for the unweighted score and
+  `..._score_weighted.*` for the score statistic.
 - `abm_system_convert_rdata.c` is the older way to fill a dataset directory: it
   converts the 108 `.Rdata` files under `dataset/simulated/` instead of running
   the simulator. Use one or the other, never both: step 6 fits every
@@ -519,7 +554,9 @@ Scripts in `applications/` that the ten steps do not use:
 
 Files in `out/` the ten steps do not write:
 
-- `out/abm_system_mcs_statistic_comparison.*`, from the check above.
+- `out/abm_system_mcs_statistic_comparison*.*`, from the check above.
+- `out/abm_system_score_loss*.csv` and `out/abm_system_score_loss_manifest.txt`,
+  from the second route above.
 - `out/abm_system_convert_rdata_manifest.txt`, from the older route above.
 - `out/throughput_*`, `out/fit_speedup_options.txt` and the shell scripts
   `out/hold_awake.sh`, `out/record_run_walltime.sh` and

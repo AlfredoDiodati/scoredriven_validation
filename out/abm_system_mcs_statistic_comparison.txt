@@ -1,12 +1,12 @@
-MCS_TR against MCS_TMAX on out/abm_system_mse_qvarma_joint.csv
+MCS_TR against MCS_TMAX on out/abm_system_irf_loss.csv
 1000 configurations, 1000 replicates each
 shared: alpha = 0.050, 10000 resamples, block length 1, bootstrap variance, seed 123, stream 0
 
 Both statistics are scored on the same resamples, drawn once and reused in every round.
 
 statistic  set size  decided by an accepted test  deciding round  last p-value  seconds
-MCS_TR            1                           no               0        0.0011     11.9
-MCS_TMAX          1                           no               0        0.0011      7.9
+MCS_TR            1                           no               0        0.0011     14.2
+MCS_TMAX          1                           no               0        0.0011      7.6
 
 sets
   in both sets 1, only in MCS_TR's 0, only in MCS_TMAX's 0

@@ -138,7 +138,7 @@ APPLICATION_STEMS := us_prepare_data abm_system_design
 # would give a second way to write the same tree.
 EXPERIMENT_STEMS := us_qvarma_spec_choice \
                      abm_system_convert_rdata abm_system_fit_qvarma \
-                     abm_system_irf_loss abm_system_mcs \
+                     abm_system_irf_loss abm_system_score_loss abm_system_mcs \
                      abm_system_mcs_statistic_comparison \
                      abm_system_winner_irf \
                      throughput_dataset
@@ -286,7 +286,13 @@ app-us_qvarma_spec_choice: app-us_prepare_data
 # app-throughput_fit: it writes 21 GB and takes tens of minutes, so
 # rerunning the throughput test must not rebuild the dataset it reads.
 app-abm_system_irf_loss: app-us_qvarma_spec_choice
+# The score loss needs the same real-data fit and no fit of its own: it
+# evaluates the score of that estimate on every simulated series rather than
+# fitting one, so it does not depend on app-abm_system_fit_qvarma the way the
+# IRF loss does.
+app-abm_system_score_loss: app-us_qvarma_spec_choice
 app-abm_system_mcs: app-abm_system_irf_loss
+app-abm_system_mcs_statistic_comparison: app-abm_system_irf_loss app-abm_system_score_loss
 app-abm_system_winner_irf: app-abm_system_mcs
 
 # One throughput run per solver budget. 86.85% of the 500,000 fits at a cap of

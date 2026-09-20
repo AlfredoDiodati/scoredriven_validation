@@ -14,11 +14,31 @@ every elimination round under both statistics, and the two runs share a seed,
 so they are scored on the same resamples and a difference between them comes
 from the statistic.
 
-Reads out/abm_system_irf_loss.csv. Writes
-out/abm_system_mcs_statistic_comparison.txt, a summary followed by the full
-report of each run, and out/abm_system_mcs_statistic_comparison.csv, one row
-per configuration with each statistic's MCS p-value, membership of the set and
-elimination round.
+Three loss matrices go through the same pass, with identical settings, so a
+difference between them comes from the loss and not from how it was scored:
+
+  - out/abm_system_irf_loss.csv, the distance between fitted impulse
+    responses (applications/abm_system_irf_loss.c).
+  - out/abm_system_score_loss.csv, q'q with q the score of the t-QVARMA
+    log-likelihood at the real data's own estimate, evaluated on the
+    simulated series and fitting nothing
+    (applications/abm_system_score_loss.c).
+  - out/abm_system_score_loss_weighted.csv, that same score weighted by the
+    inverse information matrix, which is Rao's score statistic and is the
+    one of the two that does not depend on how the model is parameterized.
+    docs/ABM_SYSTEM_SCORE_LOSS.md is where that is set out.
+
+Six confidence sets in total, two statistics over each matrix. Each matrix
+gets its own pair of output files rather than six reports in one, since one
+report already carries two full elimination tables of a thousand rows:
+
+  out/abm_system_mcs_statistic_comparison.txt and .csv                   impulse responses
+  out/abm_system_mcs_statistic_comparison_score.txt and .csv             score, unweighted
+  out/abm_system_mcs_statistic_comparison_score_weighted.txt and .csv    score statistic
+
+The .txt is a summary followed by the full report of each run, the .csv one
+row per configuration with each statistic's MCS p-value, membership of the set
+and elimination round.
 In EXPERIMENT_STEMS. Nothing printed.
 */
 
@@ -31,9 +51,18 @@ In EXPERIMENT_STEMS. Nothing printed.
 #include <stdlib.h>
 #include <time.h>
 
-#define LOSS_PATH "out/abm_system_irf_loss.csv"
-#define REPORT_PATH "out/abm_system_mcs_statistic_comparison.txt"
-#define TABLE_PATH "out/abm_system_mcs_statistic_comparison.csv"
+#define IRF_LOSS_PATH "out/abm_system_irf_loss.csv"
+#define IRF_REPORT_PATH "out/abm_system_mcs_statistic_comparison.txt"
+#define IRF_TABLE_PATH "out/abm_system_mcs_statistic_comparison.csv"
+
+#define SCORE_LOSS_PATH "out/abm_system_score_loss.csv"
+#define SCORE_REPORT_PATH "out/abm_system_mcs_statistic_comparison_score.txt"
+#define SCORE_TABLE_PATH "out/abm_system_mcs_statistic_comparison_score.csv"
+
+#define WEIGHTED_LOSS_PATH "out/abm_system_score_loss_weighted.csv"
+#define WEIGHTED_REPORT_PATH "out/abm_system_mcs_statistic_comparison_score_weighted.txt"
+#define WEIGHTED_TABLE_PATH "out/abm_system_mcs_statistic_comparison_score_weighted.csv"
+
 #define N_LAST_STANDING 10
 
 enum { STATISTIC_TR, STATISTIC_TMAX, N_STATISTICS };
@@ -43,6 +72,11 @@ static const char *const statistic_name[N_STATISTICS] = { "MCS_TR", "MCS_TMAX" }
 /* Every numeric column except "replicate", which indexes the rows, is a
    configuration. */
 static DataFrame read_losses(const char *path) {
+    FILE *probe = fopen(path, "r");
+    assert(probe && "abm_system_mcs_statistic_comparison: a loss matrix is missing - "
+                     "app-abm_system_irf_loss and app-abm_system_score_loss write them");
+    fclose(probe);
+
     DataFrame raw = df_read_csv(path, csv_read_options_default());
     DataFrame losses = df_new(raw.r);
     for (int j = 0; j < raw.n_cols; j++) {
@@ -72,8 +106,12 @@ static int later_tr_departure_first(const void *a, const void *b) {
     return tr_departure_rounds_for_sort[right] - tr_departure_rounds_for_sort[left];
 }
 
-int main(void) {
-    DataFrame losses = read_losses(LOSS_PATH);
+/* One loss matrix through both statistics. loss_description names what a cell
+   of it measures and goes into the title of each embedded report, so the two
+   matrices' reports cannot be told apart only by their file names. */
+static void compare_statistics(const char *loss_path, const char *report_path,
+                               const char *table_path, const char *loss_description) {
+    DataFrame losses = read_losses(loss_path);
     int n_configurations = mcs_n_models(&losses);
 
     MCSOptions opt = mcs_options_default();
@@ -110,9 +148,9 @@ int main(void) {
         if (pvalue_gap > largest_pvalue_gap) largest_pvalue_gap = pvalue_gap;
     }
 
-    FILE *report = fopen(REPORT_PATH, "w");
+    FILE *report = fopen(report_path, "w");
     assert(report && "abm_system_mcs_statistic_comparison: cannot open the report path for writing");
-    fprintf(report, "MCS_TR against MCS_TMAX on %s\n", LOSS_PATH);
+    fprintf(report, "MCS_TR against MCS_TMAX on %s\n", loss_path);
     fprintf(report, "%d configurations, %d replicates each\n", n_configurations, losses.r);
     fprintf(report, "shared: alpha = %.3f, %d resamples, block length %d, bootstrap variance, seed %llu, stream %llu\n",
             opt.alpha, opt.bootstrap, opt.block_length, (unsigned long long)opt.seed, (unsigned long long)opt.stream);
@@ -162,8 +200,8 @@ int main(void) {
 
     for (int s = 0; s < N_STATISTICS; s++) {
         char title[160];
-        snprintf(title, sizeof title, "MCS over t-QVARMA (driftless) impulse-response MAE, p1q1r2, %s statistic",
-                 statistic_name[s]);
+        snprintf(title, sizeof title, "MCS over %s, %s statistic",
+                 loss_description, statistic_name[s]);
         fprintf(report, "\n\n");
         opt.stat = statistic[s];
         mcs_fwrite_options(report, &losses, opt);
@@ -197,7 +235,7 @@ int main(void) {
     df_add_numeric_col(&table, "tmax_pvalue", tmax_pvalue);
     df_add_numeric_col(&table, "tmax_in_set", tmax_in_set);
     df_add_numeric_col(&table, "tmax_elimination_round", tmax_elimination_round);
-    df_write_csv(&table, TABLE_PATH, csv_write_options_default());
+    df_write_csv(&table, table_path, csv_write_options_default());
 
     df_free(&table);
     free(names);
@@ -208,5 +246,15 @@ int main(void) {
     mat_free(tr_elimination_round); mat_free(tmax_elimination_round);
     for (int s = 0; s < N_STATISTICS; s++) mcs_free(&result[s]);
     df_free(&losses);
+}
+
+int main(void) {
+    compare_statistics(IRF_LOSS_PATH, IRF_REPORT_PATH, IRF_TABLE_PATH,
+                       "t-QVARMA (driftless) impulse-response MAE, p1q1r2");
+    compare_statistics(SCORE_LOSS_PATH, SCORE_REPORT_PATH, SCORE_TABLE_PATH,
+                       "t-QVARMA (driftless) score quadratic form at the real-data estimate, p1q1r2");
+    compare_statistics(WEIGHTED_LOSS_PATH, WEIGHTED_REPORT_PATH, WEIGHTED_TABLE_PATH,
+                       "t-QVARMA (driftless) score statistic at the real-data estimate, "
+                       "inverse information weighting, p1q1r2");
     return 0;
 }

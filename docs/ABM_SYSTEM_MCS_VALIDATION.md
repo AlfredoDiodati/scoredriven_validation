@@ -382,6 +382,33 @@ other one, and a very noisy configuration rarely produces one; `MCS_TMAX`
 measures each against the average of those remaining. The noise was measured;
 the mechanism was not traced through et_al's code.
 
+That disagreement is specific to this loss. The same comparison over the two
+score losses of `docs/ABM_SYSTEM_SCORE_LOSS.md` puts the Spearman rank
+correlation between the two elimination orders at 0.9992 and 0.9981, with a
+median round gap of 6. Whatever makes the elimination order unstable here is a
+property of the impulse-response distance, not of the confidence set.
+
+### A loss that does not need the million fits
+
+`docs/ABM_SYSTEM_SCORE_LOSS.md` documents a different way to reach a loss
+matrix for this same confidence set. It holds the US estimate fixed and
+evaluates the score of the auxiliary model's log-likelihood on each simulated
+series, so nothing is fitted to simulated data and steps 6 and 7 of the
+pipeline are not needed at all. Weighted by the inverse information matrix,
+that loss is Rao's score statistic, it does not depend on how the auxiliary
+model is parameterized, and it is the only one of the three losses under which
+this confidence set stops because an equivalence test is accepted rather than
+because elimination ran out of configurations. It keeps `cop_0409` and
+`cop_0599`; this one keeps `cop_0191`.
+
+The two results are not near neighbours. Under `MCS_TR` on the weighted score
+loss, `cop_0191` is eliminated in round 657 of 999 at a p-value below 0.0001,
+which is mid-field rather than a close miss. In the other direction the gap is
+smaller: `cop_0409` and `cop_0599` survive this procedure to rounds 865 and
+806. `docs/ABM_SYSTEM_SCORE_LOSS.md`, "When each winner leaves the procedures
+it does not win", has the full table. Nothing in either document settles which
+of the two measures should be believed.
+
 ## Impulse responses of the winning configuration
 
 Steps 9 and 10 of the main pipeline in the README turn the result into figures:
