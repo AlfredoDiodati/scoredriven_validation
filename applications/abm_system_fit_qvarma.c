@@ -63,25 +63,22 @@ contending with itself). Each task's own matrices are small (K = 5), so
 BLAS-level threading buys nothing here - all the real parallelism belongs
 to the outer loop over independent fits.
 
-Naming: this file fits t-QVARMA specifically - applications/abm_system_fit_qvarmad.c
-is its exact counterpart for the drift-carrying variant, t-QVARMAd, same
-partition and specs, deliberately not sharing any code with this file
-(docs/MODEL_TEMPLATE.md entry 16: qvarma.h and qvarma_d.h define the same
-names, so a translation unit uses one or the other, and neither script
-imports anything from the other). Output mirrors dataset/abm_system/'s own
-structure exactly, so which sample and which replicate a cached fit belongs
-to is never in question - dataset/abm_system/<sample>/replicate_<NNN>.npz's
-own input becomes out/abm_system_fit_qvarma/<sample>/replicate_<NNN>_p1q1r2_fit.json
-and ..._p1q1r4_fit.json. Rerunning this script after an interruption resumes
-rather than redoes: a cache file with the same data fingerprint is loaded
-rather than refitted, and refitted from its own parameters rather than from
-build_start when it did not converge.
+Naming: this file fits the driftless t-QVARMA, which is what
+<et_al./sd/qvarma.h> provides. The drift-carrying variant belongs to an earlier
+stage of the project whose code is not part of this repository, and
+docs/ABM_SYSTEM_MCS_VALIDATION.md records why it is not used here. Output
+mirrors dataset/abm_system/'s own structure exactly, so which sample and which
+replicate a cached fit belongs to is never in question - a replicate read out of
+dataset/abm_system/<sample>/batch_<NNN>.npz becomes
+out/abm_system_fit_qvarma/<sample>/replicate_<NNN>_p1q1r2_fit.json. Rerunning
+this script after an interruption resumes rather than redoes: a cache file with
+the same data fingerprint is loaded rather than refitted, and refitted from its
+own parameters rather than from build_start when it did not converge.
 
 Starting-value convention identical to
-applications/us_qvarma_spec_choice.c's own build_start(), r fixed at
-at 2 rather than grid-searched - one of the two specs abm_system_fit_qvarmad.c
-uses, chosen for direct comparability against that file's own output rather
-than a fresh search on simulated data.
+applications/us_qvarma_spec_choice.c's own build_start(), r fixed at 2 rather
+than grid-searched, for direct comparability against that file's own output
+rather than a fresh search on simulated data.
 
 out/abm_system_fit_qvarma_manifest.txt records, per (sample, replicate, spec):
 converged, log-likelihood, gradient norm and AIC, plus whether the fit was
@@ -150,6 +147,7 @@ printed.
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <assert.h>
 
 #define K ABM_SYSTEM_K
 #define K_STAR 3
@@ -193,9 +191,15 @@ static char **list_subdirs(const char *dir, int *count) {
         snprintf(path, sizeof path, "%s/%s", dir, entry->d_name);
         struct stat st;
         if (stat(path, &st) != 0 || !S_ISDIR(st.st_mode)) continue;
-        if (n == cap) { cap = cap ? cap * 2 : 16; names = realloc(names, (size_t)cap * sizeof(char*)); }
+        if (n == cap) {
+            cap = cap ? cap * 2 : 16;
+            char **grown = realloc(names, (size_t)cap * sizeof(char*));
+            assert(grown && "abm_system_fit_qvarma: out of memory listing samples");
+            names = grown;
+        }
         size_t name_len = strlen(entry->d_name);
         names[n] = malloc(name_len + 1);
+        assert(names[n] && "abm_system_fit_qvarma: out of memory copying a sample name");
         memcpy(names[n], entry->d_name, name_len + 1);
         n++;
     }
@@ -287,9 +291,16 @@ typedef struct { int sample_index, replicate; } Task;
    rather than from its own solver run. -1 means its own. Kept beside the
    caches rather than inside them because it is this file's own bookkeeping and
    not a property of a QVARMA fit, and read back on the next run because the
-   rule below needs to know which donors a fit has already descended from. */
-static void read_lineage(const char *sample, int *donor, int n_replicates) {
-    for (int r = 0; r < n_replicates; r++) donor[r] = -1;
+   rule below needs to know which donors a fit has already descended from.
+
+   Both columns of lineage.txt are replicate indices, the same numbers that name
+   the cache files. The array is indexed by position in the sample's own
+   replicate list instead, because that is what the loops below carry, so the
+   two are translated here rather than left to coincide: they are equal only
+   while a sample holds the contiguous replicates 0 to count-1, and
+   abm_system.h is written to tolerate a sample that does not. */
+static void read_lineage(const char *sample, int *donor, const int *replicate_of, int count) {
+    for (int r = 0; r < count; r++) donor[r] = -1;
 
     char path[600];
     snprintf(path, sizeof path, "%s/%s/lineage.txt", OUTPUT_DIR, sample);
@@ -298,21 +309,23 @@ static void read_lineage(const char *sample, int *donor, int n_replicates) {
 
     int replicate, from;
     while (fscanf(f, "%d %d", &replicate, &from) == 2)
-        if (replicate >= 0 && replicate < n_replicates) donor[replicate] = from;
+        for (int r = 0; r < count; r++)
+            if (replicate_of[r] == replicate) { donor[r] = from; break; }
     fclose(f);
 }
 
-static void write_lineage(const char *sample, const int *donor, int n_replicates) {
+static void write_lineage(const char *sample, const int *donor, const int *replicate_of,
+                          int count) {
     int any = 0;
-    for (int r = 0; r < n_replicates && !any; r++) any = donor[r] >= 0;
+    for (int r = 0; r < count && !any; r++) any = donor[r] >= 0;
     if (!any) return;
 
     char path[600];
     snprintf(path, sizeof path, "%s/%s/lineage.txt", OUTPUT_DIR, sample);
     FILE *f = fopen(path, "w");
     assert(f && "abm_system_fit_qvarma: cannot write a lineage file");
-    for (int r = 0; r < n_replicates; r++)
-        if (donor[r] >= 0) fprintf(f, "%d %d\n", r, donor[r]);
+    for (int r = 0; r < count; r++)
+        if (donor[r] >= 0) fprintf(f, "%d %d\n", replicate_of[r], donor[r]);
     fclose(f);
 }
 
@@ -434,6 +447,19 @@ int main(void) {
                        no earlier reasons, so the chain starts at this run and
                        nruns counts the runs whose reason is recorded, which is
                        what the stored array holds. */
+                    /* Two counts with two different jobs, and they do not always
+                       agree. total_niter is what the estimate cost and counts
+                       every iteration the chain has ever spent, including those
+                       of runs whose reason was never stored. nruns and
+                       run_status are the record of why each run stopped, and a
+                       run that recorded no reason cannot be given one after the
+                       fact: et_al.'s reader requires run_status to be exactly
+                       nruns long and drops the array otherwise, so padding it
+                       with an invented reason would cost this run's real one.
+                       So a cache from before the reasons existed restarts the
+                       chain at this run while keeping the iterations it has
+                       already spent, and total_niter can exceed the sum over
+                       the nruns runs named in run_status. */
                     result.total_niter = cached.total_niter + result.niter;
                     if (cached.status_is_known) {
                         result.nruns = cached.nruns + 1;
@@ -500,7 +526,7 @@ int main(void) {
     for (int s = 0; s < n_samples; s++) {
         int first = offset_of[s], count = n_replicates[s];
         int *donor = malloc((size_t)count * sizeof(int));
-        read_lineage(samples[s], donor, count);
+        read_lineage(samples[s], donor, replicates[s], count);
 
         char sample_dir[560];
         snprintf(sample_dir, sizeof sample_dir, "%s/%s", INPUT_DIR, samples[s]);
@@ -583,7 +609,7 @@ int main(void) {
             qvarma_params_free(&shape);
         }
 
-        write_lineage(samples[s], donor, count);
+        write_lineage(samples[s], donor, replicates[s], count);
         free(donor);
     }
     free(offset_of);

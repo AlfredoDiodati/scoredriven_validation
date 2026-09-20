@@ -63,6 +63,7 @@ Writes out/dsk_good_unit_invariance.txt.
 #include <sys/stat.h>
 #include <errno.h>
 #include <assert.h>
+#include "tests/dsk_scratch.h"
 
 #define MODEL "model/dsk_sfc/dsk_SFC"
 #define INPUTS "model/dsk_sfc/dsk_sfc_inputs.json"
@@ -179,7 +180,7 @@ int main(int argc, char **argv) {
     if (!scratch) scratch = "/tmp";
 
     char root[512], plain_dir[640], scaled_dir[640];
-    snprintf(root, sizeof root, "%s/dsk_redenomination_%d", scratch, (int)getpid());
+    snprintf(root, sizeof root, "%s/dsk_good_unit_%d", scratch, (int)getpid());
     make_directory(root);
     snprintf(plain_dir, sizeof plain_dir, "%s/plain", root);
     snprintf(scaled_dir, sizeof scaled_dir, "%s/scaled", root);
@@ -338,5 +339,6 @@ int main(int argc, char **argv) {
 
     printf("good unit invariance: %d failures\n", failures);
     printf("%s\n", failures == 0 ? "PASSED, 0 failures" : "FAILED");
+    dsk_scratch_finish(root, failures == 0);
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

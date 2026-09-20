@@ -24,16 +24,14 @@ constrained-parameter distance instead; the switch is in
 abm_system_mse_qvarma.c, not here - this file only ever consumes whatever
 loss the joint csv holds, whatever it is computed from.
 
-t-QVARMAd deliberately excluded: applications/abm_system_mse.c produces its
-own comparison, out/abm_system_mse_qvarmad_joint.csv, independently - this
-file does not read it and does not compare against qvarmad at all. Not an
-oversight; both model families were run through one joint MCS once, all 400
-columns together (back when both used constrained-parameter loss), and
-every one of them survived - a result driven by measurement noise (see the
-absolute-vs-squared error point below) rather than any real inability to
-tell the models apart, and not something this file repeats. qvarmad's own
-loss has not been switched to IRFs, so the two are not comparable side by
-side any more even if it were.
+The drift-carrying t-QVARMAd is deliberately excluded. Both model families
+were run through one joint MCS once, all 400 columns together, back when
+both used constrained-parameter loss, and every one of them survived - a
+result driven by measurement noise (see the absolute-vs-squared error point
+below) rather than any real inability to tell the models apart. Its loss was
+never switched from parameter distance to IRF distance and its code is not
+part of this repository, so the two are not comparable side by side even if
+it were wanted. docs/ABM_SYSTEM_MCS_VALIDATION.md records that run.
 
 Absolute error, not squared: abm_system_mse_qvarma.c computes loss as mean
 absolute error (et_al.'s stats_mae), not mean squared error (stats_mse,
@@ -42,8 +40,8 @@ first version of the IRF distance). A squared difference turns one
 badly-fit replicate's IRF into a term that can outweigh every other
 replicate combined by many orders of magnitude, which then inflates not
 just that model's mean loss but the bootstrap variance this file's own
-mcs() call estimates from - exactly what made an earlier, all-qvarmad-and-
-qvarma, squared-error run unable to reject anything. Absolute error still
+mcs() call estimates from - exactly what made an earlier squared-error run
+over both model families unable to reject anything. Absolute error still
 counts that same replicate, linearly rather than squared, so it can no
 longer single-handedly swamp every other observation.
 
@@ -92,6 +90,7 @@ via mcs_pvalue_frame). In EXPERIMENT_STEMS. Nothing printed.
 #include <et_al./inference/mcs.h>
 #include <et_al./frame/csv.h>
 #include <string.h>
+#include <assert.h>
 
 #define LOSS_PATH "out/abm_system_mse_qvarma_joint.csv"
 

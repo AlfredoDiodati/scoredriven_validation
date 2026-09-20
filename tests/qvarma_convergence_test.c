@@ -446,14 +446,14 @@ int main(void) {
             if (!cell[i].usable) continue;
             for (int b = 0; b < N_BUDGETS; b++) {
                 if (!cell[i].computable[b] && c != 0 && c != 1 && c != 3) continue;
-                double value = cell[i].reading[b][c];
-                if (!isfinite(value)) continue;
+                double reading = cell[i].reading[b][c];
+                if (!isfinite(reading)) continue;
                 if (cell[i].se_movement[b] <= ARRIVED_AT) {
                     n_arrived++;
-                    if (value > worst_arrived) worst_arrived = value;
+                    if (reading > worst_arrived) worst_arrived = reading;
                 } else if (cell[i].se_movement[b] > FAR_AWAY) {
                     n_far++;
-                    if (value < best_far) best_far = value;
+                    if (reading < best_far) best_far = reading;
                 }
             }
         }

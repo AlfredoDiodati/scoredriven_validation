@@ -26,6 +26,8 @@ comparison then runs both builds in sibling directories of that same length.
 
 #define _XOPEN_SOURCE 700
 
+#include "tests/dsk_scratch.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -118,11 +120,22 @@ static DskScratch dsk_scratch_open(const char *tag, const char *run_name, const 
             found = tried;
             break;
         }
+
+        /* This length did not let upstream write. The directory it was tried in
+           has two build symlinks in it and nothing else, and the next length
+           gets its own, so it goes now rather than being left behind. */
+        dsk_scratch_remove(tried.root);
     }
 
     assert(found.padding >= 0 &&
            "dsk scratch: no scratch path of any length let the upstream build write its output");
     return found;
+}
+
+/* Call once, on the way out, with the test's own verdict: the directory goes
+   when the test passed and stays when it did not. */
+static void dsk_scratch_close(const DskScratch *scratch, int passed) {
+    dsk_scratch_finish(scratch->root, passed);
 }
 
 #endif

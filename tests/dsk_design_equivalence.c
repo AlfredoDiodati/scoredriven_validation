@@ -223,5 +223,6 @@ int main(int argc, char **argv) {
 
     printf("%d parameter points times %d seeds compared\n", N_POINTS, n_seeds);
     printf("%s, %d failures\n", failures == 0 ? "PASSED" : "FAILED", failures);
+    dsk_scratch_close(&scratch, failures == 0);
     return failures == 0 ? 0 : 1;
 }

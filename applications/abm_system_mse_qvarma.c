@@ -40,13 +40,12 @@ For the auxiliary spec p1q1r2:
 nu <= 2 fits are skipped, not fed through impulse_responses: qvarma.h's own
 impulse_responses asserts m->nu > 2 (the multivariate-t degrees of freedom
 enters the impulse formula as 1/(nu-2)), which a badly non-converged
-optimizer run can and does produce. This project's own convention is that
-an infeasible parameter value from an optimizer probing the space returns a
-sentinel rather than aborting (see docs/MODEL_TEMPLATE.md's "Implementing a
-new model" policy) - a cached fit already written to disk is exactly that
-case, arrived at after the fact rather than during the fit itself, so it is
-checked and skipped here (counted as missing, same as an unreadable cache
-file) rather than left to the library's own assert.
+optimizer run can and does produce. The convention this project follows is
+that an infeasible parameter value from an optimizer probing the space
+returns a sentinel rather than aborting - a cached fit already written to
+disk is exactly that case, arrived at after the fact rather than during the
+fit itself, so it is checked and skipped here (counted as missing, same as
+an unreadable cache file) rather than left to the library's own assert.
 
 Requires out/abm_system_fit_qvarma/ to already hold every replicate's fit (run
 applications/abm_system_fit_qvarma.c to completion first),
@@ -97,6 +96,7 @@ Nothing printed.
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
+#include <assert.h>
 
 #define K ABM_SYSTEM_K
 #define K_STAR 3
@@ -244,9 +244,15 @@ static SampleEntry *list_samples(const char *dir, int *count) {
         snprintf(path, sizeof path, "%s/%s", dir, entry->d_name);
         struct stat st;
         if (stat(path, &st) != 0 || !S_ISDIR(st.st_mode)) continue;
-        if (n == cap) { cap = cap ? cap * 2 : 16; entries = realloc(entries, (size_t)cap * sizeof(SampleEntry)); }
+        if (n == cap) {
+            cap = cap ? cap * 2 : 16;
+            SampleEntry *grown = realloc(entries, (size_t)cap * sizeof(SampleEntry));
+            assert(grown && "abm_system_mse_qvarma: out of memory listing samples");
+            entries = grown;
+        }
         size_t len = strlen(entry->d_name);
         entries[n].name = malloc(len + 1);
+        assert(entries[n].name && "abm_system_mse_qvarma: out of memory copying a sample name");
         memcpy(entries[n].name, entry->d_name, len + 1);
         entries[n].index = trailing_index(entry->d_name);
         n++;
@@ -257,11 +263,6 @@ static SampleEntry *list_samples(const char *dir, int *count) {
     return entries;
 }
 
-/* One replicate's own K x T series, same convention
-   applications/abm_system_fit_qvarma_cluster.c's own read_y uses - kept as
-   its own copy here rather than shared, same reason qvarma.h and
-   qvarma_d.h stay two files: this project's own convention is that
-   independent scripts do not import functions from one another. */
 /* One replicate's five series, out of the compressed archive holding it.
    abm_system.h's own reader is what applications/abm_system_fit_qvarma.c and
    applications/abm_system_simulate.c go through, so the three cannot disagree

@@ -32,6 +32,7 @@ of them against results already on disk. Pass --force to overwrite anyway.
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <assert.h>
 
 #define DESIGN_PATH "dataset/abm_system_design.csv"
 #define N_COP 1000

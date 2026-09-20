@@ -230,5 +230,6 @@ int main(int argc, char **argv) {
 
     printf("%d files compared over %d seeds, %d differing\n", files_compared, n_seeds, failures);
     printf("%s, %d failures\n", failures == 0 ? "PASSED" : "FAILED", failures);
+    dsk_scratch_close(&scratch, failures == 0);
     return failures == 0 ? 0 : 1;
 }

@@ -1,15 +1,15 @@
 The model as it stands against the authors' build and against the archives
 of the 1000 x 1000 experiment.
 
-40 configurations spread across the design, replications 0 to 7 of each,
-320 pairs, 600 periods, 12 threads, 34.2 minutes of wall clock.
+20 configurations spread across the design, replications 0 to 4 of each,
+100 pairs, 600 periods, 16 threads, 9.6 minutes of wall clock.
 Seeds are the replication number plus one, the same in every configuration,
 as the experiment was run.
 
-pairs run                       320
-results files against upstream  320 compared, 0 differing
-error logs against upstream     320 compared, 0 differing
-runs against the archives       320 compared, 0 differing
+pairs run                       100
+results files against upstream  100 compared, 0 differing
+error logs against upstream     100 compared, 0 differing
+runs against the archives       100 compared, 0 differing
 archives missing                0
 long-horizon logs written       0 (must be 0)
 runs that did not complete      0

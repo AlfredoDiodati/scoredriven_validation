@@ -67,6 +67,7 @@ Writes dataset/, not out/, apart from the failure logs and the manifest.
 #include <limits.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <assert.h>
 
 #define DESIGN_PATH "dataset/abm_system_design.csv"
 #define MODEL_PATH "model/dsk_sfc/dsk_SFC"
@@ -191,12 +192,20 @@ int main(int argc, char **argv) {
     const char *output_dir = getenv("ABM_SYSTEM_OUTPUT_DIR");
     if (!output_dir) output_dir = OUTPUT_DIR;
 
+    /* Resolved outside the assert: an unbuilt model is an environment error
+       rather than a programmer error, and a call inside assert() disappears
+       along with the check under -DNDEBUG. */
     char executable[PATH_MAX];
-    assert(realpath(model, executable) &&
-           "abm_system_simulate: the model is not built - run make model");
+    if (!realpath(model, executable)) {
+        fprintf(stderr, "abm_system_simulate: cannot resolve %s - run make model\n", model);
+        return 1;
+    }
     char base_json[PATH_MAX];
-    assert(realpath(model_inputs, base_json) &&
-           "abm_system_simulate: the model's own inputs JSON is missing");
+    if (!realpath(model_inputs, base_json)) {
+        fprintf(stderr, "abm_system_simulate: cannot resolve %s, the model's own inputs JSON\n",
+                model_inputs);
+        return 1;
+    }
 
     DataFrame design = df_read_csv(DESIGN_PATH, csv_read_options_default());
     int n_cop = design.r;
@@ -218,7 +227,10 @@ int main(int argc, char **argv) {
     char local_exe[512];
     snprintf(local_exe, sizeof local_exe, "%s/dsk_SFC", scratch);
     unlink(local_exe);
-    assert(symlink(executable, local_exe) == 0 && "abm_system_simulate: cannot link the executable into scratch");
+    if (symlink(executable, local_exe) != 0) {
+        fprintf(stderr, "abm_system_simulate: cannot link %s into %s\n", executable, scratch);
+        return 1;
+    }
 
     make_directory(output_dir);
     make_directory(REPORT_DIR);
@@ -256,14 +268,27 @@ int main(int argc, char **argv) {
                 }
             }
 
-            /* The same seeds for every configuration: comparisons across
-               configurations are what the design exists for, and shared
-               randomness reduces the variance of a difference. */
+            /* The same seeds for every configuration, which makes a stored
+               replication traceable to the run that produced it. It was meant
+               as a variance reduction too, and that part was measured and did
+               not happen: the model consumes a different number of draws per
+               period at different parameters, so two configurations' streams
+               desynchronise and the losses end up uncorrelated. Mean loss
+               correlation across configuration pairs is 0.0017 at the same seed
+               against -0.0001 at a shifted one, and the variance of a
+               difference is 0.9988 of the independent sum. See "Common random
+               numbers" in docs/ABM_SYSTEM_SIMULATION.md. */
             int seed = mc + 1;
 
+            /* Truncation checked rather than assumed: a long scratch path would
+               otherwise cut the command short and the model would be run with
+               the wrong arguments instead of not at all. */
             char command[2048];
-            snprintf(command, sizeof command, "\"%s\" \"%s\" -r %s -s %d -f 0 -c 0 -v 0 >/dev/null 2>&1",
-                     local_exe, json_path, run_name, seed);
+            int written = snprintf(command, sizeof command,
+                                   "\"%s\" \"%s\" -r %s -s %d -f 0 -c 0 -v 0 >/dev/null 2>&1",
+                                   local_exe, json_path, run_name, seed);
+            assert(written > 0 && (size_t)written < sizeof command &&
+                   "abm_system_simulate: the model command does not fit");
             int status = system(command);
 
             char raw_path[640], error_path[640];

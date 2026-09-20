@@ -43,6 +43,7 @@ out/dsk_memory_safety.txt.
 #include <sys/stat.h>
 #include <errno.h>
 #include <assert.h>
+#include "tests/dsk_scratch.h"
 
 #define SANITIZED "bin/dsk_SFC_sanitized"
 #define ORDINARY "model/dsk_sfc/dsk_SFC"
@@ -249,5 +250,6 @@ int main(int argc, char **argv) {
 
     printf("%d sanitized runs over %d parameter points\n", runs, n_points);
     printf("%s, %d failures\n", failures == 0 ? "PASSED" : "FAILED", failures);
+    dsk_scratch_finish(root, failures == 0);
     return failures == 0 ? 0 : 1;
 }

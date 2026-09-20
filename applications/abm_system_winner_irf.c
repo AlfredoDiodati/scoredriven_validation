@@ -132,6 +132,7 @@ dataset/abm_system/ (applications/abm_system_simulate_all.sh). Nothing printed.
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
+#include <assert.h>
 
 #define K ABM_SYSTEM_K
 #define K_STAR 3

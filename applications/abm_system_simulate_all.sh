@@ -81,6 +81,34 @@ fi
 
 mkdir -p "$REPORT_DIR" "$OUTPUT_DIR"
 
+# The design a stored archive was produced under, recorded beside the archives
+# rather than only in the provenance file. The row index is the identity every
+# archive, fit and confidence set entry is named by, so a design redrawn with
+# --force renumbers all of them, and a later run would append new-parameter data
+# into existing cop_NNNN directories with nothing to say so.
+design_md5=$(md5sum "$DESIGN" | cut -d' ' -f1)
+fingerprint="$OUTPUT_DIR/.design_md5"
+if [ -f "$fingerprint" ]; then
+  stored=$(cat "$fingerprint")
+  if [ "$stored" != "$design_md5" ]; then
+    echo "$OUTPUT_DIR was filled under a different parameter design." >&2
+    echo "  stored   $stored" >&2
+    echo "  $DESIGN  $design_md5" >&2
+    echo >&2
+    echo "Configuration numbers identify rows of the design, so adding to this" >&2
+    echo "directory under a redrawn design would mix two meanings of cop_NNNN." >&2
+    echo "Restore the design this directory was built with, or point this run" >&2
+    echo "elsewhere with ABM_SYSTEM_OUTPUT_DIR." >&2
+    exit 1
+  fi
+else
+  echo "$design_md5" > "$fingerprint"
+fi
+
+# Archives already present, so the throughput reported at the end counts what
+# this launch produced rather than what was on disk before it started.
+archives_before=$(find "$OUTPUT_DIR" -name 'batch_*.npz' | wc -l)
+
 total=$((LAST - FIRST + 1))
 if [ "$SHARDS" -gt "$total" ]; then SHARDS="$total"; fi
 per=$((total / SHARDS))
@@ -88,7 +116,9 @@ remainder=$((total % SHARDS))
 
 START_EPOCH=$(date +%s)
 {
-  echo "1000 x 1000 DSK experiment, launched $(date -d @$START_EPOCH '+%F %T')"
+  # Named for what this launch actually covers, not for the full design, so a
+  # pilot's provenance file does not describe a run that did not happen.
+  echo "$total x $N_MC DSK experiment, launched $(date -d @$START_EPOCH '+%F %T')"
   echo
   echo "configurations   $FIRST to $LAST ($total)"
   echo "replications     $N_MC per configuration"
@@ -97,7 +127,7 @@ START_EPOCH=$(date +%s)
   echo
   echo "model            $(readlink -f model/dsk_sfc/dsk_SFC), built $(stat -c %y model/dsk_sfc/dsk_SFC)"
   echo "driver           $(readlink -f $BIN), built $(stat -c %y $BIN)"
-  echo "design           $DESIGN  md5 $(md5sum $DESIGN | cut -d' ' -f1)"
+  echo "design           $DESIGN  md5 $design_md5"
   echo "base parameters  model/dsk_sfc/dsk_sfc_inputs.json  md5 $(md5sum model/dsk_sfc/dsk_sfc_inputs.json | cut -d' ' -f1)"
   echo "host             $(uname -srm), $(nproc) hardware threads"
   echo "scratch          ${SLURM_TMPDIR:-${TMPDIR:-/tmp}}"
@@ -143,16 +173,21 @@ done
 END_EPOCH=$(date +%s)
 ELAPSED=$((END_EPOCH - START_EPOCH))
 archives=$(find "$OUTPUT_DIR" -name 'batch_*.npz' | wc -l)
+written=$((archives - archives_before))
 {
   echo
   echo "finished $(date -d @$END_EPOCH '+%F %T')"
   printf "wall clock       %d s (%.2f h)\n" "$ELAPSED" "$(awk -v s=$ELAPSED 'BEGIN{print s/3600}')"
   echo "shards failing   $failed of $SHARDS"
   echo "archives on disk $archives"
+  echo "archives written $written by this launch, $archives_before already present"
   echo "stored size      $(du -sh "$OUTPUT_DIR" | cut -f1)"
-  if [ "$ELAPSED" -gt 0 ]; then
-    printf "throughput       %.1f runs per minute over the whole launch\n" \
-           "$(awk -v a=$archives -v s=$ELAPSED 'BEGIN{print a*10*60/s}')"
+  if [ "$ELAPSED" -gt 0 ] && [ "$written" -gt 0 ]; then
+    # An upper bound: every archive is assumed full at ten replications, which
+    # a batch with a failed run is not. out/abm_system_simulate_manifest.txt
+    # holds the completed and failed counts per configuration.
+    printf "throughput       %.1f runs per minute over this launch, at most\n" \
+           "$(awk -v a=$written -v s=$ELAPSED 'BEGIN{print a*10*60/s}')"
   fi
   echo
   echo "completion per configuration is in out/abm_system_simulate_manifest.txt,"

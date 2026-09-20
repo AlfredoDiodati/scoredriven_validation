@@ -37,6 +37,7 @@ out/dsk_long_path.txt.
 #include <sys/stat.h>
 #include <errno.h>
 #include <assert.h>
+#include "tests/dsk_scratch.h"
 
 #define MODEL "model/dsk_sfc/dsk_SFC"
 #define INPUTS "model/dsk_sfc/dsk_sfc_inputs.json"
@@ -144,5 +145,6 @@ int main(void) {
 
     free(short_text);
     free(long_text);
+    dsk_scratch_finish(root, identical);
     return identical ? EXIT_SUCCESS : EXIT_FAILURE;
 }

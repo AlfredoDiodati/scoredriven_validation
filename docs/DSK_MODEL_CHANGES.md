@@ -18,7 +18,20 @@ the long-horizon work `docs/DSK_LONG_HORIZON.md` describes.
 Nothing compiles or links against `model/dsk_sfc/upstream/`. `build.sh
 --upstream` copies a scratch tree, drops those files over their modified
 counterparts in it, and builds that, so the reference binary is upstream's code
-at upstream's flags and nothing in the working tree is disturbed.
+at upstream's flags and nothing in the working tree is disturbed. That scratch
+tree is removed on the way out; it was not, for a while, because a second
+`trap` replaced the one that removed it and tested `"$source_dir" != "$PWD"`
+after the script had already changed into `$source_dir`, so the test was always
+false. Each `make model-upstream` left a 5.6 MB copy of the tree behind.
+
+`build.sh` does not discard compiler output. It used to send it to
+`/dev/null`, which meant a translation unit that failed to compile reached the
+link stage as an undefined reference with nothing saying which file or why.
+`dsk_sfc_main.cpp` is compiled with `-Wall`, since that is the unit including
+the six new headers; `newmat10`, `rapidjson` and the modules are upstream's and
+are compiled as upstream wrote them. The warnings this leaves are all
+upstream's, mostly unused variables in the `GENFILE*` functions, and none is in
+the new headers.
 
     make model              the simulator this project runs
     make model-upstream     bin/dsk_SFC_upstream, unmodified, upstream's flags
@@ -223,6 +236,15 @@ Two flags are deliberately absent. `-O3` measured no faster. `-march=native`
 lets the compiler contract a multiply and an add into one instruction, which
 changed 356 KB of the 3 MB output; equality with upstream is worth more here
 than the nothing it bought.
+
+One is deliberately present for the same reason. `-ffp-contract=off` says the
+same thing to the compiler directly rather than leaving it to follow from the
+instruction set: `-msse` does not enable FMA, so nothing is contracted at these
+flags either way, and the flag costs nothing. What it buys is that the byte
+equality below stops depending on a fact about the target architecture that a
+later flag change could quietly undo. It is in all three builds `build.sh`
+produces - this project's, the upstream reference and the sanitized one - so
+none of them can contract where another does not.
 
 ### Two loops in `MACH()` read memory the wrong way round
 
@@ -990,6 +1012,33 @@ above.
 the output directory, and the error log is one level down in `output/errors/`.
 It now walks that level, which took the files compared per seed from 13 to 14.
 `tests/dsk_build_equivalence.c` reads it too.
+
+**None of the ten tests removed the directory it ran the model in.** Each gives
+the model a directory of its own under `TMPDIR`, because the model writes beside
+the executable it was invoked as and two tests sharing a directory would read
+each other's files. A 600-period run writes about 3 MB and a `-f 1` run twelve
+files and 28 MB, and several of these tests run the model tens of times, so a
+`make test` left about a dozen directories behind and they accumulated run over
+run: 36 of them, 564 MB, when this was found. `tests/dsk_upstream_scratch.h`
+also abandoned a directory for every padding length it tried before finding one
+the reference tolerates.
+
+`tests/dsk_scratch.h` now removes the tree, and only when the test passed. What
+a failed comparison leaves behind is the two files that differ, so a test that
+fails keeps its directory and prints the path; the next passing run of that test
+does not clear it either, since the path carries the process id and belongs to
+the run that made it. The walk is `nftw` under `FTW_DEPTH | FTW_PHYS` rather
+than a shell command: the path comes from `TMPDIR`, building `rm -rf` out of an
+environment variable would run whatever is in it, and `FTW_PHYS` is what stops
+the walk following the `dsk_SFC` symlink out of the scratch directory and into
+this repository. Measured after the change: a full `make test` leaves the count
+of scratch directories where it found it.
+
+A second defect came out of the same reading. `tests/dsk_good_unit_invariance.c`
+named its scratch directory `dsk_redenomination_<pid>`, copied from
+`tests/dsk_redenomination_invariance.c`. The process id kept them from
+colliding, but the directories two different tests left behind could not be told
+apart. It is named for its own test now.
 
 `make asan` builds every test itself under AddressSanitizer and
 UndefinedBehaviorSanitizer and runs it. That is what catches a mistake in a test

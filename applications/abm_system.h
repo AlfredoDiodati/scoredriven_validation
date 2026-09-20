@@ -10,22 +10,26 @@
 #include <string.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <assert.h>
 
 /*
 Converts one replicate of one ABM-simulated dataset (an .Rdata file under
 dataset/simulated/) into the same K x T layout
-applications/us_qvarmad_employment_change.c's own build_block() produces
-from the real data - GDP_growth, EN_growth, Employment_change, Inflation,
-InterestRate - so the t-QVARMAd(1,1,2)/(1,1,4) auxiliary models this
-project settled on can be fit to a simulated series with no change to
-qvarma_d.h or to how a fit is called. Named for what the data is (the ABM's
-own simulated economic system, converted into this project's own "system"
+applications/us_qvarma_spec_choice.c's own build_block() produces from the
+real data - GDP_growth, EN_growth, Employment_change, Inflation,
+InterestRate - so the auxiliary model can be fit to a simulated series with
+no change to how a fit is called. Named for what the data is (the ABM's own
+simulated economic system, converted into this project's own "system"
 layout - us_data.h's own load_us_system is the real-data counterpart), not
 for the model that eventually consumes it - this is a data-conversion
 primitive, not a QVARMA of any kind, and does not fit anything or loop over
 replicates or files itself. It exists to be called from inside whichever
 script needs one (file, replicate) pair at a time -
 applications/abm_system_extract.c converts every one of them up front.
+
+tests/abm_system_layout.c is what checks that the transformation below is
+the one this comment describes, that it agrees with the route the real data
+takes, and that an archive gives back what was written into it.
 
 Each .Rdata file holds one saved object ("estimation"), an 8-variable x
 n_periods x n_replicates double array (dataset/simulated's own
@@ -39,11 +43,10 @@ differently.
 
 Every transformation below was checked against the real data's own
 equivalent series (out/us_system.csv, the same five, computed the same way
-applications/us_qvarmad_employment_change.c's own build_block() does) before
-being adopted - see the session that built this file for the actual
-comparison (mean and sd of each of the five, real against simulated,
-replicate 0 of EstimationSeriesSample1_1.Rdata): the same order of magnitude
-throughout, which a wrong scale (log10 instead of ln, or a missed
+applications/us_qvarma_spec_choice.c's own build_block() does) before being
+adopted: the mean and sd of each of the five, real against simulated,
+replicate 0 of EstimationSeriesSample1_1.Rdata, came out the same order of
+magnitude throughout, which a wrong scale (log10 instead of ln, or a missed
 proportion-to-percentage-point rescale) would not have produced. None of
 this is guaranteed by any documentation of the ABM's own output - it is
 inferred from the numbers, and stated here as exactly that, an inference:
@@ -54,7 +57,9 @@ inferred from the numbers, and stated here as exactly that, an inference:
     100 ln(level), first-differenced, the identical transform
     applications/us_prepare_data.c's own header comment documents for the
     real data's LogGDP and LogEnergyDemand (100 ln(x_t), Fabiano's own
-    convention, not this project's invention).
+    convention, not this project's invention). That the two routes agree is
+    checked directly in tests/abm_system_layout.c rather than argued from
+    this comment.
   - "Employment rate": a 0-1 proportion (checked range 0.86-1.00), not the
     real data's own 0-100 scale (Employment = 100 - Unemployment,
     us_prepare_data.c's own construction) - rescaled by 100 before
@@ -362,7 +367,13 @@ static inline int *abm_system_list_replicates(const char *dir, int *count) {
         for (int t = 0; t < df.r; t++) {
             int here = (int)AT(index, t, 0);
             if (here == previous) continue;
-            if (n == cap) { cap = cap ? cap * 2 : 32; replicate = (int*)realloc(replicate, (size_t)cap * sizeof(int)); }
+            if (n == cap) {
+                cap = cap ? cap * 2 : 32;
+                int *grown = (int*)realloc(replicate, (size_t)cap * sizeof(int));
+                if (!grown) { free(replicate); replicate = NULL; }
+                assert(grown && "abm_system: out of memory listing replicates");
+                replicate = grown;
+            }
             replicate[n++] = here;
             previous = here;
         }

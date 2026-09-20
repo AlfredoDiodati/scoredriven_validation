@@ -48,6 +48,7 @@ parameters. Writes out/dsk_ulp_sensitivity.txt.
 #include <sys/stat.h>
 #include <errno.h>
 #include <assert.h>
+#include "tests/dsk_scratch.h"
 
 #define MODEL "model/dsk_sfc/dsk_SFC"
 #define INPUTS "model/dsk_sfc/dsk_sfc_inputs.json"
@@ -237,5 +238,6 @@ int main(int argc, char **argv) {
            runs, fine, pairs, FINE_THRESHOLD);
     printf("%s, share %.2f against a bar of %.2f\n",
            passed ? "PASSED" : "FAILED", share, REQUIRED_SHARE);
+    dsk_scratch_finish(root, passed);
     return passed ? 0 : 1;
 }

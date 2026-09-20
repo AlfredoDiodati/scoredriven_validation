@@ -57,6 +57,7 @@ Writes out/dsk_machine_lot_rebase.txt.
 #include <sys/stat.h>
 #include <errno.h>
 #include <assert.h>
+#include "tests/dsk_scratch.h"
 
 #define MODEL "model/dsk_sfc/dsk_SFC"
 #define INPUTS "model/dsk_sfc/dsk_sfc_inputs.json"
@@ -323,5 +324,6 @@ int main(void) {
     free(reference);
     free(lots);
     free(longer);
+    dsk_scratch_finish(root, failures == 0);
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

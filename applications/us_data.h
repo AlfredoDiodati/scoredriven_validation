@@ -4,6 +4,7 @@
 #include <et_al./linalg/mat.h>
 #include <et_al./frame/csv.h>
 #include <stdio.h>
+#include <assert.h>
 
 /*
 The five variables and the sample, shared by every script under applications/
@@ -13,17 +14,18 @@ non-stationary, co-integrated three and are 100 ln(level); employment and the
 interest rate are his stationary two and are their own untransformed units.
 
 This header does not read us_real.csv itself. applications/us_prepare_data.c
-does that once, following papers/fabiano.txt's transformation, and writes
-out/us_system.csv; this header only loads that CSV back into the K x T matrix
-layout the rest of the project uses. Run `make app-us_prepare_data` before
+does that once, following the transformation docs/DATA_DOCUMENTATION.md
+records, and writes out/us_system.csv; this header only loads that CSV back
+into the K x T matrix layout the rest of the project uses. Run `make app-us_prepare_data` before
 anything that includes this header, which `make applications` and the
 per-script `app-<name>` targets already do for you - see the Makefile's
 ordering on APPLICATION_STEMS.
 
-qvarma_data.txt (Blazsek, Escribano and Licht's own series) plays no part
-here or anywhere downstream of it: it is a diagnostic file, read only by
-applications/us_transformation_search.c, which checks a candidate
-transformation of us_real.csv against a published one and nothing more.
+Blazsek, Escribano and Licht's own three-series file plays no part here or
+anywhere downstream of it. It was used once, in a diagnostic that checked a
+candidate transformation of us_real.csv against a published one; that script
+is not part of this repository and docs/DATA_DOCUMENTATION.md records what
+it established.
 */
 
 #define ESTIMATION_PERIODS 188

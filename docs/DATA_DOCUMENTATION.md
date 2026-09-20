@@ -8,19 +8,20 @@
 `applications/us_data.h` and never touches `us_real.csv` directly.
 
 `qvarma_data.txt` — Blazsek, Escribano and Licht's own three-series file — is
-not read anywhere in that path. It is a diagnostic file only, read by
-`applications/us_transformation_search.c` to check a candidate transformation
-of `us_real.csv` against a published one, and by nothing downstream of it. The
-background section at the end of this file is what that diagnostic
-established; it explains why `qvarma_data.txt` is excluded, not how the
-current variables are built.
+not read anywhere in that path. It was used once, by a transformation-search
+diagnostic that checked a candidate transformation of `us_real.csv` against a
+published one; that script is not part of this repository and neither is the
+file it read. The background section at the end of this file is the record of
+what that diagnostic established; it explains why `qvarma_data.txt` is
+excluded, not how the current variables are built.
 
 ## The five variables and their transformation
 
-The variable set and which three are non-stationary follow
-`papers/fabiano.txt` (Fabiano, "Evaluating Nonlinear Simulation Models with
-Model Confidence Sets", section 4.2), which uses this same FRED-QD-sourced US
-data: GDP, employment, CPI, the interest rate and energy demand.
+The variable set and which three are non-stationary follow Fabiano,
+"Evaluating Nonlinear Simulation Models with Model Confidence Sets" (Pisa /
+Sant'Anna, thesis), section 4.2, which uses this same FRED-QD-sourced US data:
+GDP, employment, CPI, the interest rate and energy demand. The thesis itself is
+not in this repository.
 
 | column in `out/us_system.csv` | `us_real.csv` source | transformation |
 |---|---|---|
@@ -36,23 +37,18 @@ difference: differencing a co-integrated variable throws the relation away
 (Sims et al. 1990; Cochrane 1997), so the levels are kept and the log is only
 what stabilises their variance. Employment and the interest rate are
 Fabiano's own stationary two and are left in their natural units,
-untransformed — `static_model.md`'s own state vector, which this system
-descends from, keeps `Emp_t` and `IR_t` unlogged for the same reason: nothing
-about being stationary requires logging a series, and Fabiano logging all
-five was a uniform-specification choice for his own VAR rather than a
-requirement this project needs to inherit.
+untransformed: nothing about being stationary requires logging a series, and
+Fabiano logging all five was a uniform-specification choice for his own VAR
+rather than a requirement this project needs to inherit.
 
 Column names carry no spaces, since they are read back by name in
 `applications/us_data.h` and a name with a space in it is one more thing a
 reader has to quote correctly.
 
 Employment is not a column `us_real.csv` has; it is `100` minus
-`Unemployment`, the same identity this file's background section records for
-`_other/modified.csv`'s `Employement` column, and every unit root or
-co-integration statistic used in this project is invariant to that affine map
-— confirmed again once `docs/VARIABLE_STATUS.md`'s `Employment` numbers are
-compared against the raw `Unemployment` figures in
-`docs/RAW_SERIES_STATIONARITY.md`. Energy demand uses the deseasonalised
+`Unemployment`, the identity this file's background section records, and every
+unit root or co-integration statistic used in this project is invariant to that
+affine map. Energy demand uses the deseasonalised
 column: the raw `Energy_demand` column has a pronounced quarterly pattern a
 level transformation does nothing to remove, and FRED-QD's own series are
 seasonally adjusted to begin with.
@@ -76,15 +72,18 @@ quarter.
 
     make app-us_prepare_data
 
-writes `out/us_system.csv`. It runs automatically before `app-us_stationarity`
-and `app-us_cointegration`, and before `make applications`.
+writes `out/us_system.csv`. It runs before `app-us_qvarma_spec_choice` and
+before `make applications`, which the Makefile declares as prerequisites, so a
+standalone run of either regenerates the CSV rather than reading a stale one.
 
 ## Background: why `qvarma_data.txt` plays no part in this
 
-Kept for the record. This is what `applications/us_transformation_search.c`
+Kept for the record. This is what a transformation-search diagnostic
 established when the project's variables were still being taken partly from
 Blazsek, Escribano and Licht's own file; it is why that file was dropped from
-the empirical pipeline rather than merely deprioritised.
+the empirical pipeline rather than merely deprioritised. Neither the script nor
+`qvarma_data.txt` is part of this repository, so what follows is the conclusion
+and not something that can be re-run here.
 
 ### The two files, as the search saw them
 
@@ -154,9 +153,8 @@ answer was to take the rate from `qvarma_data.txt` instead and, if `Fed_rate`
 were ever used, to correct the offset first. The current pipeline instead
 takes `Fed_rate` as it stands, no shift, on the view that whatever internal
 offset `us_real.csv` carries is a property of this file's own vintage of the
-series and not something to correct by borrowing values from a different one;
-`docs/VARIABLE_STATUS.md`'s own results are what say whether that choice
-costs anything.
+series and not something to correct by borrowing values from a different one.
+What that choice costs has not been measured here.
 
 **Unemployment and energy demand were never in the authors' file at all,**
 so both always came from `us_real.csv`, regardless of this question.

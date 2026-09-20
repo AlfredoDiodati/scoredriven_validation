@@ -3,14 +3,12 @@
 # Header-only against et_al.; nothing here builds a library of its own.
 #
 #   make                          build every test binary
-#   make test                     every test script
+#   make test                     every test script. All of them are the DSK
+#                                 simulator's: the auxiliary model is et_al.'s
+#                                 and is tested there, not here.
 #   make test-stress              every test script, slow checks included
-#   make test-qvarma_correctness  does the implementation compute what it claims
-#   make test-qvarma_correctness-stress
-#                                 the same plus the slow checks
-#   make test-qvarma_identification
-#                                 which parameters the data can pin down
-#   make test-lbfgs_correctness   does the solver find the minimum it claims to
+#   make test-<stem>              one of them on its own, one stem per entry in
+#                                 TEST_STEMS
 #   make test                     float64 by default. The analytic gradient is
 #                                 identical in both builds; float64 is the
 #                                 default because et_al.'s _syevd (used by
@@ -19,19 +17,20 @@
 #                                 t-QVARMA Hessian - see
 #                                 ../et_al./KNOWN_ISSUES.md.
 #   make MAT_DOUBLE=0 test        float32, not recommended; see above.
-#   make study-qvarma_recovery_study
-#                                 Monte Carlo recovery study, writes out/, prints
-#                                 nothing. REPLICATIONS sets draws per cell,
-#                                 default 12; MAX_ITERATIONS the solver budget.
+#   make study                    the robustness studies on the pipeline's own
+#   make study-robustness         result, the same target under the name that
+#                                 says what they are. Every one of them reads
+#                                 what the pipeline wrote to out/ and dataset/ -
+#                                 15 GB of simulation and a million cached fits -
+#                                 and none rebuilds it, so none runs on a fresh
+#                                 clone.
+#   make study-<stem>             one study on its own
 #   make bench                    run the benchmarks (never part of test)
 #   make bench-performance ETAL_DEV=1
 #                                 the same, built against the development et_al.
-#   make examples                 run the example scripts, output to the
-#                                 terminal only, nothing written to out/
 #   make applications             fit the model to the real dataset, results to
 #                                 out/. Always built in float64. One app-<stem>
-#                                 target per stem in APPLICATION_STEMS, which is
-#                                 empty while the specification is rebuilt.
+#                                 target per stem in APPLICATION_STEMS.
 #   make app-<stem>                one application on its own, EXPERIMENT_STEMS
 #                                 included - one-off structural searches
 #                                 already answered (see that variable's own
@@ -41,9 +40,8 @@
 #   make asan                     under AddressSanitizer and UndefinedBehaviorSanitizer
 #
 # Adding a test script means adding its stem to TEST_STEMS. A stem maps to
-# tests/qvarma_<stem>.c, bin/qvarma_<stem>, and the targets
-# test-<stem> and test-<stem>-stress, which are generated below rather than
-# written by hand.
+# tests/<stem>.c, bin/<stem>, and the targets test-<stem> and
+# test-<stem>-stress, which are generated below rather than written by hand.
 
 CC ?= gcc
 CFLAGS ?= -O2 -march=native -Wall -Wextra -std=c11
@@ -74,7 +72,13 @@ endif
 # on an et_al. change is already covered by ETAL_INSTALLED_HEADERS above.
 HEADERS :=
 TEST_HEADERS :=
-TEST_STEMS := qvarma_correctness dsk_long_path dsk_build_equivalence \
+# Every stem here is the DSK simulator's. The auxiliary model lives in the
+# installed et_al. and its correctness suite lives there with it; a copy kept
+# here drifted out of date against the library it was testing and failed on a
+# contract et_al. had since changed, which is worse than not having one.
+# abm_system_layout is this project's own and tests the one header both dataset
+# writers and every reader agree about the stored layout through.
+TEST_STEMS := abm_system_layout dsk_long_path dsk_build_equivalence \
                dsk_full_output_equivalence dsk_design_equivalence \
                dsk_memory_safety dsk_ulp_sensitivity dsk_redenomination_invariance \
                dsk_machine_lot_rebase dsk_good_unit_invariance \
@@ -88,33 +92,33 @@ TEST_STEMS := qvarma_correctness dsk_long_path dsk_build_equivalence \
 BENCH_STEMS := qvarma_fit_cost qvarma_fit_io qvarma_iteration_budget \
                 qvarma_taped_vs_fused qvarma_thread_scaling qvarma_process_scaling \
                 small_call_scaling
-STUDY_STEMS := qvarma_recovery_study qvarma_stuck_fits qvarma_conditioning \
-                qvarma_convergence_test
-# Robustness checks on the result of the main pipeline, not steps of it. Each reads
-# what the pipeline already wrote to out/ and dataset/ and never rebuilds it.
-STUDY_STEMS += us_qvarma_nu_sensitivity abm_system_winner_diagnostics \
+# Robustness checks on the result of the main pipeline, not steps of it. Every
+# one of them reads what the pipeline already wrote to out/ and dataset/ and
+# never rebuilds it, so none can run on a fresh clone: `study` checks for the
+# dataset and the fit cache first and says so rather than letting the first
+# binary fail on an assert.
+#
+# The order is load-bearing in two places, which is why this is a list and not a
+# set: abm_system_winner_diagnostics writes the theta table
+# abm_system_winner_normality reads, and us_qvarma_nu_sensitivity writes the
+# held-nu US fits abm_system_winner_tail_comparison reads. Each producer comes
+# before its consumer here and `study` runs them in this order.
+STUDY_STEMS := qvarma_stuck_fits qvarma_conditioning qvarma_convergence_test \
+               us_qvarma_nu_sensitivity abm_system_winner_diagnostics \
                abm_system_winner_nu_profile abm_system_winner_nu_likelihood_scan \
                abm_system_winner_tail_comparison abm_system_tail_origin \
                abm_system_seed_correlation abm_system_winner_normality
-EXAMPLE_STEMS :=
-# _old/ holds the previous attempt and is deliberately not built; _old/README.md
-# says why it was left.
-#
 # us_prepare_data has to come first: it is the only script that reads
-# qvarma_data.txt and us_real.csv's Unemployment and Des_Energy_demand columns,
-# and it writes out/us_system.csv and out/us_system_author_full.csv, which
-# us_data.h reads back for the specification-grid scripts. The order here is
-# what makes `applications`' shell loop run it first; the app-<name> targets
-# that need it also depend on it directly below, for a standalone
-# `make app-<name>` to regenerate the CSVs rather than read stale ones.
+# us_real.csv's Unemployment and Des_Energy_demand columns, and it writes
+# out/us_system.csv, which us_data.h reads back. The order here is what makes
+# `applications`' shell loop run it first; the app-<name> targets that need it
+# also depend on it directly below, for a standalone `make app-<name>` to
+# regenerate the CSV rather than read a stale one.
 #
 # Only data preparation is routine. A model fit already takes real time and
 # does not change on a routine basis, so the fitting scripts and the whole
 # ABM chain sit in EXPERIMENT_STEMS and are run one at a time via
 # `make app-<name>`.
-#
-# not_used/ holds everything outside the chain docs/call_24082026.md
-# describes, in the same directory layout, and is deliberately not built.
 APPLICATION_STEMS := us_prepare_data abm_system_design
 #
 # abm_system_scale_fit_qvarma is deliberately not a stem here. Its solver budget
@@ -138,7 +142,6 @@ TEST_BINARIES := $(addprefix $(BIN)/,$(TEST_STEMS))
 TEST_BINARIES += $(BIN)/dsk_bulk_cancellation_distribution
 BENCH_BINARIES := $(addprefix $(BIN)/,$(BENCH_STEMS))
 STUDY_BINARIES := $(addprefix $(BIN)/,$(STUDY_STEMS))
-EXAMPLE_BINARIES := $(addprefix $(BIN)/,$(EXAMPLE_STEMS))
 APPLICATION_BINARIES := $(addprefix $(BIN)/,$(APPLICATION_STEMS))
 EXPERIMENT_BINARIES := $(addprefix $(BIN)/,$(EXPERIMENT_STEMS))
 
@@ -160,7 +163,7 @@ BENCH_ETAL_CFLAGS := $(ETAL_CFLAGS)
 BENCH_ETAL_HEADERS := $(ETAL_INSTALLED_HEADERS)
 endif
 
-.PHONY: all test test-stress bench bench-performance study examples applications asan clean
+.PHONY: all test test-stress bench bench-performance study applications asan clean
 
 all: $(TEST_BINARIES)
 
@@ -208,23 +211,28 @@ study-$(1): $(BIN)/$(1) | $(OUT)
 endef
 $(foreach stem,$(STUDY_STEMS),$(eval $(call study_target_for_stem,$(stem))))
 
-study: $(STUDY_BINARIES) | $(OUT)
+# What every study reads and no study rebuilds. Checked once here because the
+# alternative is the first binary aborting on an assert several minutes in.
+study-inputs:
+	@test -d dataset/abm_system || { \
+	  echo "dataset/abm_system/ is missing. The studies read the simulated dataset"; \
+	  echo "and never rebuild it; applications/abm_system_simulate_all.sh produces it."; \
+	  exit 1; }
+	@test -d out/abm_system_fit_qvarma || { \
+	  echo "out/abm_system_fit_qvarma/ is missing. The studies read the fit cache and"; \
+	  echo "never rebuild it; make app-abm_system_fit_qvarma produces it."; \
+	  exit 1; }
+	@test -f out/abm_system_mcs_joint.csv || { \
+	  echo "out/abm_system_mcs_joint.csv is missing. The studies read the confidence"; \
+	  echo "set and never rebuild it; make app-abm_system_mcs produces it."; \
+	  exit 1; }
+
+.PHONY: study-inputs study-robustness
+# One name per thing: study-robustness says what these are, study is the name
+# the README and the habit already use.
+study-robustness: study
+study: study-inputs $(STUDY_BINARIES) | $(OUT)
 	@for binary in $(STUDY_BINARIES); do ./$$binary || exit 1; done
-
-# Examples exist to be read and to print to the terminal, not to gate
-# anything or to write to out/, so unlike test/study they take no -stress
-# variant and no OUT dependency.
-define example_target_for_stem
-.PHONY: example-$(1)
-$(BIN)/$(1): examples/$(1).c $(HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
-	$(CC) $(CFLAGS) $(ETAL_CFLAGS) $(INCLUDES) $$< -o $$@ $(ETAL_LIBS)
-example-$(1): $(BIN)/$(1)
-	./$(BIN)/$(1)
-endef
-$(foreach stem,$(EXAMPLE_STEMS),$(eval $(call example_target_for_stem,$(stem))))
-
-examples: $(EXAMPLE_BINARIES)
-	@for binary in $(EXAMPLE_BINARIES); do ./$$binary || exit 1; done
 
 # Applications fit the model to a real dataset and write their results to out/.
 # Neither a test nor a study on simulated data, so they are their own category

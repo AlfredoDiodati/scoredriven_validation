@@ -268,6 +268,72 @@ Both output files carry the round in which each configuration was eliminated:
 `elimination_round` in the CSV, `round` in the text report, with 0 for the one
 configuration no round eliminated.
 
+### What the confidence set does not say
+
+The Model Confidence Set is a relative procedure. It ranks the 1000
+configurations against each other and returns those whose expected loss cannot
+be separated from the smallest. It never tests whether the smallest is small,
+and nothing else in the pipeline does either, so the result above is "this
+configuration is the closest of the thousand" and not "this configuration
+matches the US data".
+
+The scale that answers the second question is already computed.
+`tests/abm_system_winner_diagnostics.c` reports, in section 4 of
+`out/abm_system_winner_diagnostics.txt`, the mean absolute US response over the
+525 stacked elements: 0.12228. That is the loss a model whose impulse responses
+were identically zero would score, since the loss is the mean absolute
+difference against the US vector and a zero vector leaves the US vector itself.
+
+| | mean loss |
+|---|---:|
+| `cop_0191`, the configuration kept | 0.11816 |
+| a model with identically zero impulse responses | 0.12228 |
+| median over the 1000 configurations | 0.13000 |
+| largest over the 1000 configurations | 0.16329 |
+
+Counted from `out/abm_system_mcs_joint.csv`: 35 of the 1000 configurations
+score below 0.12228 and the other 965 score above it. The winner beats the zero
+response by 3.4 per cent.
+
+The same section gives the mechanism. The mean absolute response of a
+configuration's own fits has median 0.03173 over the 1000 configurations
+(5th percentile 0.02025, 95th 0.04620) against the US benchmark's 0.12228, so
+the fitted simulated responses are roughly a quarter the size of the US ones
+and most of the distance is the US response itself. `cop_0191` has mean
+response magnitude 0.03578, rank 688 of 1000 from the smallest. The Spearman
+rank correlation between a configuration's mean response magnitude and its mean
+loss is 0.0694, so the loss is not simply rewarding small responses either; the
+responses are small across the whole design.
+
+The raw series say the same thing without any model in the way.
+`out/abm_system_tail_origin_report.txt`, Part 1, compares unconditional moments
+over the 400 stored periods against the US series over 187 quarters. The last
+column counts configurations whose median over their 1000 replicates reaches
+the US value:
+
+| series | moment | US | simulated median | configurations reaching US |
+|---|---|---:|---:|---:|
+| GDP growth | variance | 0.5713 | 1.691 | 1000 of 1000 |
+| employment change | variance | 0.1129 | 1.400 | 1000 of 1000 |
+| inflation | variance | 0.6547 | 0.09712 | 0 of 1000 |
+| interest rate | variance | 16.33 | 0.02168 | 0 of 1000 |
+| GDP growth | skewness | -0.4202 | 0.02578 | 0 of 1000 |
+| employment change | skewness | -1.678 | 0.01155 | 0 of 1000 |
+
+GDP growth and employment change are several times too volatile at every design
+point, inflation and the interest rate far too smooth, and the skewness of the
+US series is not reproduced anywhere in the design. No configuration of the nine
+parameters this experiment varies reproduces the second moments of the US
+series, let alone the third.
+
+None of this makes the confidence set wrong. It makes it an answer to a
+narrower question than the phrase "validation" suggests, and the narrower
+question is the one this document reports. An absolute measure would be the
+Fabiano validation score in "Open questions" below, which weights the winning
+configuration's distance by the benchmark's own estimation uncertainty; it is
+not implemented here, and implementing it is what would turn this ranking into
+a statement about fit.
+
 ### Does the number of resamples matter
 
 The same run at 2000 resamples, everything else identical: the same set of one,
@@ -463,3 +529,13 @@ comments above is the step's own time. `./bin/abm_system_mcs` and
   (`v = 1/(1+s)`, `s = d_i / sigma^2_rw`, weighting the winning CoP's
   distance by the real-data benchmark's own estimation uncertainty) is not
   implemented here. `abm_system_mcs.c` reports the MCS set and p-values only.
+  This is the largest of the open questions rather than one of them: it is the
+  only absolute measure in the protocol, and without it the pipeline can say
+  which configuration is closest but not whether it is close. See "What the
+  confidence set does not say" above for what is already known on that.
+- **The benchmark's own sampling error is not in the loss.** Every
+  configuration is scored against one estimated US impulse response, treated as
+  known. With 1000 replicates the test separates mean losses differing in the
+  fourth decimal, which is far below the benchmark's own estimation
+  uncertainty, so the singleton set reflects the precision of the simulation
+  average and not the precision with which the US dynamics are known.

@@ -176,6 +176,45 @@ induced correlation can be small. Nothing is biased when that happens - within
 a configuration the replications remain a valid sample from that
 configuration's path distribution - only the variance reduction is lost.
 
+### It was measured, and the gain is nothing
+
+`tests/abm_system_seed_correlation.c` reads
+`out/abm_system_mse_qvarma_joint.csv`, 1000 replicates by 1000 configurations,
+and computes the Pearson correlation of the per-replicate losses for every one
+of the 499,500 configuration pairs. The reference for no shared randomness is
+the same correlation with the second configuration's rows shifted down by one,
+pairing seed $n$ with seed $n+1$ and wrapping at the end. Under independence
+both have mean zero and standard deviation about $1/\sqrt{1000} = 0.032$.
+Output: `out/abm_system_seed_correlation_report.txt`.
+
+| over all 499,500 pairs | mean | p05 | p50 | p95 |
+|---|---:|---:|---:|---:|
+| loss correlation, same seed | $0.0017$ | $-0.0431$ | $-0.0015$ | $0.0546$ |
+| loss correlation, shifted seed | $-0.0001$ | $-0.0449$ | $-0.0031$ | $0.0522$ |
+| variance ratio, same seed | $0.9988$ | $0.9609$ | $1.0007$ | $1.0306$ |
+
+The variance ratio is
+$\operatorname{Var}(L_i - L_j) / (\operatorname{Var}(L_i) + \operatorname{Var}(L_j))$,
+which is $1$ when the seeds bought nothing. It is $0.9988$. The share of pairs
+correlated above $2/\sqrt{1000} = 0.063$ is 3.27 per cent at the same seed
+against 2.93 per cent at the shifted one, which is the difference between two
+numbers that would both be about 2.3 per cent if nothing were shared at all.
+Correlation does not fall with distance in the design either: the Spearman rank
+correlation between a pair's design distance and its loss correlation is
+$0.0009$ over the 71,357 pairs sampled, and the mean loss correlation by
+distance quartile, nearest first, is $0.0021$, $0.0017$, $0.0016$, $0.0019$.
+
+On the pair the confidence set separated last, `cop_0191` against `cop_0148`,
+the standard error of the mean loss difference is $0.000151$ treating
+replicates as independent and $0.000149$ using the paired differences, so the
+shared seeds moved the test statistic from $3.34$ to $3.37$ standard errors.
+
+The desynchronisation described above is what this looks like when it happens,
+and it happens completely: the streams share a seed and nothing else. The
+convention costs nothing and is kept because it makes a replication traceable
+to its seed, not because it reduces any variance. Any claim that it does should
+be read against this measurement.
+
 The seed a replication came from is its own index plus one, and the archive
 records that index beside the series, so a stored replication can always be
 traced back to the run that produced it.
@@ -291,6 +330,17 @@ reads, so the fit does not know or care which of the two wrote a given file,
 and there is no extraction pass after this one. Both writers and every reader
 go through the same four functions in `applications/abm_system.h`, so the
 layout is written down once.
+
+That header is the one place the layout is defined, and every output of the
+pipeline is computed through it, so the pipeline's own results agree with each
+other whatever it does and cannot catch a mistake in it.
+`tests/abm_system_layout.c` is what does: the transformation against a closed
+form on levels whose answer is known exactly, the transformation against the
+route the US data takes through `applications/us_prepare_data.c` and
+`build_block` (the same function composed in the opposite order, and the whole
+comparison this project makes rests on the two agreeing), the burn-in
+arithmetic, an archive round trip over a full batch and a short one, and the
+replicate listing with a batch missing from the middle.
 
 Ten to an archive rather than one is what makes the compression work. A
 deflate stream that sees ten replications of a series finds far more to reuse
@@ -432,12 +482,29 @@ Nothing about how results are stored is decided there. Every process writes
 through `abm_system_write_batch`, so the archives are the same compressed `.npz`
 files with the same six columns whichever route produced them.
 
-The script refuses to start if the output directory already holds
-subdirectories this experiment did not write. `dataset/abm_system` currently
-holds the hundred directories the older `.Rdata` route produced, and
-`applications/abm_system_fit_qvarma.c` fits every subdirectory it finds without
-being able to tell the two datasets apart. Either move the old one aside or set
-`ABM_SYSTEM_OUTPUT_DIR` to somewhere else.
+Two things the script refuses, both because
+`applications/abm_system_fit_qvarma.c` fits every subdirectory it finds and
+cannot tell one dataset from another.
+
+It refuses an output directory holding subdirectories this experiment did not
+write. `dataset/abm_system` now holds the thousand `cop_NNNN` directories of the
+design run; the hundred the older `.Rdata` route produced were moved to
+`dataset/abm_system_rdata`, which is where `applications/abm_system_extract.c`
+writes by default now and which it refuses to leave. Either move an old dataset
+aside or set `ABM_SYSTEM_OUTPUT_DIR` to somewhere else.
+
+It also refuses an output directory filled under a different parameter design.
+A configuration number is a row index into `dataset/abm_system_design.csv` and
+means nothing without it, so a design redrawn with `abm_system_design --force`
+renumbers every stored replication, every fit and every confidence set entry at
+once. The launcher writes the design's md5 to `<output>/.design_md5` the first
+time it fills a directory and compares it on every later run, so adding to a
+directory under a redrawn design stops rather than mixing two meanings of
+`cop_NNNN`. The dataset this experiment produced carries
+`c844833d45ae7e18df857527ffefbab3`, the same checksum
+`out/abm_system_simulate_all_provenance.txt` recorded at the time. Redrawing the
+design is refused by `abm_system_design` itself unless forced, so this is the
+second of two locks on the same door rather than the only one.
 
 ### The pilot, and what it projects
 

@@ -52,6 +52,7 @@ In EXPERIMENT_STEMS, so `make app-us_qvarma_spec_choice` runs it.
 #include <et_al./stats.h>
 #include <et_al./frame/csv.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #define K 5
 #define K_STAR 3

@@ -27,7 +27,20 @@ cd "$(dirname "$0")"
 
 source_dir="$PWD"
 output="$PWD/dsk_SFC"
-flags="-O2 -flto=$(nproc) -fno-math-errno -msse"
+# -ffp-contract=off so that byte equality with upstream does not rest on the
+# instruction set alone. Contraction of a multiply and an add into one FMA
+# changes results, and -msse does not enable FMA, so today nothing is contracted
+# either way; asking for it explicitly is what keeps that true if the flags ever
+# gain -march=native. docs/DSK_MODEL_CHANGES.md records the 356 KB of output
+# -march=native moved when it was tried.
+# -Wall on this project's own headers. The vendored newmat10 and rapidjson are
+# upstream's and are compiled as they are, so the warning flag goes on the
+# translation units this project wrote or rewrote rather than on all of them.
+common="-fno-math-errno -msse -ffp-contract=off"
+flags="-O2 -flto=$(nproc) $common"
+# The scratch tree --upstream builds in, removed by the one trap installed
+# below. Empty for the other two modes.
+scratch_source=""
 
 if [ "$1" = "--upstream" ]; then
     [ -n "$2" ] || { echo "usage: $0 --upstream OUTPUT" >&2; exit 1; }
@@ -37,9 +50,9 @@ if [ "$1" = "--upstream" ]; then
     esac
     # What CMAKE_BUILD_TYPE Debug and the project's own two flags amount to:
     # no optimisation at all.
-    flags="-g -fno-math-errno -msse"
-    source_dir="$(mktemp -d)"
-    trap 'rm -rf "$source_dir"' EXIT
+    flags="-g $common"
+    scratch_source="$(mktemp -d)"
+    source_dir="$scratch_source"
     cp -a "$PWD/." "$source_dir/"
     cp "$PWD/upstream/dsk_sfc_main.cpp" "$PWD/upstream/dsk_sfc_globalvars.h" "$source_dir/"
     cp "$PWD/upstream/modules/module_finance_sfc.cpp" "$PWD/upstream/modules/module_finance_sfc.h" \
@@ -55,16 +68,26 @@ if [ "$1" = "--sanitize" ]; then
     esac
     # -O1 rather than -O2: the sanitizers want frame pointers and readable
     # stacks, and this build is asked about correctness rather than speed.
-    flags="-fsanitize=address,undefined -fno-omit-frame-pointer -g -O1 -fno-math-errno -msse"
+    flags="-fsanitize=address,undefined -fno-omit-frame-pointer -g -O1 $common"
 fi
 
 obj="$(mktemp -d)"
-trap 'rm -rf "$obj" ${source_dir:+$([ "$source_dir" != "$PWD" ] && echo "$source_dir")}' EXIT
+trap 'rm -rf "$obj" ${scratch_source:+"$scratch_source"}' EXIT
 
 cd "$source_dir"
 export OBJDIR="$obj" FLAGS="$flags"
-ls newmat10/*.cpp auxiliary/*.cpp modules/*.cpp modules/WITCH_input/*.cpp dsk_sfc_main.cpp \
-  | xargs -P "$(nproc)" -I@ bash -c 'g++ -std=c++11 $FLAGS -I. -c "@" -o "$OBJDIR/$(echo "@" | tr / _ | sed "s/\.cpp$/.o/")" 2>/dev/null'
+# dsk_sfc_main.cpp is where this project's own headers are included, so it is
+# the unit -Wall is asked about; newmat10 and rapidjson are upstream's and are
+# compiled as they are. It is also the longest single compile, so it starts
+# first and runs alongside the rest rather than after them.
+#
+# Compiler output is not discarded. A build that fails has to say which file and
+# why, or the link reports an undefined reference with nothing to trace it to.
+g++ -std=c++11 $flags -Wall -I. -c dsk_sfc_main.cpp -o "$obj/dsk_sfc_main.o" &
+main_unit=$!
+ls newmat10/*.cpp auxiliary/*.cpp modules/*.cpp modules/WITCH_input/*.cpp \
+  | xargs -P "$(nproc)" -I@ bash -c 'g++ -std=c++11 $FLAGS -I. -c "@" -o "$OBJDIR/$(echo "@" | tr / _ | sed "s/\.cpp$/.o/")"'
+wait "$main_unit"
 g++ -std=c++11 $flags "$obj"/*.o -o "$output"
 
 echo "built $output"

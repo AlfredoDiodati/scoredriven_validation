@@ -1,0 +1,22 @@
+applications/abm_system.h: the stored layout of the simulated dataset
+float64 build
+
+1. abm_system_transform against the closed form
+   35 periods, constant-growth levels: GDP 0.399202, energy -0.150113, inflation 1.242252,
+   employment 0.020000, interest 1.750000, every period
+
+2. the simulated route against the real data's route
+   255 elements, worst |difference| 2.13e-13
+
+3. the burn-in
+   600 model periods, burn-in 200, reported 400
+
+4. write an archive, read it back
+   13 replicates over a full batch of 10 and a short batch of 3, 12 periods each
+   worst |difference| 0
+
+5. listing the replicates an archive directory holds
+   batches 0 and 2 written, batch 1 absent: 14 replicates listed, ascending yes
+   first 0, last 23
+
+PASSED, 0 failures

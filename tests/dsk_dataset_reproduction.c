@@ -57,6 +57,7 @@ Needs `make model`, `make model-upstream`, and dataset/abm_system.
 
 #include <et_al./frame/csv.h>
 #include <et_al./json.h>
+#include "tests/dsk_scratch.h"
 
 #define MODEL "model/dsk_sfc/dsk_SFC"
 #define UPSTREAM "bin/dsk_SFC_upstream"
@@ -381,5 +382,6 @@ int main(int argc, char **argv) {
 
     free(pair);
     df_free(&design);
+    dsk_scratch_finish(root, !failed);
     return failed ? EXIT_FAILURE : EXIT_SUCCESS;
 }

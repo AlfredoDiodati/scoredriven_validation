@@ -227,5 +227,6 @@ int main(int argc, char **argv) {
     printf("the upstream build repeated itself on %d of %d seeds\n", repeatable, n_seeds);
     printf("%s\n", passed ? "PASSED, 0 failures" : "FAILED");
 
+    dsk_scratch_close(&scratch, passed);
     return passed ? EXIT_SUCCESS : EXIT_FAILURE;
 }

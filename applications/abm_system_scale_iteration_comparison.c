@@ -69,9 +69,11 @@ here.
 Wall time comes from the two runs' own timing files, quoted rather than
 recomputed.
 
-out/abm_system_scale_iteration_comparison.txt holds the summary and
-out/abm_system_scale_iteration_comparison.csv one row per series, for
-whatever plot the summary does not answer. Nothing printed.
+out/abm_system_scale_iteration_comparison_i<base>_i<high>.txt holds the summary
+and the .csv beside it one row per series, for whatever plot the summary does
+not answer. Both are named for the pair of budgets compared, which are
+compile-time constants, so one binary per pair writes one pair of files and
+cannot overwrite another's. Nothing printed.
 
 Requires both trees to exist and to hold the same series. A series present in
 one and missing from the other is counted and skipped rather than aborting the

@@ -298,8 +298,8 @@ int main(void) {
                     /* The convergence flag sits with the diagnostics, which only
                        the full load reads, and it checks the fit was made on y. */
                     if (ok && c == winner) {
-                        int loaded = qvarma_load_fit(&winner_fit, y, cache_path);
-                        assert(loaded && "abm_system_winner_diagnostics: a winner fit has no diagnostics or was fitted to other data");
+                        int winner_loaded = qvarma_load_fit(&winner_fit, y, cache_path);
+                        assert(winner_loaded && "abm_system_winner_diagnostics: a winner fit has no diagnostics or was fitted to other data");
                         winner_converged[row] = winner_fit.is_converged;
                     }
                     mat_free(y);

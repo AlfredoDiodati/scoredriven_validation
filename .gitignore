@@ -49,6 +49,9 @@ model/dsk_sfc/dsk_SFC
 model/dsk_sfc/output/
 
 *.Rmd
+# except the brief the simulation workflow was derived from, which the README
+# points a reader at and which is small.
+!docs/Model_Simulation.Rmd
 
 # dataset/Dati simulati.zip, 226 MB: the archive dataset/simulated/ was
 # unpacked from. The unpacked form is already ignored above and the README

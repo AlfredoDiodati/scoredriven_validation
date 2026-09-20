@@ -164,8 +164,12 @@ SIGN_RESTRICTED = Orientation(
     directory=OUT_DIR / "sign_restricted",
     headers=SIGN_RESTRICTED_HEADERS,
     phrases=SIGN_RESTRICTED_PHRASES,
-    # The two unrestricted shocks are in the full matrix, where their width is
-    # the point, and out of the figures that read one shock at a time.
+    # Which shocks the figures that compare a few side by side use: cumulative,
+    # decomposition and identification. The two unrestricted shocks are left out
+    # of those, and out of the figures that read one shock at a time, because
+    # neither has a name to put above a column. total_grid and impact show all
+    # five regardless, since there the width is the point; they take their range
+    # from headers rather than from either field here.
     matrix_shocks=[1, 2, 3],
     panel_shocks=[1, 2, 3],
     file_stems=["shock_supply", "shock_demand", "shock_monetary"],

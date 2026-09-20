@@ -1,13 +1,21 @@
 # ABM validation with t-QVARMA and a Model Confidence Set
 
-Which parameter configurations of an agent-based macroeconomic model produce
-dynamics that cannot be told apart from US data. The comparison runs through an
-auxiliary model fitted to both: the t-QVARMA of Blazsek, Escribano and Licht
-(2023), a score-driven model that is nonlinear in its updating step while
-keeping a co-integrated block in levels and Student-t innovations. The distance
-between two economies is the distance between the impulse responses their fits
-imply, and the Model Confidence Set of Hansen, Lunde and Nason (2011) decides
-which configurations survive.
+Which parameter configurations of an agent-based macroeconomic model sit
+closest to US data, and which of them cannot be told apart from each other at
+that distance. The comparison runs through an auxiliary model fitted to both:
+the t-QVARMA of Blazsek, Escribano and Licht (2023), a score-driven model that
+is nonlinear in its updating step while keeping a co-integrated block in levels
+and Student-t innovations. The distance between two economies is the distance
+between the impulse responses their fits imply, and the Model Confidence Set of
+Hansen, Lunde and Nason (2011) decides which configurations survive.
+
+The procedure ranks configurations against one another; it does not test
+whether the closest one is close. On this design it is not: 965 of the 1000
+configurations score a worse impulse-response distance than a model whose
+responses are identically zero, and no configuration reproduces the variance of
+the US interest rate or the skewness of US GDP growth.
+`docs/ABM_SYSTEM_MCS_VALIDATION.md`, "What the confidence set does not say",
+has the numbers and where they come from.
 
 The ten steps that produce the result, from simulation to figures, and the
 files each one writes are listed under "The main pipeline" below.
@@ -460,13 +468,15 @@ Scripts in `applications/` that the ten steps do not use:
 - `abm_system_mcs_statistic_comparison.c` reruns step 8 under both statistics
   et_al implements, as a check, and writes
   `out/abm_system_mcs_statistic_comparison.txt` and `.csv`.
-- `abm_system_extract.c` is the older way to fill `dataset/abm_system/`: it
+- `abm_system_extract.c` is the older way to fill a dataset directory: it
   converts the 108 `.Rdata` files under `dataset/simulated/` instead of running
   the simulator. Use one or the other, never both: step 6 fits every
-  subdirectory of `dataset/abm_system/` regardless of what wrote it, so two
+  subdirectory of the dataset directory regardless of what wrote it, so two
   datasets sitting there at once would be fitted together with nothing in the
-  results to say so. `dataset/abm_system_rdata/` holds the older one, moved
-  aside so the design runs could take its place.
+  results to say so. It writes `dataset/abm_system_rdata/`, which is where its
+  output was moved when the design runs took `dataset/abm_system/` over, and it
+  refuses to start if the directory it is about to write into already holds
+  `cop_*` directories. `ABM_SYSTEM_EXTRACT_DIR` overrides where it writes.
 - `abm_system_scale_extract.c`, `abm_system_scale_fit_qvarma.c` and
   `abm_system_scale_iteration_comparison.c` are a throughput study of the
   fitting step on a separate 500 by 1000 dataset.
@@ -482,31 +492,66 @@ Files in `out/` the ten steps do not write:
   `out/abm_system_fit_qvarma_manifest_before_resume.txt` and
   `out/abm_system_mse_qvarma_manifest.txt`, left from the run on the older
   dataset in August 2026.
-- `out/dsk_*`, `out/qvarma_*`, `out/correctness_*` and
+- `out/dsk_*`, `out/qvarma_*`, `out/abm_system_layout_report.txt` and
   `out/small_call_scaling.txt`, written by the tests and studies below.
 - `out/*.log`, what each step wrote to the terminal when it was run in the
   background.
 
 ## Tests
 
-    make test         the auxiliary model computes what it claims to
+    make test         every test script
     make test-stress  the same, including the slow simulation checks
-    make study        parameter recovery from known truths, over sample sizes,
-                      model shapes and parameter regimes
 
-The simulator has six of its own, and they are the gate on any change to it:
+The auxiliary model is et_al's and is tested there, not here: `make test` in an
+et_al clone runs its correctness suite, including the cache and resume
+behaviour `applications/abm_system_fit_qvarma.c` relies on. A copy of that suite
+used to live in this repository and is gone, because it drifted out of date
+against the library it was testing and failed on a contract et_al had since
+changed.
+
+What `make test` runs is one test of this project's own data layout and eleven
+of the simulator. The layout test:
+
+    make test-abm_system_layout             applications/abm_system.h stores and
+                                            returns what it says it does: the
+                                            transformation against its closed
+                                            form, agreement with the route the
+                                            US data takes, the burn-in, and an
+                                            archive round trip
+
+The simulator's eleven are the gate on any change to it:
 
     make test-dsk_build_equivalence         every byte of the economy-wide output
-                                           matches upstream, over three seeds
+                                            matches upstream, over three seeds
     make test-dsk_full_output_equivalence   the same for the twelve per-firm
-                                           files the model writes under -f 1
+                                            files the model writes under -f 1
     make test-dsk_design_equivalence        the same away from the default
-                                           parameters, at four points of the design
+                                            parameters, at four points of the design
+    make test-dsk_dataset_reproduction      the same where the experiment actually
+                                            ran, against the stored archives
     make test-dsk_memory_safety             every run under AddressSanitizer and
-                                           UndefinedBehaviorSanitizer is clean
+                                            UndefinedBehaviorSanitizer is clean
     make test-dsk_ulp_sensitivity           how small a difference in the
-                                           arithmetic those comparisons can see
+                                            arithmetic those comparisons can see
     make test-dsk_long_path                 the filename bug stays fixed
+    make test-dsk_redenomination_invariance counting money in a bigger unit leaves
+                                            the economy where it was
+    make test-dsk_machine_lot_rebase        the same for counting machines in lots
+    make test-dsk_good_unit_invariance      the same for counting the consumption
+                                            good in a bigger unit
+    make test-dsk_bulk_cancellation_distribution
+                                            the bulk cancellation draw is the
+                                            distribution it claims to be
+
+The last four come from the long-horizon work; `docs/DSK_LONG_HORIZON.md`
+explains what each mechanism is for.
+
+    make study        the robustness checks on the pipeline's own result
+    make study-robustness   the same target, under the name that says what it is
+
+Every study reads what the pipeline wrote to `out/` and `dataset/` and none
+rebuilds it, so none runs on a fresh clone. `make study` checks for the dataset,
+the fit cache and the confidence set first and says which is missing.
 
 `test-dsk_build_equivalence` builds the reference itself and then runs it seven
 times for three seeds - once to check the scratch path works, twice per seed to
