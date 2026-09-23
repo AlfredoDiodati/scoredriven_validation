@@ -83,6 +83,14 @@ out/abm_system_irf_loss.csv
 out/abm_system_score_loss.csv
 out/abm_system_score_loss_weighted.csv
 
+# The same three tables again, from the Monte Carlo experiment, which runs the
+# same protocols against a simulated benchmark instead of the US data. Rebuilt
+# by make montecarlo. Its reports, manifests and the record of which run it
+# promoted are small and kept.
+montecarlo/out/irf_loss.csv
+montecarlo/out/score_loss.csv
+montecarlo/out/score_loss_weighted.csv
+
 # Python's bytecode cache, written when the plotting script runs.
 __pycache__/
 

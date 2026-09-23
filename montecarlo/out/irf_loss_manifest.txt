@@ -1,0 +1,7 @@
+1000 samples, 1000 replicates each, 1 spec, loss = MAE between stacked impulse response vectors (horizon 20)
+benchmark: cop_0191 replicate 706, its own cached fit and its own series, and that replicate is held out of every column
+
+p1q1r2: 0 of 1000 replicates dropped for holding a missing cell
+p1q1r2: replicate 706 held out of every column, the benchmark's own seed
+p1q1r2: 0 of 999000 cells missing
+

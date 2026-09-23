@@ -326,6 +326,15 @@ US series is not reproduced anywhere in the design. No configuration of the nine
 parameters this experiment varies reproduces the second moments of the US
 series, let alone the third.
 
+These are moments of runs this project's build of the simulator produced, so
+the reading holds only if that build is the authors'. It is:
+`tests/dsk_tail_replicate_reproduction.c` takes the replicates with the
+heaviest tails in the whole experiment and reruns them in the authors'
+unchanged build at the same configuration and seed, and
+`out/dsk_tail_replicate_reproduction.txt` records sixteen such runs reproduced
+exactly, results file, error log and stored series alike. The thinness above is
+the model's.
+
 None of this makes the confidence set wrong. It makes it an answer to a
 narrower question than the phrase "validation" suggests, and the narrower
 question is the one this document reports. An absolute measure would be the

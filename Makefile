@@ -87,12 +87,19 @@ TEST_HEADERS :=
 # here drifted out of date against the library it was testing and failed on a
 # contract et_al. had since changed, which is worse than not having one.
 # abm_system_layout is this project's own and tests the one header both dataset
-# writers and every reader agree about the stored layout through.
-TEST_STEMS := abm_system_layout dsk_long_path dsk_build_equivalence \
+# writers and every reader agree about the stored layout through;
+# abm_system_dataset_finiteness reads the archives that header wrote and asks
+# whether every value in them is a number. dsk_dataset_reproduction and
+# dsk_tail_replicate_reproduction both rerun the experiment against the authors'
+# build and the archives, and differ only in which runs they pick:
+# configurations spread evenly across the design against the replicates whose
+# tails studies/abm_system_tail_origin.c reads.
+TEST_STEMS := abm_system_layout abm_system_dataset_finiteness dsk_long_path \
+               dsk_build_equivalence \
                dsk_full_output_equivalence dsk_design_equivalence \
                dsk_memory_safety dsk_ulp_sensitivity dsk_redenomination_invariance \
                dsk_machine_lot_rebase dsk_good_unit_invariance \
-               dsk_dataset_reproduction
+               dsk_dataset_reproduction dsk_tail_replicate_reproduction
 # Where the wall time of a t-QVARMA fit goes, and what each way of speeding it
 # up is worth. Measured 2026-08-29 against a 500,000-fit run of
 # abm_system_fit_qvarma; out/fit_speedup_options.txt collects the numbers and
@@ -142,6 +149,15 @@ EXPERIMENT_STEMS := us_qvarma_spec_choice \
                      abm_system_mcs_statistic_comparison \
                      abm_system_winner_irf \
                      throughput_dataset
+# The Monte Carlo experiment: the same three validation protocols with one
+# simulated run promoted to the role the US data plays, so that the procedure
+# is asked a question whose answer is known. It is a pipeline of its own and
+# shares no source with applications/, which stays exactly as it is; what it
+# reuses is applications/'s output, above all the million cached fits, since it
+# estimates nothing. docs/MONTECARLO_VALIDATION.md.
+MONTECARLO_STEMS := benchmark_choice irf_loss score_loss mcs mcs_statistic_comparison \
+                     sweep_irf sweep_score
+
 # Whatever the application scripts share, so editing it rebuilds them.
 APPLICATION_HEADERS := applications/us_data.h applications/abm_system.h
 BIN := bin
@@ -259,6 +275,28 @@ endef
 $(foreach stem,$(APPLICATION_STEMS),$(eval $(call application_target_for_stem,$(stem))))
 $(foreach stem,$(EXPERIMENT_STEMS),$(eval $(call application_target_for_stem,$(stem))))
 
+# montecarlo/ builds the same way applications/ does and writes into its own
+# out/, which is created here rather than by the script, so a fresh clone can
+# run the experiment without a mkdir of its own.
+define montecarlo_target_for_stem
+.PHONY: mc-$(1)
+$(BIN)/$(1): montecarlo/$(1).c $(HEADERS) $(APPLICATION_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
+	$(CC) $(CFLAGS) -DMAT_DOUBLE -fopenmp $(ETAL_CFLAGS) $(INCLUDES) $$< -o $$@ $(ETAL_LIBS)
+mc-$(1): $(BIN)/$(1) | montecarlo/out
+	./$(BIN)/$(1)
+endef
+$(foreach stem,$(MONTECARLO_STEMS),$(eval $(call montecarlo_target_for_stem,$(stem))))
+
+montecarlo/out:
+	@mkdir -p montecarlo/out
+
+# The whole Monte Carlo experiment: choose the benchmark, then the three loss
+# matrices and their confidence sets against it. It reads the fit cache and the
+# dataset and rebuilds neither, so it does not run on a fresh clone.
+.PHONY: montecarlo
+montecarlo: $(addprefix $(BIN)/,$(MONTECARLO_STEMS)) | montecarlo/out
+	./montecarlo/run.sh
+
 # abm_system_simulate is built but never run by a target of its own: with no
 # arguments it simulates the whole design, a million runs and about a fortnight
 # of this machine, which is not something a make target should start.
@@ -362,12 +400,25 @@ $(BIN)/dsk_bulk_cancellation_distribution: tests/dsk_bulk_cancellation_distribut
 test-dsk_bulk_cancellation_distribution: $(BIN)/dsk_bulk_cancellation_distribution | $(OUT)
 	./$(BIN)/dsk_bulk_cancellation_distribution
 
+# abm_system_dataset_finiteness sweeps every archive of the experiment, one
+# configuration per thread, which the rule for tests/%.c does not enable.
+$(BIN)/abm_system_dataset_finiteness: tests/abm_system_dataset_finiteness.c $(APPLICATION_HEADERS) \
+                                      $(ETAL_INSTALLED_HEADERS) | $(BIN)
+	$(CC) $(CFLAGS) -fopenmp $(ETAL_CFLAGS) $(INCLUDES) $< -o $@ $(ETAL_LIBS)
+
 # dsk_dataset_reproduction runs both builds over a sample of the design and
 # compares against the archives the experiment produced. The upstream build is
 # unoptimised, about 35 seconds a run, so the sample is spread over the cores
 # with OpenMP, which the rule for tests/%.c does not enable.
 $(BIN)/dsk_dataset_reproduction: tests/dsk_dataset_reproduction.c $(APPLICATION_HEADERS) \
                                  $(ETAL_INSTALLED_HEADERS) | $(BIN)
+	$(CC) $(CFLAGS) -fopenmp $(ETAL_CFLAGS) $(INCLUDES) $< -o $@ $(ETAL_LIBS)
+
+# dsk_tail_replicate_reproduction sweeps every archive to find the replicates
+# that carry the tails and then runs both builds on those, so it needs OpenMP
+# for the same two reasons.
+$(BIN)/dsk_tail_replicate_reproduction: tests/dsk_tail_replicate_reproduction.c $(APPLICATION_HEADERS) \
+                                        $(ETAL_INSTALLED_HEADERS) | $(BIN)
 	$(CC) $(CFLAGS) -fopenmp $(ETAL_CFLAGS) $(INCLUDES) $< -o $@ $(ETAL_LIBS)
 
 # Every DSK test runs the simulator, so the binaries have to exist first.
@@ -381,6 +432,7 @@ test-dsk_redenomination_invariance: model
 test-dsk_machine_lot_rebase: model
 test-dsk_good_unit_invariance: model
 test-dsk_dataset_reproduction: model model-upstream
+test-dsk_tail_replicate_reproduction: model model-upstream
 
 applications: $(APPLICATION_BINARIES) | $(OUT)
 	@for binary in $(APPLICATION_BINARIES); do ./$$binary || exit 1; done
@@ -388,7 +440,7 @@ applications: $(APPLICATION_BINARIES) | $(OUT)
 bench: $(BENCH_BINARIES) | $(OUT)
 	@for binary in $(BENCH_BINARIES); do ./$$binary || exit 1; done
 
-# Ten of the eleven stems run the simulator, so every build they reach for has
+# Eleven of the thirteen stems run the simulator, so every build they reach for has
 # to exist before the loop starts. The per-stem targets below declare the same
 # prerequisites, but an aggregate that only depended on the test binaries would
 # pass on a tree where a simulator build happened to be left over and fail on a

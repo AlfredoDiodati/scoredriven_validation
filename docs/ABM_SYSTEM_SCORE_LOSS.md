@@ -250,6 +250,22 @@ accepted, at p = 0.1026, with two configurations standing. The next one out,
 `cop_0767`, leaves at p = 0.0002 under MCS_TR, so the boundary is not a close
 call.
 
+**Do not read that as the weighted loss being the better measure.** It was read
+that way here before there was anything to check it against, and
+`docs/MONTECARLO_VALIDATION.md` then checked it. Running all three protocols
+against a simulated benchmark, where the right answer is known because the
+benchmark is a replicate of a known configuration, the impulse-response
+distance returns that configuration alone and both score losses miss it: the
+generating configuration comes 5th under `q'q` and 76th under `LM`, by a factor
+of about 1.8 in mean loss. The weighted loss stopped on an accepted test there
+too, at p = 0.0783, and the set it stopped on did not contain the right answer.
+
+Stopping because a test was accepted means the bootstrap could not separate the
+last few configurations. It carries no information about whether any of them is
+correct. That is one benchmark and not a power calculation, but it is the only
+evidence in this project that bears on which loss identifies a configuration
+when one is definitely there, and it does not favour the score losses.
+
 ### How the three losses rank the configurations
 
 Spearman rank correlation between the per-configuration mean losses, over all

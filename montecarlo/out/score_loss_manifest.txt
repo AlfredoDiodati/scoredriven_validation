@@ -1,0 +1,31 @@
+1000 configurations, 1000 replicates each, 400 periods each, spec p1q1r2
+q is the score of the t-QVARMA log-likelihood at the benchmark's estimate, evaluated on the simulated series
+theta from out/abm_system_fit_qvarma/cop_0191/replicate_706_p1q1r2_fit.json, 42 coordinates, unconstrained scale
+nothing is estimated here: no simulated series is fitted
+benchmark: cop_0191 replicate 706, held out of every column
+montecarlo/out/score_loss.csv holds q'q
+montecarlo/out/score_loss_weighted.csv holds the score statistic q' [T_sim I_1]^-1 q
+
+weighting
+  observed information at the benchmark estimate, -d2 logL/dtheta dtheta', differenced from the analytic gradient over 400 periods of its own series
+  eigenvalues: smallest 6.698585e-01, largest 7.497884e+05, condition 1.119e+06
+  positive definite yes, 0 directions flat against a floor of 6.992e-09
+  scaled by T_sim / T_benchmark = 400 / 400 before inversion, so the loss is on the chi-square scale
+  under the null that a replicate came from the auxiliary model at the benchmark estimate, chi-square with 42 degrees of freedom: mean 42, sd 9.17
+  that calibration holds under the null only - away from it the weighted loss is a distance in a fixed metric, not a per-cell p-value
+  how q'q splits over coordinates of theta, on cop_0001 replicate 0, total 2.4588e+08
+    Omega_inv[4,1]     share 0.3737  cumulative 0.3737
+    Omega_inv[4,0]     share 0.3602  cumulative 0.7339
+    alpha2[0,0]        share 0.0663  cumulative 0.8002
+    alpha1[0,0]        share 0.0262  cumulative 0.8264
+    Omega_inv[3,1]     share 0.0228  cumulative 0.8492
+  how the statistic splits over eigen-directions, on cop_0001 replicate 0, total 3.8056e+03
+    direction  0  eigenvalue 6.6986e-01  share 0.3012  cumulative 0.3012
+    direction 10  eigenvalue 4.4284e+02  share 0.1542  cumulative 0.4554
+    direction  1  eigenvalue 2.0581e+00  share 0.1455  cumulative 0.6009
+    direction 40  eigenvalue 6.3572e+05  share 0.0588  cumulative 0.6597
+    direction 24  eigenvalue 4.1206e+03  share 0.0491  cumulative 0.7088
+
+0 of 1000 replicates dropped for holding a missing cell
+replicate 706 held out of every column, the benchmark's own seed
+0 of 999000 cells missing

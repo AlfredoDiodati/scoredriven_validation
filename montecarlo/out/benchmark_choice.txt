@@ -1,0 +1,23 @@
+Which simulated run stands in for the real data in montecarlo/
+
+step 1, the candidate pool: every configuration a real-data confidence set kept, MCS_TR
+  out/abm_system_mcs_statistic_comparison.csv kept 1
+  out/abm_system_mcs_statistic_comparison_score.csv kept 1
+  out/abm_system_mcs_statistic_comparison_score_weighted.csv kept 2
+  pool of 4: cop_0191 cop_0931 cop_0409 cop_0599
+
+step 2, how often each one's fits converged
+  configuration     fits  converged         rate
+  cop_0191         1000        449        44.9%
+  cop_0931         1000        441        44.1%
+  cop_0409         1000        229        22.9%
+  cop_0599         1000        332        33.2%
+  chosen: cop_0191
+
+step 3, its converged replicates by gradient norm, taking the first whose information matrix is positive definite
+  replicate         log_lik     gradient  smallest eigval    condition     usable
+  706              124.6637    4.058e-03       6.6986e-01    1.119e+06        yes
+
+benchmark: cop_0191 replicate 706
+  log-likelihood 124.6637, gradient norm 4.058000e-03, converged, its own fit
+  replicate 706 is seed 707 of the model, and every configuration's replicate 706 is held out of the validation set

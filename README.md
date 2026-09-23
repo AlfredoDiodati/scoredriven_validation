@@ -27,9 +27,15 @@ the result on the design experiment.
 `docs/ABM_SYSTEM_SCORE_LOSS.md` describes a second route to the same confidence
 set, one that fits nothing to the simulated data: it scores each simulated
 series by the score of the auxiliary model's log-likelihood at the real data's
-own estimate, weighted by the inverse information matrix. It is the only one of
-the three losses this project computes under which the confidence set stops
-because an equivalence test is accepted rather than because elimination ran out.
+own estimate, weighted by the inverse information matrix. On the US data it is
+the only one of the three losses under which the confidence set stops because
+an equivalence test is accepted rather than because elimination ran out; on a
+simulated benchmark with a known answer it is also the one that misses that
+answer by the widest margin, which `docs/MONTECARLO_VALIDATION.md` records.
+`docs/MONTECARLO_VALIDATION.md` describes the check that the validation
+procedure recovers an answer it already knows: one simulated run replaces the
+US data, and the confidence set should return the configuration that run came
+from.
 `docs/DATA_DOCUMENTATION.md` records where the US series come from and how each
 one is transformed. `docs/ABM_SYSTEM_SIMULATION.md` describes the design the
 simulations run over and how they are stored, and
@@ -530,6 +536,26 @@ agree on which configuration is closest.
 | `out/abm_system_score_loss_weighted.csv` | the score statistic, same shape |
 | `out/abm_system_score_loss_manifest.txt` | the information matrix's spectrum and conditioning, how the statistic splits over eigen-directions, and every missing cell |
 
+### Does the procedure recover an answer it already knows
+
+Neither route above can be checked, because nobody knows which configuration is
+really closest to the United States. `montecarlo/` asks the same question with
+the answer known: one simulated run is promoted to the role the US data plays,
+every loss is measured against it, and the confidence set should come back
+holding the configuration that run was drawn from.
+
+    make montecarlo            the whole experiment, results in montecarlo/out/
+
+It is a pipeline of its own under `montecarlo/`, sharing no source with
+`applications/`, and it fits nothing: the benchmark's parameters and every
+replicate's come from the fit cache of step 6, which is the output it reuses
+and the reason it takes minutes. `cop_0191` replicate
+706 is what it promotes, chosen by `montecarlo/benchmark_choice.c` on grounds
+recorded in `montecarlo/out/benchmark_choice.txt`, and replicate 706 of every
+configuration is held out of the validation set because every configuration
+shares the same seeds. `docs/MONTECARLO_VALIDATION.md` is the write-up, and
+says what the experiment cannot show as well as what it can.
+
 ### Not part of the main pipeline
 
 Scripts in `applications/` that the ten steps do not use:
@@ -587,8 +613,8 @@ used to live in this repository and is gone, because it drifted out of date
 against the library it was testing and failed on a contract et_al had since
 changed.
 
-What `make test` runs is one test of this project's own data layout and eleven
-of the simulator. The layout test:
+What `make test` runs is two tests of this project's own data and eleven of the
+simulator. The two data tests:
 
     make test-abm_system_layout             applications/abm_system.h stores and
                                             returns what it says it does: the
@@ -596,8 +622,13 @@ of the simulator. The layout test:
                                             form, agreement with the route the
                                             US data takes, the burn-in, and an
                                             archive round trip
+    make test-abm_system_dataset_finiteness every value in dataset/abm_system is a
+                                            finite number, every block has the
+                                            shape the layout promises, and every
+                                            configuration holds each replication
+                                            once. Needs the experiment's archives
 
-The simulator's eleven are the gate on any change to it:
+The simulator's twelve are the gate on any change to it:
 
     make test-dsk_build_equivalence         every byte of the economy-wide output
                                             matches upstream, over three seeds
@@ -607,6 +638,11 @@ The simulator's eleven are the gate on any change to it:
                                             parameters, at four points of the design
     make test-dsk_dataset_reproduction      the same where the experiment actually
                                             ran, against the stored archives
+    make test-dsk_tail_replicate_reproduction
+                                            the same on the replicates that carry
+                                            the tails, which is where a change
+                                            acting only in extreme states would
+                                            show. Needs the experiment's archives
     make test-dsk_memory_safety             every run under AddressSanitizer and
                                             UndefinedBehaviorSanitizer is clean
     make test-dsk_ulp_sensitivity           how small a difference in the

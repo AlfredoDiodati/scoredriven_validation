@@ -1,0 +1,25 @@
+Finiteness and completeness of dataset/abm_system
+
+configurations cop_0001 .. cop_1000, 1000 replications each, 5 series x 400 periods
+
+
+replications read               1000000 of 1000000
+values read                     2000000000
+NaN values                      0
+infinite values                 0
+configurations with either      0
+configurations absent           0
+configurations short            0
+archives absent                 0
+blocks of the wrong shape       0
+indices repeated                0
+indices out of range            0
+
+range of each series over everything read, context rather than a verdict
+  GDP_growth               -27.3781         18.6374
+  EN_growth                -27.6652         20.1249
+  Employment_change        -22.7906         15.2581
+  Inflation                -3.14111          2.5773
+  InterestRate             2.04e-06         2.69829
+
+PASSED

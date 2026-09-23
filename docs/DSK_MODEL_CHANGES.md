@@ -48,6 +48,8 @@ the new headers.
     make test-dsk_machine_lot_rebase        counting machines in bigger lots leaves the economy where it was
     make test-dsk_good_unit_invariance      counting the good in a bigger unit changes nothing else
     make test-dsk_dataset_reproduction      the same output as the authors' build and as the experiment's archives
+    make test-dsk_tail_replicate_reproduction
+                                            the same on the replicates whose tails the study of the tails reads
 
 "Proving the model was not changed" below explains what each one does and what
 none of them covers.
@@ -809,7 +811,7 @@ unchanged, compiled at the flags they ship. `make model-upstream` builds it from
 touched. `make model` builds the version this project runs. Both come from the
 same vendored tree and neither reaches the network.
 
-Six tests. Each answers one question.
+Eight tests. Each answers one question.
 
 | test | question it answers |
 |---|---|
@@ -820,6 +822,7 @@ Six tests. Each answers one question.
 | `dsk_ulp_sensitivity` | how small a difference would those file comparisons actually catch? |
 | `dsk_long_path` | does the filename bug that was fixed stay fixed? |
 | `dsk_dataset_reproduction` | does it still compute what the authors compute, and still produce the archives the experiment ran on? |
+| `dsk_tail_replicate_reproduction` | does it still do so on the replicates that carry the tails, rather than on an even sample of the design? |
 
     make test-dsk_build_equivalence
     make test-dsk_full_output_equivalence
@@ -827,8 +830,10 @@ Six tests. Each answers one question.
     make test-dsk_memory_safety
     make test-dsk_ulp_sensitivity
     make test-dsk_long_path
+    make test-dsk_dataset_reproduction
+    make test-dsk_tail_replicate_reproduction
 
-All six pass. What follows is what each one actually does.
+All eight pass. What follows is what each one actually does.
 
 ### The economy-wide output
 
@@ -1079,6 +1084,75 @@ every results file and every error log identical to the authors' build, every
 run reproducing the stored archives exactly, and no long-horizon log written.
 That is 320 of the experiment's million pairs, and 640,000 stored numbers.
 
+### Where the tails are
+
+The sample above is spread evenly across the design and takes the first few
+replications of each configuration. Tails are not spread evenly over
+replicates. `out/abm_system_tail_origin_report.txt` reports that the simulated
+series are thinner tailed than the US ones, and it reads the archives this
+build wrote, so a rewrite that thinned a tail would show up there as a property
+of the model. The rewrites that could act on a few extreme runs rather than on
+all of them are the long-horizon ones in `docs/DSK_LONG_HORIZON.md`, which
+change nothing until a threshold is crossed, so the extreme replicates are both
+where a difference would first appear and where an even sample does not look.
+
+`tests/dsk_tail_replicate_reproduction.c` chooses its sample by how heavy a
+replicate's tails are. It sweeps every replicate of every configuration, read
+only, and scores each one on two criteria, because a replicate can carry a
+large fourth moment with no single large observation and the other way round:
+the largest excess kurtosis over the six series the study uses, and the largest
+absolute deviation from the mean in standard deviations over those series and
+all periods. The six are the five stored series and the first difference of the
+interest rate. The top twelve by each criterion are then run in both builds and
+put through the same four requirements as the test above.
+
+Measured on 2026-09-23, 16 threads, the machine otherwise idle. All 1000
+configurations and all 1,000,000 replicates swept in 0.6 minutes, the top
+twelve by each criterion taken, 16 distinct runs, 1.5 minutes on the runs.
+Every results file and every error log identical to the authors' build, every
+run reproducing its stored archive exactly, and no long-horizon log written.
+`out/dsk_tail_replicate_reproduction.txt` holds the run's own report.
+
+Where the selection sits in the two distributions, over all 1,000,000
+replicates:
+
+| criterion | median | p99 | max |
+|---|---:|---:|---:|
+| heaviest kurtosis | 0.995 | 8.527 | 53.89 |
+| largest deviation | 4.168 | 7.054 | 11.89 |
+
+The sixteen runs, with the rank each holds on each criterion out of the
+1,000,000. Every one was reproduced exactly:
+
+| configuration | replicate | seed | heaviest kurtosis | rank | largest deviation | rank |
+|---|---:|---:|---:|---:|---:|---:|
+| `cop_0817` | 77 | 78 | 53.89 | 1 | 11.89 | 1 |
+| `cop_0349` | 36 | 37 | 45.16 | 3 | 11.24 | 2 |
+| `cop_0540` | 23 | 24 | 41.55 | 4 | 11.00 | 3 |
+| `cop_0248` | 574 | 575 | 36.18 | 9 | 10.89 | 4 |
+| `cop_0089` | 266 | 267 | 39.46 | 5 | 10.88 | 5 |
+| `cop_0857` | 601 | 602 | 46.30 | 2 | 10.83 | 6 |
+| `cop_0262` | 26 | 27 | 35.63 | 10 | 10.76 | 7 |
+| `cop_0606` | 449 | 450 | 34.24 | 17 | 10.64 | 8 |
+| `cop_0333` | 537 | 538 | 37.36 | 7 | 10.62 | 9 |
+| `cop_0290` | 576 | 577 | 32.14 | 27 | 10.59 | 10 |
+| `cop_0497` | 250 | 251 | 32.52 | 25 | 10.58 | 11 |
+| `cop_0738` | 297 | 298 | 33.46 | 21 | 10.57 | 12 |
+| `cop_0544` | 113 | 114 | 38.83 | 6 | 10.54 | 13 |
+| `cop_0895` | 842 | 843 | 37.19 | 8 | 10.25 | 30 |
+| `cop_0488` | 521 | 522 | 34.88 | 11 | 10.16 | 35 |
+| `cop_0461` | 153 | 154 | 34.69 | 12 | 10.05 | 44 |
+
+The heaviest replicate in the experiment carries excess kurtosis 53.89 where
+the median replicate carries 0.995, and the selection reaches replicate 842 in
+one configuration and 601 in another, which a sample of the first few
+replications never gets near.
+
+What this adds is not more coverage but coverage of a particular place. A pass
+says the tail-carrying runs are the authors' own runs, so the thinness the
+study reports is the model's rather than this project's. It says nothing about
+whether the study reads those runs correctly.
+
 ### What these tests do not cover
 
 Stated plainly, because a reader should not have to work it out.
@@ -1086,7 +1160,8 @@ Stated plainly, because a reader should not have to work it out.
 **Coverage is a sample, not a proof.** Three seeds for the economy-wide
 comparison, two for the per-firm files, one seed at each of four parameter
 points for the design comparison, three seeds at three points under the
-sanitizers. The experiment runs a thousand parameter settings times a thousand
+sanitizers, 320 pairs spread across the design, and sixteen runs chosen for
+their tails. The experiment runs a thousand parameter settings times a thousand
 seeds. What the tests establish is that the two programs agree everywhere they
 have been compared. They are not a proof over the whole space, and no feasible
 test would be.

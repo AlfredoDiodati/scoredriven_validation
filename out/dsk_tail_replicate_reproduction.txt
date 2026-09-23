@@ -1,0 +1,41 @@
+The replicates that carry the tails, against the authors' build and against
+the archives studies/abm_system_tail_origin.c reads.
+
+1000 configurations, 1000000 replicates swept in 0.6 minutes.
+Top 12 by each criterion, 16 distinct runs, 16 threads, 1.5 minutes of
+wall clock on the runs.
+Seeds are the replicate number plus one, as the experiment was run.
+
+the two criteria over everything swept, context rather than a verdict
+  criterion           median       p99       max
+  heaviest kurtosis     0.995     8.527     53.89
+  largest deviation     4.168     7.054     11.89
+
+the runs compared, with their rank on each criterion
+  configuration replicate seed  kurtosis  rank  deviation  rank  verdict
+  cop_0817             77   78     53.89     1      11.89     1  reproduced
+  cop_0349             36   37     45.16     3      11.24     2  reproduced
+  cop_0540             23   24     41.55     4         11     3  reproduced
+  cop_0248            574  575     36.18     9      10.89     4  reproduced
+  cop_0089            266  267     39.46     5      10.88     5  reproduced
+  cop_0857            601  602      46.3     2      10.83     6  reproduced
+  cop_0262             26   27     35.63    10      10.76     7  reproduced
+  cop_0606            449  450     34.24    17      10.64     8  reproduced
+  cop_0333            537  538     37.36     7      10.62     9  reproduced
+  cop_0290            576  577     32.14    27      10.59    10  reproduced
+  cop_0497            250  251     32.52    25      10.58    11  reproduced
+  cop_0738            297  298     33.46    21      10.57    12  reproduced
+  cop_0544            113  114     38.83     6      10.54    13  reproduced
+  cop_0895            842  843     37.19     8      10.25    30  reproduced
+  cop_0488            521  522     34.88    11      10.16    35  reproduced
+  cop_0461            153  154     34.69    12      10.05    44  reproduced
+
+runs compared                   16
+results files against upstream  16 compared, 0 differing
+error logs against upstream     16 compared, 0 differing
+runs against the archives       16 compared, 0 differing
+archives missing                0
+long-horizon logs written       0 (must be 0)
+runs that did not complete      0
+
+PASSED
