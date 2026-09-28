@@ -1,0 +1,48 @@
+Whether the cross-section of firms behind GDP is one a central limit theorem
+acts on.
+
+5 configurations of the design, seeds 1 to 5, periods 201 to the end of
+each run. The two firm types are kept apart.
+Anderson-Darling null simulated from 100000 Gaussian samples at each firm
+count, seed 20260923.
+
+PART 1. The cross-section of output levels at a date, averaged over the
+periods of a run and then
+over the runs. Concentration is H * N: 1 when every firm is the same size,
+N when one firm is everything. AD<.05 is 0.05 under a Gaussian
+cross-section.
+
+  firm type      N   runs   skewness  exc kurt  concentr   AD<.05
+  K-firms       20     25     2.6201    7.1019     5.757   0.9384
+  C-firms      200     25    -0.9945    1.9339     1.066   0.9982
+
+Whether the terms move together, and what the sum inherits. The average
+correlation is over the pairs of firm output changes within a run. The
+effective count is N / (1 + (N - 1) rho). A sum of m independent draws
+from the cross-section would have skewness gamma / sqrt(m) and excess
+kurtosis kappa / m.
+
+  firm type      N   mean rho  effective N   sum skew at N  sum kurt at N  sum kurt at eff
+  K-firms       20    -0.0024        20.94          0.5859         0.3551           0.3392
+  C-firms      200    -0.0008       236.37         -0.0703         0.0097           0.0082
+
+PART 2. The cross-section of changes, which is what GDP's change is a sum
+of. Averaged over the periods of a run and then over the runs.
+
+  firm type      N   runs   exc kurt of change  concentr of |change|
+  K-firms       20     25               3.6034                 3.028
+  C-firms      200     25              14.4586                 3.103
+
+GDP growth three ways, over the 400 quarters of each run, averaged over the
+runs. 'as it stands' is the series dataset/abm_system reports.
+'standardised' divides each quarter by sqrt(N) times that quarter's own
+cross-sectional spread, which is what a central limit theorem acting at
+each date separately would leave. 'dispersion alone' is the excess
+kurtosis a Gaussian whose variance moved like this one's would have.
+
+  quantity                    skewness   exc kurt
+  GDP growth as it stands       0.0093     0.5711
+  standardised                  0.0777     0.1871
+  dispersion alone                         0.6345
+
+Every run on its own is in out/abm_system_micro_clt_by_run.csv and out/abm_system_micro_clt_growth.csv.

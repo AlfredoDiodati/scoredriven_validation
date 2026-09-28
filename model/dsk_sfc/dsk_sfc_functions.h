@@ -77,6 +77,9 @@ void GENFILEVALIDATION12(char *path, const char *s25, char const* seednumber);
 
 //  Writing output
 void WRITEPROD(void);
+void WRITEQUANTITY(void);
+void GENFILEQUANTITY1(char *path, const char *s, char const* desc);
+void GENFILEQUANTITY2(char *path, const char *s, char const* desc);
 void WRITEDEB(void);
 void WRITENW(void);
 

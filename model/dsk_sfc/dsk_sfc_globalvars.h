@@ -14,6 +14,7 @@
 #include <utility>
 
 int              fulloutput;                                 // Dummy indicating whether full output is saved
+int              microoutput;                                // Dummy indicating whether per-firm output quantities are saved
 long int         seed;				                         // Seed for random number generation
 long int         *p_seed;			                         // Pointer to seed            
 int              cerr_enabled;                               // Determines whether error messages to console are printed to console
@@ -693,6 +694,8 @@ char filename22[PATH_MAX];                                         // File "vali
 char filename23[PATH_MAX];                                         // File "validation10" (inv_val10)
 char filename24[PATH_MAX];                                         // File "validation10" (inv_val10)
 char filename25[PATH_MAX];                                         // File "validation10" (inv_val10)
+char filename_micro1[PATH_MAX];                                    // File "Q1all" (inv_q1all)
+char filename_micro2[PATH_MAX];                                    // File "Q2all" (inv_q2all)
 char errorfilename[PATH_MAX];                                      // Name of error file
 
 //WITCH inputs

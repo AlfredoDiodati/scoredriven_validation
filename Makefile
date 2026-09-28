@@ -82,6 +82,10 @@ endif
 # on an et_al. change is already covered by ETAL_INSTALLED_HEADERS above.
 HEADERS :=
 TEST_HEADERS :=
+# The laws and their fits live in one header, so editing it has to rebuild
+# the test that checks them and the study that uses them. The generic rules
+# below know about tests/ and studies/ sources only.
+MARGINAL_LAWS_HEADER := studies/marginal_laws.h
 # Every stem here is the DSK simulator's. The auxiliary model lives in the
 # installed et_al. and its correctness suite lives there with it; a copy kept
 # here drifted out of date against the library it was testing and failed on a
@@ -99,7 +103,8 @@ TEST_STEMS := abm_system_layout abm_system_dataset_finiteness dsk_long_path \
                dsk_full_output_equivalence dsk_design_equivalence \
                dsk_memory_safety dsk_ulp_sensitivity dsk_redenomination_invariance \
                dsk_machine_lot_rebase dsk_good_unit_invariance \
-               dsk_dataset_reproduction dsk_tail_replicate_reproduction
+               dsk_dataset_reproduction dsk_tail_replicate_reproduction \
+               marginal_laws_correctness lp_system_transform
 # Where the wall time of a t-QVARMA fit goes, and what each way of speeding it
 # up is worth. Measured 2026-08-29 against a 500,000-fit run of
 # abm_system_fit_qvarma; out/fit_speedup_options.txt collects the numbers and
@@ -124,7 +129,10 @@ STUDY_STEMS := qvarma_stuck_fits qvarma_conditioning qvarma_convergence_criteria
                us_qvarma_nu_sensitivity abm_system_winner_diagnostics \
                abm_system_winner_nu_profile abm_system_winner_nu_likelihood_scan \
                abm_system_winner_tail_comparison abm_system_tail_origin \
-               abm_system_seed_correlation abm_system_winner_normality
+               abm_system_gaussian_convergence abm_system_micro_clt \
+               abm_system_stable_tails abm_system_marginal_fit \
+               abm_system_seed_correlation abm_system_winner_normality lp_recovery_diagnostics \
+               qvarma_recovery_diagnostics
 # us_prepare_data has to come first: it is the only script that reads
 # us_real.csv's Unemployment and Des_Energy_demand columns, and it writes
 # out/us_system.csv, which us_data.h reads back. The order here is what makes
@@ -144,7 +152,9 @@ APPLICATION_STEMS := us_prepare_data abm_system_design
 # app-<stem> rule - which would build one unnamed binary at the default budget -
 # would give a second way to write the same tree.
 EXPERIMENT_STEMS := us_qvarma_spec_choice \
-                     abm_system_convert_rdata abm_system_fit_qvarma \
+                     abm_system_convert_rdata abm_system_fit_qvarma abm_system_fit_lp \
+                     us_lp_fit abm_system_lp_irf_loss abm_system_lp_mcs \
+                     abm_system_micro_simulate \
                      abm_system_irf_loss abm_system_score_loss abm_system_mcs \
                      abm_system_mcs_statistic_comparison \
                      abm_system_winner_irf \
@@ -156,10 +166,11 @@ EXPERIMENT_STEMS := us_qvarma_spec_choice \
 # reuses is applications/'s output, above all the million cached fits, since it
 # estimates nothing. docs/MONTECARLO_VALIDATION.md.
 MONTECARLO_STEMS := benchmark_choice irf_loss score_loss mcs mcs_statistic_comparison \
-                     sweep_irf sweep_score
+                     sweep_irf sweep_score lp_irf_loss lp_mcs lp_sweep
 
 # Whatever the application scripts share, so editing it rebuilds them.
-APPLICATION_HEADERS := applications/us_data.h applications/abm_system.h
+APPLICATION_HEADERS := applications/us_data.h applications/abm_system.h applications/lp_system.h \
+                       applications/abm_system_lp.h
 BIN := bin
 OUT := out
 
@@ -195,6 +206,13 @@ all: $(TEST_BINARIES)
 
 $(BIN) $(OUT):
 	mkdir -p $@
+
+$(BIN)/marginal_laws_correctness: $(MARGINAL_LAWS_HEADER)
+$(BIN)/lp_system_transform: applications/lp_system.h
+$(BIN)/lp_recovery_diagnostics: applications/lp_system.h applications/abm_system_lp.h montecarlo/benchmark.h \
+                                 studies/recovery_noise.h
+$(BIN)/qvarma_recovery_diagnostics: applications/abm_system.h montecarlo/benchmark.h studies/recovery_noise.h
+$(BIN)/abm_system_marginal_fit: $(MARGINAL_LAWS_HEADER)
 
 $(BIN)/%: tests/%.c $(HEADERS) $(TEST_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
 	$(CC) $(CFLAGS) $(ETAL_CFLAGS) $(INCLUDES) $< -o $@ $(ETAL_LIBS)
@@ -290,12 +308,23 @@ $(foreach stem,$(MONTECARLO_STEMS),$(eval $(call montecarlo_target_for_stem,$(st
 montecarlo/out:
 	@mkdir -p montecarlo/out
 
+# The local-projection scripts read the cache through one shared header, which
+# the rule above does not know about.
+$(addprefix $(BIN)/,lp_irf_loss lp_mcs lp_sweep): applications/abm_system_lp.h montecarlo/benchmark.h
+
 # The whole Monte Carlo experiment: choose the benchmark, then the three loss
 # matrices and their confidence sets against it. It reads the fit cache and the
 # dataset and rebuilds neither, so it does not run on a fresh clone.
 .PHONY: montecarlo
 montecarlo: $(addprefix $(BIN)/,$(MONTECARLO_STEMS)) | montecarlo/out
 	./montecarlo/run.sh
+
+# The same experiment with the local projections as the auxiliary model, against
+# the benchmark montecarlo already chose. It reads out/abm_system_fit_lp/, which
+# make app-abm_system_fit_lp writes, and rebuilds neither that nor the dataset.
+.PHONY: montecarlo-lp
+montecarlo-lp: $(addprefix $(BIN)/,lp_irf_loss lp_mcs) | montecarlo/out
+	./montecarlo/lp_run.sh
 
 # abm_system_simulate is built but never run by a target of its own: with no
 # arguments it simulates the whole design, a million runs and about a fortnight
@@ -332,6 +361,26 @@ app-abm_system_score_loss: app-us_qvarma_spec_choice
 app-abm_system_mcs: app-abm_system_irf_loss
 app-abm_system_mcs_statistic_comparison: app-abm_system_irf_loss app-abm_system_score_loss
 app-abm_system_winner_irf: app-abm_system_mcs
+# The local-projection route against the US data. The simulated fits come from
+# app-abm_system_fit_lp, which, like app-abm_system_fit_qvarma, is not rerun
+# as a prerequisite.
+app-us_lp_fit: app-us_prepare_data
+app-abm_system_lp_irf_loss: app-us_lp_fit
+app-abm_system_lp_mcs: app-abm_system_lp_irf_loss
+
+# The same route on R's levels, the collaborator's transformation, every step
+# run with --r-levels and every output carrying _r_levels. The simulated fits
+# take minutes and are, like the default ones, not a prerequisite of the loss.
+.PHONY: app-abm_system_fit_lp_r_levels app-us_lp_fit_r_levels app-abm_system_lp_r_levels_irf_loss \
+        app-abm_system_lp_r_levels_mcs
+app-abm_system_fit_lp_r_levels: $(BIN)/abm_system_fit_lp | $(OUT)
+	./$(BIN)/abm_system_fit_lp --r-levels
+app-us_lp_fit_r_levels: $(BIN)/us_lp_fit app-us_prepare_data | $(OUT)
+	./$(BIN)/us_lp_fit --r-levels
+app-abm_system_lp_r_levels_irf_loss: $(BIN)/abm_system_lp_irf_loss app-us_lp_fit_r_levels | $(OUT)
+	./$(BIN)/abm_system_lp_irf_loss --r-levels
+app-abm_system_lp_r_levels_mcs: $(BIN)/abm_system_lp_mcs app-abm_system_lp_r_levels_irf_loss | $(OUT)
+	./$(BIN)/abm_system_lp_mcs --r-levels
 
 # One throughput run per solver budget. 86.85% of the 500,000 fits at a cap of
 # 2000 stopped at the cap, so what a larger budget costs and what it moves is

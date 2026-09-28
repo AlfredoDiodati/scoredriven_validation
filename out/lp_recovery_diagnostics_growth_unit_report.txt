@@ -1,0 +1,44 @@
+Why the local projections do not recover the stand-in's configuration
+
+Data: dataset/abm_system, 1000 configurations x 1000 runs, 397 periods each after R's transform.
+Stand-in for the real data: cop_0191 run 706; run 706 of every configuration left out.
+Local projections: 4 lags, horizons 0 to 15, recursive ordering GDP, Employment, Inflation, InterestRate, Energy; state weight from the HP cycle (lambda 1600) of the 4-period moving average of the GDP row, logistic slope 2, lagged one period.
+Loss: mean absolute difference over the 400 response values (5 responses x 16 horizons x 5 shocks), unless stated.
+Confidence set: MCS_TR, level 0.05, 10000 bootstrap resamples of single runs, bootstrap variance, et_al seed 123.
+Repetitions: runs 0 to 99 of cop_0191 each take the stand-in's place in turn, linear model only, that run left out of every configuration.
+
+
+Variant growth_unit: the stored series the t-QVARMA is fitted on, in its order (GDP growth, energy growth, employment change, inflation, interest rate), unit shocks; state weight as in R
+  runs whose fit had no responses or a non-finite one: 0
+
+  stand-in cop_0191 run 706
+  linear                       set of 1: cop_0191
+                               cop_0191 in the set, rank 1 of 1000 by mean loss (0.6892); smallest mean loss cop_0191 0.6892
+  state 1                      set of 1: cop_0191
+                               cop_0191 in the set, rank 1 of 1000 by mean loss (1.336); smallest mean loss cop_0191 1.336
+  state 2                      set of 3: cop_0191 cop_0437 cop_0832
+                               cop_0191 in the set, rank 3 of 1000 by mean loss (1.431); smallest mean loss cop_0437 1.408
+
+  5. Noise against signal, linear model, stand-in cop_0191 run 706
+  cop_0191: mean loss 0.6892, distance 0.454, scatter 0.5063 (the stand-in's configuration)
+  cop_0191: mean loss 0.6892, distance 0.454, scatter 0.5063 (smallest mean loss)
+  over the 1000 configurations: distance median 1.654 (min 0.454, max 305), scatter median 1.292 (min 0.5054, max 127.2)
+  Spearman correlation over configurations: mean loss with distance 0.985, with scatter 0.970
+  variance between configurations over variance within, per entry (385 of 400 entries vary): median 0.0483, 10th percentile 0.00417, 90th percentile 4.2
+  an all-zero response is at 0.5941 from the stand-in; 0 of 1000 configurations have a smaller mean loss
+  share of cop_0191's loss by response (row) and shock (column), percent:
+                               GDP_growth          EN_growth  Employment_change          Inflation       InterestRate
+    GDP_growth                        0.5                2.3                3.2                7.6               15.7
+    EN_growth                         0.5                2.3                3.1                7.2               16.0
+    Employment_change                 0.4                2.2                2.9                7.2               14.2
+    Inflation                         0.1                0.5                0.7                1.7                3.9
+    InterestRate                      0.1                0.5                0.7                1.3                5.4
+  share of cop_0191's loss by response (row) and shock (column), percent:
+                               GDP_growth          EN_growth  Employment_change          Inflation       InterestRate
+    GDP_growth                        0.5                2.3                3.2                7.6               15.7
+    EN_growth                         0.5                2.3                3.1                7.2               16.0
+    Employment_change                 0.4                2.2                2.9                7.2               14.2
+    Inflation                         0.1                0.5                0.7                1.7                3.9
+    InterestRate                      0.1                0.5                0.7                1.3                5.4
+
+  linear model, runs 0 to 99 of cop_0191 as the stand-in: cop_0191 in the set 90 times of 100, smallest mean loss 86 times

@@ -792,6 +792,50 @@ bytes and requires both that it completes and that its output matches a run
 from a short path, since a name that overflowed into a neighbouring global
 could have changed a number as easily as crashed.
 
+### The per-firm output quantities GDP is a sum of
+
+This one adds an output file. It changes no number, and it is not a speed
+change.
+
+`GDP_r(1) = Q1tot * dim_mach + Q2tot` in `module_macro_sfc.cpp`, with `Q1tot`
+and `Q2tot` the sums over the 20 K-firms' and 200 C-firms' output. So GDP is a
+sum over 220 firms, and that cross-section is what a central limit theorem
+would act on. `-f 1` writes each firm's productivity, energy efficiency, net
+worth and debt, and no firm's output, so the cross-section was not recoverable
+from anything the model wrote.
+
+`-m 1` now writes it, into `Q1all_<run>_<seed>.txt` and
+`Q2all_<run>_<seed>.txt`, one row per period and one column per firm. The write
+sits in `MACRO()` where `WRITEPROD` and `WRITEDEB` do, which is the point where
+`Q1` and `Q2` are final and immediately before `GDP_r(1)` is formed from them.
+
+It is a switch of its own rather than an extension of `-f 1`. Adding a file to
+what `-f 1` writes would make `tests/dsk_full_output_equivalence.c` fail by
+design: that test requires both builds to write the same set of names, and the
+upstream build has no such file. With a separate switch, off by default, every
+existing mode writes exactly what it wrote before.
+
+Changed: `dsk_sfc_globalvars.h` (the flag and two filename buffers),
+`dsk_sfc_functions.h` (three declarations), `dsk_sfc_main.cpp` (the command
+line option, two name builders and the writer), `modules/module_macro_sfc.h`
+and `modules/module_macro_sfc.cpp` (the call).
+
+Checked three ways, 2026-09-23:
+
+- `tests/dsk_build_equivalence.c`: 3 of 3 seeds byte-identical to the authors'
+  build, and the upstream build repeated itself on 3 of 3.
+- `tests/dsk_full_output_equivalence.c`: 28 files compared over 2 seeds, 0
+  differing, so the `-f 1` file set is unchanged.
+- The identity itself: over the 600 periods of one run at the default
+  parameters, the 220 firm rows summed back with `dim_mach = 40` against the
+  GDP column of the aggregate file. Largest absolute difference 5.7e-9 on
+  values between 2.4e5 and 1.3e6, which is the ten-decimal rounding of the
+  text output.
+
+`applications/abm_system_micro_simulate.c` is what uses it, and
+`studies/abm_system_micro_clt.c` and `studies/abm_system_stable_tails.c` read
+what it writes.
+
 ## Proving the model was not changed
 
 Everything above is a speed change. None of it is allowed to change a number the

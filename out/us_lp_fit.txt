@@ -1,0 +1,11 @@
+Local projections on the US data
+
+data: out/us_system.csv through us_system_growth_block, then the stored series: GDP_growth, EN_growth, Employment_change, Inflation, InterestRate; 184 quarters from 1974Q1 to 2019Q4, in the order of the recursive identification
+state series: R's 4-period moving average of 100 log(100 + cumsum(GDP_growth))
+spec: lags 4, horizons 0 to 15, unit shocks, HP lambda 1600, logistic gamma 2, switching lagged 1 period
+loaded, fitted on these data under this spec, from out/us_lp_fit.npz
+
+responses: yes
+VAR behind the shocks: ols status 0, rank 21 of 21, Cholesky status 0
+horizons solved by the minimum-norm fallback for a rank-deficient design: linear 0, state dependent 0, of 15 each
+switching series constant: no

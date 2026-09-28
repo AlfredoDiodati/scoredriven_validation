@@ -1,0 +1,14 @@
+pass  1. shape: 5 x 397 and 397 x 1 from 400 stored periods
+      largest relative gap: series 0.00e+00, switching 4.19e-16, tolerance 1.42e-14
+pass  1. every element against the reference
+pass  1. fitted layout: the stored rows from period 3 on and R's switching series, exactly
+pass  2. a strided input gives exactly what its copy gives
+pass  3. cumulated GDP growth below -100 gives NaN, as R's log does, and reaches the switching series
+pass  4. spec: 4 lags in both parts, hor 15, unit shock, HP at 1600, gamma 2, lagged switching
+pass  5. a fit on data holding a NaN has no responses, the others do
+pass  5. every field of every row read back bit for bit
+pass  5. a row matches the series it was fitted on and refuses another replicate's
+pass  5. an archive written for another gamma reads as a miss
+pass  5. a missing archive reads as a miss
+
+all passed

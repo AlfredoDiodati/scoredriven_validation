@@ -56,6 +56,7 @@ extern double           psi2;
 extern double           psi3;
 extern double           w_min;
 extern int              fulloutput;
+extern int              microoutput;
 extern double           kappa;
 extern double           taylor;
 extern double           varphi;

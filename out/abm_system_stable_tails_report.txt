@@ -1,0 +1,41 @@
+Whether the macro series are stable with index below 2, or have a finite
+variance.
+
+Columns. 'var slope' is the slope of log sample variance on log n over
+n = 50 to 400: 0 for a finite variance, 2/alpha - 1 for a stable alpha.
+'Hill' is the tail index from the largest 10, 5 and 2.5 per cent of |x|.
+'iqr slope' and 'sd slope' are the slope of log scale on log block length
+over k = 1 to 32: 1/2 for a finite variance with independent terms,
+1/alpha for a stable alpha.
+
+PART 1. Calibration. 20000 samples of 400 values from each law, seed 20260923.
+A stable alpha should give var slope 2/alpha - 1, Hill alpha, and
+iqr slope 1/alpha. The Gaussian row is alpha = 2: 0, no power-law tail,
+and 0.5.
+
+  law                        samples  var slope  Hill 10%  Hill 5%  Hill2.5%  iqr slope   sd slope
+  Gaussian (alpha = 2)         20000      0.009     4.76     6.14     7.73     0.473     0.488
+  stable alpha = 1.8           20000      0.119     2.90     2.86     2.72     0.530     0.489
+  stable alpha = 1.5           20000      0.341     1.77     1.73     1.76     0.649     0.490
+
+PARTS 2 TO 4. The experiment's own series, 1000 configurations, 1000000
+replicates, 400 quarters each, one sample per replicate. 1.7 minutes.
+
+  series                     samples  var slope  Hill 10%  Hill 5%  Hill2.5%  iqr slope   sd slope
+  GDP growth                 1000000      0.022     3.99     4.79     5.64     0.220     0.218
+  energy growth              1000000      0.042     3.98     4.74     5.52     0.308     0.306
+  employment change          1000000      0.025     3.99     4.75     5.53     0.174     0.169
+  inflation                  1000000      0.031     6.95     8.24     9.65     0.340     0.337
+  interest rate              1000000      0.089    20.08    24.75    31.94     0.625     0.638
+  interest rate change       1000000      0.046     4.42     5.60     6.97     0.354     0.358
+
+PART 5. Hill on the cross-section of firm output changes at each date,
+10000 cross-sections from dataset/abm_system_micro. The 10, 5 and 2.5 per
+cent of a cross-section this small is a handful of firms, so these are
+the noisiest numbers here.
+
+  cross-section              firms  Hill 10%  Hill 5%  Hill2.5%
+  K-firm changes                20      3.09       nan       nan
+  C-firm changes               200      2.19      2.22      2.67
+
+Every series' own row is in out/abm_system_stable_tails_by_series.csv.

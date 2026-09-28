@@ -183,6 +183,11 @@ invoked as:
 
     ./model/dsk_sfc/dsk_SFC model/dsk_sfc/dsk_sfc_inputs.json -r myrun -s 1 -f 0 -c 0 -v 0
 
+`-f 1` adds twelve per-firm files. `-m 1` adds two more holding each firm's own
+output quantity, the cross-section GDP is the sum of; it is this project's
+addition and `docs/DSK_MODEL_CHANGES.md` records what it changed and what says
+it changed no number.
+
 The whole experiment goes through the driver rather than through that command;
 these are steps 1 and 3 of "The main pipeline" below:
 
@@ -523,6 +528,15 @@ weighted one is the one to use.
     make app-abm_system_score_loss                    both matrices, about a minute
     make app-abm_system_mcs_statistic_comparison      scores all three losses
 
+A separate side run, not part of either route to the confidence set:
+
+    make app-abm_system_micro_simulate                5 configurations x 5 seeds
+                                                      with the per-firm output on
+
+It reruns configurations of the design at seeds the archives already hold and
+keeps each firm's output, which `studies/abm_system_micro_clt.c` and
+`studies/abm_system_stable_tails.c` read. About half a minute and 261 MB.
+
 It replaces steps 6 and 7 and reads steps 3, 4 and 5. Under the weighted
 statistic the confidence set keeps `cop_0409` and `cop_0599` and stops because
 an equivalence test is accepted at p = 0.1026; under the impulse-response
@@ -555,6 +569,35 @@ recorded in `montecarlo/out/benchmark_choice.txt`, and replicate 706 of every
 configuration is held out of the validation set because every configuration
 shares the same seeds. `docs/MONTECARLO_VALIDATION.md` is the write-up, and
 says what the experiment cannot show as well as what it can.
+
+The same experiment runs with the auxiliary model swapped for the local
+projections of the collaborator's R pipeline (`_temp/main_code.R`): linear, and
+state dependent with two states, three loss matrices against the same
+benchmark. Unlike the t-QVARMA route these fits are not in any cache yet, so
+the first step fits them:
+
+    make app-abm_system_fit_lp     fits all 1,000,000 replicates, a few minutes
+    make montecarlo-lp             loss matrices and confidence sets
+    ./bin/lp_sweep                 every replicate of cop_0191 as the benchmark
+
+`applications/lp_system.h` builds the series the fits use, the stored series
+the t-QVARMA is fitted on plus R's moving average of log GDP to set the state,
+keeps R's `transform_data()` for reference, and defines the archive layout the
+fits are stored in, one compressed
+`out/abm_system_fit_lp/cop_NNNN.npz` per configuration, which is also where the
+US data's own fit will be read from.
+`docs/MONTECARLO_LP_VALIDATION.md` is the write-up.
+
+The same local projections against the US data:
+
+    make app-abm_system_lp_mcs     US fit, loss tables, confidence sets
+
+keeps `cop_0191` alone under the linear model and state 1, as the t-QVARMA
+does, and four configurations including it under state 2. On the
+collaborator's own transformation (`make app-abm_system_fit_lp_r_levels`, then
+`make app-abm_system_lp_r_levels_mcs`) all three keep `cop_0905` alone, the
+configuration that transformation wrongly picks in the Monte Carlo experiment.
+`docs/ABM_SYSTEM_LP_VALIDATION.md` has the setup and the numbers.
 
 ### Not part of the main pipeline
 

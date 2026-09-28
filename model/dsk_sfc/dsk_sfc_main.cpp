@@ -31,6 +31,10 @@ int main(int argc, char *argv[])
   int fullout{0};
   app.add_option("-f,--fulloutput", fullout, "If set to 1, full output will be saved");
 
+  //Add command line input: per-firm output dummy
+  int microout{0};
+  app.add_option("-m,--microoutput", microout, "If set to 1, the per-firm output quantities GDP is the sum of will be saved");
+
   //Add command line input: error printing dummy
   int cerr_enabled{0};
   app.add_option("-c,--cerr", cerr_enabled, "If set to 1, print error messages to the console");
@@ -54,6 +58,7 @@ int main(int argc, char *argv[])
   char* exec_dir;
   char const* runname = str_runname.c_str();
   fulloutput=fullout;
+  microoutput=microout;
 
   //Path to executable as char; needed to create output folder
   exec_dir = argv[0];
@@ -159,6 +164,14 @@ int main(int argc, char *argv[])
   {
     //Otherwise, create name for standard output file
     GENFILEYMC(filepath,"/results", desc);
+  }
+
+  //The per-firm output files are their own switch, so turning them on leaves
+  //the file set of every other mode exactly as it was
+  if(microoutput==1)
+  {
+    GENFILEQUANTITY1(filepath,"/Q1all", desc);
+    GENFILEQUANTITY2(filepath,"/Q2all", desc);
   }
 
   if(verbose){cout << "Finished creating output file names" << endl;}
@@ -6909,6 +6922,45 @@ void UPDATE(void)
 
 ///////////WRITE OUTPUT/////////////////////////////
 
+void WRITEQUANTITY(void)
+{
+	//When microoutput==1, save the per-firm output quantities. GDP_r is
+	//Q1.Sum()*dim_mach + Q2.Sum(), so a K-firm's contribution to it is its row
+	//here times dim_mach and a C-firm's is its row as written.
+	if(microoutput ==1)
+	{
+		ofstream inv_q1all(filename_micro1,ios::app);
+		inv_q1all.setf(ios::fixed);
+		inv_q1all.precision(10);
+		inv_q1all.setf(ios::right);
+		if (t>1)
+		{
+			inv_q1all << "\n";
+		}
+		for (i=1; i<=N1; i++)
+		{
+			inv_q1all.width(60);
+			inv_q1all << Q1(i);
+		}
+		inv_q1all.close();
+
+		ofstream inv_q2all(filename_micro2,ios::app);
+		inv_q2all.setf(ios::fixed);
+		inv_q2all.precision(10);
+		inv_q2all.setf(ios::right);
+		if (t>1)
+		{
+			inv_q2all << "\n";
+		}
+		for (i=1; i<=N2; i++)
+		{
+			inv_q2all.width(60);
+			inv_q2all << Q2(i);
+		}
+		inv_q2all.close();
+	}
+}
+
 void WRITEPROD(void)
 {
   //When fulloutput==1, save individual productivity values
@@ -7689,6 +7741,24 @@ void GENFILEYMC(char *path, const char *s1, char const* desc)
 	char* name1=strcat(filename1,s1);
 	name1=strcat(filename1,desc);
 	strcat(filename1,".txt");
+}
+
+void GENFILEQUANTITY1(char *path, const char *s, char const* desc)
+{
+	//File to save each K-firm's own output quantity
+  strcpy(filename_micro1,path);
+	strcat(filename_micro1,s);
+	strcat(filename_micro1,desc);
+	strcat(filename_micro1,".txt");
+}
+
+void GENFILEQUANTITY2(char *path, const char *s, char const* desc)
+{
+	//File to save each C-firm's own output quantity
+  strcpy(filename_micro2,path);
+	strcat(filename_micro2,s);
+	strcat(filename_micro2,desc);
+	strcat(filename_micro2,".txt");
 }
 
 void GENFILEPROD1(char *path, const char *s2, char const* desc)				    

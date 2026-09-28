@@ -248,6 +248,13 @@ void MACRO(void)
 		WRITEPROD();
 		WRITEDEB();
 	}
+
+	//If microoutput==1, save the per-firm output quantities GDP_r is the sum of,
+	//written here because this is where Q1 and Q2 are final for the period
+	if(microoutput==1)
+	{
+		WRITEQUANTITY();
+	}
 	
 	//GDP
   	GDP_r(1)=Q1tot*dim_mach+Q2tot;

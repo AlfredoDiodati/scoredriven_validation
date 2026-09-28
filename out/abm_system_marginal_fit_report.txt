@@ -1,0 +1,136 @@
+Which named law fits the marginal of a simulated series, by maximum
+likelihood.
+
+100 configurations of the design, 2 replicates of each, 1200 series fitted,
+400 quarters each, 8 laws, 34.5 minutes on 16 threads.
+Nothing is pooled across replicates. 'wins' is the share of series where
+that law had the lowest Schwarz criterion, over the series where it
+converged. 'gain' is its mean log-likelihood less the Gaussian's on the
+same series, so the Gaussian's own gain is zero by construction.
+
+GDP growth
+  law                        p     fits   converged      gain   wins BIC   wins AIC      shape
+  Gaussian                   2      200      1.0000     0.000     0.5700     0.2900        nan
+  Laplace                    2      200      1.0000    -7.867     0.0250     0.0000        nan
+  Subbotin                   3      200      0.9950     4.319     0.0400     0.1350      1.674
+  Student t                  3      200      0.8700     6.293     0.3200     0.4000      19.44
+  lognormal mixture          3      200      1.0000     5.266     0.0400     0.0800     0.2057
+  normal inverse Gaussian    4      200      0.9100     6.220     0.0000     0.0500      426.2
+  variance gamma             4      200      0.7900    10.895     0.0050     0.0450     0.2688
+  generalised hyperbolic     5      200      0.8500     6.839     0.0000     0.0000       1.68
+
+energy growth
+  law                        p     fits   converged      gain   wins BIC   wins AIC      shape
+  Gaussian                   2      200      1.0000     0.000     0.5600     0.2950        nan
+  Laplace                    2      200      0.9900    -7.936     0.0100     0.0000        nan
+  Subbotin                   3      200      0.9950     4.364     0.0500     0.1100      1.668
+  Student t                  3      200      0.8850     6.104     0.3050     0.3800       7190
+  lognormal mixture          3      200      1.0000     5.206     0.0700     0.0900     0.2075
+  normal inverse Gaussian    4      200      0.9150     6.131     0.0000     0.0600      69.83
+  variance gamma             4      200      0.8050    11.559     0.0050     0.0650      0.267
+  generalised hyperbolic     5      200      0.8750     6.606     0.0000     0.0000     -1.308
+
+employment change
+  law                        p     fits   converged      gain   wins BIC   wins AIC      shape
+  Gaussian                   2      200      1.0000     0.000     0.5300     0.2900        nan
+  Laplace                    2      200      0.9950    -7.302     0.0150     0.0050        nan
+  Subbotin                   3      200      0.9850     4.557     0.0600     0.1150      1.664
+  Student t                  3      200      0.8700     6.694     0.3400     0.4000       1825
+  lognormal mixture          3      200      0.9950     5.649     0.0500     0.0950     0.2097
+  normal inverse Gaussian    4      200      0.8950     6.784     0.0000     0.0500      233.9
+  variance gamma             4      200      0.8050     6.914     0.0050     0.0450     0.2744
+  generalised hyperbolic     5      200      0.8600     7.223     0.0000     0.0000    -0.5508
+
+inflation
+  law                        p     fits   converged      gain   wins BIC   wins AIC      shape
+  Gaussian                   2      200      1.0000     0.000     0.5350     0.2050        nan
+  Laplace                    2      200      0.9900    -6.786     0.0300     0.0000        nan
+  Subbotin                   3      200      0.9700     4.313     0.0150     0.1100      1.662
+  Student t                  3      200      0.8700     7.204     0.3650     0.4400       1334
+  lognormal mixture          3      200      0.9950     6.083     0.0500     0.0900     0.2191
+  normal inverse Gaussian    4      200      0.8700     7.515     0.0000     0.0600      124.5
+  variance gamma             4      200      0.8350     8.610     0.0050     0.0900     0.2738
+  generalised hyperbolic     5      200      0.8400     7.895     0.0000     0.0050      1.083
+
+interest rate
+  law                        p     fits   converged      gain   wins BIC   wins AIC      shape
+  Gaussian                   2      200      0.9900     0.000     0.6800     0.3600        nan
+  Laplace                    2      200      1.0000   -14.615     0.0100     0.0050        nan
+  Subbotin                   3      200      0.9650     2.132     0.1700     0.3100      1.976
+  Student t                  3      200      0.5800     2.304     0.0250     0.0250  1.504e+04
+  lognormal mixture          3      200      0.9950     1.541     0.0300     0.0200     0.1249
+  normal inverse Gaussian    4      200      0.5900     4.429     0.0100     0.0600  1.042e+04
+  variance gamma             4      200      0.6550     4.732     0.0750     0.2150     0.2174
+  generalised hyperbolic     5      200      0.5700     4.875     0.0000     0.0050     0.8288
+
+interest rate change
+  law                        p     fits   converged      gain   wins BIC   wins AIC      shape
+  Gaussian                   2      200      1.0000     0.000     0.7450     0.4500        nan
+  Laplace                    2      200      0.9150   -12.978     0.0150     0.0050        nan
+  Subbotin                   3      200      0.9750     1.540     0.0500     0.1750      1.841
+  Student t                  3      200      0.7100     2.975     0.1150     0.1150       6382
+  lognormal mixture          3      200      1.0000     2.145     0.0500     0.0550     0.1426
+  normal inverse Gaussian    4      200      0.7550     3.542     0.0000     0.0900  4.989e+04
+  variance gamma             4      200      0.6400     3.578     0.0250     0.1000     0.1868
+  generalised hyperbolic     5      200      0.7600     3.654     0.0000     0.0100      2.055
+
+
+THE US SERIES, 187 quarters, one fit each. The winner by the Schwarz
+criterion is marked.
+
+GDP growth
+  law                        p    log L        BIC     shape
+  Gaussian                   2  -212.99     436.45       nan 
+  Laplace                    2  -197.73     405.92       nan   <- lowest BIC
+  Subbotin                   3  -197.71     411.12    0.9782 
+  Student t                  3  -198.51     412.72     2.855 
+  lognormal mixture          3  -197.39     410.47    0.5586 
+  normal inverse Gaussian    4  -196.76     414.45    0.9603 
+  variance gamma             4  -196.84     414.60     1.048 
+  generalised hyperbolic     5  -196.50     419.16    0.2256 
+
+energy growth
+  law                        p    log L        BIC     shape
+  Gaussian                   2  -373.09     756.64       nan   <- lowest BIC
+  Laplace                    2  -381.18     772.81       nan 
+  Subbotin                   3  -373.02     761.73     1.883 
+  Student t                  3  -373.00     761.69     38.54 
+  lognormal mixture          3  -373.00     761.69    0.1182 
+  normal inverse Gaussian    4  -372.98     766.88     2.594 
+  variance gamma             4  -373.03     766.98   0.07758 
+  generalised hyperbolic     5      nan        nan      -433   did not converge
+
+employment change
+  law                        p    log L        BIC     shape
+  Gaussian                   2   -61.43     133.33       nan 
+  Laplace                    2      nan        nan       nan   did not converge
+  Subbotin                   3      nan        nan    0.6877   did not converge
+  Student t                  3   -30.46      76.62     2.001 
+  lognormal mixture          3   -30.02      75.74    0.6907 
+  normal inverse Gaussian    4   -21.12      63.17     2.733   <- lowest BIC
+  variance gamma             4      nan        nan     1.328   did not converge
+  generalised hyperbolic     5   -20.70      67.56   0.04536 
+
+inflation
+  law                        p    log L        BIC     shape
+  Gaussian                   2  -225.74     461.94       nan 
+  Laplace                    2  -202.64     415.73       nan 
+  Subbotin                   3  -198.97     413.63    0.7023 
+  Student t                  3  -203.58     422.86     1.713 
+  lognormal mixture          3  -200.09     415.88    0.7872 
+  normal inverse Gaussian    4  -194.06     409.04    0.8594   <- lowest BIC
+  variance gamma             4      nan        nan     1.498   did not converge
+  generalised hyperbolic     5  -191.86     409.88    0.2528 
+
+interest rate
+  law                        p    log L        BIC     shape
+  Gaussian                   2  -526.49    1063.44       nan   <- lowest BIC
+  Laplace                    2  -531.98    1074.43       nan 
+  Subbotin                   3  -526.10    1067.90     1.754 
+  Student t                  3  -525.33    1066.35     12.94 
+  lognormal mixture          3  -525.50    1066.68    0.1953 
+  normal inverse Gaussian    4      nan        nan 1.751e+06   did not converge
+  variance gamma             4      nan        nan     1.652   did not converge
+  generalised hyperbolic     5      nan        nan    0.7499   did not converge
+
+Every row is in out/abm_system_marginal_fit_by_law.csv and out/abm_system_marginal_fit_us.csv.

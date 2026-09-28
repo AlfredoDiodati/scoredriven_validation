@@ -1,0 +1,104 @@
+Why the local projections do not recover the stand-in's configuration
+
+Data: dataset/abm_system, 1000 configurations x 1000 runs, 397 periods each after R's transform.
+Stand-in for the real data: cop_0191 run 706; run 706 of every configuration left out.
+Local projections: 4 lags, horizons 0 to 15, recursive ordering GDP, Employment, Inflation, InterestRate, Energy; state weight from the HP cycle (lambda 1600) of the 4-period moving average of the GDP row, logistic slope 2, lagged one period.
+Loss: mean absolute difference over the 400 response values (5 responses x 16 horizons x 5 shocks), unless stated.
+Confidence set: MCS_TR, level 0.05, 10000 bootstrap resamples of single runs, bootstrap variance, et_al seed 123.
+Repetitions: runs 0 to 99 of cop_0191 each take the stand-in's place in turn, linear model only, that run left out of every configuration.
+
+
+Variant r_unit: R's transform_data, unit shocks: the protocol as run
+  runs whose fit had no responses or a non-finite one: 0
+
+1. Recomputed losses against montecarlo/out/lp_irf_loss_<model>.csv
+  lin: 999000 cells compared, largest difference relative to max(1, |stored|) 1.95e-13
+  s1: 999000 cells compared, largest difference relative to max(1, |stored|) 5.35e-13
+  s2: 999000 cells compared, largest difference relative to max(1, |stored|) 1.79e-13
+
+  stand-in cop_0191 run 706
+  linear                       set of 1: cop_0905
+                               cop_0191 NOT in the set, rank 26 of 1000 by mean loss (13.16); smallest mean loss cop_0905 2.877
+  state 1                      set of 7: cop_0079 cop_0100 cop_0148 cop_0191 cop_0552 cop_0593 cop_0905
+                               cop_0191 in the set, rank 1 of 1000 by mean loss (47.78); smallest mean loss cop_0191 47.78
+  state 2                      set of 1: cop_0905
+                               cop_0191 NOT in the set, rank 23 of 1000 by mean loss (28.37); smallest mean loss cop_0905 5.007
+
+4. The linear model with the mean squared difference, R's loss
+  linear, squared              set of 1: cop_0905
+                               cop_0191 NOT in the set, rank 24 of 1000 by mean loss (2367); smallest mean loss cop_0905 143.2
+
+5. Noise against signal, linear model, stand-in cop_0191 run 706
+  expected loss = distance of the configuration's average response from the stand-in (bias) plus the scatter of its own runs (spread), both mean absolute over 400 values
+  cop_0191: mean loss 13.16, bias 3.73, spread 12.84
+  cop_0905: mean loss 2.877, bias 1.322, spread 2.24
+  over the 1000 configurations: bias median 16.2 (min 1.322, max 2245), spread median 69.36 (min 2.24, max 8898)
+  Spearman correlation across configurations: mean loss with bias 0.936, mean loss with spread 0.999
+  a response of all zeros is at 1.743 from the stand-in; 0 of 1000 configurations have a smaller mean loss
+  between-configuration variance over within-configuration variance, per response value (385 values that vary): median 0.0592, 10th percentile 0.0064, 90th percentile 0.692
+  share of cop_0191's loss by response (row) and shock (column), percent:
+                           GDP   Employment    Inflation InterestRate       Energy
+    GDP                    0.0          0.1          0.3         22.5          0.1
+    Employment             0.0          0.1          0.4         28.2          0.1
+    Inflation              0.0          0.0          0.1          3.8          0.0
+    InterestRate           0.0          0.0          0.1          5.1          0.0
+    Energy                 0.1          0.1          0.6         38.0          0.2
+  share of cop_0905's loss by response (row) and shock (column), percent:
+                           GDP   Employment    Inflation InterestRate       Energy
+    GDP                    0.2          0.4          1.8         20.1          0.4
+    Employment             0.3          0.6          1.7         26.1          0.6
+    Inflation              0.1          0.1          0.6          5.3          0.2
+    InterestRate           0.0          0.1          0.6          4.4          0.1
+    Energy                 0.3          0.5          2.8         31.8          0.8
+
+  linear model, runs 0 to 99 of cop_0191 as the stand-in: cop_0191 in the set 0 times of 100, smallest mean loss 0 times
+
+6. Standard deviation of each series' one-period change, averaged over a configuration's runs, R's layout
+  series                min      median         max     max/min    cop_0191    cop_0905
+  GDP                0.6867      0.8791       1.278         1.9      0.8419       1.117
+  Employment         0.9325       1.188        1.75         1.9       1.124       1.526
+  Inflation          0.1061      0.4371       1.036         9.8      0.3551      0.8684
+  InterestRate     0.005415     0.06046      0.2035        37.6      0.1221      0.2035
+  Energy              1.046       1.338       1.961         1.9       1.271       1.689
+
+
+Variant r_sd: R's transform_data, shocks of one standard deviation
+  runs whose fit had no responses or a non-finite one: 0
+
+  stand-in cop_0191 run 706
+  linear                       set of 2: cop_0593 cop_0905
+                               cop_0191 NOT in the set, rank 119 of 1000 by mean loss (0.8443); smallest mean loss cop_0905 0.3457
+  state 1                      set of 11: cop_0028 cop_0100 cop_0165 cop_0179 cop_0274 cop_0291 cop_0407 cop_0490 ...
+                               cop_0191 NOT in the set, rank 35 of 1000 by mean loss (2.932); smallest mean loss cop_0766 2.795
+  state 2                      set of 2: cop_0593 cop_0905
+                               cop_0191 NOT in the set, rank 150 of 1000 by mean loss (1.77); smallest mean loss cop_0905 0.5822
+
+  linear model, runs 0 to 99 of cop_0191 as the stand-in: cop_0191 in the set 0 times of 100, smallest mean loss 0 times
+
+
+Variant loglevel_unit: log levels as cumulated growth, unit shocks
+  runs whose fit had no responses or a non-finite one: 0
+
+  stand-in cop_0191 run 706
+  linear                       set of 1: cop_0905
+                               cop_0191 NOT in the set, rank 25 of 1000 by mean loss (14.15); smallest mean loss cop_0905 3.284
+  state 1                      set of 2: cop_0593 cop_0905
+                               cop_0191 NOT in the set, rank 9 of 1000 by mean loss (30.93); smallest mean loss cop_0905 26.23
+  state 2                      set of 1: cop_0905
+                               cop_0191 NOT in the set, rank 23 of 1000 by mean loss (23.83); smallest mean loss cop_0905 4.834
+
+  linear model, runs 0 to 99 of cop_0191 as the stand-in: cop_0191 in the set 0 times of 100, smallest mean loss 0 times
+
+
+Variant loglevel_sd: log levels as cumulated growth, shocks of one standard deviation
+  runs whose fit had no responses or a non-finite one: 0
+
+  stand-in cop_0191 run 706
+  linear                       set of 3: cop_0593 cop_0905 cop_0970
+                               cop_0191 NOT in the set, rank 106 of 1000 by mean loss (1.006); smallest mean loss cop_0593 0.5222
+  state 1                      set of 3: cop_0119 cop_0407 cop_0522
+                               cop_0191 NOT in the set, rank 43 of 1000 by mean loss (2.098); smallest mean loss cop_0522 1.882
+  state 2                      set of 2: cop_0593 cop_0905
+                               cop_0191 NOT in the set, rank 87 of 1000 by mean loss (1.69); smallest mean loss cop_0593 0.7852
+
+  linear model, runs 0 to 99 of cop_0191 as the stand-in: cop_0191 in the set 0 times of 100, smallest mean loss 0 times

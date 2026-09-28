@@ -59,4 +59,26 @@ static inline Mat load_us_system(void) {
     return y;
 }
 
+/*
+The US series in the layout the simulated dataset is stored in
+(applications/abm_system.h's rows): GDP growth, energy growth, employment
+change, inflation, the interest rate, one period shorter than original because
+the first period anchors the first difference. The same arithmetic as
+applications/us_qvarma_spec_choice.c's build_block, whose output the t-QVARMA
+is fitted on. original is load_us_system's matrix. Caller must mat_free.
+*/
+static inline Mat us_system_growth_block(Mat original) {
+    assert(original.r == N_VARIABLES && "us_data: expected load_us_system's matrix");
+    Mat y = mat_new(N_VARIABLES, original.c - 1);
+    for (int t = 1; t < original.c; t++) {
+        int c = t - 1;
+        AT(y, 0, c) = AT(original, LOG_GDP, t) - AT(original, LOG_GDP, t - 1);
+        AT(y, 1, c) = AT(original, LOG_ENERGY_DEMAND, t) - AT(original, LOG_ENERGY_DEMAND, t - 1);
+        AT(y, 2, c) = AT(original, EMPLOYMENT, t) - AT(original, EMPLOYMENT, t - 1);
+        AT(y, 3, c) = AT(original, LOG_CPI, t) - AT(original, LOG_CPI, t - 1);
+        AT(y, 4, c) = AT(original, INTEREST_RATE, t);
+    }
+    return y;
+}
+
 #endif /* US_DATA_H */

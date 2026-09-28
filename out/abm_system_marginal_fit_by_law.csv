@@ -1,0 +1,49 @@
+series,law,parameters,fits,converged,share_converged,mean_log_likelihood,mean_gain_over_gaussian,share_best_bic,share_best_aic,mean_shape
+gdp_growth,Gaussian,2,200,200,1,-685.231763,0,0.57,0.29,nan
+gdp_growth,Laplace,2,200,200,1,-693.098719,-7.86695566,0.025,0,nan
+gdp_growth,Subbotin,3,200,199,0.995,-680.013786,4.31885888,0.04,0.135,1.67413578
+gdp_growth,Student t,3,200,174,0.87,-685.100004,6.29283457,0.32,0.4,19.4393144
+gdp_growth,lognormal mixture,3,200,200,1,-679.965668,5.26609584,0.04,0.08,0.205740597
+gdp_growth,normal inverse Gaussian,4,200,182,0.91,-683.495533,6.21988109,0,0.05,426.169851
+gdp_growth,variance gamma,4,200,158,0.79,-683.938306,10.8950398,0.005,0.045,0.268800512
+gdp_growth,generalised hyperbolic,5,200,170,0.85,-683.827057,6.83949381,0,0,1.67970227
+energy_growth,Gaussian,2,200,200,1,-692.919155,0,0.56,0.295,nan
+energy_growth,Laplace,2,200,198,0.99,-700.609099,-7.93571407,0.01,0,nan
+energy_growth,Subbotin,3,200,199,0.995,-687.762661,4.36403751,0.05,0.11,1.6683926
+energy_growth,Student t,3,200,177,0.885,-692.222961,6.10421487,0.305,0.38,7190.25843
+energy_growth,lognormal mixture,3,200,200,1,-687.713543,5.20561152,0.07,0.09,0.207482297
+energy_growth,normal inverse Gaussian,4,200,183,0.915,-691.992912,6.13099536,0,0.06,69.8341291
+energy_growth,variance gamma,4,200,161,0.805,-689.231858,11.5593587,0.005,0.065,0.267015607
+energy_growth,generalised hyperbolic,5,200,175,0.875,-687.940465,6.60645662,0,0,-1.30758432
+employment_change,Gaussian,2,200,200,1,-645.072004,0,0.53,0.29,nan
+employment_change,Laplace,2,200,199,0.995,-651.988634,-7.30236495,0.015,0.005,nan
+employment_change,Subbotin,3,200,197,0.985,-638.952919,4.55724389,0.06,0.115,1.6639227
+employment_change,Student t,3,200,174,0.87,-643.715429,6.69382422,0.34,0.4,1825.43322
+employment_change,lognormal mixture,3,200,199,0.995,-639.371923,5.64915628,0.05,0.095,0.209666349
+employment_change,normal inverse Gaussian,4,200,179,0.895,-643.999056,6.78376321,0,0.05,233.910654
+employment_change,variance gamma,4,200,161,0.805,-646.740644,6.913787,0.005,0.045,0.274422581
+employment_change,generalised hyperbolic,5,200,172,0.86,-642.336977,7.22280967,0,0,-0.550779208
+inflation,Gaussian,2,200,200,1,-90.6388366,0,0.535,0.205,nan
+inflation,Laplace,2,200,198,0.99,-94.9930102,-6.7861467,0.03,0,nan
+inflation,Subbotin,3,200,194,0.97,-88.3870973,4.31281103,0.015,0.11,1.66237318
+inflation,Student t,3,200,174,0.87,-78.8968812,7.20425122,0.365,0.44,1334.00397
+inflation,lognormal mixture,3,200,199,0.995,-84.8230972,6.082776,0.05,0.09,0.219126194
+inflation,normal inverse Gaussian,4,200,174,0.87,-81.5602684,7.51544038,0,0.06,124.531928
+inflation,variance gamma,4,200,167,0.835,-76.7377812,8.61035325,0.005,0.09,0.273773294
+inflation,generalised hyperbolic,5,200,168,0.84,-80.9138289,7.89465768,0,0.005,1.08337299
+interest_rate,Gaussian,2,200,198,0.99,185.42368,0,0.68,0.36,nan
+interest_rate,Laplace,2,200,200,1,171.150619,-14.6148347,0.01,0.005,nan
+interest_rate,Subbotin,3,200,193,0.965,186.726081,2.13229945,0.17,0.31,1.97612897
+interest_rate,Student t,3,200,116,0.58,181.469986,2.30368523,0.025,0.025,15039.0946
+interest_rate,lognormal mixture,3,200,199,0.995,185.726956,1.54127308,0.03,0.02,0.124896753
+interest_rate,normal inverse Gaussian,4,200,118,0.59,197.084058,4.42941383,0.01,0.06,10421.6178
+interest_rate,variance gamma,4,200,131,0.655,193.260006,4.73184092,0.075,0.215,0.217364502
+interest_rate,generalised hyperbolic,5,200,114,0.57,223.043783,4.87520607,0,0.005,0.828773247
+interest_rate_change,Gaussian,2,200,200,1,548.007615,0,0.745,0.45,nan
+interest_rate_change,Laplace,2,200,183,0.915,529.235618,-12.9782283,0.015,0.005,nan
+interest_rate_change,Subbotin,3,200,195,0.975,547.804162,1.54012606,0.05,0.175,1.84077346
+interest_rate_change,Student t,3,200,142,0.71,527.372354,2.9751392,0.115,0.115,6381.56715
+interest_rate_change,lognormal mixture,3,200,200,1,550.152304,2.14468967,0.05,0.055,0.14260896
+interest_rate_change,normal inverse Gaussian,4,200,151,0.755,543.323868,3.54154668,0,0.09,49887.8261
+interest_rate_change,variance gamma,4,200,128,0.64,524.431028,3.57753738,0.025,0.1,0.186784915
+interest_rate_change,generalised hyperbolic,5,200,152,0.76,569.304681,3.65353368,0,0.01,2.05505477

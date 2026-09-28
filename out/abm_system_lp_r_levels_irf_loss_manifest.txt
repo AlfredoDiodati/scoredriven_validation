@@ -1,0 +1,9 @@
+1000 configurations, 1000 replicates each, loss = mean absolute difference between the US local-projection responses and each run's (400 values, horizons 0 to 15)
+series: R's transform_data levels: GDP, Employment, Inflation, InterestRate, Energy
+
+lin: 0 of 1000000 cells missing, 1000 of 1000 replicates kept
+
+s1: 0 of 1000000 cells missing, 1000 of 1000 replicates kept
+
+s2: 0 of 1000000 cells missing, 1000 of 1000 replicates kept
+

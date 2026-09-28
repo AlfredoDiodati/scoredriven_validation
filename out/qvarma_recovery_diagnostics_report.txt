@@ -1,0 +1,15 @@
+How precise the t-QVARMA's impulse responses are for the Monte Carlo protocol
+
+Data: dataset/abm_system, 1000 configurations x 1000 runs; each run's stored p1q1r2 fit in out/abm_system_fit_qvarma.
+Responses: total response, horizons 0 to 20, 525 values per run, as montecarlo/irf_loss.c builds them.
+Stand-in: cop_0191 run 706, left out of every configuration. Runs with no response: 0.
+
+Check against montecarlo/out/irf_loss.csv: 999 rows x 1000 configurations, largest relative difference 9.9e-08 (the responses here are held as float).
+
+Noise against signal, stand-in cop_0191 run 706
+  cop_0191: mean loss 0.01006, distance 0.00656, scatter 0.007487 (the stand-in's configuration)
+  cop_0191: mean loss 0.01006, distance 0.00656, scatter 0.007487 (smallest mean loss)
+  over the 1000 configurations: distance median 0.02192 (min 0.00656, max 0.04697), scatter median 0.01434 (min 0.004935, max 0.05778)
+  Spearman correlation over configurations: mean loss with distance 0.887, with scatter 0.531
+  variance between configurations over variance within, per entry (515 of 525 entries vary): median 0.0575, 10th percentile 0.0156, 90th percentile 3.97
+  an all-zero response is at 0.03625 from the stand-in; 895 of 1000 configurations have a smaller mean loss
