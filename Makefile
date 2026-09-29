@@ -166,7 +166,7 @@ EXPERIMENT_STEMS := us_qvarma_spec_choice \
 # reuses is applications/'s output, above all the million cached fits, since it
 # estimates nothing. docs/MONTECARLO_VALIDATION.md.
 MONTECARLO_STEMS := benchmark_choice irf_loss score_loss mcs mcs_statistic_comparison \
-                     sweep_irf sweep_score lp_irf_loss lp_mcs lp_sweep
+                     sweep_irf sweep_score lp_irf_loss lp_mcs lp_sweep sweep_cops
 
 # Whatever the application scripts share, so editing it rebuilds them.
 APPLICATION_HEADERS := applications/us_data.h applications/abm_system.h applications/lp_system.h \
@@ -310,7 +310,7 @@ montecarlo/out:
 
 # The local-projection scripts read the cache through one shared header, which
 # the rule above does not know about.
-$(addprefix $(BIN)/,lp_irf_loss lp_mcs lp_sweep): applications/abm_system_lp.h montecarlo/benchmark.h
+$(addprefix $(BIN)/,lp_irf_loss lp_mcs lp_sweep sweep_cops): applications/abm_system_lp.h montecarlo/benchmark.h
 
 # The whole Monte Carlo experiment: choose the benchmark, then the three loss
 # matrices and their confidence sets against it. It reads the fit cache and the

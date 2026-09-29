@@ -312,6 +312,65 @@ procedure stopped on an accepted test, and how many replicates were dropped.
 
 To be filled in when the sweep completes.
 
+## The first run of every configuration as the benchmark
+
+The sweep above asks whether the procedure identifies `cop_0191`. This asks
+whether it identifies every configuration: for each of the 1000
+configurations, its replicate 0 (seed 1 of the model) stands in as the
+benchmark, and the confidence set should return that configuration. One
+benchmark per configuration, 1000 confidence sets per model.
+
+    make bin/sweep_cops && ./bin/sweep_cops
+
+It runs the impulse-response loss only, under the t-QVARMA and the three local
+projections of `docs/MONTECARLO_LP_VALIDATION.md` (linear, state 1, state 2).
+Every individual run is what `montecarlo/sweep_irf.c` and
+`montecarlo/lp_sweep.c` do for one benchmark: mean absolute error between
+response vectors, replicate 0 held out of every column, a replicate with a
+missing cell in any column dropped, MCS_TR at alpha 0.05 with 10000 resamples,
+block length 1, bootstrap variance, seed 123 stream 0. The row for `cop_0191`
+therefore reproduces row 0 of `sweep_irf.csv` and of `lp_sweep_<model>.csv`.
+
+The whole result is one file, `montecarlo/out/sweep_cops.csv.gz`, one row per
+model and benchmark configuration: whether the configuration is in the set,
+its rank by mean loss, its MCS p-value, the set size, whether the set was
+decided by an accepted test, the final p-value, replicates dropped, the
+configuration with the smallest mean loss, the seconds spent in the confidence
+set, and the configurations in the set. While it runs, rows go to
+`montecarlo/out/sweep_cops_progress.csv`, which a rerun resumes from and which
+is compressed and removed when all four models are done.
+
+### Results
+
+Run on 2026-09-28 and 29, one confidence set at a time on 16 cores. No
+response was missing under any model, so every loss matrix is 999 replicates
+by 1000 configurations with nothing dropped. One confidence set took 4.8 to
+5.2 seconds on average per model, 14.4 at most.
+
+The `cop_0191` rows reproduce row 0 of `sweep_irf.csv` and of the three
+`lp_sweep_<model>.csv` exactly, including the state-1 and state-2 sets of 3 and
+4 configurations decided at p = 0.0777 and 0.4187.
+
+Out of 1000 benchmark configurations:
+
+| model | own configuration in the set | alone in the set | smallest mean loss | mean set size |
+| --- | --- | --- | --- | --- |
+| t-QVARMA | 97 | 34 | 51 | 2.99 |
+| LP linear | 93 | 36 | 57 | 3.09 |
+| LP state 1 | 10 | 2 | 5 | 5.27 |
+| LP state 2 | 24 | 4 | 10 | 6.61 |
+
+The 87.6% at which the t-QVARMA recovers `cop_0191` from its own replicates
+does not carry to the other configurations: with one benchmark each, the
+procedure returns the right configuration for fewer than one in ten of them.
+
+A few configurations take the smallest mean loss against many benchmarks
+that are not theirs: under state 1, `cop_0437` for 139 benchmarks and
+`cop_0191` for 102; under state 2, `cop_0717` for 92; under the t-QVARMA,
+`cop_0505` for 47 and `cop_0799` for 38. `cop_0191` is in the set of 16
+benchmarks other than itself under the t-QVARMA, 34 under the linear local
+projection, 175 under state 1 and 118 under state 2.
+
 ## What this experiment cannot show
 
 The sweep above answers the "one benchmark" objection for the benchmark

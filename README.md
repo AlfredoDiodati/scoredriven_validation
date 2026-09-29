@@ -579,6 +579,8 @@ the first step fits them:
     make app-abm_system_fit_lp     fits all 1,000,000 replicates, a few minutes
     make montecarlo-lp             loss matrices and confidence sets
     ./bin/lp_sweep                 every replicate of cop_0191 as the benchmark
+    ./bin/sweep_cops               replicate 0 of every configuration as the
+                                   benchmark, t-QVARMA and local projections
 
 `applications/lp_system.h` builds the series the fits use, the stored series
 the t-QVARMA is fitted on plus R's moving average of log GDP to set the state,

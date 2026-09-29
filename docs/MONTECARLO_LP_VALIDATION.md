@@ -109,6 +109,11 @@ configurations shared the set is not recorded.
 The whole chain, refit, single stand-in and 1000 repetitions, took 12.2 hours,
 one confidence set at a time.
 
+The same protocol with replicate 0 of each of the 1000 configurations as the
+stand-in, instead of every replicate of `cop_0191`, is
+`montecarlo/sweep_cops.c`; `docs/MONTECARLO_VALIDATION.md`, "The first run of
+every configuration as the benchmark", describes it for both auxiliary models.
+
 ## The first run, on R's levels
 
 The experiment was first run on the series R's `transform_data()` builds
