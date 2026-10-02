@@ -310,7 +310,19 @@ montecarlo/out:
 
 # The local-projection scripts read the cache through one shared header, which
 # the rule above does not know about.
-$(addprefix $(BIN)/,lp_irf_loss lp_mcs lp_sweep sweep_cops): applications/abm_system_lp.h montecarlo/benchmark.h
+$(addprefix $(BIN)/,lp_irf_loss lp_mcs lp_sweep sweep_cops sweep_grid): applications/abm_system_lp.h montecarlo/benchmark.h montecarlo/response_cache.h
+
+# The grid's four million confidence sets are built at -O3, where GCC
+# vectorises mcs()'s pair spreads; without -ffast-math that changes no
+# addition's order, so the results are the -O2 build's bit for bit. Measured
+# with 8 sets side by side on 999 x 1000 tables at 2000 resamples: about 0.13
+# s per set at -O2, 0.08 s at -O3. Its own rule, because the one above fixes
+# the flags when it is generated.
+.PHONY: mc-sweep_grid
+$(BIN)/sweep_grid: montecarlo/sweep_grid.c $(HEADERS) $(APPLICATION_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
+	$(CC) $(subst -O2,-O3,$(CFLAGS)) -DMAT_DOUBLE -fopenmp $(ETAL_CFLAGS) $(INCLUDES) $< -o $@ $(ETAL_LIBS)
+mc-sweep_grid: $(BIN)/sweep_grid | montecarlo/out
+	./$(BIN)/sweep_grid
 
 # The whole Monte Carlo experiment: choose the benchmark, then the three loss
 # matrices and their confidence sets against it. It reads the fit cache and the

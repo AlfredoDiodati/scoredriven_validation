@@ -119,3 +119,17 @@ __pycache__/
 
 # temporary files
 _temp/
+
+# The grid Monte Carlo's response caches, 7 GB in all, rebuilt by
+# bin/sweep_grid from the fits and the dataset when missing.
+out/sweep_grid_response_cache/
+
+# The grid Monte Carlo's running log of finished benchmarks, 140 MB and growing
+# while bin/sweep_grid runs. The compressed per-model files it is split into
+# when a model is done are kept.
+montecarlo/out/sweep_grid_progress.csv
+
+# The grid Monte Carlo's per-model result files and the combined one
+# bin/sweep_grid writes at the end, 13 to 15 MB each.
+montecarlo/out/sweep_grid_*.csv.gz
+montecarlo/out/sweep_grid.csv.gz
