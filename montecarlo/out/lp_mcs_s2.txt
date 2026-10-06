@@ -5,8 +5,8 @@ shared: alpha = 0.050, 10000 resamples, block length 1, bootstrap variance, seed
 Both statistics are scored on the same resamples, drawn once and reused in every round.
 
 statistic  set size  decided by an accepted test  deciding round  last p-value  seconds
-MCS_TR            3                          yes             998        0.0773      5.1
-MCS_TMAX          4                          yes             997        0.1439      7.2
+MCS_TR            3                          yes             998        0.0773      0.9
+MCS_TMAX          4                          yes             997        0.1439      6.9
 
 sets
   in both sets 3, only in MCS_TR's 0, only in MCS_TMAX's 1

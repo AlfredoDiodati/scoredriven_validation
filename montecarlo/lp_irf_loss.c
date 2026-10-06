@@ -5,6 +5,8 @@ local projections of the collaborator's R pipeline, one per model:
     lin   the linear local projection, irf_lin_mean
     s1    the state-dependent one in state 1 (lags times 1 - F), irf_s1_mean
     s2    the same in state 2 (lags times F), irf_s2_mean
+    nl    the state-dependent one with both states in one vector, s1's entries
+          followed by s2's (_temp/Note on non-lin LP.pdf, equation 5)
 
 The procedure is montecarlo/irf_loss.c's with the auxiliary model changed.
 The benchmark is the simulated run montecarlo/benchmark_choice.c chose, read
@@ -14,8 +16,8 @@ held out of every configuration's column, for the reason benchmark.h gives:
 replicate n of every configuration is seed n+1 of the model.
 
 A cell's loss is the mean absolute error between the benchmark's response
-vector and the cell's, all K x (hor + 1) x K = 400 entries of one model, as in
-the t-QVARMA protocol. The R pipeline uses the mean squared error instead; the
+vector and the cell's, all K x (hor + 1) x K = 400 entries of one model (800
+under nl), as in the t-QVARMA protocol. The R pipeline uses the mean squared error instead; the
 absolute error is kept for comparability with the t-QVARMA results and for the
 reason montecarlo/irf_loss.c gives.
 
@@ -35,7 +37,7 @@ montecarlo/out/benchmark.env. Writes montecarlo/out/lp_irf_loss_<model>.csv,
 one per model, and montecarlo/out/lp_irf_loss_manifest.txt. Nothing printed.
 */
 
-#include "applications/abm_system_lp.h"
+#include "montecarlo/response_cache.h"
 #include "montecarlo/benchmark.h"
 #include <et_al./stats.h>
 #include <et_al./frame/csv.h>
@@ -48,8 +50,12 @@ one per model, and montecarlo/out/lp_irf_loss_manifest.txt. Nothing printed.
 static const char *FIT_DIR;
 static const char *INPUT_DIR;
 
-/* A vector of LP_RESPONSE_DIM entries as a 1 x n view, for stats_mae. */
-static Mat as_row(mreal *values) { return (Mat){ 1, LP_RESPONSE_DIM, LP_RESPONSE_DIM, values }; }
+#define FIRST_LP MODEL_LP_LIN
+#define N_LP (N_MODELS - MODEL_LP_LIN)
+#define LONGEST_DIM (2 * LP_RESPONSE_DIM)
+
+/* A vector of dim entries as a 1 x dim view, for stats_mae. */
+static Mat as_row(mreal *values, int dim) { return (Mat){ 1, dim, dim, values }; }
 
 int main(void) {
     FIT_DIR = getenv("ABM_SYSTEM_LP_FIT_DIR");
@@ -66,33 +72,34 @@ int main(void) {
     int n_replicates = lp_count_replicates(INPUT_DIR, samples[0].name);
     assert(benchmark.replicate < n_replicates && "lp_irf_loss: the benchmark replicate is out of range");
 
-    static mreal reference[LP_N_LOSSES][LP_RESPONSE_DIM];
+    static mreal reference[N_LP][LONGEST_DIM];
     {
         LpConfiguration own = lp_configuration_load(FIT_DIR, INPUT_DIR, benchmark.sample, n_replicates, LP_LAYOUT_GROWTH);
-        for (int loss = 0; loss < LP_N_LOSSES; loss++) {
-            assert(lp_configuration_ok(&own, benchmark.replicate, loss)
-                   && "lp_irf_loss: the benchmark's own LP fit is missing or not finite");
-            memcpy(reference[loss], lp_response(own.row[benchmark.replicate], loss),
-                   LP_RESPONSE_DIM * sizeof(mreal));
+        for (int loss = 0; loss < N_LP; loss++) {
+            int ok = lp_model_response(&own, benchmark.replicate, FIRST_LP + loss, reference[loss]);
+            assert(ok && "lp_irf_loss: the benchmark's own LP fit is missing or not finite");
+            (void)ok;
         }
         lp_configuration_free(&own);
     }
 
     /* values[loss] is replicate x configuration, NaN where the cell has no loss. */
-    Mat values[LP_N_LOSSES];
-    for (int loss = 0; loss < LP_N_LOSSES; loss++) values[loss] = mat_new(n_replicates, n_samples);
-    long n_missing[LP_N_LOSSES] = { 0, 0, 0 };
+    Mat values[N_LP];
+    for (int loss = 0; loss < N_LP; loss++) values[loss] = mat_new(n_replicates, n_samples);
+    long n_missing[N_LP] = { 0 };
 
     /* One task per configuration. Each task writes only its own column, so no
        cell is shared between threads. */
     #pragma omp parallel for schedule(dynamic)
     for (int col = 0; col < n_samples; col++) {
         LpConfiguration c = lp_configuration_load(FIT_DIR, INPUT_DIR, samples[col].name, n_replicates, LP_LAYOUT_GROWTH);
+        mreal response[LONGEST_DIM];
         for (int row = 0; row < n_replicates; row++)
-            for (int loss = 0; loss < LP_N_LOSSES; loss++) {
+            for (int loss = 0; loss < N_LP; loss++) {
+                int dim = response_dim(FIRST_LP + loss);
                 mreal value = (mreal)NAN;
-                if (row != benchmark.replicate && lp_configuration_ok(&c, row, loss))
-                    value = stats_mae(as_row(reference[loss]), as_row((mreal *)lp_response(c.row[row], loss)));
+                if (row != benchmark.replicate && lp_model_response(&c, row, FIRST_LP + loss, response))
+                    value = stats_mae(as_row(reference[loss], dim), as_row(response, dim));
                 AT(values[loss], row, col) = value;
             }
         lp_configuration_free(&c);
@@ -103,13 +110,14 @@ int main(void) {
     FILE *manifest = fopen(manifest_path, "w");
     assert(manifest && "lp_irf_loss: cannot open the manifest for writing");
     fprintf(manifest, "%d configurations, %d replicates each, loss = MAE between stacked "
-                      "local-projection impulse responses (%d entries, horizons 0 to %d)\n",
-            n_samples, n_replicates, LP_RESPONSE_DIM, LP_SYSTEM_HOR);
+                      "local-projection impulse responses (%d entries, horizons 0 to %d; %d under nl, "
+                      "state 1 then state 2)\n",
+            n_samples, n_replicates, LP_RESPONSE_DIM, LP_SYSTEM_HOR, 2 * LP_RESPONSE_DIM);
     fprintf(manifest, "benchmark: %s replicate %03d, its own cached LP fits and its own series; "
                       "replicate %03d is held out of every column\n\n",
             benchmark.sample, benchmark.replicate, benchmark.replicate);
 
-    for (int loss = 0; loss < LP_N_LOSSES; loss++) {
+    for (int loss = 0; loss < N_LP; loss++) {
         int *usable = malloc((size_t)n_replicates * sizeof(int));
         int keep = 0;
         for (int row = 0; row < n_replicates; row++) {
@@ -118,7 +126,7 @@ int main(void) {
             for (int col = 0; col < n_samples; col++)
                 if (MISNAN(AT(values[loss], row, col))) {
                     n_missing[loss]++;
-                    fprintf(manifest, "%s missing: %s replicate %03d\n", lp_loss_name(loss),
+                    fprintf(manifest, "%s missing: %s replicate %03d\n", lp_model_name(FIRST_LP + loss),
                             samples[col].name, row);
                     usable[row] = 0;
                 }
@@ -139,17 +147,17 @@ int main(void) {
         names[0] = frame_strdup("replicate");
         for (int col = 0; col < n_samples; col++) {
             char buffer[128];
-            snprintf(buffer, sizeof buffer, "%s_lp_%s", samples[col].name, lp_loss_name(loss));
+            snprintf(buffer, sizeof buffer, "%s_lp_%s", samples[col].name, lp_model_name(FIRST_LP + loss));
             names[col + 1] = frame_strdup(buffer);
         }
         DataFrame frame = df_from_matrix(table, (const char *const *)names);
         char path[256];
-        snprintf(path, sizeof path, "%s_%s.csv", OUTPUT_STEM, lp_loss_name(loss));
+        snprintf(path, sizeof path, "%s_%s.csv", OUTPUT_STEM, lp_model_name(FIRST_LP + loss));
         df_write_csv(&frame, path, csv_write_options_default());
 
         fprintf(manifest, "%s: %ld of %ld cells missing, %d of %d replicates kept "
                           "(the benchmark's own held out, %d dropped for a missing cell)\n\n",
-                lp_loss_name(loss), n_missing[loss], (long)(n_replicates - 1) * n_samples, keep,
+                lp_model_name(FIRST_LP + loss), n_missing[loss], (long)(n_replicates - 1) * n_samples, keep,
                 n_replicates, n_replicates - 1 - keep);
 
         df_free(&frame);

@@ -30,3 +30,34 @@ lp_lin: mean own-CoP rate 0.1070; mean off-target presence per CoP 0.0030
     cop_0320 0.0248 0.6130
   share of all off-target set slots taken by the top 10: 0.110
 
+lp_s1: mean own-CoP rate 0.0153; mean off-target presence per CoP 0.0053
+  CoPs whose off-target presence rate exceeds their own recovery rate: 770 of 1000
+  CoPs whose off-target presence exceeds the mean own rate 0.0153: 86
+  top 10 by off-target presence (cop, off rate, own rate):
+    cop_0437 0.2580 0.7850
+    cop_0410 0.1906 0.4380
+    cop_0717 0.1744 0.6270
+    cop_0191 0.1662 0.8570
+    cop_0832 0.1129 0.2360
+    cop_0031 0.0827 0.0650
+    cop_0032 0.0781 0.1920
+    cop_0772 0.0748 0.0250
+    cop_0692 0.0719 0.4490
+    cop_0554 0.0704 0.0130
+  share of all off-target set slots taken by the top 10: 0.243
+
+lp_s2: mean own-CoP rate 0.0161; mean off-target presence per CoP 0.0069
+  CoPs whose off-target presence rate exceeds their own recovery rate: 768 of 1000
+  CoPs whose off-target presence exceeds the mean own rate 0.0161: 99
+  top 10 by off-target presence (cop, off rate, own rate):
+    cop_0717 0.2546 0.7420
+    cop_0410 0.2363 0.5690
+    cop_0437 0.1793 0.7790
+    cop_0832 0.1729 0.4700
+    cop_0356 0.1358 0.7090
+    cop_0931 0.1278 0.2380
+    cop_0148 0.1215 0.3320
+    cop_0191 0.1204 0.7800
+    cop_0142 0.1072 0.1580
+    cop_0664 0.0952 0.0920
+  share of all off-target set slots taken by the top 10: 0.226

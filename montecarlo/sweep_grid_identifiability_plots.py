@@ -43,6 +43,7 @@ MODELS = {
     "lp_lin": "Local projection, linear",
     "lp_s1": "Local projection, state 1",
     "lp_s2": "Local projection, state 2",
+    "lp_nl": "Local projection, both states",
 }
 
 # The neutrals of applications/abm_system_winner_irf_plots.py, so the figures

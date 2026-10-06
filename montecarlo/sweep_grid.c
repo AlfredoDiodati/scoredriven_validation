@@ -1,8 +1,8 @@
 /*
 The impulse-response protocol run with every simulated run of every
 configuration standing in as the benchmark: 1000 configurations times 1000
-runs, for the t-QVARMA and the three local projections (linear, state 1,
-state 2), four million confidence sets.
+runs, for the t-QVARMA and the four local projections (linear, state 1,
+state 2, both states in one vector), five million confidence sets.
 
 montecarlo/sweep_cops.c uses one run per configuration as the benchmark, run 0.
 This uses all of them. Each individual benchmark is what sweep_cops.c does for
@@ -28,6 +28,9 @@ against 0.182 s per set, 2000 resamples, 999 x 1000 tables).
 Resumable at benchmark granularity. Rows go to a plain progress file as each
 batch finishes, and a rerun skips what it holds. When every model is done the
 rows are written to one gzip-compressed csv and the progress file is removed.
+A rerun with the result present and no progress file decompresses the result
+into the progress file, so a model added since is run and the rows already
+there are kept.
 
 Columns: model, benchmark configuration, benchmark run, whether the benchmark's
 configuration is in the set, its rank by mean loss (1 is the smallest), its MCS
@@ -35,11 +38,11 @@ p-value, the set size, whether the set was decided by an accepted test, the
 final p-value, runs dropped for a missing response, the configuration with the
 smallest mean loss, and the configurations in the set, space separated.
 
-SWEEP_GRID_WORKERS sets how many confidence sets run side by side (default 8,
-one per physical core here). Requires out/abm_system_fit_qvarma/,
+SWEEP_GRID_WORKERS sets how many confidence sets run side by side (default one
+per hardware thread). Requires out/abm_system_fit_qvarma/,
 out/abm_system_fit_lp/ and dataset/abm_system/, and rebuilds none of them.
 Progress goes to stderr. Each model's response cache is kept in
-out/sweep_grid_response_cache/ (1.6 to 2.1 GB each, ignored by git) so a
+out/sweep_grid_response_cache/ (1.6 to 3.2 GB each, ignored by git) so a
 restart reads it in seconds.
 */
 
@@ -63,7 +66,7 @@ restart reads it in seconds.
 #define RESULT_PATH "montecarlo/out/sweep_grid.csv.gz"
 #endif
 #ifndef RESPONSE_CACHE_DIR
-#define RESPONSE_CACHE_DIR "out/sweep_grid_response_cache"
+#define RESPONSE_CACHE_DIR RESPONSE_CACHE_DIR_DEFAULT
 #endif
 #ifndef FIRST_MODEL
 #define FIRST_MODEL 0
@@ -313,6 +316,32 @@ static void sweep_model(int model, int run_from, int run_to, const unsigned char
     response_cache_free(&cache);
 }
 
+/* The result back into the progress file, so a rerun after a model was added
+   skips the rows the result holds, keeps them, and does the new model. */
+static void restore_progress(void) {
+    FILE *f = fopen(RESULT_PATH, "rb");
+    assert(f && "sweep_grid: cannot open the result");
+    fseek(f, 0, SEEK_END);
+    long length = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    unsigned char *compressed = malloc((size_t)length);
+    assert(compressed && "sweep_grid: out of memory reading the result");
+    size_t n_read = fread(compressed, 1, (size_t)length, f);
+    assert(n_read == (size_t)length && "sweep_grid: short read of the result");
+    fclose(f);
+
+    size_t text_length;
+    unsigned char *text = gzip_inflate(compressed, (size_t)length, &text_length);
+    FILE *out = fopen(PROGRESS_PATH, "wb");
+    assert(out && "sweep_grid: cannot open the progress file for writing");
+    size_t n_written = fwrite(text, 1, text_length, out);
+    assert(n_written == text_length && "sweep_grid: short write of the progress file");
+    fclose(out);
+    fprintf(stderr, "%s restored to %s, %zu bytes\n", RESULT_PATH, PROGRESS_PATH, text_length);
+    free(text);
+    free(compressed);
+}
+
 /* The progress file, compressed whole into the result and then removed. */
 static void write_result(void) {
     FILE *f = fopen(PROGRESS_PATH, "rb");
@@ -345,7 +374,7 @@ int main(void) {
     INPUT_DIR = getenv("ABM_SYSTEM_INPUT_DIR");
     if (!INPUT_DIR) INPUT_DIR = LP_INPUT_DIR_DEFAULT;
     const char *workers_text = getenv("SWEEP_GRID_WORKERS");
-    int n_workers = workers_text ? atoi(workers_text) : 8;
+    int n_workers = workers_text ? atoi(workers_text) : omp_get_num_procs();
     assert(n_workers >= 1 && "sweep_grid: SWEEP_GRID_WORKERS must be at least 1");
     openblas_set_num_threads(1);
     /* A confidence set inside a worker runs on that worker's thread alone. */
@@ -353,10 +382,7 @@ int main(void) {
 
     struct stat st;
     int progress_exists = stat(PROGRESS_PATH, &st) == 0;
-    if (stat(RESULT_PATH, &st) == 0 && !progress_exists) {
-        fprintf(stderr, "%s already written, nothing to do\n", RESULT_PATH);
-        return 0;
-    }
+    int restored = stat(RESULT_PATH, &st) == 0 && !progress_exists;
 
     samples = lp_list_samples(LP_FIT_DIR, &n_samples);
     assert(n_samples > 0 && "sweep_grid: no configurations in the LP fit cache");
@@ -369,12 +395,20 @@ int main(void) {
         (void)found;
     }
 
+    if (restored) restore_progress();
     long n_done;
     unsigned char *done = read_done(&n_done);
     fprintf(stderr, "%ld benchmarks already in %s\n", n_done, PROGRESS_PATH);
+    if (restored && n_done == (long)N_MODELS * n_samples * n_replicates) {
+        remove(PROGRESS_PATH);
+        fprintf(stderr, "%s holds every model, nothing to do\n", RESULT_PATH);
+        free(done);
+        lp_free_samples(samples, n_samples);
+        return 0;
+    }
     FILE *progress = fopen(PROGRESS_PATH, "a");
     assert(progress && "sweep_grid: cannot open the progress file");
-    if (!progress_exists) {
+    if (!progress_exists && !restored) {
         fputs(HEADER, progress);
         fflush(progress);
     }

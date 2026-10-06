@@ -38,6 +38,13 @@
 #                                 so a routine build does not redo minutes of
 #                                 already-settled work every time.
 #   make asan                     under AddressSanitizer and UndefinedBehaviorSanitizer
+#   make montecarlo: build every MONTECARLO_STEMS binary and run the
+#   one-benchmark Monte Carlo experiment, montecarlo/run.sh.
+#   make montecarlo-lp: the same experiment under the local projections.
+#   make mc-<stem>: one montecarlo/ program on its own, built and run.
+#   make mc-sweep_grid: every run of every configuration as the benchmark, built
+#   at -O3 by its own rule, not part of `make montecarlo`.
+#   docs/MONTECARLO_VALIDATION.md, "The experiments", lists them all.
 #
 # Three kinds of script, three directories, one stem list each. A stem maps to
 # <directory>/<stem>.c and bin/<stem>, and the targets below are generated from
@@ -166,7 +173,8 @@ EXPERIMENT_STEMS := us_qvarma_spec_choice \
 # reuses is applications/'s output, above all the million cached fits, since it
 # estimates nothing. docs/MONTECARLO_VALIDATION.md.
 MONTECARLO_STEMS := benchmark_choice irf_loss score_loss mcs mcs_statistic_comparison \
-                     sweep_irf sweep_score lp_irf_loss lp_mcs lp_sweep sweep_cops
+                     sweep_irf sweep_score lp_irf_loss lp_mcs lp_sweep sweep_cops \
+                     compressed_response_recovery
 
 # Whatever the application scripts share, so editing it rebuilds them.
 APPLICATION_HEADERS := applications/us_data.h applications/abm_system.h applications/lp_system.h \

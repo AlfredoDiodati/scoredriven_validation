@@ -124,12 +124,17 @@ _temp/
 # bin/sweep_grid from the fits and the dataset when missing.
 out/sweep_grid_response_cache/
 
-# The grid Monte Carlo's running log of finished benchmarks, 140 MB and growing
-# while bin/sweep_grid runs. The compressed per-model files it is split into
-# when a model is done are kept.
+# The grid Monte Carlo's running log of finished benchmarks, 260 MB when
+# complete. bin/sweep_grid compresses it into sweep_grid.csv.gz and removes it
+# when every model is done.
 montecarlo/out/sweep_grid_progress.csv
 
-# The grid Monte Carlo's per-model result files and the combined one
-# bin/sweep_grid writes at the end, 13 to 15 MB each.
+# The grid Monte Carlo's result, 60 MB, and the per-model files an earlier
+# version of bin/sweep_grid wrote, 13 to 15 MB each, the same rows.
 montecarlo/out/sweep_grid_*.csv.gz
 montecarlo/out/sweep_grid.csv.gz
+
+# Every run's compressed response vector, written by
+# montecarlo/compressed_response_learn.py, 36 to 420 MB per file. The script
+# rebuilds them from out/sweep_grid_response_cache/ in minutes.
+out/compressed_response_cache/

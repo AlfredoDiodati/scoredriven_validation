@@ -1,7 +1,8 @@
 /*
 The confidence sets of the Monte Carlo experiment under the local projections:
-each of the three loss matrices montecarlo/lp_irf_loss.c writes (linear, state
-1, state 2) under both Model Confidence Set statistics, six confidence sets.
+each of the four loss matrices montecarlo/lp_irf_loss.c writes (linear, state
+1, state 2, both states in one vector) under both Model Confidence Set
+statistics, eight confidence sets.
 
 The scoring is montecarlo/mcs_statistic_comparison.c's, copied, with every
 setting unchanged, so a local-projection set and a t-QVARMA set differ only in
@@ -29,7 +30,7 @@ Nothing printed.
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
-#include "applications/abm_system_lp.h"
+#include "montecarlo/response_cache.h"
 
 #define N_LAST_STANDING 10
 
@@ -217,17 +218,18 @@ static void compare_statistics(const char *loss_path, const char *report_path,
 }
 
 int main(void) {
-    static const char *const description[LP_N_LOSSES] = {
-        "linear local projection impulse-response MAE",
-        "state-dependent local projection impulse-response MAE, state 1 (lags times 1 - F)",
-        "state-dependent local projection impulse-response MAE, state 2 (lags times F)"
+    static const char *const description[N_MODELS] = {
+        [MODEL_LP_LIN] = "linear local projection impulse-response MAE",
+        [MODEL_LP_S1] = "state-dependent local projection impulse-response MAE, state 1 (lags times 1 - F)",
+        [MODEL_LP_S2] = "state-dependent local projection impulse-response MAE, state 2 (lags times F)",
+        [MODEL_LP_NL] = "state-dependent local projection impulse-response MAE, states 1 and 2 in one vector"
     };
-    for (int loss = 0; loss < LP_N_LOSSES; loss++) {
+    for (int model = MODEL_LP_LIN; model < N_MODELS; model++) {
         char loss_path[128], report_path[128], table_path[128];
-        snprintf(loss_path, sizeof loss_path, "montecarlo/out/lp_irf_loss_%s.csv", lp_loss_name(loss));
-        snprintf(report_path, sizeof report_path, "montecarlo/out/lp_mcs_%s.txt", lp_loss_name(loss));
-        snprintf(table_path, sizeof table_path, "montecarlo/out/lp_mcs_%s.csv", lp_loss_name(loss));
-        compare_statistics(loss_path, report_path, table_path, description[loss]);
+        snprintf(loss_path, sizeof loss_path, "montecarlo/out/lp_irf_loss_%s.csv", lp_model_name(model));
+        snprintf(report_path, sizeof report_path, "montecarlo/out/lp_mcs_%s.txt", lp_model_name(model));
+        snprintf(table_path, sizeof table_path, "montecarlo/out/lp_mcs_%s.csv", lp_model_name(model));
+        compare_statistics(loss_path, report_path, table_path, description[model]);
     }
     return 0;
 }

@@ -1,0 +1,11 @@
+qvarma_lp_lin: training runs 500-999 of every configuration
+entries 925, of which some run moves 900
+between- over within-configuration variance, leading 30 directions: [76.96, 65.96, 49.45, 21.56, 17.72, 16.3, 9.02, 4.43, 3.13, 2.4, 1.56, 1.36, 1.22, 1.04, 0.9, 0.78, 0.63, 0.53, 0.51, 0.45, 0.44, 0.43, 0.36, 0.32, 0.29, 0.24, 0.21, 0.2, 0.18, 0.16]
+directions with ratio above 1: 14
+ridge penalty 0.1: held-out R2 per parameter [0.17, 0.07, 0.71, 1.0, 0.78, 0.62, 0.92, 0.97, 0.89]
+ridge penalty 1: held-out R2 per parameter [0.35, 0.3, 0.74, 1.0, 0.78, 0.64, 0.94, 0.98, 0.89]
+ridge penalty 10: held-out R2 per parameter [0.43, 0.37, 0.74, 1.0, 0.78, 0.64, 0.95, 0.98, 0.89]
+ridge penalty 100: held-out R2 per parameter [0.41, 0.4, 0.74, 1.0, 0.78, 0.6, 0.95, 0.98, 0.88]
+ridge penalty 1000: held-out R2 per parameter [0.35, 0.39, 0.7, 0.99, 0.76, 0.5, 0.93, 0.97, 0.85]
+ridge penalty 10000: held-out R2 per parameter [0.27, 0.33, 0.48, 0.96, 0.71, 0.26, 0.86, 0.93, 0.72]
+chosen penalty 10

@@ -581,6 +581,17 @@ the first step fits them:
     ./bin/lp_sweep                 every replicate of cop_0191 as the benchmark
     ./bin/sweep_cops               replicate 0 of every configuration as the
                                    benchmark, t-QVARMA and local projections
+    make mc-sweep_grid             every replicate of every configuration as
+                                   the benchmark, four million confidence sets
+
+`docs/MONTECARLO_VALIDATION.md`, "The experiments", lists all five Monte Carlo
+experiments with their programs, settings and outputs. The recovery rate that
+`cop_0191` reaches, 876 of its own 1000 replicates under the t-QVARMA, is near
+the top of the field: over every replicate of every configuration it is about
+one in ten for the t-QVARMA and the linear local projection, and under 2% for
+the two states. `docs/MONTECARLO_COMPRESSED_RESPONSE.md` shows that comparing a
+few combinations of the responses instead of all of them raises it to 80% to
+95%.
 
 `applications/lp_system.h` builds the series the fits use, the stored series
 the t-QVARMA is fitted on plus R's moving average of log GDP to set the state,

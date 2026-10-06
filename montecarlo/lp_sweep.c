@@ -7,25 +7,25 @@ montecarlo/lp_irf_loss.c and montecarlo/lp_mcs.c ask, for one benchmark,
 whether the confidence set returns the configuration it came from. One
 benchmark cannot tell a protocol that identifies a configuration from one that
 drew well once, so this repeats each run with every replicate of that
-configuration standing in as the benchmark, for each of the three models
-(linear, state 1, state 2), and records how often the answer comes back right.
+configuration standing in as the benchmark, for each of the four models
+(linear, state 1, state 2, both states in one vector), and records how often
+the answer comes back right.
 
 Each individual run is what lp_irf_loss.c and lp_mcs.c do for its benchmark:
-the same MAE over the 400 response entries, the benchmark's own replicate held
-out of every column, a replicate with a hole dropped, MCS_TR at 10000
-resamples, block length 1, bootstrap variance.
+the same MAE over the 400 response entries (800 for both states), the
+benchmark's own replicate held out of every column, a replicate with a hole
+dropped, MCS_TR at 10000 resamples, block length 1, bootstrap variance.
 
 As in sweep_irf.c, a cell's response vector does not depend on the benchmark,
 so every cell's vector is read once and held as float32, and each benchmark's
 loss matrix is one pass of absolute differences over that cache, accumulated
-in double. One model's cache is 1000 x 1000 x 400 floats, 1.6 GB. The three
-models are swept one after another, each with its own cache freed before the
-next is built, because all three at once would be 4.8 GB on a 7.5 GB machine.
-The archives and the dataset are therefore read once per model, three passes
-of a minute or two each, which saves 3.2 GB of memory.
+in double. The cache is montecarlo/response_cache.h's, the same files
+montecarlo/sweep_grid.c keeps: 1.6 GB per model, 3.2 GB for both states. The
+models are swept one after another, each cache released before the next is
+opened.
 
-Benchmarks run one at a time by default; LP_SWEEP_WORKERS runs several side
-by side (see main for why one is the default).
+LP_SWEEP_WORKERS benchmarks run side by side, one thread each, default one per
+hardware thread.
 
 Resumable at benchmark granularity per model: every finished benchmark is
 appended to that model's summary as it finishes, and a rerun skips the
@@ -40,7 +40,7 @@ montecarlo/out/benchmark.env. Writes montecarlo/out/lp_sweep_<model>.csv, one
 row per benchmark. Progress goes to stderr, so the summaries are the result.
 */
 
-#include "applications/abm_system_lp.h"
+#include "montecarlo/response_cache.h"
 #include "montecarlo/benchmark.h"
 #include <et_al./inference/mcs.h>
 #include <et_al./stats.h>
@@ -55,37 +55,6 @@ static const char *FIT_DIR;
 static const char *INPUT_DIR;
 static int n_samples = 0;
 static int n_replicates = 0;
-
-static float *response_slot(float *cache, int sample, int replicate) {
-    return cache + ((size_t)sample * n_replicates + replicate) * LP_RESPONSE_DIM;
-}
-
-/* Every cell's response vector under one model, read once. A cell with no
-   usable fit is marked by a NaN in its first entry and counted. */
-static float *build_response_cache(const LpSample *samples, int loss, long *n_missing_out) {
-    size_t cells = (size_t)n_samples * n_replicates;
-    float *cache = malloc(cells * LP_RESPONSE_DIM * sizeof(float));
-    assert(cache && "lp_sweep: out of memory for the response cache");
-    for (size_t cell = 0; cell < cells; cell++) cache[cell * LP_RESPONSE_DIM] = (float)NAN;
-
-    long n_missing = 0;
-    #pragma omp parallel for schedule(dynamic) reduction(+:n_missing)
-    for (int sample = 0; sample < n_samples; sample++) {
-        LpConfiguration c = lp_configuration_load(FIT_DIR, INPUT_DIR, samples[sample].name, n_replicates, LP_LAYOUT_GROWTH);
-        for (int replicate = 0; replicate < n_replicates; replicate++) {
-            if (!lp_configuration_ok(&c, replicate, loss)) { n_missing++; continue; }
-            const mreal *response = lp_response(c.row[replicate], loss);
-            float *slot = response_slot(cache, sample, replicate);
-            for (int i = 0; i < LP_RESPONSE_DIM; i++) slot[i] = (float)response[i];
-        }
-        lp_configuration_free(&c);
-        if (sample % 100 == 0)
-            fprintf(stderr, "  %s cache: configuration %d of %d\n", lp_loss_name(loss), sample, n_samples);
-    }
-
-    *n_missing_out = n_missing;
-    return cache;
-}
 
 /* Which benchmarks a model's summary already holds. */
 static int *read_done(const char *path, int *count) {
@@ -117,9 +86,10 @@ typedef struct {
 
 /* The whole protocol for one benchmark, on the calling thread alone: the loss
    matrix against that benchmark, then the confidence set over it. */
-static BenchmarkOutcome run_benchmark(const float *cache, const char *const *model_name,
+static BenchmarkOutcome run_benchmark(const ResponseCache *cache, const char *const *model_name,
                                       int benchmark_sample, int benchmark) {
-    const float *reference = response_slot((float *)cache, benchmark_sample, benchmark);
+    const float *reference = response_slot(cache, benchmark_sample, benchmark);
+    const int dim = cache->dim;
 
     Mat values = mat_new(n_replicates - 1, n_samples);
     int *usable = malloc((size_t)(n_replicates - 1) * sizeof(int));
@@ -129,15 +99,15 @@ static BenchmarkOutcome run_benchmark(const float *cache, const char *const *mod
         if (replicate == benchmark) continue;
         usable[row] = 1;
         for (int sample = 0; sample < n_samples; sample++) {
-            const float *cell = response_slot((float *)cache, sample, replicate);
+            const float *cell = response_slot(cache, sample, replicate);
             if (MISNAN(cell[0])) {
                 AT(values, row, sample) = (mreal)NAN;
                 usable[row] = 0;
                 continue;
             }
             double sum = 0;
-            for (int i = 0; i < LP_RESPONSE_DIM; i++) sum += fabs((double)cell[i] - (double)reference[i]);
-            AT(values, row, sample) = (mreal)(sum / LP_RESPONSE_DIM);
+            for (int i = 0; i < dim; i++) sum += fabs((double)cell[i] - (double)reference[i]);
+            AT(values, row, sample) = (mreal)(sum / dim);
         }
         row++;
     }
@@ -183,20 +153,21 @@ static BenchmarkOutcome run_benchmark(const float *cache, const char *const *mod
     return o;
 }
 
-static void sweep_model(const LpSample *samples, int benchmark_sample, int loss, int n_workers) {
+static void sweep_model(const LpSample *samples, int benchmark_sample, int model, int n_workers) {
+    const char *name = lp_model_name(model);
     char summary_path[256];
-    snprintf(summary_path, sizeof summary_path, "%s_%s.csv", SUMMARY_STEM, lp_loss_name(loss));
+    snprintf(summary_path, sizeof summary_path, "%s_%s.csv", SUMMARY_STEM, name);
 
     int n_done;
     int *done = read_done(summary_path, &n_done);
-    fprintf(stderr, "%s: %d of %d benchmarks already done\n", lp_loss_name(loss), n_done, n_replicates);
+    fprintf(stderr, "%s: %d of %d benchmarks already done\n", name, n_done, n_replicates);
     if (n_done == n_replicates) { free(done); return; }
 
-    fprintf(stderr, "%s: building the response cache, %.1f GB\n", lp_loss_name(loss),
-            (double)n_samples * n_replicates * LP_RESPONSE_DIM * sizeof(float) / 1e9);
-    long n_missing_cells;
-    float *cache = build_response_cache(samples, loss, &n_missing_cells);
-    fprintf(stderr, "%s: cache built, %ld cells missing\n", lp_loss_name(loss), n_missing_cells);
+    fprintf(stderr, "%s: building the response cache, %.1f GB\n", name,
+            (double)n_samples * n_replicates * response_dim(model) * sizeof(float) / 1e9);
+    ResponseCache cache = response_cache_load_or_build(model, samples, n_samples, n_replicates, FIT_DIR,
+                                                       INPUT_DIR, RESPONSE_CACHE_DIR_DEFAULT);
+    fprintf(stderr, "%s: cache built, %ld cells missing\n", name, cache.n_missing);
 
     FILE *summary = fopen(summary_path, n_done ? "a" : "w");
     assert(summary && "lp_sweep: cannot open a summary for writing");
@@ -210,7 +181,7 @@ static void sweep_model(const LpSample *samples, int benchmark_sample, int loss,
     char (*name_buffer)[128] = malloc((size_t)n_samples * sizeof *name_buffer);
     assert(model_name && name_buffer);
     for (int i = 0; i < n_samples; i++) {
-        snprintf(name_buffer[i], sizeof name_buffer[i], "%s_lp_%s", samples[i].name, lp_loss_name(loss));
+        snprintf(name_buffer[i], sizeof name_buffer[i], "%s_lp_%s", samples[i].name, name);
         model_name[i] = name_buffer[i];
     }
 
@@ -223,18 +194,17 @@ static void sweep_model(const LpSample *samples, int benchmark_sample, int loss,
     #pragma omp parallel for schedule(dynamic, 1) num_threads(n_workers) if (n_workers > 1)
     for (int benchmark = 0; benchmark < n_replicates; benchmark++) {
         if (done[benchmark]) continue;
-        if (MISNAN(response_slot(cache, benchmark_sample, benchmark)[0])) {
-            fprintf(stderr, "%s benchmark %03d skipped, its own response is missing\n",
-                    lp_loss_name(loss), benchmark);
+        if (MISNAN(response_slot(&cache, benchmark_sample, benchmark)[0])) {
+            fprintf(stderr, "%s benchmark %03d skipped, its own response is missing\n", name, benchmark);
             continue;
         }
-        BenchmarkOutcome o = run_benchmark(cache, model_name, benchmark_sample, benchmark);
+        BenchmarkOutcome o = run_benchmark(&cache, model_name, benchmark_sample, benchmark);
         #pragma omp critical(lp_sweep_summary)
         {
             fprintf(summary, "%d,%d,%d,%.6f,%d,%s,%.6f,%d\n", benchmark, o.in_set, o.rank, o.pvalue,
                     o.set_size, o.converged ? "yes" : "no", o.final_pvalue, o.n_dropped);
             fflush(summary);
-            fprintf(stderr, "%s benchmark %03d: rank %d, in set %d, set size %d\n", lp_loss_name(loss),
+            fprintf(stderr, "%s benchmark %03d: rank %d, in set %d, set size %d\n", name,
                     benchmark, o.rank, o.in_set, o.set_size);
         }
     }
@@ -242,7 +212,7 @@ static void sweep_model(const LpSample *samples, int benchmark_sample, int loss,
     fclose(summary);
     free(name_buffer);
     free(model_name);
-    free(cache);
+    response_cache_free(&cache);
     free(done);
 }
 
@@ -263,17 +233,14 @@ int main(void) {
         if (strcmp(samples[i].name, benchmark.sample) == 0) benchmark_sample = i;
     assert(benchmark_sample >= 0 && "lp_sweep: the benchmark configuration is not in the LP fit cache");
 
-    /* One confidence set at a time by default, each using all of mcs's threads.
-       Eight side by side, each on one thread, measured slower on this machine:
-       38 benchmarks of the linear model at about 3 minutes each, against about
-       2 minutes each one at a time (before et_al's mcs got its faster row
-       bound, 1000 configurations, 999 replicates, 10000 draws). Each set holds
-       about 180 MB, so LP_SWEEP_WORKERS above one also costs memory. */
+    /* LP_SWEEP_WORKERS confidence sets side by side, one thread each; by
+       default one per hardware thread. Each set at 10000 resamples holds about
+       100 MB. */
     const char *workers_text = getenv("LP_SWEEP_WORKERS");
-    int n_workers = workers_text ? atoi(workers_text) : 1;
+    int n_workers = workers_text ? atoi(workers_text) : omp_get_num_procs();
     assert(n_workers >= 1 && "lp_sweep: LP_SWEEP_WORKERS must be at least 1");
 
-    for (int loss = 0; loss < LP_N_LOSSES; loss++) sweep_model(samples, benchmark_sample, loss, n_workers);
+    for (int model = MODEL_LP_LIN; model < N_MODELS; model++) sweep_model(samples, benchmark_sample, model, n_workers);
 
     lp_free_samples(samples, n_samples);
     return 0;

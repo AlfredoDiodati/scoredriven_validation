@@ -1,0 +1,11 @@
+lp_s1: training runs 500-999 of every configuration
+entries 400, of which some run moves 385
+between- over within-configuration variance, leading 30 directions: [22.63, 11.89, 11.26, 6.9, 6.07, 2.73, 1.35, 0.85, 0.73, 0.65, 0.37, 0.34, 0.31, 0.24, 0.22, 0.2, 0.18, 0.15, 0.12, 0.11, 0.09, 0.08, 0.06, 0.05, 0.05, 0.04, 0.04, 0.03, 0.03, 0.03]
+directions with ratio above 1: 7
+ridge penalty 0.1: held-out R2 per parameter [0.19, 0.08, 0.67, 0.99, 0.5, 0.37, 0.92, 0.95, 0.8]
+ridge penalty 1: held-out R2 per parameter [0.19, 0.08, 0.67, 0.99, 0.5, 0.37, 0.92, 0.95, 0.8]
+ridge penalty 10: held-out R2 per parameter [0.19, 0.08, 0.67, 0.99, 0.5, 0.37, 0.92, 0.95, 0.8]
+ridge penalty 100: held-out R2 per parameter [0.19, 0.08, 0.67, 0.99, 0.5, 0.37, 0.92, 0.95, 0.8]
+ridge penalty 1000: held-out R2 per parameter [0.16, 0.06, 0.64, 0.99, 0.46, 0.33, 0.91, 0.95, 0.76]
+ridge penalty 10000: held-out R2 per parameter [0.08, 0.02, 0.51, 0.96, 0.4, 0.21, 0.84, 0.93, 0.67]
+chosen penalty 10

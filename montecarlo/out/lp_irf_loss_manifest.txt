@@ -1,4 +1,4 @@
-1000 configurations, 1000 replicates each, loss = MAE between stacked local-projection impulse responses (400 entries, horizons 0 to 15)
+1000 configurations, 1000 replicates each, loss = MAE between stacked local-projection impulse responses (400 entries, horizons 0 to 15; 800 under nl, state 1 then state 2)
 benchmark: cop_0191 replicate 706, its own cached LP fits and its own series; replicate 706 is held out of every column
 
 lin: 0 of 999000 cells missing, 999 of 1000 replicates kept (the benchmark's own held out, 0 dropped for a missing cell)
@@ -6,4 +6,6 @@ lin: 0 of 999000 cells missing, 999 of 1000 replicates kept (the benchmark's own
 s1: 0 of 999000 cells missing, 999 of 1000 replicates kept (the benchmark's own held out, 0 dropped for a missing cell)
 
 s2: 0 of 999000 cells missing, 999 of 1000 replicates kept (the benchmark's own held out, 0 dropped for a missing cell)
+
+nl: 0 of 999000 cells missing, 999 of 1000 replicates kept (the benchmark's own held out, 0 dropped for a missing cell)
 

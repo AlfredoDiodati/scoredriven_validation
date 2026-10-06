@@ -1,7 +1,7 @@
 /*
 The impulse-response protocol run with the first replicate of every
-configuration standing in as the benchmark, for the t-QVARMA and the three
-local projections (linear, state 1, state 2).
+configuration standing in as the benchmark, for the t-QVARMA and the four
+local projections (linear, state 1, state 2, both states in one vector).
 
 montecarlo/sweep_irf.c and montecarlo/lp_sweep.c ask how often the confidence
 set returns cop_0191 when each of cop_0191's 1000 replicates is the benchmark
@@ -19,13 +19,18 @@ for every benchmark of one model and are decided once.
 
 Response vectors are read once per model and held as float32, as in the two
 sweeps this extends: 2.1 GB for the t-QVARMA (525 entries per cell), 1.6 GB for
-each local projection (400 entries). One model's cache is freed before the next
-is built.
+each local projection (400 entries), 3.2 GB for both states in one vector. The
+caches are montecarlo/response_cache.h's files, shared with
+montecarlo/sweep_grid.c, and one model's is released before the next is
+opened.
 
-Resumable at benchmark granularity. Rows go to a plain progress file as each
-benchmark finishes, and a rerun skips what it holds. When every model is done
+SWEEP_COPS_WORKERS benchmarks run side by side, one thread each, default one
+per hardware thread. Resumable at benchmark granularity. Rows go to a plain
+progress file as each benchmark finishes, in the order they finish, and a rerun skips what it holds. When every model is done
 the rows are written to one gzip-compressed csv and the progress file is
-removed, so a finished run leaves a single file.
+removed, so a finished run leaves a single file. A rerun with the result
+present and no progress file decompresses the result into the progress file,
+so a model added since is run and the rows already there are kept.
 
 Columns: model, benchmark configuration, whether it is in the set, its rank by
 mean loss (1 is the smallest), its MCS p-value, the set size, whether the set
@@ -102,13 +107,14 @@ static int *kept_replicates(const ResponseCache *cache, int *n_kept) {
     return kept;
 }
 
-static void sweep_model(int model, const int *done, int n_done, FILE *progress) {
+static void sweep_model(int model, const int *done, int n_done, FILE *progress, int n_workers) {
     fprintf(stderr, "%s: %d of %d benchmarks already done\n", model_label[model], n_done, n_samples);
     if (n_done == n_samples) return;
 
     fprintf(stderr, "%s: building the response cache, %.1f GB\n", model_label[model],
             (double)n_samples * n_replicates * response_dim(model) * sizeof(float) / 1e9);
-    ResponseCache cache = response_cache_build(model, samples, n_samples, n_replicates, LP_FIT_DIR, INPUT_DIR);
+    ResponseCache cache = response_cache_load_or_build(model, samples, n_samples, n_replicates, LP_FIT_DIR,
+                                                       INPUT_DIR, RESPONSE_CACHE_DIR_DEFAULT);
     long n_missing_cells = cache.n_missing;
     int n_kept;
     int *kept = kept_replicates(&cache, &n_kept);
@@ -124,7 +130,14 @@ static void sweep_model(int model, const int *done, int n_done, FILE *progress) 
         model_name[i] = name_buffer[i];
     }
 
+    /* Benchmarks are independent, so several run at once, each loss matrix
+       and confidence set on one thread, with nested parallel regions switched
+       off. With one worker the loop runs on the calling thread and each step
+       uses all threads instead. Rows reach the progress file in the order they
+       finish; the configuration in the second column identifies them. */
     const int dim = response_dim(model);
+    if (n_workers > 1) omp_set_max_active_levels(1);
+    #pragma omp parallel for schedule(dynamic, 1) num_threads(n_workers) if (n_workers > 1)
     for (int benchmark_sample = 0; benchmark_sample < n_samples; benchmark_sample++) {
         if (done[model * n_samples + benchmark_sample]) continue;
         const float *reference = response_slot(&cache, benchmark_sample, BENCHMARK_REPLICATE);
@@ -164,21 +177,24 @@ static void sweep_model(int model, const int *done, int n_done, FILE *progress) 
             if (sample != benchmark_sample && mean < benchmark_mean) rank++;
         }
 
-        fprintf(progress, "%s,%d,%d,%d,%.6f,%d,%d,%.6f,%d,%d,%.2f,", model_label[model],
-                samples[benchmark_sample].index, mcs_in_set(&res, benchmark_sample), rank,
-                res.pvalue[benchmark_sample], res.n_surviving, res.converged, res.final_pvalue,
-                n_replicates - 1 - n_kept, samples[lowest].index, mcs_seconds);
-        int first_member = 1;
-        for (int sample = 0; sample < n_samples; sample++)
-            if (mcs_in_set(&res, sample)) {
-                fprintf(progress, first_member ? "%d" : " %d", samples[sample].index);
-                first_member = 0;
-            }
-        fprintf(progress, "\n");
-        fflush(progress);
-        fprintf(stderr, "%s %s: rank %d, in set %d, set size %d, %.1f s\n", model_label[model],
-                samples[benchmark_sample].name, rank, mcs_in_set(&res, benchmark_sample), res.n_surviving,
-                mcs_seconds);
+        #pragma omp critical(sweep_cops_progress)
+        {
+            fprintf(progress, "%s,%d,%d,%d,%.6f,%d,%d,%.6f,%d,%d,%.2f,", model_label[model],
+                    samples[benchmark_sample].index, mcs_in_set(&res, benchmark_sample), rank,
+                    res.pvalue[benchmark_sample], res.n_surviving, res.converged, res.final_pvalue,
+                    n_replicates - 1 - n_kept, samples[lowest].index, mcs_seconds);
+            int first_member = 1;
+            for (int sample = 0; sample < n_samples; sample++)
+                if (mcs_in_set(&res, sample)) {
+                    fprintf(progress, first_member ? "%d" : " %d", samples[sample].index);
+                    first_member = 0;
+                }
+            fprintf(progress, "\n");
+            fflush(progress);
+            fprintf(stderr, "%s %s: rank %d, in set %d, set size %d, %.1f s\n", model_label[model],
+                    samples[benchmark_sample].name, rank, mcs_in_set(&res, benchmark_sample), res.n_surviving,
+                    mcs_seconds);
+        }
 
         mcs_free(&res);
         df_free(&losses);
@@ -188,6 +204,32 @@ static void sweep_model(int model, const int *done, int n_done, FILE *progress) 
     free(model_name);
     free(kept);
     response_cache_free(&cache);
+}
+
+/* The result back into the progress file, so a rerun after a model was added
+   skips the rows the result holds, keeps them, and does the new model. */
+static void restore_progress(void) {
+    FILE *f = fopen(RESULT_PATH, "rb");
+    assert(f && "sweep_cops: cannot open the result");
+    fseek(f, 0, SEEK_END);
+    long length = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    unsigned char *compressed = malloc((size_t)length);
+    assert(compressed && "sweep_cops: out of memory reading the result");
+    size_t n_read = fread(compressed, 1, (size_t)length, f);
+    assert(n_read == (size_t)length && "sweep_cops: short read of the result");
+    fclose(f);
+
+    size_t text_length;
+    unsigned char *text = gzip_inflate(compressed, (size_t)length, &text_length);
+    FILE *out = fopen(PROGRESS_PATH, "wb");
+    assert(out && "sweep_cops: cannot open the progress file for writing");
+    size_t n_written = fwrite(text, 1, text_length, out);
+    assert(n_written == text_length && "sweep_cops: short write of the progress file");
+    fclose(out);
+    fprintf(stderr, "%s restored to %s, %zu bytes\n", RESULT_PATH, PROGRESS_PATH, text_length);
+    free(text);
+    free(compressed);
 }
 
 /* The progress file, compressed whole into the result and then removed. */
@@ -225,10 +267,7 @@ int main(void) {
 
     struct stat st;
     int progress_exists = stat(PROGRESS_PATH, &st) == 0;
-    if (stat(RESULT_PATH, &st) == 0 && !progress_exists) {
-        fprintf(stderr, "%s already written, nothing to do\n", RESULT_PATH);
-        return 0;
-    }
+    int restored = stat(RESULT_PATH, &st) == 0 && !progress_exists;
 
     samples = lp_list_samples(LP_FIT_DIR, &n_samples);
     assert(n_samples > 0 && "sweep_cops: no configurations in the LP fit cache");
@@ -241,17 +280,33 @@ int main(void) {
         fclose(probe);
     }
 
+    if (restored) restore_progress();
     int n_done[N_MODELS];
     int *done = read_done(n_done);
+    int n_done_all = 0;
+    for (int model = 0; model < N_MODELS; model++) n_done_all += n_done[model];
+    if (restored && n_done_all == N_MODELS * n_samples) {
+        remove(PROGRESS_PATH);
+        fprintf(stderr, "%s holds every model, nothing to do\n", RESULT_PATH);
+        free(done);
+        lp_free_samples(samples, n_samples);
+        return 0;
+    }
     FILE *progress = fopen(PROGRESS_PATH, "a");
     assert(progress && "sweep_cops: cannot open the progress file");
-    if (!progress_exists) {
+    if (!progress_exists && !restored) {
         fputs(HEADER, progress);
         fflush(progress);
     }
 
+    /* SWEEP_COPS_WORKERS confidence sets side by side, one thread each; by
+       default one per hardware thread. Each set at 10000 resamples holds about
+       100 MB. */
+    const char *workers_text = getenv("SWEEP_COPS_WORKERS");
+    int n_workers = workers_text ? atoi(workers_text) : omp_get_num_procs();
+    assert(n_workers >= 1 && "sweep_cops: SWEEP_COPS_WORKERS must be at least 1");
     for (int model = 0; model < N_MODELS; model++)
-        sweep_model(model, done, n_done[model], progress);
+        sweep_model(model, done, n_done[model], progress, n_workers);
     fclose(progress);
 
     /* A benchmark whose own response is missing is skipped rather than

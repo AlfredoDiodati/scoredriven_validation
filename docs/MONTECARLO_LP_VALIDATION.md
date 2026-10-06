@@ -38,6 +38,14 @@ impulse responses are a 5 by 16 by 5 array, 400 numbers: the linear model's,
 and the state-dependent model's in state 1 (periods weighted towards GDP above
 trend) and state 2 (below).
 
+The state-dependent model is also compared as one vector, following
+`_temp/Note on non-lin LP.pdf`: state 1's 400 responses followed by state 2's,
+800 numbers, called "both states" below (`lp_nl` in the code and in the file
+names, `nl` in the `lp_*` files). Its loss, the mean absolute difference over
+the 800 entries, is exactly the average of the two states' losses, since the
+two halves have the same length; measured on the single-benchmark tables
+below, the largest relative difference between the two is 4.8e-15.
+
 `applications/abm_system_fit_lp.c` writes the fits to one compressed archive
 per configuration, `out/abm_system_fit_lp/cop_NNNN.npz`, one row per run, with
 the responses, the shock matrix, the fit diagnostics, the settings and a
@@ -57,8 +65,8 @@ The run standing in for the US data is the same as in the t-QVARMA experiment,
 configuration is left out, because all configurations share the same random
 seeds. The loss of a run is the mean absolute difference between its 400
 response values and the stand-in's, separately for the linear model, state 1
-and state 2. Each loss table is 999 runs by 1000 configurations; no cell was
-missing.
+and state 2, and over 800 values for both states. Each loss table is 999 runs
+by 1000 configurations; no cell was missing.
 
 The confidence set is computed exactly as in the t-QVARMA experiment: level
 0.05, 10000 bootstrap resamples of single runs, the bootstrap variance of the
@@ -73,6 +81,8 @@ Result (`montecarlo/out/lp_mcs_<model>.txt` and `.csv`):
 - state 2: the set holds `cop_0437`, `cop_0832` and `cop_0191`; `cop_0191` is
   third by mean loss (1.431 against 1.408 for `cop_0437`), and the set stopped
   on an accepted test at p = 0.0773.
+- both states: the set holds `cop_0191` alone, smallest mean loss (1.383,
+  next `cop_0437` at 1.425), under MCS_TR and MCS_TMAX.
 
 The t-QVARMA experiment, same stand-in run, same settings, keeps `cop_0191`
 alone.

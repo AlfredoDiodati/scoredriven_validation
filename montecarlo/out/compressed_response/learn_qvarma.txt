@@ -1,0 +1,11 @@
+qvarma: training runs 500-999 of every configuration
+entries 525, of which some run moves 515
+between- over within-configuration variance, leading 30 directions: [87.33, 41.01, 20.13, 6.92, 3.76, 3.09, 1.74, 1.17, 0.88, 0.62, 0.55, 0.42, 0.35, 0.33, 0.28, 0.24, 0.22, 0.18, 0.17, 0.16, 0.14, 0.13, 0.12, 0.11, 0.1, 0.09, 0.09, 0.08, 0.07, 0.07]
+directions with ratio above 1: 8
+ridge penalty 0.1: held-out R2 per parameter [0.0, 0.2, 0.17, 0.93, 0.55, 0.58, 0.84, 0.89, 0.35]
+ridge penalty 1: held-out R2 per parameter [0.0, 0.21, 0.17, 0.93, 0.55, 0.58, 0.84, 0.89, 0.35]
+ridge penalty 10: held-out R2 per parameter [0.0, 0.21, 0.17, 0.93, 0.55, 0.58, 0.84, 0.89, 0.35]
+ridge penalty 100: held-out R2 per parameter [-0.0, 0.2, 0.17, 0.93, 0.55, 0.57, 0.84, 0.89, 0.34]
+ridge penalty 1000: held-out R2 per parameter [-0.03, 0.18, 0.17, 0.92, 0.54, 0.46, 0.82, 0.88, 0.31]
+ridge penalty 10000: held-out R2 per parameter [-0.07, 0.14, 0.14, 0.88, 0.52, 0.26, 0.78, 0.86, 0.26]
+chosen penalty 1
