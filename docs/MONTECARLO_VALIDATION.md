@@ -32,7 +32,10 @@ Five experiments, each a larger set of benchmarks than the one before. In every
 one the benchmark's run index is held out of every configuration's column, the
 loss is measured against the benchmark, and the question is whether the Model
 Confidence Set (MCS_TR, alpha 0.05, block length 1, bootstrap variance, seed 123
-stream 0) holds the benchmark's own configuration.
+stream 0) holds the benchmark's own configuration. The last row of the table
+below asks something else of the same confidence sets: how far each set's best
+configuration is from the benchmark, measured against the sampling standard
+deviation of the responses.
 
 | experiment | benchmarks | losses and auxiliary models | resamples | program | output | written up in |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -41,6 +44,7 @@ stream 0) holds the benchmark's own configuration.
 | run 0 of every configuration | 1000 per model | impulse response, five models | 10000 | `bin/sweep_cops` | `sweep_cops.csv.gz` | this file, "The first run of every configuration" |
 | every run of every configuration | 1,000,000 per model | impulse response, five models | 2000 | `bin/sweep_grid` | `sweep_grid.csv.gz` | this file, "Every run of every configuration" |
 | compressed responses | 5000 or 2000 per vector | the same responses mapped to a few coordinates first | 2000 | `montecarlo/compressed_response_*` | `compressed_response/` | `docs/MONTECARLO_COMPRESSED_RESPONSE.md` |
+| fit metric | 1,000,000 per model (oracle), 1000 per model (bootstrap) | the best configuration's mean loss against the responses' sampling standard deviation, five models | none | `montecarlo/fit_metric_run.sh` | `fit_metric_*` | `docs/MONTECARLO_FIT_METRIC.md` |
 
 The five models are the t-QVARMA (p1q1r2, total responses to horizon 20, 525
 entries per run) and the four local projections of
@@ -83,6 +87,7 @@ another full estimation run.
 | `montecarlo/lp_nl_run.sh` | runs every experiment after the single benchmark for both states, resuming where it stopped |
 | `montecarlo/sweep_grid_presence.py` | how often each configuration sits in sets that are not its own |
 | `montecarlo/sweep_grid_cop_0191.py` | `cop_0191` as the truth, as a wrong answer, and every configuration as the truth, `docs/MONTECARLO_COP_0191.md` |
+| `montecarlo/fit_metric.h`, `fit_metric_oracle.c`, `fit_metric_bootstrap.c`, `fit_metric_report.c`, `fit_metric_run.sh`, `fit_metric_v_histograms.py` | the fit metric, oracle and bootstrap versions, `docs/MONTECARLO_FIT_METRIC.md`; the planned comparison across methods, `docs/MONTECARLO_FIT_METRIC_COMPARISON.md` |
 | `montecarlo/sweep_grid_identifiability_plots.py` | per-configuration recovery figures from the same rows |
 | `montecarlo/compressed_response_learn.py`, `compressed_response_recovery.c`, `compressed_response_grid_baseline.py`, `compressed_response_report.py` | `docs/MONTECARLO_COMPRESSED_RESPONSE.md` |
 

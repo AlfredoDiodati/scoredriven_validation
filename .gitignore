@@ -134,6 +134,14 @@ montecarlo/out/sweep_grid_progress.csv
 montecarlo/out/sweep_grid_*.csv.gz
 montecarlo/out/sweep_grid.csv.gz
 
+# The oracle fit metric of every benchmark of the grid, 130 MB, and its text
+# before compression; bin/fit_metric_oracle rebuilds it in a few minutes. The
+# bootstrap version's running log, removed by bin/fit_metric_bootstrap when
+# every configuration is done.
+montecarlo/out/fit_metric_oracle.csv.gz
+montecarlo/out/fit_metric_oracle.csv
+montecarlo/out/fit_metric_bootstrap_progress.csv
+
 # Every run's compressed response vector, written by
 # montecarlo/compressed_response_learn.py, 36 to 420 MB per file. The script
 # rebuilds them from out/sweep_grid_response_cache/ in minutes.

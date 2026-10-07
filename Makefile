@@ -111,7 +111,7 @@ TEST_STEMS := abm_system_layout abm_system_dataset_finiteness dsk_long_path \
                dsk_memory_safety dsk_ulp_sensitivity dsk_redenomination_invariance \
                dsk_machine_lot_rebase dsk_good_unit_invariance \
                dsk_dataset_reproduction dsk_tail_replicate_reproduction \
-               marginal_laws_correctness lp_system_transform
+               marginal_laws_correctness lp_system_transform fit_metric_correctness
 # Where the wall time of a t-QVARMA fit goes, and what each way of speeding it
 # up is worth. Measured 2026-08-29 against a 500,000-fit run of
 # abm_system_fit_qvarma; out/fit_speedup_options.txt collects the numbers and
@@ -174,7 +174,8 @@ EXPERIMENT_STEMS := us_qvarma_spec_choice \
 # estimates nothing. docs/MONTECARLO_VALIDATION.md.
 MONTECARLO_STEMS := benchmark_choice irf_loss score_loss mcs mcs_statistic_comparison \
                      sweep_irf sweep_score lp_irf_loss lp_mcs lp_sweep sweep_cops \
-                     compressed_response_recovery
+                     compressed_response_recovery fit_metric_oracle fit_metric_bootstrap \
+                     fit_metric_report
 
 # Whatever the application scripts share, so editing it rebuilds them.
 APPLICATION_HEADERS := applications/us_data.h applications/abm_system.h applications/lp_system.h \
@@ -319,6 +320,8 @@ montecarlo/out:
 # The local-projection scripts read the cache through one shared header, which
 # the rule above does not know about.
 $(addprefix $(BIN)/,lp_irf_loss lp_mcs lp_sweep sweep_cops sweep_grid): applications/abm_system_lp.h montecarlo/benchmark.h montecarlo/response_cache.h
+FIT_METRIC_BINARIES := fit_metric_oracle fit_metric_bootstrap fit_metric_report fit_metric_correctness
+$(addprefix $(BIN)/,$(FIT_METRIC_BINARIES)): montecarlo/response_cache.h montecarlo/fit_metric.h $(APPLICATION_HEADERS)
 
 # The grid's five million confidence sets are built at -O3, where GCC
 # vectorises mcs()'s pair spreads; without -ffast-math that changes no

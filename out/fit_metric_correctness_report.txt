@@ -1,0 +1,25 @@
+pass  sigma2 of (1,2), (3,6), (5,10) is 10
+pass  s = 1 and v = 1/2 at d = 2, sigma2 = 4
+pass  s is unchanged when the responses are multiplied by 100
+      oracle shortcut against the direct variance, largest relative gap 3.86e-15
+pass  the oracle shortcut equals the direct variance over the other runs
+pass  d equals a plain loop over the other runs
+pass  d does not read the benchmark's run
+pass  d reads every other run
+pass  cop_0191 is in the design
+pass  the cached t-QVARMA fit of cop_0191 run 706 loads
+pass  lp_lin response of cop_0191 run 706 equals the stored one to float32 (largest gap 3.4e-08 of the largest entry)
+pass  lp_s1 response of cop_0191 run 706 equals the stored one to float32 (largest gap 2.7e-08 of the largest entry)
+pass  lp_s2 response of cop_0191 run 706 equals the stored one to float32 (largest gap 3.4e-08 of the largest entry)
+pass  lp_nl response of cop_0191 run 706 equals the stored one to float32 (largest gap 2.7e-08 of the largest entry)
+pass  qvarma response from the cached parameters equals the stored one (largest gap 0.0e+00 of the largest entry)
+      qvarma refitted from the cached parameters: converged 1 after 1 iterations, largest gap to the stored response 2.8e-08 of the largest entry
+pass  blocks the length of the series give sigma2_star 0 under every method (largest 2.1e-32)
+      qvarma sigma2_star over 3 resamples, blocks of 8: 0.000174821 (3 usable)
+      lp_lin sigma2_star over 3 resamples, blocks of 8: 0.0576828 (3 usable)
+      lp_s1 sigma2_star over 3 resamples, blocks of 8: 0.38483 (3 usable)
+      lp_s2 sigma2_star over 3 resamples, blocks of 8: 0.308716 (3 usable)
+      lp_nl sigma2_star over 3 resamples, blocks of 8: 0.346773 (3 usable)
+pass  the same seed gives the same sigma2_star
+
+0 failures

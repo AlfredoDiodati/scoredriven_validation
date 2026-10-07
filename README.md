@@ -587,14 +587,21 @@ the first step fits them:
     ./montecarlo/lp_nl_run.sh      the three above and the summaries for both
                                    states stacked, resuming where it stopped
 
-`docs/MONTECARLO_VALIDATION.md`, "The experiments", lists all five Monte Carlo
+`docs/MONTECARLO_VALIDATION.md`, "The experiments", lists the Monte Carlo
 experiments with their programs, settings and outputs. The recovery rate that
 `cop_0191` reaches, 876 of its own 1000 replicates under the t-QVARMA, is near
 the top of the field: over every replicate of every configuration it is about
 one in ten for the t-QVARMA and the linear local projection, and under 2% for
-each state and for both states stacked. `docs/MONTECARLO_COMPRESSED_RESPONSE.md` shows that comparing a
-few combinations of the responses instead of all of them raises it to 80% to
-95%.
+each state and for both states stacked. `docs/MONTECARLO_COMPRESSED_RESPONSE.md`
+shows that comparing a few combinations of the responses instead of all of
+them raises it to 80% to 95%. `docs/MONTECARLO_FIT_METRIC.md` defines a fit
+metric, the best configuration's distance against the sampling standard
+deviation of the responses, in an oracle version that needs the simulation and
+a bootstrap version that can be computed on the US data, and compares the two
+(`./montecarlo/fit_metric_run.sh`). The bootstrap version understates the
+sampling variance: about 1.6% of the oracle value under the local projections
+and 41% under the t-QVARMA, at the median. `docs/MONTECARLO_FIT_METRIC_COMPARISON.md`
+designs the tests comparing the metric across methods.
 
 `applications/lp_system.h` builds the series the fits use, the stored series
 the t-QVARMA is fitted on plus R's moving average of log GDP to set the state,
