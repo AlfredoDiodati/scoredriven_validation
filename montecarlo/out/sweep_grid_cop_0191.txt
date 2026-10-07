@@ -1,0 +1,24 @@
+cop_0191 is the true configuration: share of its own 1,000 benchmarks
+order: in the set, alone in the set, smallest mean loss
+qvarma: 87.60%, 78.10%, 82.90%
+linear: 91.30%, 86.40%, 88.60%
+state 1: 85.70%, 64.60%, 75.80%
+state 2: 78.00%, 39.90%, 59.20%
+both states: 91.60%, 66.80%, 80.50%
+
+cop_0191 is not the true configuration: share of the other 999,000 benchmarks where cop_0191 is
+order: in the set, alone in the set, smallest mean loss
+qvarma: 2.42%, 1.50%, 1.89%
+linear: 2.83%, 1.56%, 2.08%
+state 1: 16.62%, 5.78%, 9.63%
+state 2: 12.04%, 2.11%, 4.84%
+both states: 12.71%, 3.22%, 6.07%
+
+every true configuration: share of all 1,000,000 benchmarks where the true configuration is
+order: in the set, alone in the set, smallest mean loss
+qvarma: 9.52%, 3.16%, 5.39%
+linear: 10.70%, 3.90%, 6.34%
+state 1: 1.53%, 0.47%, 0.79%
+state 2: 1.61%, 0.36%, 0.73%
+both states: 1.17%, 0.43%, 0.67%
+

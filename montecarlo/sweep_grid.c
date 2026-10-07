@@ -15,7 +15,7 @@ The order is by run first: run 0 of every configuration, then run 1, and so on,
 so a run stopped early holds every configuration at the same number of
 benchmarks. SWEEP_GRID_RUN_BLOCK sets how many runs one model does before the
 next model takes the same runs (default all of them, one model at a time,
-t-QVARMA first); a smaller block keeps the four models level.
+t-QVARMA first); a smaller block keeps the models level.
 
 Benchmarks are taken 64 at a time, all with the same run index, so they share
 the rows kept. Their 64 loss matrices are formed in one pass over the response

@@ -572,8 +572,9 @@ says what the experiment cannot show as well as what it can.
 
 The same experiment runs with the auxiliary model swapped for the local
 projections of the collaborator's R pipeline (`_temp/main_code.R`): linear, and
-state dependent with two states, three loss matrices against the same
-benchmark. Unlike the t-QVARMA route these fits are not in any cache yet, so
+state dependent with two states, four loss matrices against the same
+benchmark: the linear model, each state, and both states stacked into one
+vector as `_temp/Note on non-lin LP.pdf` prescribes. Unlike the t-QVARMA route these fits are not in any cache yet, so
 the first step fits them:
 
     make app-abm_system_fit_lp     fits all 1,000,000 replicates, a few minutes
@@ -582,14 +583,16 @@ the first step fits them:
     ./bin/sweep_cops               replicate 0 of every configuration as the
                                    benchmark, t-QVARMA and local projections
     make mc-sweep_grid             every replicate of every configuration as
-                                   the benchmark, four million confidence sets
+                                   the benchmark, five million confidence sets
+    ./montecarlo/lp_nl_run.sh      the three above and the summaries for both
+                                   states stacked, resuming where it stopped
 
 `docs/MONTECARLO_VALIDATION.md`, "The experiments", lists all five Monte Carlo
 experiments with their programs, settings and outputs. The recovery rate that
 `cop_0191` reaches, 876 of its own 1000 replicates under the t-QVARMA, is near
 the top of the field: over every replicate of every configuration it is about
 one in ten for the t-QVARMA and the linear local projection, and under 2% for
-the two states. `docs/MONTECARLO_COMPRESSED_RESPONSE.md` shows that comparing a
+each state and for both states stacked. `docs/MONTECARLO_COMPRESSED_RESPONSE.md` shows that comparing a
 few combinations of the responses instead of all of them raises it to 80% to
 95%.
 

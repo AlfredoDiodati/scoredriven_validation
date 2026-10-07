@@ -320,7 +320,7 @@ montecarlo/out:
 # the rule above does not know about.
 $(addprefix $(BIN)/,lp_irf_loss lp_mcs lp_sweep sweep_cops sweep_grid): applications/abm_system_lp.h montecarlo/benchmark.h montecarlo/response_cache.h
 
-# The grid's four million confidence sets are built at -O3, where GCC
+# The grid's five million confidence sets are built at -O3, where GCC
 # vectorises mcs()'s pair spreads; without -ffast-math that changes no
 # addition's order, so the results are the -O2 build's bit for bit. Measured
 # with 8 sets side by side on 999 x 1000 tables at 2000 resamples: about 0.13

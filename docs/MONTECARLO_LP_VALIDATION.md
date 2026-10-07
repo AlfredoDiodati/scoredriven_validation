@@ -102,8 +102,10 @@ holds `cop_0191`.
   loss in 758.
 - state 2: in the set in 781 of 1000 (78.1%), alone in 398; smallest mean
   loss in 592. The median set holds 2 configurations, the largest 16.
+- both states: in the set in 914 of 1000 (91.4%), alone in 668; smallest mean
+  loss in 805. The median set holds 1 configuration, the largest 9.
 
-The median rank of `cop_0191` by mean loss is 1 under all three models. No run
+The median rank of `cop_0191` by mean loss is 1 under all four models. No run
 was dropped for a missing value in any repetition.
 
 For comparison, the t-QVARMA version of the same 1000 repetitions
@@ -111,13 +113,15 @@ For comparison, the t-QVARMA version of the same 1000 repetitions
 (87.6%).
 
 Per-repetition rows: `montecarlo/out/lp_sweep_lin.csv`, `lp_sweep_s1.csv`,
-`lp_sweep_s2.csv`, one row per stand-in run: whether `cop_0191` is in the set,
-its rank by mean loss, its p-value, the size of the set, whether the set was
-decided by an accepted test, and how many runs were dropped. Which
-configurations shared the set is not recorded.
+`lp_sweep_s2.csv`, `lp_sweep_nl.csv`, one row per stand-in run: whether
+`cop_0191` is in the set, its rank by mean loss, its p-value, the size of the
+set, whether the set was decided by an accepted test, and how many runs were
+dropped. Which configurations shared the set is not recorded.
 
-The whole chain, refit, single stand-in and 1000 repetitions, took 12.2 hours,
-one confidence set at a time.
+The whole chain, refit, single stand-in and 1000 repetitions of the three
+original models, took 12.2 hours, one confidence set at a time. The 1000
+repetitions under both states were added later by `montecarlo/lp_nl_run.sh`,
+16 confidence sets side by side; their time was not kept.
 
 The same protocol with replicate 0 of each of the 1000 configurations as the
 stand-in, instead of every replicate of `cop_0191`, is

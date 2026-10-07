@@ -36,18 +36,19 @@ stream 0) holds the benchmark's own configuration.
 
 | experiment | benchmarks | losses and auxiliary models | resamples | program | output | written up in |
 | --- | --- | --- | --- | --- | --- | --- |
-| one benchmark | `cop_0191` run 706 | impulse response, `q'q`, `LM` (t-QVARMA); impulse response (three local projections) | 10000 | `montecarlo/run.sh`, `montecarlo/lp_run.sh` | `irf_loss.csv` to `mcs_statistic_comparison*`, `lp_*` | this file, "Results"; `docs/MONTECARLO_LP_VALIDATION.md` |
-| every run of `cop_0191` | 1000 | impulse response (t-QVARMA, three local projections); `q'q`, `LM` stopped at 389 | 10000 | `montecarlo/sweep.sh`, `bin/lp_sweep` | `sweep_irf.csv`, `sweep_score*.csv`, `lp_sweep_*.csv` | this file, "Every replicate as the benchmark"; `docs/MONTECARLO_LP_VALIDATION.md` |
-| run 0 of every configuration | 1000 per model | impulse response, four models | 10000 | `bin/sweep_cops` | `sweep_cops.csv.gz` | this file, "The first run of every configuration" |
-| every run of every configuration | 1,000,000 per model | impulse response, four models | 2000 | `bin/sweep_grid` | `sweep_grid.csv.gz` | this file, "Every run of every configuration" |
+| one benchmark | `cop_0191` run 706 | impulse response, `q'q`, `LM` (t-QVARMA); impulse response (four local projections) | 10000 | `montecarlo/run.sh`, `montecarlo/lp_run.sh` | `irf_loss.csv` to `mcs_statistic_comparison*`, `lp_*` | this file, "Results"; `docs/MONTECARLO_LP_VALIDATION.md` |
+| every run of `cop_0191` | 1000 | impulse response (t-QVARMA, four local projections); `q'q`, `LM` stopped at 389 | 10000 | `montecarlo/sweep.sh`, `bin/lp_sweep` | `sweep_irf.csv`, `sweep_score*.csv`, `lp_sweep_*.csv` | this file, "Every replicate as the benchmark"; `docs/MONTECARLO_LP_VALIDATION.md` |
+| run 0 of every configuration | 1000 per model | impulse response, five models | 10000 | `bin/sweep_cops` | `sweep_cops.csv.gz` | this file, "The first run of every configuration" |
+| every run of every configuration | 1,000,000 per model | impulse response, five models | 2000 | `bin/sweep_grid` | `sweep_grid.csv.gz` | this file, "Every run of every configuration" |
 | compressed responses | 5000 or 2000 per vector | the same responses mapped to a few coordinates first | 2000 | `montecarlo/compressed_response_*` | `compressed_response/` | `docs/MONTECARLO_COMPRESSED_RESPONSE.md` |
 
-The four models are the t-QVARMA (p1q1r2, total responses to horizon 20, 525
-entries per run) and the three local projections of
-`docs/MONTECARLO_LP_VALIDATION.md` (linear, state 1, state 2, 400 entries per
-run). `q'q` and `LM` are the two score losses of
-`docs/ABM_SYSTEM_SCORE_LOSS.md`, the plain and the inverse-information-weighted
-squared score.
+The five models are the t-QVARMA (p1q1r2, total responses to horizon 20, 525
+entries per run) and the four local projections of
+`docs/MONTECARLO_LP_VALIDATION.md`: linear, state 1 and state 2, 400 entries per
+run, and both states, the state-dependent model's two states stacked into one
+vector of 800 entries as `_temp/Note on non-lin LP.pdf` prescribes. `q'q` and
+`LM` are the two score losses of `docs/ABM_SYSTEM_SCORE_LOSS.md`, the plain and
+the inverse-information-weighted squared score.
 
 ## A separate pipeline that refits nothing
 
@@ -77,9 +78,11 @@ another full estimation run.
 | `montecarlo/lp_irf_loss.c`, `lp_mcs.c`, `lp_run.sh` | the one-benchmark experiment under the local projections |
 | `montecarlo/lp_sweep.c` | every run of `cop_0191` as the benchmark, local projections |
 | `montecarlo/response_cache.h` | every run's response vector under one model, held as float32 and kept on disk |
-| `montecarlo/sweep_cops.c` | run 0 of every configuration as the benchmark, four models |
-| `montecarlo/sweep_grid.c` | every run of every configuration as the benchmark, four models |
+| `montecarlo/sweep_cops.c` | run 0 of every configuration as the benchmark, five models |
+| `montecarlo/sweep_grid.c` | every run of every configuration as the benchmark, five models |
+| `montecarlo/lp_nl_run.sh` | runs every experiment after the single benchmark for both states, resuming where it stopped |
 | `montecarlo/sweep_grid_presence.py` | how often each configuration sits in sets that are not its own |
+| `montecarlo/sweep_grid_cop_0191.py` | `cop_0191` as the truth, as a wrong answer, and every configuration as the truth, `docs/MONTECARLO_COP_0191.md` |
 | `montecarlo/sweep_grid_identifiability_plots.py` | per-configuration recovery figures from the same rows |
 | `montecarlo/compressed_response_learn.py`, `compressed_response_recovery.c`, `compressed_response_grid_baseline.py`, `compressed_response_report.py` | `docs/MONTECARLO_COMPRESSED_RESPONSE.md` |
 
@@ -203,8 +206,9 @@ All optional; the default is what every result in this file used.
 | `ABM_SYSTEM_LP_FIT_DIR` | `lp_irf_loss`, `lp_sweep`, `sweep_cops`, `sweep_grid` | `out/abm_system_fit_lp` |
 | `ABM_SYSTEM_LOSS_PATH` | `irf_loss` | `montecarlo/out/irf_loss.csv` |
 | `ABM_SYSTEM_SCORE_LOSS_PATH` | `score_loss` | `montecarlo/out/score_loss.csv` |
-| `LP_SWEEP_WORKERS` | `lp_sweep`, confidence sets side by side | 1 |
-| `SWEEP_GRID_WORKERS`, `SWEEP_GRID_RUN_BLOCK` | `sweep_grid`, see its section | 8, all runs |
+| `LP_SWEEP_WORKERS` | `lp_sweep`, confidence sets side by side | every hardware thread |
+| `SWEEP_COPS_WORKERS` | `sweep_cops`, confidence sets side by side | every hardware thread |
+| `SWEEP_GRID_WORKERS`, `SWEEP_GRID_RUN_BLOCK` | `sweep_grid`, see its section | every hardware thread, all runs |
 
 The other programs take their paths as fixed constants. In particular
 `sweep_irf`, `sweep_score`, `benchmark_choice` and the t-QVARMA half of
@@ -424,8 +428,9 @@ benchmark per configuration, 1000 confidence sets per model.
 
     make bin/sweep_cops && ./bin/sweep_cops
 
-It runs the impulse-response loss only, under the t-QVARMA and the three local
-projections of `docs/MONTECARLO_LP_VALIDATION.md` (linear, state 1, state 2).
+It runs the impulse-response loss only, under the t-QVARMA and the four local
+projections of `docs/MONTECARLO_LP_VALIDATION.md` (linear, state 1, state 2,
+both states).
 Every individual run is what `montecarlo/sweep_irf.c` and
 `montecarlo/lp_sweep.c` do for one benchmark: mean absolute error between
 response vectors, replicate 0 held out of every column, a replicate with a
@@ -440,16 +445,22 @@ decided by an accepted test, the final p-value, replicates dropped, the
 configuration with the smallest mean loss, the seconds spent in the confidence
 set, and the configurations in the set. While it runs, rows go to
 `montecarlo/out/sweep_cops_progress.csv`, which a rerun resumes from and which
-is compressed and removed when all four models are done.
+is compressed and removed when all five models are done. A model added to
+the program later is run on a rerun: the finished file is unpacked back into
+the progress file, the new model's rows are appended, and the old rows are kept
+as they were.
 
 ### Results
 
-Run on 2026-09-28 and 29, one confidence set at a time on 16 cores. No
-response was missing under any model, so every loss matrix is 999 replicates
-by 1000 configurations with nothing dropped. One confidence set took 4.8 to
-5.2 seconds on average per model, 14.4 at most.
+The first four models were run on 2026-09-28 and 29, one confidence set at a
+time on 16 cores; one confidence set took 4.8 to 5.2 seconds on average per
+model, 14.4 at most. Both states were added on 2026-10-05, 16 confidence sets
+side by side with one thread each, 11.2 seconds per set on average and 13.4 at
+most. No response was missing under any model, so every loss matrix is 999
+replicates by 1000 configurations with nothing dropped. The rows of the first
+four models are byte for byte those written before both states were added.
 
-The `cop_0191` rows reproduce row 0 of `sweep_irf.csv` and of the three
+The `cop_0191` rows reproduce row 0 of `sweep_irf.csv` and of the four
 `lp_sweep_<model>.csv` exactly, including the state-1 and state-2 sets of 3 and
 4 configurations decided at p = 0.0777 and 0.4187.
 
@@ -461,6 +472,7 @@ Out of 1000 benchmark configurations:
 | LP linear | 93 | 36 | 57 | 3.09 |
 | LP state 1 | 10 | 2 | 5 | 5.27 |
 | LP state 2 | 24 | 4 | 10 | 6.61 |
+| LP both states | 14 | 5 | 6 | 6.76 |
 
 The 87.6% at which the t-QVARMA recovers `cop_0191` from its own replicates
 does not carry to the other configurations: with one benchmark each, the
@@ -469,9 +481,10 @@ procedure returns the right configuration for fewer than one in ten of them.
 A few configurations take the smallest mean loss against many benchmarks
 that are not theirs: under state 1, `cop_0437` for 139 benchmarks and
 `cop_0191` for 102; under state 2, `cop_0717` for 92; under the t-QVARMA,
-`cop_0505` for 47 and `cop_0799` for 38. `cop_0191` is in the set of 16
+`cop_0505` for 47 and `cop_0799` for 38; under both states, `cop_0437` for
+134, `cop_0717` for 110 and `cop_0410` for 95. `cop_0191` is in the set of 16
 benchmarks other than itself under the t-QVARMA, 34 under the linear local
-projection, 175 under state 1 and 118 under state 2.
+projection, 175 under state 1, 118 under state 2 and 143 under both states.
 
 Replicate 0's t-QVARMA fit converged for 337 of the 1000 configurations. The
 own configuration is in the set for 26 of those 337 and 71 of the other 663.
@@ -480,7 +493,7 @@ own configuration is in the set for 26 of those 337 and 71 of the other 663.
 
 The experiment above uses one benchmark per configuration, so a configuration's
 result is one draw. This uses all of them: every run of every configuration is
-the benchmark in turn, 1,000,000 benchmarks per model, four million confidence
+the benchmark in turn, 1,000,000 benchmarks per model, five million confidence
 sets in all. It answers, for each configuration, how often the procedure
 returns it when it is the right answer.
 
@@ -507,7 +520,8 @@ sets run side by side, one per thread.
 
 Settings read from the environment:
 
-- `SWEEP_GRID_WORKERS`: how many confidence sets run side by side, default 8.
+- `SWEEP_GRID_WORKERS`: how many confidence sets run side by side, default
+  every hardware thread (16 on this machine).
 - `SWEEP_GRID_RUN_BLOCK`: how many run indices one model does before the next
   model takes the same ones, default all 1000 (one model at a time, t-QVARMA
   first).
@@ -520,28 +534,47 @@ Compile-time overrides for a test build over part of the grid: `BOOTSTRAP`,
 `RESPONSE_CACHE_DIR`.
 
 It reads `out/abm_system_fit_qvarma/`, `out/abm_system_fit_lp/` and
-`dataset/abm_system/` and rebuilds none of them. Each model's responses are
-kept in `out/sweep_grid_response_cache/<model>.f32` (2.1 GB for the t-QVARMA,
-1.6 GB per local projection, ignored by git), built on the first run in about
-10 minutes for the t-QVARMA and 20 per local projection, then read back in
-seconds. A cache file is rebuilt only when its header (model, configurations,
-runs, entries per run) disagrees with what the program expects; a change of the
-fits or the dataset with the same shape is not detected, so delete the file by
-hand after either changes. The caches on disk were built between 2026-09-29 and
-2026-10-03, after the last local-projection refit (2026-09-27) and the last
-t-QVARMA fit (2026-09-10).
+`dataset/abm_system/` and rebuilds none of them. Each model's responses are kept
+in `out/sweep_grid_response_cache/<model>.f32` (2.1 GB for the t-QVARMA, 1.6 GB
+per local projection, 3.2 GB for both states, ignored by git), built on the
+first run in about 10 minutes for the t-QVARMA and 20 per local projection, then
+read back in seconds. Both states' file is built from the two state files,
+copying each run's 400 state-1 entries followed by its 400 state-2 entries, in
+seconds; for every run, the file on disk holds bit for bit that run's entries in
+the two state files. The file is mapped into memory rather than read into it, so
+when memory is short the system can drop parts of it and read them back from
+disk; that is slower but does not stop the run. A cache file is rebuilt only
+when its header (model, configurations, runs, entries per run) disagrees with
+what the program expects; a change of the fits or the dataset with the same
+shape is not detected, so delete the file by hand after either changes. The
+caches on disk were built between 2026-09-29 and 2026-10-03, after the last
+local-projection refit (2026-09-27) and the last t-QVARMA fit (2026-09-10); both
+states' on 2026-10-05.
 
 Resumable at benchmark granularity. Rows go to
 `montecarlo/out/sweep_grid_progress.csv` as each batch of 64 finishes; a rerun
 skips what that file holds. When every model is done the rows are compressed to
 `montecarlo/out/sweep_grid.csv.gz` and the progress file is removed. If
-`sweep_grid.csv.gz` exists and no progress file does, the program does nothing.
+`sweep_grid.csv.gz` exists and no progress file does, the finished rows are
+unpacked back into the progress file and only the models missing from them are
+run; if none is missing, the program does nothing. A crash can leave the
+progress file ending in zero bytes, the part of the last write that never
+reached the disk; `montecarlo/lp_nl_run.sh` cuts the file at the first of them
+before resuming.
 
-Cost: the run spanned several sessions, the last finished on 2026-10-04. That
-last session did 1,187,552 benchmarks (the rest of state 1 and all of state 2)
-at 0.0956 s of wall-clock time per benchmark, 8 workers on this machine (AMD
-Ryzen 7 4800H, 16 threads), from `out/sweep_grid.log`. The earlier sessions'
-timing was not kept.
+Cost: the first four models spanned several sessions, the last finished on
+2026-10-04. That last session did 1,187,552 benchmarks (the rest of state 1 and
+all of state 2) at 0.0956 s of wall-clock time per benchmark, 8 workers on this
+machine (AMD Ryzen 7 4800H, 16 threads), from `out/sweep_grid.log`. The earlier
+sessions' timing was not kept. Both states ran from 2026-10-05 to 2026-10-07.
+A crash of the machine stopped them after 471,768 benchmarks; the session after
+it did the remaining 528,232 at 0.1196 s per benchmark, 16 workers, from
+`out/lp_nl_run.log`, comparing 800 entries per run rather than 400. The timing
+before the crash was not kept. After both
+states were added, the t-QVARMA and linear rows of the new
+`sweep_grid.csv.gz` were compared with `sweep_grid_qvarma.csv.gz` and
+`sweep_grid_lp_lin.csv.gz` and are identical; the state 1 and state 2 rows have
+no separate copy to compare with.
 
 ### Outputs
 
@@ -549,6 +582,7 @@ timing was not kept.
 | --- | --- |
 | `montecarlo/out/sweep_grid.csv.gz` | one row per model and benchmark: model, benchmark configuration and run, whether the configuration is in the set, its rank by mean loss, its MCS p-value, the set size, whether the set was decided by an accepted test, the final p-value, runs dropped, the configuration with the smallest mean loss, the configurations in the set |
 | `montecarlo/out/sweep_grid_qvarma.csv.gz`, `sweep_grid_lp_lin.csv.gz` | written by an earlier version of `sweep_grid.c` that split the rows per model; byte for byte the t-QVARMA and linear rows of `sweep_grid.csv.gz`, header included. The current program does not write them |
+| `montecarlo/out/sweep_grid_cop_0191.txt`, `.tex` | `montecarlo/sweep_grid_cop_0191.py`, in plain text and as LaTeX tables: per model, in percent, how often `cop_0191` is in the set, alone and first by mean loss over its own 1000 benchmarks and over the other 999,000, and how often the true configuration is over all 1,000,000; `docs/MONTECARLO_COP_0191.md` |
 | `montecarlo/out/sweep_grid_presence.txt` | `montecarlo/sweep_grid_presence.py`: per model, how often each configuration is in the sets of benchmarks that are not its own |
 | `montecarlo/out/sweep_grid_identifiability.csv`, `sweep_grid_identifiability_plots/` | `montecarlo/sweep_grid_identifiability_plots.py`: per model and configuration, the share of its own 1000 sets that hold it, and the share holding the other configuration found in them most often, with two bar charts per model |
 
@@ -558,7 +592,8 @@ timing was not kept.
 The first needs only the Python standard library. The second needs `polars`,
 `plotly` and `kaleido`. The figures and the table on disk were drawn on
 2026-10-02, when only the t-QVARMA and the linear local projection were done, so
-they cover those two models; rerunning the script adds the two states.
+they cover those two models; rerunning the script adds the three other local
+projections.
 
 ### Results
 
@@ -571,10 +606,17 @@ No response was missing under any model, so every loss matrix is 999 runs by
 | LP linear | 107,025 (10.7%) | 38,964 | 63,433 | 3.09 | 75 |
 | LP state 1 | 15,318 (1.5%) | 4,699 | 7,854 | 5.29 | 295 |
 | LP state 2 | 16,060 (1.6%) | 3,648 | 7,305 | 6.89 | 336 |
+| LP both states | 11,653 (1.2%) | 4,300 | 6,746 | 6.97 | 548 |
 
 Counts out of 1,000,000 benchmarks per model. The rates are close to those of
-"The first run of every configuration" (97, 93, 10 and 24 out of 1000), so that
-experiment's result was not an unlucky choice of run.
+"The first run of every configuration" (97, 93, 10, 24 and 14 out of 1000), so
+that experiment's result was not an unlucky choice of run.
+
+Stacking the two states does not help on the raw responses: both states
+recover the right configuration less often than either state alone (1.2%
+against 1.5% and 1.6%), with larger sets on average (6.97 against 5.29 and
+6.89). The loss over the stacked vector is the average of the two states'
+losses.
 
 Per configuration, out of its own 1000 benchmarks:
 
@@ -584,31 +626,34 @@ Per configuration, out of its own 1000 benchmarks:
 | LP linear | 35 | 1 | 188 |
 | LP state 1 | 3 | 0 | 660 |
 | LP state 2 | 6 | 0 | 621 |
+| LP both states | 4 | 1 | 772 |
 
 Recovery is concentrated: a few dozen configurations are found most of the
 time, and about half are never found under the t-QVARMA.
 
 When the procedure is wrong, a few configurations collect the wrong answers
-(`sweep_grid_presence.txt`). The off-target rate of a configuration is the
-share of the other configurations' 999,000 benchmarks whose set holds it. Under
-the t-QVARMA the highest are `cop_0799` (6.85%) and `cop_0505` (6.84%), and the
-ten highest take 15.7% of all wrong set slots; under the linear projection
-`cop_0410` (4.6%) and `cop_0914` (4.5%), ten highest 11.0%; under state 1 `cop_0437`
-(25.8%) and `cop_0410` (19.1%), ten highest 24.3%; under state 2 `cop_0717`
-(25.5%) and `cop_0410` (23.6%), ten highest 22.6%. `cop_0191` is among the ten
-highest under the linear projection and both states. In 245 configurations
-under the t-QVARMA, 162 under the linear projection, 770 under state 1 and 768
-under state 2, the off-target rate exceeds the configuration's own recovery
-rate. `docs/MONTECARLO_COMPRESSED_RESPONSE.md` traces this to the loss
-averaging over hundreds of response entries that are mostly noise.
+(`sweep_grid_presence.txt`). The off-target rate of a configuration is the share
+of the other configurations' 999,000 benchmarks whose set holds it. Under the
+t-QVARMA the highest are `cop_0799` (6.85%) and `cop_0505` (6.84%), and the ten
+highest take 15.7% of all wrong set slots; under the linear projection
+`cop_0410` (4.6%) and `cop_0914` (4.5%), ten highest 11.0%; under state 1
+`cop_0437` (25.8%) and `cop_0410` (19.1%), ten highest 24.3%; under state 2
+`cop_0717` (25.5%) and `cop_0410` (23.6%), ten highest 22.6%; under both states
+`cop_0717` (28.2%), `cop_0437` (26.9%) and `cop_0410` (26.9%), ten highest
+23.2%. `cop_0191` is among the ten highest under every local projection. In 245
+configurations under the t-QVARMA, 162 under the linear projection, 770 under
+state 1, 768 under state 2 and 870 under both states, the off-target rate
+exceeds the configuration's own recovery rate.
+`docs/MONTECARLO_COMPRESSED_RESPONSE.md` traces this to the loss averaging over
+hundreds of response entries that are mostly noise.
 
 **2000 against 10000 resamples.** Run 0 of every configuration is a benchmark
 both here (2000 resamples) and in `sweep_cops.csv.gz` (10000), on the same loss
 matrices. Over those 1000 benchmarks per model, whether the own configuration is
-in the set differs once in 4000 (linear local projection, 93 against 94); the
-set size differs for 51 (t-QVARMA), 27 (linear), 68 (state 1) and 99 (state 2)
-of 1000. The lower resample count changes the set membership of the right
-answer essentially never.
+in the set differs once in 5000 (linear local projection, 93 against 94); the
+set size differs for 51 (t-QVARMA), 27 (linear), 68 (state 1), 99 (state 2) and
+94 (both states) of 1000. The lower resample count changes the set membership of
+the right answer essentially never.
 
 ### Recovery by whether the benchmark's fit converged
 
@@ -632,8 +677,9 @@ The impulse-response protocols have now been asked about every configuration
 ("Every run of every configuration as the benchmark"), and the answer for
 `cop_0191` does not generalise. `cop_0191` is recovered from 876 of its own 1000
 runs under the t-QVARMA, which only 4 configurations exceed, and from more of
-its own runs than any other configuration under each of the three local
-projections (913, 857 and 780 of 1000). Over all configurations the rate is
+its own runs than any other configuration under each of the four local
+projections (913, 857, 780 and 916 of 1000 under linear, state 1, state 2 and
+both states). Over all configurations the rate is
 about one in ten. Results in this project that rest on `cop_0191` alone, the
 single benchmark and the sweep over its runs, describe one of the easiest
 configurations to identify.
@@ -646,7 +692,7 @@ good in general. The configurations the score protocols favoured on the US data
 are hard to recover under the impulse-response protocols: `cop_0409` from 45 of
 its 1000 runs under the t-QVARMA and at most 1 under the local projections,
 `cop_0931` from none under the t-QVARMA and from 27 to 238 under the local
-projections.
+projections (95 under both states).
 
 The score protocols have been asked only about `cop_0191`, and only on 389 of
 its runs. Whether they recover any other configuration has not been run; at

@@ -13,7 +13,8 @@
 #
 #   ./montecarlo/lp_run.sh        the single-benchmark run, a few minutes
 #   ./bin/lp_sweep                every replicate of the benchmark configuration
-#                                 as the benchmark, three models, about 11 hours
+#                                 as the benchmark, four models: linear, each
+#                                 state, and both states as one vector
 #
 # Reads out/abm_system_fit_lp/ (make app-abm_system_fit_lp writes it) and
 # dataset/abm_system/, and rebuilds neither. docs/MONTECARLO_LP_VALIDATION.md is
@@ -28,10 +29,10 @@ test -f montecarlo/out/benchmark.env || {
 }
 sed 's/^/  /' montecarlo/out/benchmark.env
 
-echo "local-projection losses, linear and both states"
+echo "local-projection losses, linear, each state and both states"
 ./bin/lp_irf_loss
 
-echo "confidence sets, both statistics over the three losses"
+echo "confidence sets, both statistics over the four losses"
 ./bin/lp_mcs
 
 echo "done, results in montecarlo/out/lp_*"

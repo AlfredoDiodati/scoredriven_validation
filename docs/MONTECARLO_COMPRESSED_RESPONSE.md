@@ -199,7 +199,10 @@ memory.
 On the raw responses they are the worst of the four. Over all 1,000,000
 benchmarks of `montecarlo/out/sweep_grid.csv.gz` the true configuration is in
 the set 1.5% of the time in state 1 and 1.6% in state 2, against 9.5% for the
-t-QVARMA and 10.7% for the linear projection. The cause is the same and
+t-QVARMA and 10.7% for the linear projection, and 1.2% with the two states
+stacked into one vector of 800 raw entries, the comparison
+`_temp/Note on non-lin LP.pdf` prescribes (`lp_nl` in the code). The cause is
+the same and
 stronger: 7 directions with ratio above one in each state, against 11 for the
 linear projection, with leading ratios of 23 and 22 against 74.
 
@@ -209,6 +212,7 @@ Full scale, 2000 benchmarks, setup as above:
 | --- | --- | --- | --- |
 | state 1, raw | 1.0% | 0.4% | 5.34 |
 | state 2, raw | 1.8% | 0.7% | 6.57 |
+| both states stacked, raw | 1.0% | 0.5% | 6.78 |
 | state 1, parameters | 86.2% | 82.6% | 1.11 |
 | state 2, parameters | 85.3% | 81.4% | 1.12 |
 | both states stacked, parameters | 93.4% | 91.6% | 1.05 |
@@ -220,13 +224,16 @@ Main setup, 5000 benchmarks, 199 rows:
 | --- | --- | --- | --- |
 | state 1, raw | 4.9% | 0.7% | 34.16 |
 | state 2, raw | 5.1% | 0.7% | 45.47 |
+| both states stacked, raw | 3.0% | 0.6% | 37.28 |
 | state 1, parameters | 89.7% | 82.1% | 1.29 |
 | state 2, parameters | 88.9% | 81.4% | 1.31 |
 | both states stacked, parameters | 94.7% | 90.7% | 1.14 |
 | all four stacked, discriminant_12 | 96.2% | 94.2% | 1.06 |
 
-Each state alone is weaker than the linear projection alone, and the two
-states together recover what the linear projection recovers by itself (93.4%
+Stacked raw, the two states do no better than either alone; stacked after
+each is mapped to the parameters, they do better than either. Each state alone
+is weaker than the linear projection alone, and the two states together
+recover what the linear projection recovers by itself (93.4%
 in both cases at full scale). Adding both states to the t-QVARMA and linear
 stack moves it from 94.0% to 94.9%: the nonlinear projections carry little that
 the linear one does not. The rank-only results for every number of directions
@@ -283,6 +290,10 @@ k directions of the same decomposition. RIDGE_RUNS changes the `parameters` map.
     python montecarlo/compressed_response_learn.py lp_s2
     RIDGE_RUNS=20 python montecarlo/compressed_response_learn.py lp_s1+lp_s2
     RIDGE_RUNS=10 python montecarlo/compressed_response_learn.py qvarma+lp_lin+lp_s1+lp_s2
+    python montecarlo/compressed_response_learn.py lp_nl raw_only
+
+The last writes only `lp_nl_raw.f32`, the two states' raw responses of runs 0
+to 199 stacked into one vector; nothing is learned on it.
 
 The rank tables need every k. Afterwards only the vectors the confidence-set
 tables use were kept on disk (36 to 420 MB each); to rebuild just those, pass
@@ -300,7 +311,7 @@ the confidence set. The main setup is `0 4 0 200`, the full-scale setup
 
     # main setup, confidence sets
     for v in qvarma_raw qvarma_discriminant_8 lp_lin_raw lp_lin_discriminant_20 lp_lin_parameters \
-             qvarma_lp_lin_discriminant_12 lp_s1_raw lp_s1_parameters lp_s2_raw lp_s2_parameters \
+             qvarma_lp_lin_discriminant_12 lp_s1_raw lp_s1_parameters lp_s2_raw lp_s2_parameters lp_nl_raw \
              lp_s1_lp_s2_parameters qvarma_lp_lin_lp_s1_lp_s2_discriminant_12; do
         run $v 0 4 0 200 $dir/recovery_${v}_rows200.csv
     done
