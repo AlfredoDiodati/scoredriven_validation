@@ -335,6 +335,6 @@ much is not established by these runs.
 ### Next
 
 `docs/MONTECARLO_FIT_METRIC_COMPARISON.md` designs the tests of whether the
-oracle $v$ differs across the five methods, one test over all five at once for
-each of two nulls (equal means, and no method systematically ahead). Not
-implemented yet.
+oracle $v$ differs across the five auxiliary models, one test over all five at
+once for each of two nulls (equal means, and the auxiliary model has no
+effect). Not implemented yet.
