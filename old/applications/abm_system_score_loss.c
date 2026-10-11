@@ -1,4 +1,8 @@
 /*
+Discarded from the main pipeline: the score losses gave poor results in the
+Monte Carlo check and have no theoretical justification as a validation
+distance. docs/ABM_SYSTEM_SCORE_LOSS.md records the experiment and its results.
+
 Two loss matrices for the Model Confidence Set, built without fitting
 anything: how strongly each simulated series pulls the real data's own fitted
 auxiliary model away from where the real data put it.
@@ -116,12 +120,12 @@ every column of both matrices, the same direction
 applications/abm_system_irf_loss.c drops in, since that keeps every
 configuration in the comparison.
 
-In EXPERIMENT_STEMS, buildable on its own via make app-abm_system_score_loss.
+In OLD_APPLICATION_STEMS, buildable on its own via make old-abm_system_score_loss.
 Nothing printed.
 */
 
-#include "abm_system.h"
-#include "us_data.h"
+#include "applications/abm_system.h"
+#include "applications/us_data.h"
 #include <et_al./sd/qvarma.h>
 #include <et_al./linalg/decomp.h>
 #include <et_al./frame/csv.h>
@@ -392,7 +396,7 @@ static Mat build_information_factor(Vec theta, const QvarmaParams *shape, Mat re
     mreal scale = (mreal)sim_periods / (mreal)real_y.c;
     Mat scaled = mat_copy(information);
     for (int i = 0; i < n * n; i++) scaled.d[i] *= scale;
-    Mat factor = mat_chol(scaled);
+    Mat factor = mat_chol(scaled, NULL);
 
     fprintf(manifest, "  scaled by T_sim / T_US = %d / %d before inversion, so the loss is on the "
                        "chi-square scale\n", sim_periods, real_y.c);

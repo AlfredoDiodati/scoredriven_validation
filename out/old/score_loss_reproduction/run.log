@@ -1,0 +1,18 @@
+Running as unit: run-p8476-i8477.scope; invocation ID: 7ce3fe9ddcd84d3494fee3e1e7bd8135
+real-data score losses
+identical out/abm_system_score_loss.csv
+identical out/abm_system_score_loss_weighted.csv
+manifest lines that differ, out/abm_system_score_loss_manifest.txt against out/old/score_loss_reproduction/abm_system_score_loss_manifest.txt:
+< out/abm_system_score_loss.csv holds q'q
+< out/abm_system_score_loss_weighted.csv holds the score statistic q' [T_sim I_1]^-1 q
+> out/old/score_loss_reproduction/abm_system_score_loss.csv holds q'q
+> out/old/score_loss_reproduction/abm_system_score_loss_weighted.csv holds the score statistic q' [T_sim I_1]^-1 q
+Monte Carlo score losses
+identical montecarlo/out/score_loss.csv
+identical montecarlo/out/score_loss_weighted.csv
+manifest lines that differ, montecarlo/out/score_loss_manifest.txt against out/old/score_loss_reproduction/score_loss_manifest.txt:
+< montecarlo/out/score_loss.csv holds q'q
+< montecarlo/out/score_loss_weighted.csv holds the score statistic q' [T_sim I_1]^-1 q
+> out/old/score_loss_reproduction/score_loss.csv holds q'q
+> out/old/score_loss_reproduction/score_loss_weighted.csv holds the score statistic q' [T_sim I_1]^-1 q
+done

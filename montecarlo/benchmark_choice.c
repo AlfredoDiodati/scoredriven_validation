@@ -12,11 +12,11 @@ nothing to do with the answer, so the grounds are fixed here and written down.
 
 Three requirements, in the order they are applied.
 
-The configuration must be one the real-data confidence sets kept. Those are
-read from the comparison tables the three real-data procedures wrote, and the
-union of their surviving configurations is the candidate pool. A configuration
-no procedure kept would make the experiment ask whether a poor benchmark is
-recovered, which is a different and less interesting question.
+The configuration must be one the real-data confidence set kept. Those are
+read from the comparison table of the real-data impulse-response procedure,
+and its surviving configurations are the candidate pool. A configuration the
+procedure did not keep would make the experiment ask whether a poor benchmark
+is recovered, which is a different and less interesting question.
 
 Among those, the configuration whose auxiliary fits converged most often, read
 from out/abm_system_fit_qvarma_manifest.txt. Roughly a third of the million
@@ -26,63 +26,32 @@ did not converge is a parameter vector the optimizer stopped at, not an
 estimate.
 
 Within that configuration, the converged replicate with the smallest gradient
-norm whose observed information matrix is positive definite. The gradient norm
-orders the candidates; positive definiteness is a gate, because the weighted
-score loss inverts that matrix and a benchmark it cannot be built at would
-leave one of the three protocols unrunnable. Candidates are tried in order and
-the first that passes is taken. Replicates that failed the gate are listed in
-the report, so a reader can see how close the choice was to falling through.
+norm.
 
 Fits taken from another replicate's parameters are excluded: the manifest marks
 them inherited, and a benchmark should be the estimate its own data produced.
 
-Reads out/abm_system_mcs_statistic_comparison*.csv, the fit manifest, the fit
-cache and the dataset. Writes montecarlo/out/benchmark_choice.txt, the report,
-and montecarlo/out/benchmark.env, two shell assignments the driver reads so the
+Reads out/abm_system_mcs_statistic_comparison.csv and the fit manifest. Writes
+montecarlo/out/benchmark_choice.txt, the report, and
+montecarlo/out/benchmark.env, two shell assignments the driver reads so the
 choice is made once and every downstream step runs against the same run.
 Nothing printed.
 */
 
-#include "applications/abm_system.h"
-#include <et_al./sd/qvarma.h>
-#include <et_al./linalg/decomp.h>
 #include <et_al./frame/csv.h>
 #include <et_al./frame/frame.h>
 #include <string.h>
 #include <stdlib.h>
-#include <math.h>
 #include <assert.h>
 
-#define K ABM_SYSTEM_K
-#define K_STAR 3
-#define R 1
-#define SHARED_BETA 1
-#define WARMUP_LONGEST 0
-#define MU_STAR_STATIONARY_ONLY 1
-#define P 1
-#define Q 1
-#define SPEC_R 2
-#define SPEC_LABEL "p1q1r2"
-
-#define FIT_DIR "out/abm_system_fit_qvarma"
-#define INPUT_DIR "dataset/abm_system"
 #define MANIFEST_PATH "out/abm_system_fit_qvarma_manifest.txt"
 #define REPORT_PATH "montecarlo/out/benchmark_choice.txt"
 #define ENV_PATH "montecarlo/out/benchmark.env"
-#define MAX_CANDIDATES 25
 
 static const char *const winner_table[] = {
-    "out/abm_system_mcs_statistic_comparison.csv",
-    "out/abm_system_mcs_statistic_comparison_score.csv",
-    "out/abm_system_mcs_statistic_comparison_score_weighted.csv"
+    "out/abm_system_mcs_statistic_comparison.csv"
 };
 #define N_WINNER_TABLES ((int)(sizeof winner_table / sizeof winner_table[0]))
-
-static QvarmaParams spec_shape(void) {
-    QvarmaParams m = qvarma_params_new(K, K_STAR, P, Q, SPEC_R, R, SHARED_BETA, WARMUP_LONGEST);
-    m.mu_star_stationary_only = MU_STAR_STATIONARY_ONLY;
-    return m;
-}
 
 /* A model name in a comparison table is "<sample>_qvarma_<spec>"; the sample is
    what everything else here is keyed on. */
@@ -97,9 +66,7 @@ static void sample_of_model(const char *model, char *out, size_t n) {
 
 typedef struct { char name[64]; } Sample;
 
-/* Every configuration any of the three real-data confidence sets kept, without
-   repeats. A table that is not there is skipped rather than fatal, so this can
-   run before every procedure has been scored. */
+/* Every configuration the real-data confidence set kept, without repeats. */
 static Sample *read_winners(int *count, FILE *report) {
     Sample *winners = NULL;
     int n = 0, cap = 0;
@@ -194,63 +161,13 @@ static int by_gradient(const void *a, const void *b) {
     return ga < gb ? -1 : ga > gb ? 1 : 0;
 }
 
-/*
-Whether the weighted score loss can be built at this fit: the observed
-information at the fit's own estimate on its own series, positive definite
-against the same floor applications/abm_system_score_loss.c reads a flat
-direction against. smallest and condition come back for the report whatever the
-verdict is.
-*/
-static int information_is_usable(const char *sample, int replicate, double *smallest_out,
-                                 double *condition_out) {
-    QvarmaParams m = spec_shape();
-    char path[640];
-    snprintf(path, sizeof path, "%s/%s/replicate_%03d_%s_fit.json", FIT_DIR, sample, replicate,
-             SPEC_LABEL);
-    if (!qvarma_load_params(&m, path)) { qvarma_params_free(&m); return 0; }
-
-    int n = qvarma_n_theta(&m);
-    Vec theta = mat_new(n, 1);
-    _qvarma_unlink(&m, theta);
-
-    char dir[560];
-    snprintf(dir, sizeof dir, "%s/%s", INPUT_DIR, sample);
-    Mat y = abm_system_read_replicate(dir, replicate);
-
-    Mat information = _qvarma_hessian(theta, &m, y);
-    Vec eigenvalues;
-    Mat eigenvectors;
-    int usable = 0;
-    *smallest_out = NAN;
-    *condition_out = NAN;
-    if (mat_eig_sym_status(information, &eigenvalues, &eigenvectors) == 0) {
-        mreal smallest = eigenvalues.d[0], largest = eigenvalues.d[0];
-        for (int i = 1; i < n; i++) {
-            if (eigenvalues.d[i] < smallest) smallest = eigenvalues.d[i];
-            if (eigenvalues.d[i] > largest) largest = eigenvalues.d[i];
-        }
-        mreal floor_value = (mreal)(n * MEPS) * MABS(largest);
-        usable = smallest > floor_value;
-        *smallest_out = (double)smallest;
-        *condition_out = smallest > 0 ? (double)(largest / smallest) : INFINITY;
-        mat_free(eigenvalues);
-        mat_free(eigenvectors);
-    }
-
-    mat_free(information);
-    mat_free(y);
-    mat_free(theta);
-    qvarma_params_free(&m);
-    return usable;
-}
-
 int main(void) {
     FILE *report = fopen(REPORT_PATH, "w");
     assert(report && "benchmark_choice: cannot open montecarlo/out/benchmark_choice.txt - "
                       "the directory has to exist");
 
     fprintf(report, "Which simulated run stands in for the real data in montecarlo/\n\n");
-    fprintf(report, "step 1, the candidate pool: every configuration a real-data confidence set "
+    fprintf(report, "step 1, the candidate pool: every configuration the real-data confidence set "
                      "kept, MCS_TR\n");
     int n_winners;
     Sample *winners = read_winners(&n_winners, report);
@@ -282,27 +199,13 @@ int main(void) {
     SampleFits *chosen = &fits[best];
     qsort(chosen->row, (size_t)chosen->n_rows, sizeof(FitRow), by_gradient);
 
-    fprintf(report, "step 3, its converged replicates by gradient norm, taking the first whose "
-                     "information matrix is positive definite\n");
-    fprintf(report, "  %-10s %14s %12s %16s %12s %10s\n", "replicate", "log_lik", "gradient",
-            "smallest eigval", "condition", "usable");
-
+    fprintf(report, "step 3, its converged replicates by gradient norm, taking the first that is "
+                     "its own fit\n");
     int picked = -1;
-    int tried = 0;
-    for (int i = 0; i < chosen->n_rows && tried < MAX_CANDIDATES && picked < 0; i++) {
-        if (!chosen->row[i].converged || chosen->row[i].inherited) continue;
-        tried++;
-        double smallest, condition;
-        int usable = information_is_usable(chosen->name, chosen->row[i].replicate, &smallest,
-                                           &condition);
-        fprintf(report, "  %-10d %14.4f %12.3e %16.4e %12.3e %10s\n", chosen->row[i].replicate,
-                chosen->row[i].log_likelihood, chosen->row[i].gradient, smallest, condition,
-                usable ? "yes" : "no");
-        if (usable) picked = i;
-    }
-    assert(picked >= 0 && "benchmark_choice: no converged replicate of the chosen configuration "
-                           "has a usable information matrix");
-
+    for (int i = 0; i < chosen->n_rows && picked < 0; i++)
+        if (chosen->row[i].converged && !chosen->row[i].inherited) picked = i;
+    assert(picked >= 0 && "benchmark_choice: the chosen configuration has no converged replicate "
+                           "that is its own fit");
     fprintf(report, "\nbenchmark: %s replicate %03d\n", chosen->name, chosen->row[picked].replicate);
     fprintf(report, "  log-likelihood %.4f, gradient norm %.6e, converged, its own fit\n",
             chosen->row[picked].log_likelihood, chosen->row[picked].gradient);

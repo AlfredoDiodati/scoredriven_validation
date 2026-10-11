@@ -88,7 +88,7 @@ dataset/abm_system.tar.gz
 
 # The loss tables, each 1000 replicates by 1000 configurations and about 19 MB.
 # The first is rebuilt by make app-abm_system_irf_loss from the fit cache, the
-# other two by make app-abm_system_score_loss from the dataset and the
+# other two by make old-abm_system_score_loss from the dataset and the
 # real-data fit. None of the three is reproducible from a fresh clone, because
 # the fit cache and the dataset are ignored above for the same reason. What
 # they feed is kept: the confidence sets, out/abm_system_mcs.* and
@@ -100,7 +100,7 @@ out/abm_system_score_loss_weighted.csv
 
 # The same three tables again, from the Monte Carlo experiment, which runs the
 # same protocols against a simulated benchmark instead of the US data. Rebuilt
-# by make montecarlo. Its reports, manifests and the record of which run it
+# by make montecarlo and make old-score_loss. Its reports, manifests and the record of which run it
 # promoted are small and kept.
 montecarlo/out/irf_loss.csv
 montecarlo/out/score_loss.csv
@@ -146,3 +146,7 @@ montecarlo/out/fit_metric_bootstrap_progress.csv
 # montecarlo/compressed_response_learn.py, 36 to 420 MB per file. The script
 # rebuilds them from out/sweep_grid_response_cache/ in minutes.
 out/compressed_response_cache/
+
+# The score loss tables rebuilt by old/score_loss_reproduction.sh to check they
+# match the ones above, about 19 MB each.
+out/old/score_loss_reproduction/*.csv

@@ -1,30 +1,21 @@
 /*
-All three Monte Carlo loss matrices under both Model Confidence Set statistics,
-six confidence sets, with every other setting identical so that a difference
-between them comes from the loss or the statistic and not from how they were
-scored.
+The Monte Carlo impulse-response loss matrix, montecarlo/out/irf_loss.csv,
+under both Model Confidence Set statistics, with every other setting identical
+so that a difference between the two sets comes from the statistic.
 
 This is applications/abm_system_mcs_statistic_comparison.c's procedure over the
-Monte Carlo matrices:
-
-  montecarlo/out/irf_loss.csv            the impulse-response distance
-  montecarlo/out/score_loss.csv          q'q
-  montecarlo/out/score_loss_weighted.csv the score statistic
-
-Each matrix gets its own pair of output files rather than six reports in one,
-since a single report already carries two elimination tables of a thousand
-rows.
+Monte Carlo matrix.
 
 The benchmark is a replicate of a known configuration, so unlike the real-data
 run this one can be marked right or wrong: docs/MONTECARLO_VALIDATION.md
-records which of the three losses return the configuration the benchmark came
-from, and which do not.
+records whether the configuration the benchmark came from is returned.
 
 With the bootstrap variance the resamples are drawn once and reused in every
 elimination round under both statistics, and the two runs share a seed, so a
 difference between the statistics comes from the statistic.
 
-Requires the three matrices montecarlo/run.sh writes before this. Nothing
+Requires montecarlo/out/irf_loss.csv, which montecarlo/run.sh writes before
+this. Writes montecarlo/out/mcs_statistic_comparison.txt and .csv. Nothing
 printed.
 */
 
@@ -41,14 +32,6 @@ printed.
 #define IRF_REPORT_PATH "montecarlo/out/mcs_statistic_comparison.txt"
 #define IRF_TABLE_PATH "montecarlo/out/mcs_statistic_comparison.csv"
 
-#define SCORE_LOSS_PATH "montecarlo/out/score_loss.csv"
-#define SCORE_REPORT_PATH "montecarlo/out/mcs_statistic_comparison_score.txt"
-#define SCORE_TABLE_PATH "montecarlo/out/mcs_statistic_comparison_score.csv"
-
-#define WEIGHTED_LOSS_PATH "montecarlo/out/score_loss_weighted.csv"
-#define WEIGHTED_REPORT_PATH "montecarlo/out/mcs_statistic_comparison_score_weighted.txt"
-#define WEIGHTED_TABLE_PATH "montecarlo/out/mcs_statistic_comparison_score_weighted.csv"
-
 #define N_LAST_STANDING 10
 
 enum { STATISTIC_TR, STATISTIC_TMAX, N_STATISTICS };
@@ -59,8 +42,8 @@ static const char *const statistic_name[N_STATISTICS] = { "MCS_TR", "MCS_TMAX" }
    configuration. */
 static DataFrame read_losses(const char *path) {
     FILE *probe = fopen(path, "r");
-    assert(probe && "montecarlo/mcs_statistic_comparison: a loss matrix is missing - "
-                     "montecarlo/run.sh writes them");
+    assert(probe && "montecarlo/mcs_statistic_comparison: the loss matrix is missing - "
+                     "montecarlo/run.sh writes it");
     fclose(probe);
 
     DataFrame raw = df_read_csv(path, csv_read_options_default());
@@ -93,8 +76,7 @@ static int later_tr_departure_first(const void *a, const void *b) {
 }
 
 /* One loss matrix through both statistics. loss_description names what a cell
-   of it measures and goes into the title of each embedded report, so the two
-   matrices' reports cannot be told apart only by their file names. */
+   of it measures and goes into the title of each embedded report. */
 static void compare_statistics(const char *loss_path, const char *report_path,
                                const char *table_path, const char *loss_description) {
     DataFrame losses = read_losses(loss_path);
@@ -235,18 +217,7 @@ static void compare_statistics(const char *loss_path, const char *report_path,
 }
 
 int main(void) {
-    compare_statistics(IRF_LOSS_PATH,
-                       IRF_REPORT_PATH,
-                       IRF_TABLE_PATH,
+    compare_statistics(IRF_LOSS_PATH, IRF_REPORT_PATH, IRF_TABLE_PATH,
                        "t-QVARMA (driftless) impulse-response MAE, p1q1r2");
-    compare_statistics(SCORE_LOSS_PATH,
-                       SCORE_REPORT_PATH,
-                       SCORE_TABLE_PATH,
-                       "t-QVARMA (driftless) score quadratic form at the benchmark estimate, p1q1r2");
-    compare_statistics(WEIGHTED_LOSS_PATH,
-                       WEIGHTED_REPORT_PATH,
-                       WEIGHTED_TABLE_PATH,
-                       "t-QVARMA (driftless) score statistic at the benchmark estimate, "
-                       "inverse information weighting, p1q1r2");
     return 0;
 }

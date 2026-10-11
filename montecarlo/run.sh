@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
-# The Monte Carlo experiment: the main pipeline's three validation protocols,
-# run against one simulated run instead of against the US data.
+# The Monte Carlo experiment: the main pipeline's impulse-response validation
+# protocol, run against one simulated run instead of against the US data.
 #
 # This is a pipeline of its own. It shares no source with applications/, which
 # it does not touch, and it reuses that pipeline's output rather than its code:
@@ -35,17 +35,12 @@ sed 's/^/  /' montecarlo/out/benchmark.env
 echo "impulse-response loss"
 ./bin/irf_loss
 
-# Both score losses in one pass: q'q and the inverse-information-weighted score
-# statistic, the information taken at the benchmark's estimate on its series.
-echo "score losses"
-./bin/score_loss
-
 # The headline confidence set, MCS_TR over the impulse-response loss.
 echo "confidence set, impulse-response loss"
 ./bin/mcs
 
-# All three losses under both MCS statistics, six confidence sets.
-echo "confidence sets, both statistics over all three losses"
+# The same loss under both MCS statistics, two confidence sets.
+echo "confidence sets, both statistics over the impulse-response loss"
 ./bin/mcs_statistic_comparison
 
 echo "done, results in montecarlo/out"

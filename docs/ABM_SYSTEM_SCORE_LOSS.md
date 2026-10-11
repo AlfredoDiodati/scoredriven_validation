@@ -1,5 +1,26 @@
 # ABM validation via the score of the auxiliary model
 
+## Status: discarded
+
+This experiment is no longer part of either pipeline. The score losses, both
+`q'q` and the weighted `q' [T_sim I_1]^-1 q`, gave poor results in the Monte
+Carlo check, where the right answer is known (`docs/MONTECARLO_VALIDATION.md`,
+"Neither score protocol recovers it"), and there is no theoretical
+justification for using either one as a distance between a simulated
+configuration and the data. The code is kept under `old/`, the results below
+are kept as a record, and the outputs stay at the paths listed here.
+
+| program | what it does |
+| --- | --- |
+| `old/applications/abm_system_score_loss.c` | both score loss matrices against the US data |
+| `old/applications/abm_system_mcs_statistic_comparison_score.c` | both matrices under MCS_TR and MCS_TMAX |
+| `old/montecarlo/score_loss.c` | both score loss matrices against the Monte Carlo benchmark |
+| `old/montecarlo/mcs_statistic_comparison_score.c` | the same four confidence sets for the Monte Carlo matrices |
+| `old/montecarlo/sweep_score.c` | both score protocols with every run of `cop_0191` as the benchmark |
+
+Each one builds and runs with `make old-<stem>`, for instance
+`make old-abm_system_score_loss`.
+
 ## Overview
 
 A second and a third loss matrix for the same Model Confidence Set the project
@@ -20,9 +41,9 @@ how hard would this series pull the estimate away from where the real data put
 it. That is the score of the auxiliary model's log-likelihood, evaluated at the
 real data's estimate on simulated data.
 
-Everything here is produced by `applications/abm_system_score_loss.c` and
-scored by `applications/abm_system_mcs_statistic_comparison.c`. Neither reads
-`out/abm_system_fit_qvarma/`.
+Everything here is produced by `old/applications/abm_system_score_loss.c` and
+scored by `old/applications/abm_system_mcs_statistic_comparison_score.c`.
+Neither reads `out/abm_system_fit_qvarma/`.
 
 ## The quantity
 
@@ -146,10 +167,10 @@ No inverse is formed. The matrix `T_sim/T_US * I_US` is Cholesky-factored once,
 before the parallel loop, and each cell costs one triangular solve: with the
 factorization `L L'`, `LM = ||L^-1 q||^2`.
 
-## The pipeline step
+## Running it
 
-    make app-abm_system_score_loss              writes both matrices
-    make app-abm_system_mcs_statistic_comparison   scores all three
+- `make old-abm_system_score_loss` writes both matrices.
+- `make old-abm_system_mcs_statistic_comparison_score` scores both.
 
 Inputs:
 

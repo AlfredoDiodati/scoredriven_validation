@@ -24,14 +24,12 @@ files each one writes are listed under "The main pipeline" below.
 compared against what, why the comparison runs on impulse responses rather than
 on fitted parameters, the settings the confidence set is computed under, and
 the result on the design experiment.
-`docs/ABM_SYSTEM_SCORE_LOSS.md` describes a second route to the same confidence
-set, one that fits nothing to the simulated data: it scores each simulated
-series by the score of the auxiliary model's log-likelihood at the real data's
-own estimate, weighted by the inverse information matrix. On the US data it is
-the only one of the three losses under which the confidence set stops because
-an equivalence test is accepted rather than because elimination ran out; on a
-simulated benchmark with a known answer it is also the one that misses that
-answer by the widest margin, which `docs/MONTECARLO_VALIDATION.md` records.
+`docs/ABM_SYSTEM_SCORE_LOSS.md` records a discarded route to the same
+confidence set, which scored each simulated series by the score of the
+auxiliary model's log-likelihood at the real data's own estimate, unweighted
+(`q'q`) and weighted by the inverse information matrix. It missed the known
+answer in the Monte Carlo check and has no theoretical justification, so its
+code is under `old/`.
 `docs/MONTECARLO_VALIDATION.md` describes the check that the validation
 procedure recovers an answer it already knows: one simulated run replaces the
 US data, and the confidence set should return the configuration that run came
@@ -237,6 +235,10 @@ minute. `docs/ABM_SYSTEM_SIMULATION.md` has the setup behind those numbers.
                       of the way so only one of the two is ever fitted, and
                       throughput/ is the separate dataset the throughput study
                       times fits on
+    old/              experiments discarded from the main pipeline and the
+                      Monte Carlo, in old/applications/ and old/montecarlo/.
+                      Still buildable with make old-<stem>; their write-ups
+                      stay in docs/
     out/              every result, written here rather than printed
     docs/             the write-up and the reference documentation
 
@@ -514,21 +516,28 @@ C. Results are written to files, never printed.
 
 `docs/ABM_SYSTEM_MCS_VALIDATION.md` lists every figure and what it shows.
 
-### The second route to the confidence set, which fits nothing
+### The score route, discarded
 
-Steps 6 and 7 above cost a million fits. `applications/abm_system_score_loss.c`
-reaches a loss matrix without any of them: it holds the US estimate of step 5
-fixed and evaluates the score of the auxiliary model's log-likelihood on each
-simulated series, which measures how hard that series would pull the estimate
-away from where the US data put it. Two matrices come out of one pass, the
-plain sum of squares and the inverse-information-weighted score statistic, and
-`docs/ABM_SYSTEM_SCORE_LOSS.md` sets out what each one measures and why the
-weighted one is the one to use.
+`old/applications/abm_system_score_loss.c` reached a loss matrix without the
+million fits of steps 6 and 7: it held the US estimate of step 5 fixed and
+evaluated the score of the auxiliary model's log-likelihood on each simulated
+series, as the plain sum of squares `q'q` and as the inverse-information-weighted
+score statistic. Neither recovered the known answer in the Monte Carlo check
+and neither has a theoretical justification as a validation distance, so both
+are out of the pipeline. `docs/ABM_SYSTEM_SCORE_LOSS.md` keeps the setup and
+the results, and lists the `make old-<stem>` targets that still rebuild them.
+Their outputs stay where they were:
 
-    make app-abm_system_score_loss                    both matrices, about a minute
-    make app-abm_system_mcs_statistic_comparison      scores all three losses
+| file | what it holds |
+|---|---|
+| `out/abm_system_score_loss.csv` | the unweighted loss table, same shape as step 7's |
+| `out/abm_system_score_loss_weighted.csv` | the score statistic, same shape |
+| `out/abm_system_score_loss_manifest.txt` | the information matrix's spectrum and conditioning, how the statistic splits over eigen-directions, and every missing cell |
+| `out/abm_system_mcs_statistic_comparison_score*.*` | the confidence sets under both MCS statistics |
 
-A separate side run, not part of either route to the confidence set:
+### A side run with the per-firm output
+
+A separate side run, not part of the route to the confidence set:
 
     make app-abm_system_micro_simulate                5 configurations x 5 seeds
                                                       with the per-firm output on
@@ -537,26 +546,14 @@ It reruns configurations of the design at seeds the archives already hold and
 keeps each firm's output, which `studies/abm_system_micro_clt.c` and
 `studies/abm_system_stable_tails.c` read. About half a minute and 261 MB.
 
-It replaces steps 6 and 7 and reads steps 3, 4 and 5. Under the weighted
-statistic the confidence set keeps `cop_0409` and `cop_0599` and stops because
-an equivalence test is accepted at p = 0.1026; under the impulse-response
-distance and under the unweighted sum of squares it eliminates everything down
-to one configuration without ever accepting a test. The three losses do not
-agree on which configuration is closest.
-
-| file | what it holds |
-|---|---|
-| `out/abm_system_score_loss.csv` | the unweighted loss table, same shape as step 7's |
-| `out/abm_system_score_loss_weighted.csv` | the score statistic, same shape |
-| `out/abm_system_score_loss_manifest.txt` | the information matrix's spectrum and conditioning, how the statistic splits over eigen-directions, and every missing cell |
-
 ### Does the procedure recover an answer it already knows
 
-Neither route above can be checked, because nobody knows which configuration is
-really closest to the United States. `montecarlo/` asks the same question with
-the answer known: one simulated run is promoted to the role the US data plays,
-every loss is measured against it, and the confidence set should come back
-holding the configuration that run was drawn from.
+The procedure above cannot be checked on the US data, because nobody knows
+which configuration is really closest to the United States. `montecarlo/`
+asks the same question with the answer known: one simulated run is promoted to
+the role the US data plays, every loss is measured against it, and the
+confidence set should come back holding the configuration that run was drawn
+from.
 
     make montecarlo            the whole experiment, results in montecarlo/out/
 
@@ -627,10 +624,8 @@ configuration that transformation wrongly picks in the Monte Carlo experiment.
 Scripts in `applications/` that the ten steps do not use:
 
 - `abm_system_mcs_statistic_comparison.c` reruns step 8 under both statistics
-  et_al implements, as a check, over each of the three loss matrices, and writes
-  `out/abm_system_mcs_statistic_comparison.txt` and `.csv` for the
-  impulse-response loss, `..._score.*` for the unweighted score and
-  `..._score_weighted.*` for the score statistic.
+  et_al implements, as a check, and writes
+  `out/abm_system_mcs_statistic_comparison.txt` and `.csv`.
 - `abm_system_convert_rdata.c` is the older way to fill a dataset directory: it
   converts the 108 `.Rdata` files under `dataset/simulated/` instead of running
   the simulator. Use one or the other, never both: step 6 fits every
@@ -646,9 +641,10 @@ Scripts in `applications/` that the ten steps do not use:
 
 Files in `out/` the ten steps do not write:
 
-- `out/abm_system_mcs_statistic_comparison*.*`, from the check above.
-- `out/abm_system_score_loss*.csv` and `out/abm_system_score_loss_manifest.txt`,
-  from the second route above.
+- `out/abm_system_mcs_statistic_comparison.*`, from the check above.
+- `out/abm_system_score_loss*.csv`, `out/abm_system_score_loss_manifest.txt`
+  and `out/abm_system_mcs_statistic_comparison_score*.*`, from the discarded
+  score route above.
 - `out/abm_system_convert_rdata_manifest.txt`, from the older route above.
 - `out/throughput_*`, `out/fit_speedup_options.txt` and the shell scripts
   `out/hold_awake.sh`, `out/record_run_walltime.sh` and

@@ -1,4 +1,8 @@
 /*
+Discarded from the main pipeline: the score losses gave poor results in the
+Monte Carlo check and have no theoretical justification as a validation
+distance. docs/ABM_SYSTEM_SCORE_LOSS.md records the experiment and its results.
+
 The two score protocols run against every replicate of cop_0191 in turn, the
 companion to montecarlo/sweep_irf.c.
 
@@ -9,7 +13,7 @@ that configuration's 1000 replicates standing in as the benchmark, so that a
 protocol that is structurally unable to identify a configuration can be told
 apart from one that drew badly once.
 
-Each individual run is what montecarlo/score_loss.c and montecarlo/mcs.c do:
+Each individual run is what old/montecarlo/score_loss.c and montecarlo/mcs.c do:
 the same two losses, the same hold-out of the benchmark's own seed, the same
 confidence set settings. The loop and the tally are all that is added.
 
@@ -80,7 +84,7 @@ typedef struct { char *name; int index; } SampleEntry;
 
 static int trailing_index(const char *name) {
     const char *underscore = strrchr(name, '_');
-    assert(underscore && "sweep_score: a configuration directory name has no trailing _<N>");
+    assert(underscore && "old/montecarlo/sweep_score: a configuration directory name has no trailing _<N>");
     return atoi(underscore + 1);
 }
 
@@ -90,7 +94,7 @@ static int compare_sample_entries(const void *a, const void *b) {
 
 static SampleEntry *list_samples(const char *dir, int *count) {
     DIR *handle = opendir(dir);
-    assert(handle && "sweep_score: cannot open dataset/abm_system/");
+    assert(handle && "old/montecarlo/sweep_score: cannot open dataset/abm_system/");
 
     SampleEntry *entries = NULL;
     int n = 0, cap = 0;
@@ -156,7 +160,7 @@ static BenchmarkPoint benchmark_point(int replicate, int sim_periods) {
     snprintf(path, sizeof path, "%s/%s/replicate_%03d_%s_fit.json", FIT_DIR, BENCHMARK_SAMPLE,
              replicate, SPEC_LABEL);
     int loaded = qvarma_load_params(&m, path);
-    assert(loaded && "sweep_score: a benchmark's cached fit will not load");
+    assert(loaded && "old/montecarlo/sweep_score: a benchmark's cached fit will not load");
 
     int n = qvarma_n_theta(&m);
     point.theta = mat_new(n, 1);
@@ -180,8 +184,9 @@ static BenchmarkPoint benchmark_point(int replicate, int sim_periods) {
             mreal scale = (mreal)sim_periods / (mreal)y.c;
             Mat scaled = mat_copy(information);
             for (int i = 0; i < n * n; i++) scaled.d[i] *= scale;
-            point.factor = mat_chol(scaled);
-            point.weighting_usable = 1;
+            int status;
+            point.factor = mat_chol(scaled, &status);
+            point.weighting_usable = status == 0;
             mat_free(scaled);
         }
         mat_free(eigenvalues);
@@ -261,7 +266,7 @@ int main(void) {
     int benchmark_sample = -1;
     for (int i = 0; i < n_samples; i++)
         if (strcmp(samples[i].name, BENCHMARK_SAMPLE) == 0) benchmark_sample = i;
-    assert(benchmark_sample >= 0 && "sweep_score: the benchmark configuration is not in the dataset");
+    assert(benchmark_sample >= 0 && "old/montecarlo/sweep_score: the benchmark configuration is not in the dataset");
 
     int n_done_plain, n_done_weighted;
     int *done_plain = read_done(PLAIN_SUMMARY, &n_done_plain);
@@ -386,7 +391,7 @@ int main(void) {
                     if (MISNAN(AT(plain[b], rep, sample))) usable[rep] = 0;
                 if (usable[rep]) keep++;
             }
-            assert(keep > 0 && "sweep_score: a benchmark has no usable replicate");
+            assert(keep > 0 && "old/montecarlo/sweep_score: a benchmark has no usable replicate");
 
             if (!done_plain[benchmark]) {
                 Mat kept = mat_new(keep, n_samples);

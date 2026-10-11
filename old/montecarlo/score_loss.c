@@ -1,8 +1,12 @@
 /*
+Discarded from the main pipeline: the score losses gave poor results in the
+Monte Carlo check and have no theoretical justification as a validation
+distance. docs/ABM_SYSTEM_SCORE_LOSS.md records the experiment and its results.
+
 The two score loss matrices of the Monte Carlo experiment, built without
 fitting anything.
 
-This is applications/abm_system_score_loss.c's procedure with the benchmark
+This is old/applications/abm_system_score_loss.c's procedure with the benchmark
 changed. There the score is taken at the US data's estimate; here it is taken
 at one simulated replicate's estimate, so the right answer is known - the
 configuration that replicate was drawn from. docs/MONTECARLO_VALIDATION.md is
@@ -114,7 +118,7 @@ typedef struct { char *name; int index; } SampleEntry;
    "_2". */
 static int trailing_index(const char *name) {
     const char *underscore = strrchr(name, '_');
-    assert(underscore && "montecarlo/score_loss: a configuration directory name has no trailing _<N>");
+    assert(underscore && "old/montecarlo/score_loss: a configuration directory name has no trailing _<N>");
     return atoi(underscore + 1);
 }
 
@@ -124,7 +128,7 @@ static int compare_sample_entries(const void *a, const void *b) {
 
 static SampleEntry *list_samples(const char *dir, int *count) {
     DIR *handle = opendir(dir);
-    assert(handle && "montecarlo/score_loss: cannot open dataset/abm_system/ - "
+    assert(handle && "old/montecarlo/score_loss: cannot open dataset/abm_system/ - "
                       "run applications/abm_system_simulate_all.sh first");
 
     SampleEntry *entries = NULL;
@@ -139,12 +143,12 @@ static SampleEntry *list_samples(const char *dir, int *count) {
         if (n == cap) {
             cap = cap ? cap * 2 : 16;
             SampleEntry *grown = realloc(entries, (size_t)cap * sizeof(SampleEntry));
-            assert(grown && "montecarlo/score_loss: out of memory listing configurations");
+            assert(grown && "old/montecarlo/score_loss: out of memory listing configurations");
             entries = grown;
         }
         size_t len = strlen(entry->d_name);
         entries[n].name = malloc(len + 1);
-        assert(entries[n].name && "montecarlo/score_loss: out of memory copying a configuration name");
+        assert(entries[n].name && "old/montecarlo/score_loss: out of memory copying a configuration name");
         memcpy(entries[n].name, entry->d_name, len + 1);
         entries[n].index = trailing_index(entry->d_name);
         n++;
@@ -163,7 +167,7 @@ static int count_replicates(const char *sample) {
     snprintf(dir, sizeof dir, "%s/%s", INPUT_DIR, sample);
     int count = 0;
     int *replicate = abm_system_list_replicates(dir, &count);
-    assert(count > 0 && "montecarlo/score_loss: a configuration directory holds no replicate");
+    assert(count > 0 && "old/montecarlo/score_loss: a configuration directory holds no replicate");
     int highest = replicate[0];
     for (int i = 1; i < count; i++) if (replicate[i] > highest) highest = replicate[i];
     free(replicate);
@@ -180,7 +184,7 @@ static Mat first_replicate(const char *sample) {
     Mat block[ABM_SYSTEM_BATCH];
     int replicate[ABM_SYSTEM_BATCH];
     int count = abm_system_read_batch(dir, 0, block, replicate);
-    assert(count > 0 && "montecarlo/score_loss: the first archive of a configuration is empty");
+    assert(count > 0 && "old/montecarlo/score_loss: the first archive of a configuration is empty");
     Mat y = mat_copy(block[0]);
     for (int b = 0; b < count; b++) mat_free(block[b]);
     return y;
@@ -283,7 +287,7 @@ static Mat build_information_factor(Vec theta, const QvarmaParams *shape, Mat re
     Vec eigenvalues;
     Mat eigenvectors;
     int status = mat_eig_sym_status(information, &eigenvalues, &eigenvectors);
-    assert(status == 0 && "montecarlo/score_loss: the information matrix at theta_US has no "
+    assert(status == 0 && "old/montecarlo/score_loss: the information matrix at theta_US has no "
                            "eigendecomposition - the weighting cannot be built from it");
 
     mreal smallest = eigenvalues.d[0], largest = eigenvalues.d[0];
@@ -308,14 +312,14 @@ static Mat build_information_factor(Vec theta, const QvarmaParams *shape, Mat re
     fprintf(manifest, "  positive definite %s, %d directions flat against a floor of %.3e\n",
             smallest > floor_value ? "yes" : "no", n_flat, (double)floor_value);
 
-    assert(smallest > floor_value && "montecarlo/score_loss: the information matrix at theta_US is "
+    assert(smallest > floor_value && "old/montecarlo/score_loss: the information matrix at theta_US is "
                                       "not positive definite - the weighted loss would not be a "
                                       "distance and is not written");
 
     mreal scale = (mreal)sim_periods / (mreal)real_y.c;
     Mat scaled = mat_copy(information);
     for (int i = 0; i < n * n; i++) scaled.d[i] *= scale;
-    Mat factor = mat_chol(scaled);
+    Mat factor = mat_chol(scaled, NULL);
 
     fprintf(manifest, "  scaled by T_sim / T_benchmark = %d / %d before inversion, so the loss is on the "
                        "chi-square scale\n", sim_periods, real_y.c);
@@ -480,7 +484,7 @@ int main(void) {
 
     int n_samples;
     SampleEntry *samples = list_samples(INPUT_DIR, &n_samples);
-    assert(n_samples > 0 && "montecarlo/score_loss: no configuration directories under dataset/abm_system/");
+    assert(n_samples > 0 && "old/montecarlo/score_loss: no configuration directories under dataset/abm_system/");
     n_replicates = count_replicates(samples[0].name);
     Mat probe_y = first_replicate(samples[0].name);
     int sim_periods = probe_y.c;
@@ -494,7 +498,7 @@ int main(void) {
     snprintf(fit_path, sizeof fit_path, "%s/%s/replicate_%03d_%s_fit.json",
              FIT_DIR, BENCHMARK_SAMPLE, BENCHMARK_REPLICATE, SPEC_LABEL);
     int loaded = qvarma_load_params(&real, fit_path);
-    assert(loaded && "montecarlo/score_loss: could not load the benchmark fit - run "
+    assert(loaded && "old/montecarlo/score_loss: could not load the benchmark fit - run "
                       "us_qvarma_spec_choice.c, or abm_system_fit_qvarma, first");
     Vec theta = mat_new(qvarma_n_theta(&real), 1);
     _qvarma_unlink(&real, theta);
@@ -506,7 +510,7 @@ int main(void) {
     snprintf(manifest_path, sizeof manifest_path, "%.*s_manifest.txt", (int)stem, OUTPUT_PATH);
 
     FILE *manifest = fopen(manifest_path, "w");
-    assert(manifest && "montecarlo/score_loss: cannot open the manifest path for writing");
+    assert(manifest && "old/montecarlo/score_loss: cannot open the manifest path for writing");
     fprintf(manifest, "%d configurations, %d replicates each, %d periods each, spec %s\n",
             n_samples, n_replicates, sim_periods, SPEC_LABEL);
     fprintf(manifest, "q is the score of the t-QVARMA log-likelihood at the benchmark's estimate, "
@@ -561,7 +565,7 @@ int main(void) {
             if (MISNAN(AT(plain, row, col + 1))) { usable[row] = 0; break; }
         if (usable[row]) keep++;
     }
-    assert(keep > 0 && "montecarlo/score_loss: every replicate has a missing cell");
+    assert(keep > 0 && "old/montecarlo/score_loss: every replicate has a missing cell");
     if (keep < n_replicates) {
         int held_out = 1;
         fprintf(manifest, "%d of %d replicates dropped for holding a missing cell\n",
@@ -576,7 +580,7 @@ int main(void) {
 
     DataFrame plain_frame = to_frame(plain, samples, n_samples);
     DataFrame weighted_frame = to_frame(weighted, samples, n_samples);
-    assert(plain_frame.r > 0 && "montecarlo/score_loss: the loss table has no rows");
+    assert(plain_frame.r > 0 && "old/montecarlo/score_loss: the loss table has no rows");
     df_write_csv(&plain_frame, OUTPUT_PATH, csv_write_options_default());
     df_write_csv(&weighted_frame, weighted_path, csv_write_options_default());
 

@@ -5,7 +5,7 @@ to separate luck from structure.
 montecarlo/ promotes one simulated run to the role the US data plays and asks
 whether the confidence set returns the configuration that run came from. On the
 one benchmark it was first run against, the impulse-response loss returned it
-and both score losses did not. One benchmark cannot tell a protocol that works
+and the score losses in old/montecarlo/ did not. One benchmark cannot tell a protocol that works
 from a protocol that got a lucky draw, so this repeats the whole thing with
 each of the benchmark configuration's 1000 replicates standing in as the
 benchmark, and reports how often the answer comes back right.

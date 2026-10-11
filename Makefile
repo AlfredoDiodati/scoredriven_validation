@@ -45,6 +45,8 @@
 #   make mc-sweep_grid: every run of every configuration as the benchmark, built
 #   at -O3 by its own rule, not part of `make montecarlo`.
 #   docs/MONTECARLO_VALIDATION.md, "The experiments", lists them all.
+#   make old-<stem>: one experiment discarded from either pipeline, built from
+#   old/ and run, OLD_APPLICATION_STEMS and OLD_MONTECARLO_STEMS.
 #
 # Three kinds of script, three directories, one stem list each. A stem maps to
 # <directory>/<stem>.c and bin/<stem>, and the targets below are generated from
@@ -162,20 +164,26 @@ EXPERIMENT_STEMS := us_qvarma_spec_choice \
                      abm_system_convert_rdata abm_system_fit_qvarma abm_system_fit_lp \
                      us_lp_fit abm_system_lp_irf_loss abm_system_lp_mcs \
                      abm_system_micro_simulate \
-                     abm_system_irf_loss abm_system_score_loss abm_system_mcs \
+                     abm_system_irf_loss abm_system_mcs \
                      abm_system_mcs_statistic_comparison \
                      abm_system_winner_irf \
                      throughput_dataset
-# The Monte Carlo experiment: the same three validation protocols with one
+# The Monte Carlo experiment: the same validation protocols with one
 # simulated run promoted to the role the US data plays, so that the procedure
 # is asked a question whose answer is known. It is a pipeline of its own and
 # shares no source with applications/, which stays exactly as it is; what it
 # reuses is applications/'s output, above all the million cached fits, since it
 # estimates nothing. docs/MONTECARLO_VALIDATION.md.
-MONTECARLO_STEMS := benchmark_choice irf_loss score_loss mcs mcs_statistic_comparison \
-                     sweep_irf sweep_score lp_irf_loss lp_mcs lp_sweep sweep_cops \
+MONTECARLO_STEMS := benchmark_choice irf_loss mcs mcs_statistic_comparison \
+                     sweep_irf lp_irf_loss lp_mcs lp_sweep sweep_cops \
                      compressed_response_recovery fit_metric_oracle fit_metric_bootstrap \
                      fit_metric_report
+# Experiments discarded from both pipelines, kept buildable under old/ with the
+# same flags as the pipeline they came from and run one at a time via
+# make old-<stem>. They write to out/ and montecarlo/out/ like the pipeline
+# they came from. docs/ABM_SYSTEM_SCORE_LOSS.md covers the score losses.
+OLD_APPLICATION_STEMS := abm_system_score_loss abm_system_mcs_statistic_comparison_score
+OLD_MONTECARLO_STEMS := score_loss mcs_statistic_comparison_score sweep_score
 
 # Whatever the application scripts share, so editing it rebuilds them.
 APPLICATION_HEADERS := applications/us_data.h applications/abm_system.h applications/lp_system.h \
@@ -317,6 +325,16 @@ $(foreach stem,$(MONTECARLO_STEMS),$(eval $(call montecarlo_target_for_stem,$(st
 montecarlo/out:
 	@mkdir -p montecarlo/out
 
+define old_target_for_stem
+.PHONY: old-$(1)
+$(BIN)/$(1): old/$(2)/$(1).c $(HEADERS) $(APPLICATION_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
+	$(CC) $(CFLAGS) -DMAT_DOUBLE -fopenmp $(ETAL_CFLAGS) $(INCLUDES) $$< -o $$@ $(ETAL_LIBS)
+old-$(1): $(BIN)/$(1) | $(OUT) montecarlo/out
+	./$(BIN)/$(1)
+endef
+$(foreach stem,$(OLD_APPLICATION_STEMS),$(eval $(call old_target_for_stem,$(stem),applications)))
+$(foreach stem,$(OLD_MONTECARLO_STEMS),$(eval $(call old_target_for_stem,$(stem),montecarlo)))
+
 # The local-projection scripts read the cache through one shared header, which
 # the rule above does not know about.
 $(addprefix $(BIN)/,lp_irf_loss lp_mcs lp_sweep sweep_cops sweep_grid): applications/abm_system_lp.h montecarlo/benchmark.h montecarlo/response_cache.h
@@ -335,8 +353,8 @@ $(BIN)/sweep_grid: montecarlo/sweep_grid.c $(HEADERS) $(APPLICATION_HEADERS) $(E
 mc-sweep_grid: $(BIN)/sweep_grid | montecarlo/out
 	./$(BIN)/sweep_grid
 
-# The whole Monte Carlo experiment: choose the benchmark, then the three loss
-# matrices and their confidence sets against it. It reads the fit cache and the
+# The whole Monte Carlo experiment: choose the benchmark, then the
+# impulse-response loss matrix and its confidence sets against it. It reads the fit cache and the
 # dataset and rebuilds neither, so it does not run on a fresh clone.
 .PHONY: montecarlo
 montecarlo: $(addprefix $(BIN)/,$(MONTECARLO_STEMS)) | montecarlo/out
@@ -376,13 +394,14 @@ app-us_qvarma_spec_choice: app-us_prepare_data
 # app-throughput_fit: it writes 21 GB and takes tens of minutes, so
 # rerunning the throughput test must not rebuild the dataset it reads.
 app-abm_system_irf_loss: app-us_qvarma_spec_choice
+app-abm_system_mcs: app-abm_system_irf_loss
+app-abm_system_mcs_statistic_comparison: app-abm_system_irf_loss
 # The score loss needs the same real-data fit and no fit of its own: it
 # evaluates the score of that estimate on every simulated series rather than
 # fitting one, so it does not depend on app-abm_system_fit_qvarma the way the
 # IRF loss does.
-app-abm_system_score_loss: app-us_qvarma_spec_choice
-app-abm_system_mcs: app-abm_system_irf_loss
-app-abm_system_mcs_statistic_comparison: app-abm_system_irf_loss app-abm_system_score_loss
+old-abm_system_score_loss: app-us_qvarma_spec_choice
+old-abm_system_mcs_statistic_comparison_score: old-abm_system_score_loss
 app-abm_system_winner_irf: app-abm_system_mcs
 # The local-projection route against the US data. The simulated fits come from
 # app-abm_system_fit_lp, which, like app-abm_system_fit_qvarma, is not rerun
