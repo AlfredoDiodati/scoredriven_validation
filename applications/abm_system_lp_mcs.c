@@ -16,8 +16,7 @@ combines them is not written down, so that set is not computed here.
 Requires out/abm_system_lp_irf_loss_<model>.csv. Writes
 out/abm_system_lp_mcs_<model>.txt, the readable report with both elimination
 tables, and out/abm_system_lp_mcs_<model>.csv, one row per configuration.
-With --r-levels every one of these names carries _r_levels after
-abm_system_lp. Nothing printed.
+Takes no arguments. Nothing printed.
 */
 
 #define _POSIX_C_SOURCE 199309L
@@ -216,8 +215,8 @@ static void compare_statistics(const char *loss_path, const char *report_path,
 }
 
 int main(int argc, char **argv) {
-    LpLayout layout = lp_parse_flags(argc, argv, NULL);
-    const char *suffix = lp_layout_suffix(layout);
+    (void)argv;
+    assert(argc == 1 && "abm_system_lp_mcs: takes no arguments");
     static const char *const description[LP_N_LOSSES] = {
         "linear local projection impulse-response MAE",
         "state-dependent local projection impulse-response MAE, state 1 (lags times 1 - F)",
@@ -225,11 +224,11 @@ int main(int argc, char **argv) {
     };
     for (int loss = 0; loss < LP_N_LOSSES; loss++) {
         char loss_path[128], report_path[128], table_path[128];
-        snprintf(loss_path, sizeof loss_path, "out/abm_system_lp%s_irf_loss_%s.csv", suffix, lp_loss_name(loss));
-        snprintf(report_path, sizeof report_path, "out/abm_system_lp%s_mcs_%s.txt", suffix, lp_loss_name(loss));
-        snprintf(table_path, sizeof table_path, "out/abm_system_lp%s_mcs_%s.csv", suffix, lp_loss_name(loss));
+        snprintf(loss_path, sizeof loss_path, "out/abm_system_lp_irf_loss_%s.csv", lp_loss_name(loss));
+        snprintf(report_path, sizeof report_path, "out/abm_system_lp_mcs_%s.txt", lp_loss_name(loss));
+        snprintf(table_path, sizeof table_path, "out/abm_system_lp_mcs_%s.csv", lp_loss_name(loss));
         char title[256];
-        snprintf(title, sizeof title, "%s, series %s", description[loss], lp_layout_description(layout));
+        snprintf(title, sizeof title, "%s, series %s", description[loss], LP_SYSTEM_SERIES_DESCRIPTION);
         compare_statistics(loss_path, report_path, table_path, title);
     }
     return 0;

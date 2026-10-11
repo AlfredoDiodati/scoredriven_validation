@@ -4,8 +4,8 @@ The main pipeline (`docs/ABM_SYSTEM_MCS_VALIDATION.md`) asks which of the 1000
 parameter configurations of the DSK model produce dynamics closest to the US
 data, comparing impulse responses of the t-QVARMA. This runs the same
 comparison with the collaborator's local projections as the auxiliary model,
-the version `docs/OLD_MONTECARLO_LP_VALIDATION.md` checked on simulated data
-with a known answer.
+the version the Monte Carlo grid checks on simulated data with a known answer
+(`docs/MONTECARLO_VALIDATION.md`).
 
 ## What is run
 
@@ -64,39 +64,8 @@ it.
 
 ## The same on the collaborator's transformation
 
-Every step above run again with `--r-levels`: the simulated runs and the US
-series put through R's `transform_data` (`lp_system_r_transform`), log GDP as
-`100 log(100 + cumsum(GDP_growth))`, employment as `0.90 +
-cumsum(Employment_change)`, inflation and the interest rate as they are, log
-energy like GDP, in R's order GDP, employment, inflation, interest rate,
-energy; everything else unchanged. The collaborator's own preparation of the
-US data (`rw_data_prep.R`) was not available; the thesis states the same
-transformation code runs on the real and the simulated data, so the US growth
-rates go through `transform_data` exactly as the simulated ones do. Outputs
-carry `_r_levels`: `out/abm_system_fit_lp_r_levels/`,
-`out/us_lp_fit_r_levels.*`, `out/abm_system_lp_r_levels_irf_loss_<model>.csv`,
-`out/abm_system_lp_r_levels_mcs_<model>.*`. No fit failed and every regression
-was at full rank, on the US data and on all 1,000,000 runs.
-
-    make app-abm_system_fit_lp_r_levels     the simulated fits, about 7 minutes
-    make app-abm_system_lp_r_levels_mcs     the US fit, the loss tables, the sets
-
-- **Linear:** `cop_0905` alone (mean loss 2.517; next `cop_0593` 2.960);
-  `cop_0191` is 26th (13.24).
-- **State 1:** `cop_0905` alone (24.10; next `cop_0593` 27.07); `cop_0191`
-  11th (33.14).
-- **State 2:** `cop_0905` alone (4.495; next `cop_0593` 5.710); `cop_0191`
-  23rd (28.36).
-
-MCS_TMAX keeps the same single configuration under all three models.
-
-`cop_0905` is the configuration the levels picked in the Monte Carlo
-experiment when the right answer was `cop_0191`: the one whose simulated
-responses scatter least, with the most volatile interest rate of the 1000
-(`docs/OLD_MONTECARLO_LP_VALIDATION.md`). On R's levels the local projections
-recovered a known answer in 5 (linear), 72 (state 1) and 42 (state 2) of 1000
-repetitions, so this set says which configuration's estimates are most
-precise rather than which is closest to the US data.
+The same comparison on R's levels is discarded; `docs/OLD_LP_R_LEVELS.md`
+records it and its result.
 
 ## What this does not do
 

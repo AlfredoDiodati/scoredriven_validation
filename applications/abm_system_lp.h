@@ -61,10 +61,10 @@ static inline int _lp_all_finite(const mreal *values) {
 }
 
 /* Replicates 0 to n_replicates - 1 of sample, their rows checked against the
-   series of the given layout. A configuration with no usable archive comes
-   back with every row NULL. */
+   series they are fitted on. A configuration with no usable archive comes back
+   with every row NULL. */
 static inline LpConfiguration lp_configuration_load(const char *fit_dir, const char *input_dir,
-                                                    const char *sample, int n_replicates, LpLayout layout) {
+                                                    const char *sample, int n_replicates) {
     LpConfiguration c;
     c.n_replicates = n_replicates;
     c.row = calloc((size_t)n_replicates, sizeof(LpSystemRecord *));
@@ -94,7 +94,7 @@ static inline LpConfiguration lp_configuration_load(const char *fit_dir, const c
                 if (c.records[i].replicate == index) found = &c.records[i];
             if (found && index < n_replicates && found->has_responses) {
                 Mat y, switching;
-                lp_system_series(block[b], layout, &y, &switching);
+                lp_system_from_stored(block[b], &y, &switching);
                 if (lp_system_record_matches(found, y, switching)) {
                     c.row[index] = found;
                     for (int loss = 0; loss < LP_N_LOSSES; loss++)

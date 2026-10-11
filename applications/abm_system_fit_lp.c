@@ -30,11 +30,8 @@ rewritten. A fit without d (the VAR behind the shocks had no Cholesky factor,
 or the data held a NaN) is stored as a row with has_responses 0 and counted, so
 it is not retried on every run only to fail the same way.
 
-    ./bin/abm_system_fit_lp             fit what is not stored
-    ./bin/abm_system_fit_lp --refit     ignore what is stored and fit everything
-    ./bin/abm_system_fit_lp --r-levels  the same on R's levels, the collaborator's
-                                        transformation, into
-                                        out/abm_system_fit_lp_r_levels/
+- ./bin/abm_system_fit_lp fits what is not stored.
+- ./bin/abm_system_fit_lp --refit ignores what is stored and fits everything.
 
 One task per configuration. openblas_set_num_threads(1) for the reason
 applications/abm_system_fit_qvarma.c gives: the parallelism is the outer loop.
@@ -60,7 +57,6 @@ series was constant, and whether it has responses. Nothing printed.
 
 static const char *INPUT_DIR;
 static const char *OUTPUT_DIR;
-static LpLayout LAYOUT;
 
 static void make_directory(const char *path) {
     if (mkdir(path, 0755) != 0) assert(errno == EEXIST && "abm_system_fit_lp: mkdir failed");
@@ -139,7 +135,7 @@ static Series read_series(const char *sample) {
         int count = abm_system_read_batch(dir, batch, block, replicate);
         for (int b = 0; b < count; b++) {
             s.replicate[s.count] = replicate[b];
-            lp_system_series(block[b], LAYOUT, &s.y[s.count], &s.switching[s.count]);
+            lp_system_from_stored(block[b], &s.y[s.count], &s.switching[s.count]);
             s.count++;
             mat_free(block[b]);
         }
@@ -192,14 +188,12 @@ static Summary summarise(const LpSystemRecord *r) {
 
 int main(int argc, char **argv) {
     int force_refit;
-    LAYOUT = lp_parse_flags(argc, argv, &force_refit);
+    force_refit = lp_parse_refit(argc, argv);
 
     INPUT_DIR = getenv("ABM_SYSTEM_INPUT_DIR");
     if (!INPUT_DIR) INPUT_DIR = INPUT_DIR_DEFAULT;
-    char default_output[256];
-    snprintf(default_output, sizeof default_output, "%s%s", OUTPUT_DIR_DEFAULT, lp_layout_suffix(LAYOUT));
     OUTPUT_DIR = getenv("ABM_SYSTEM_LP_FIT_DIR");
-    if (!OUTPUT_DIR) OUTPUT_DIR = default_output;
+    if (!OUTPUT_DIR) OUTPUT_DIR = OUTPUT_DIR_DEFAULT;
 
     openblas_set_num_threads(1);
     make_directory(OUTPUT_DIR);
@@ -262,7 +256,7 @@ int main(int argc, char **argv) {
     assert(manifest && "abm_system_fit_lp: cannot open the manifest for writing");
     fprintf(manifest, "Local projections of the R pipeline on every replicate of %s\n", INPUT_DIR);
     fprintf(manifest, "data: %s (applications/lp_system.h); state series R's GDP_MA4\n",
-            lp_layout_description(LAYOUT));
+            LP_SYSTEM_SERIES_DESCRIPTION);
     fprintf(manifest, "spec: lags_endog_lin %d, lags_endog_nl %d, hor %d, unit shocks, use_hp %d, "
                       "lambda %g, gamma %g, lag_switching %d\n",
             spec.lin.lags_endog_lin, spec.lags_endog_nl, spec.lin.hor, spec.use_hp, spec.lambda,

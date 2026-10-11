@@ -80,7 +80,7 @@ int main(void) {
 
     static mreal reference[N_LP][LONGEST_DIM];
     {
-        LpConfiguration own = lp_configuration_load(FIT_DIR, INPUT_DIR, benchmark.sample, n_replicates, LP_LAYOUT_GROWTH);
+        LpConfiguration own = lp_configuration_load(FIT_DIR, INPUT_DIR, benchmark.sample, n_replicates);
         for (int loss = 0; loss < N_LP; loss++) {
             int ok = lp_model_response(&own, benchmark.replicate, FIRST_LP + loss, reference[loss]);
             assert(ok && "lp_irf_loss: the benchmark's own LP fit is missing or not finite");
@@ -98,7 +98,7 @@ int main(void) {
        cell is shared between threads. */
     #pragma omp parallel for schedule(dynamic)
     for (int col = 0; col < n_samples; col++) {
-        LpConfiguration c = lp_configuration_load(FIT_DIR, INPUT_DIR, samples[col].name, n_replicates, LP_LAYOUT_GROWTH);
+        LpConfiguration c = lp_configuration_load(FIT_DIR, INPUT_DIR, samples[col].name, n_replicates);
         mreal response[LONGEST_DIM];
         for (int row = 0; row < n_replicates; row++)
             for (int loss = 0; loss < N_LP; loss++) {

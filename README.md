@@ -597,8 +597,7 @@ grid answers each of them as a special case, so they are under `old/`;
 
 `applications/lp_system.h` builds the series the fits use, the stored series
 the t-QVARMA is fitted on plus R's moving average of log GDP to set the state,
-keeps R's `transform_data()` for reference, and defines the archive layout the
-fits are stored in, one compressed
+and defines the archive layout the fits are stored in, one compressed
 `out/abm_system_fit_lp/cop_NNNN.npz` per configuration, which is also where the
 US data's own fit will be read from. `docs/MONTECARLO_VALIDATION.md`, "The
 local projections", describes the fits.
@@ -608,11 +607,10 @@ The same local projections against the US data:
     make app-abm_system_lp_mcs     US fit, loss tables, confidence sets
 
 keeps `cop_0191` alone under the linear model and state 1, as the t-QVARMA
-does, and four configurations including it under state 2. On the
-collaborator's own transformation (`make app-abm_system_fit_lp_r_levels`, then
-`make app-abm_system_lp_r_levels_mcs`) all three keep `cop_0905` alone, the
-configuration that transformation wrongly picks in the Monte Carlo experiment.
-`docs/ABM_SYSTEM_LP_VALIDATION.md` has the setup and the numbers.
+does, and four configurations including it under state 2.
+`docs/ABM_SYSTEM_LP_VALIDATION.md` has the setup and the numbers. The same
+local projections fitted on the levels the collaborator's R pipeline builds are
+discarded, `docs/OLD_LP_R_LEVELS.md`.
 
 ### Not part of the main pipeline
 

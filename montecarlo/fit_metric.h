@@ -145,7 +145,7 @@ response_dim(model) entries. usable[model] is 0 where that response is missing
 or not finite, under lp_nl when either state's is. series is ABM_SYSTEM_K x T,
 the layout the t-QVARMA is fitted on; the t-QVARMA is fitted on it from
 qvarma_start, and its convergence and iterations go to fit_converged and
-fit_iterations. The local projections are fitted through lp_system_series and
+fit_iterations. The local projections are fitted through lp_system_from_stored and
 lp_lin_and_nl as applications/abm_system_fit_lp.c fits every simulated run.
 */
 static inline void fit_metric_responses(Mat series, const QvarmaParams *qvarma_start, QvarmaFitOptions fit_options,
@@ -160,7 +160,7 @@ static inline void fit_metric_responses(Mat series, const QvarmaParams *qvarma_s
     qvarma_fit_result_free(&fit);
 
     Mat y, switching;
-    lp_system_series(series, LP_LAYOUT_GROWTH, &y, &switching);
+    lp_system_from_stored(series, &y, &switching);
     LpLinNlFit lp = lp_lin_and_nl(y, switching, lp_system_spec(), (LpBands){0});
     int has_responses = lp.lin.d.d && lp.nl.d.d;
     const mreal *state[LP_N_LOSSES] = { NULL, NULL, NULL };

@@ -1,0 +1,32 @@
+Mardia's test of joint normality of the t-QVARMA(1,1,2) estimates of cop_0191
+data: out/abm_system_winner_diagnostics_winner_theta.csv, one row per replicate, theta on the unconstrained scale
+null hypothesis: the rows are independent draws from one 42-dimensional normal
+rejection: p below 0.05; p-values are two-sided for kurtosis, upper tail for skewness
+
+all replicates: n = 1000 fits, d = 42 coordinates of theta
+   condition number of the sample correlation matrix 3.537e+04
+   check: largest relative gap between g_ii and the Mahalanobis form of mvgauss_logpdf 2.71e-15
+   check: |mean of g_ii - d| 6.54e-13
+   skewness b1 = 1154.95, degrees of freedom 13244
+      asymptotic n b1 / 6 = 192492, p below 2.2e-308 (underflows double precision)
+      small sample k n b1 / 6 = 193096, p below 2.2e-308 (underflows double precision)
+   kurtosis b2 = 3458.62, d(d+2) = 1848
+      asymptotic moments z = 418.886, p below 2.2e-308 (underflows double precision)
+      exact moments z = 441.108, p below 2.2e-308 (underflows double precision)
+
+replicates whose fit converged: n = 449 fits, d = 42 coordinates of theta
+   condition number of the sample correlation matrix 4.604e+04
+   check: largest relative gap between g_ii and the Mahalanobis form of mvgauss_logpdf 2.67e-15
+   check: |mean of g_ii - d| 3.91e-13
+   skewness b1 = 900.496, degrees of freedom 13244
+      asymptotic n b1 / 6 = 67387.1, p below 2.2e-308 (underflows double precision)
+      small sample k n b1 / 6 = 67858.4, p below 2.2e-308 (underflows double precision)
+   kurtosis b2 = 2673.39, d(d+2) = 1848
+      asymptotic moments z = 143.842, p below 2.2e-308 (underflows double precision)
+      exact moments z = 162.596, p below 2.2e-308 (underflows double precision)
+
+calibration: share of 1000 samples from a 42-dimensional standard normal rejected at 0.05
+   draws by mvgauss_sample, seed 20260917, stream r for replication r, same n as each test above
+   a correct test rejects 0.05; the binomial standard error of the share is 0.0069
+   n = 1000: skewness asymptotic 0.037, small sample 0.062; kurtosis asymptotic 0.128, exact 0.044
+   n = 449: skewness asymptotic 0.024, small sample 0.072; kurtosis asymptotic 0.286, exact 0.051

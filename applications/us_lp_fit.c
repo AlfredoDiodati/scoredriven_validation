@@ -20,17 +20,8 @@ out/us_lp_fit.npz, the layout every configuration's fits are stored in. A rerun
 keeps it when it was fitted under this specification on exactly these series,
 and fits again otherwise.
 
-    ./bin/us_lp_fit              fit unless stored
-    ./bin/us_lp_fit --refit      fit and overwrite
-    ./bin/us_lp_fit --r-levels   the same on R's levels, the collaborator's
-                                 transformation, applied to the US growth
-                                 rates exactly as to the simulated ones
-
-With --r-levels every file below carries _r_levels after us_lp_fit. The
-collaborator's own preparation of the US data (rw_data_prep.R) was not
-available; the thesis states the same transformation code runs on the real and
-the simulated data, so R's transform_data is applied to the US growth rates as
-it is to every simulated run.
+- ./bin/us_lp_fit fits unless stored.
+- ./bin/us_lp_fit --refit fits and overwrites.
 
 Writes out/us_lp_fit.npz, out/us_lp_fit.txt (the data, the settings and the fit
 notes) and out/us_lp_fit_irf.csv (every response: model, response, horizon,
@@ -46,22 +37,19 @@ shock, value). Nothing printed.
 static const char *const growth_name[LP_SYSTEM_K] = {
     "GDP_growth", "EN_growth", "Employment_change", "Inflation", "InterestRate"
 };
-static const char *const r_level_name[LP_SYSTEM_K] = { "GDP", "Employment", "Inflation", "InterestRate", "Energy" };
 
 int main(int argc, char **argv) {
-    int force_refit;
-    LpLayout layout = lp_parse_flags(argc, argv, &force_refit);
+    int force_refit = lp_parse_refit(argc, argv);
     openblas_set_num_threads(1);
-    const char *const *series_name = layout == LP_LAYOUT_R_LEVELS ? r_level_name : growth_name;
-    char archive_path[256], report_path[256], irf_path[256];
-    snprintf(archive_path, sizeof archive_path, "out/us_lp_fit%s.npz", lp_layout_suffix(layout));
-    snprintf(report_path, sizeof report_path, "out/us_lp_fit%s.txt", lp_layout_suffix(layout));
-    snprintf(irf_path, sizeof irf_path, "out/us_lp_fit%s_irf.csv", lp_layout_suffix(layout));
+    const char *const *series_name = growth_name;
+    const char *archive_path = "out/us_lp_fit.npz";
+    const char *report_path = "out/us_lp_fit.txt";
+    const char *irf_path = "out/us_lp_fit_irf.csv";
 
     Mat original = load_us_system();
     Mat stored = us_system_growth_block(original);
     Mat y, switching;
-    lp_system_series(stored, layout, &y, &switching);
+    lp_system_from_stored(stored, &y, &switching);
     LpNlSpec spec = lp_system_spec();
 
     int count = 0;
@@ -83,7 +71,7 @@ int main(int argc, char **argv) {
     fprintf(report, "Local projections on the US data\n\n");
     fprintf(report, "data: out/us_system.csv through us_system_growth_block, then %s; %d quarters from "
                     "1974Q1 to 2019Q4, in the order of the recursive identification\n",
-            lp_layout_description(layout), y.c);
+            LP_SYSTEM_SERIES_DESCRIPTION, y.c);
     fprintf(report, "state series: R's 4-period moving average of 100 log(100 + cumsum(GDP_growth))\n");
     fprintf(report, "spec: lags %d, horizons 0 to %d, unit shocks, HP lambda %g, logistic gamma %g, "
                     "switching lagged %d period\n", spec.lin.lags_endog_lin, spec.lin.hor, spec.lambda,

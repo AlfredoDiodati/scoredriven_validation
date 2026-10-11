@@ -195,7 +195,12 @@ OLD_SOURCES := old/score_loss/applications/abm_system_score_loss.c \
                old/montecarlo_one_benchmark/studies/lp_recovery_diagnostics.c \
                old/montecarlo_every_run_of_cop_0191/sweep_irf.c \
                old/montecarlo_every_run_of_cop_0191/lp_sweep.c \
-               old/montecarlo_run_0_of_every_configuration/sweep_cops.c
+               old/montecarlo_run_0_of_every_configuration/sweep_cops.c \
+               old/lp_r_levels/us_lp_fit_r_levels.c \
+               old/lp_r_levels/abm_system_fit_lp_r_levels.c \
+               old/lp_r_levels/abm_system_lp_r_levels_irf_loss.c \
+               old/lp_r_levels/abm_system_lp_r_levels_mcs.c \
+               old/lp_r_levels/lp_system_r_levels_transform.c
 
 # Whatever the application scripts share, so editing it rebuilds them.
 APPLICATION_HEADERS := applications/us_data.h applications/abm_system.h applications/lp_system.h \
@@ -350,6 +355,9 @@ $(addprefix $(BIN)/,irf_loss lp_irf_loss lp_sweep score_loss qvarma_recovery_dia
     $(OLD_BENCHMARK_HEADER)
 $(addprefix $(BIN)/,qvarma_recovery_diagnostics lp_recovery_diagnostics): \
     old/montecarlo_one_benchmark/studies/recovery_noise.h
+$(addprefix $(BIN)/,us_lp_fit_r_levels abm_system_fit_lp_r_levels abm_system_lp_r_levels_irf_loss \
+    abm_system_lp_r_levels_mcs lp_system_r_levels_transform lp_recovery_diagnostics): \
+    old/lp_r_levels/lp_system_r_levels.h
 FIT_METRIC_BINARIES := fit_metric_oracle fit_metric_bootstrap fit_metric_report fit_metric_correctness
 $(addprefix $(BIN)/,$(FIT_METRIC_BINARIES)): montecarlo/response_cache.h montecarlo/fit_metric.h $(APPLICATION_HEADERS)
 
@@ -419,19 +427,12 @@ app-us_lp_fit: app-us_prepare_data
 app-abm_system_lp_irf_loss: app-us_lp_fit
 app-abm_system_lp_mcs: app-abm_system_lp_irf_loss
 
-# The same route on R's levels, the collaborator's transformation, every step
-# run with --r-levels and every output carrying _r_levels. The simulated fits
-# take minutes and are, like the default ones, not a prerequisite of the loss.
-.PHONY: app-abm_system_fit_lp_r_levels app-us_lp_fit_r_levels app-abm_system_lp_r_levels_irf_loss \
-        app-abm_system_lp_r_levels_mcs
-app-abm_system_fit_lp_r_levels: $(BIN)/abm_system_fit_lp | $(OUT)
-	./$(BIN)/abm_system_fit_lp --r-levels
-app-us_lp_fit_r_levels: $(BIN)/us_lp_fit app-us_prepare_data | $(OUT)
-	./$(BIN)/us_lp_fit --r-levels
-app-abm_system_lp_r_levels_irf_loss: $(BIN)/abm_system_lp_irf_loss app-us_lp_fit_r_levels | $(OUT)
-	./$(BIN)/abm_system_lp_irf_loss --r-levels
-app-abm_system_lp_r_levels_mcs: $(BIN)/abm_system_lp_mcs app-abm_system_lp_r_levels_irf_loss | $(OUT)
-	./$(BIN)/abm_system_lp_mcs --r-levels
+# The discarded route on R's levels, every output carrying _r_levels. The
+# simulated fits take minutes and are, like the default ones, not a
+# prerequisite of the loss.
+old-us_lp_fit_r_levels: app-us_prepare_data
+old-abm_system_lp_r_levels_irf_loss: old-us_lp_fit_r_levels
+old-abm_system_lp_r_levels_mcs: old-abm_system_lp_r_levels_irf_loss
 
 # One throughput run per solver budget. 86.85% of the 500,000 fits at a cap of
 # 2000 stopped at the cap, so what a larger budget costs and what it moves is

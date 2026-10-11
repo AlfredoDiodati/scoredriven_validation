@@ -1,0 +1,8 @@
+pass  1. shape: 5 x 397 and 397 x 1 from 400 stored periods
+      largest relative gap: series 0.00e+00, switching 4.19e-16, tolerance 1.42e-14
+pass  1. every element against the reference
+pass  1. fitted layout: the stored rows from period 3 on and R's switching series, exactly
+pass  2. a strided input gives exactly what its copy gives
+pass  3. cumulated GDP growth below -100 gives NaN, as R's log does, and reaches the switching series
+
+all passed

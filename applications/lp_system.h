@@ -15,33 +15,18 @@ The series the local projections are fitted on, built from the five stored
 series every dataset of this project holds (applications/abm_system.h's rows:
 GDP_growth, EN_growth, Employment_change, Inflation, InterestRate).
 
-lp_system_from_stored gives the fitted layout: the five stored series
+lp_system_from_stored gives the fitted series: the five stored series
 themselves, the ones the t-QVARMA is fitted on, in the same order, and as the
 series that decides the state the 4-period moving average of log GDP that the
-collaborator's R pipeline builds. The first three periods are dropped, where
-that moving average does not exist.
+collaborator's R pipeline (transform_data() in _temp/functions.R) builds:
 
-lp_system_r_transform is transform_data() of that R pipeline
-(_temp/functions.R), the same arithmetic in the same order:
+    GDP_MA4 = rollmean(log(init_GDP + cumsum(GDP_growth)) * 100, k = 4, align = "right")
 
-    GDP_growth        = log(init_GDP + cumsum(GDP_growth)) * 100
-    Employment_change = init_Employment + cumsum(Employment_change)
-    Inflation         = Inflation
-    InterestRate      = InterestRate
-    EN_growth         = log(init_Energy + cumsum(EN_growth)) * 100
-    GDP_MA4           = rollmean(GDP_growth, k = 4, align = "right")
+The first three periods are dropped, where that moving average does not exist.
 
-with the three periods where GDP_MA4 is not defined dropped from every series,
-and the variables in R's column order: GDP, employment, inflation, interest
-rate, energy. R keeps the input column names on the transformed series, so its
-"GDP_growth" is a log level by then. Its input is this project's stored series
-in their own units: the collaborator's data are this project's dataset.
-
-The fits do not use R's levels. Fitted on them, the local projections
-recovered the configuration a simulated run came from in 0 of 100 runs of the
-Monte Carlo experiment, and fitted on the stored series in 90 of 100
-(docs/OLD_MONTECARLO_LP_VALIDATION.md). The R layout is kept because the state
-series comes from it and because it is what the collaborator's pipeline fits.
+R's transform_data() also turns the five series into levels, and fits those.
+That variant is discarded; old/lp_r_levels/ holds it and docs/OLD_EXPERIMENTS.md
+says why.
 */
 
 /* The stored rows this header reads, abm_system.h's order, spelled out here so
@@ -51,116 +36,74 @@ enum { STORED_GDP_GROWTH, STORED_EN_GROWTH, STORED_EMPLOYMENT_CHANGE, STORED_INF
        STORED_INTEREST_RATE, STORED_K };
 #define LP_SYSTEM_K STORED_K
 
-/* The rows of R's layout. */
-enum { LP_R_ROW_GDP, LP_R_ROW_EMPLOYMENT, LP_R_ROW_INFLATION, LP_R_ROW_INTEREST_RATE, LP_R_ROW_ENERGY };
-
 #define LP_SYSTEM_INIT_GDP 100.0
-#define LP_SYSTEM_INIT_ENERGY 100.0
-#define LP_SYSTEM_INIT_EMPLOYMENT 0.90
 /* zoo::rollmean's k in transform_data. */
 #define LP_SYSTEM_SWITCHING_WINDOW 4
 
 /* Periods the local projections see out of a stored block of T periods. */
 static inline int lp_system_n_periods(int T) { return T - (LP_SYSTEM_SWITCHING_WINDOW - 1); }
 
+/* What the fitted series are, as every report and manifest names them. */
+#define LP_SYSTEM_SERIES_DESCRIPTION \
+    "the stored series: GDP_growth, EN_growth, Employment_change, Inflation, InterestRate"
+
 /*
-R's transform_data. stored is STORED_K x T. Fills y with the 5 x
-lp_system_n_periods(T) block in R's layout and switching with the matching
-lp_system_n_periods(T) x 1 GDP_MA4. Caller must mat_free both.
+R's GDP_MA4 for a stored block of STORED_K x T: lp_system_n_periods(T) x 1,
+period 3 first. Caller must mat_free.
 
 A cumulated growth that falls to -init or below has no logarithm and gives a
 NaN, as it does in R. It is left in place rather than asserted on: lp.h reports
-a NaN in y or in the switching series as var_ols_status -1 and computes
-nothing, which a batch over simulated data can count.
+a NaN in the switching series as var_ols_status -1 and computes nothing, which
+a batch over simulated data can count.
 */
-static inline void lp_system_r_transform(Mat stored, Mat *y, Mat *switching) {
+static inline Mat lp_system_switching(Mat stored) {
     assert(stored.r == STORED_K && "lp_system: stored block has the wrong number of rows");
     int T = stored.c;
     int first = LP_SYSTEM_SWITCHING_WINDOW - 1;
     assert(T > first && "lp_system: fewer periods than the moving average needs");
 
     Mat cumulated = mat_cumsum(stored, 1);
-
-    Mat indexed = mat_new(2, T);
-    for (int t = 0; t < T; t++) {
+    Mat indexed = mat_new(1, T);
+    for (int t = 0; t < T; t++)
         AT(indexed, 0, t) = (mreal)LP_SYSTEM_INIT_GDP + AT(cumulated, STORED_GDP_GROWTH, t);
-        AT(indexed, 1, t) = (mreal)LP_SYSTEM_INIT_ENERGY + AT(cumulated, STORED_EN_GROWTH, t);
-    }
     Mat logs = mat_log(indexed);
-    Mat log_levels = mat_scale(logs, (mreal)100);
-
-    Mat gdp = mat_slice(log_levels, 0, 1, 0, T);
-    Mat gdp_ma4 = mat_rolling_mean(gdp, LP_SYSTEM_SWITCHING_WINDOW, 1);
+    Mat log_gdp = mat_scale(logs, (mreal)100);
+    Mat gdp_ma4 = mat_rolling_mean(log_gdp, LP_SYSTEM_SWITCHING_WINDOW, 1);
 
     int n = lp_system_n_periods(T);
-    *y = mat_new(5, n);
-    *switching = mat_new(n, 1);
-    for (int c = 0; c < n; c++) {
-        int t = c + first;
-        AT(*y, LP_R_ROW_GDP, c) = AT(log_levels, 0, t);
-        AT(*y, LP_R_ROW_EMPLOYMENT, c) = (mreal)LP_SYSTEM_INIT_EMPLOYMENT
-                                        + AT(cumulated, STORED_EMPLOYMENT_CHANGE, t);
-        AT(*y, LP_R_ROW_INFLATION, c) = AT(stored, STORED_INFLATION, t);
-        AT(*y, LP_R_ROW_INTEREST_RATE, c) = AT(stored, STORED_INTEREST_RATE, t);
-        AT(*y, LP_R_ROW_ENERGY, c) = AT(log_levels, 1, t);
-        AT(*switching, c, 0) = AT(gdp_ma4, 0, t);
-    }
+    Mat switching = mat_new(n, 1);
+    for (int c = 0; c < n; c++) AT(switching, c, 0) = AT(gdp_ma4, 0, c + first);
 
     mat_free(gdp_ma4);
-    mat_free(log_levels);
+    mat_free(log_gdp);
     mat_free(logs);
     mat_free(indexed);
     mat_free(cumulated);
+    return switching;
 }
 
 /*
-The fitted layout. stored is STORED_K x T. Fills y with the stored series from
+The fitted series. stored is STORED_K x T. Fills y with the stored series from
 period 3 on, LP_SYSTEM_K x lp_system_n_periods(T) in the stored order, and
 switching with R's GDP_MA4 over the same periods. Caller must mat_free both.
 */
 static inline void lp_system_from_stored(Mat stored, Mat *y, Mat *switching) {
-    Mat r_layout;
-    lp_system_r_transform(stored, &r_layout, switching);
-    mat_free(r_layout);
+    *switching = lp_system_switching(stored);
     int first = LP_SYSTEM_SWITCHING_WINDOW - 1;
     *y = mat_new(LP_SYSTEM_K, lp_system_n_periods(stored.c));
     for (int k = 0; k < LP_SYSTEM_K; k++)
         for (int t = first; t < stored.c; t++) AT(*y, k, t - first) = AT(stored, k, t);
 }
 
-/* Which series a fit uses: the stored ones (the default, and what the
-   Monte Carlo experiment validated), or R's levels, the collaborator's own
-   transformation. Everything a layout writes carries its suffix, so the two
-   never share a file: out/abm_system_fit_lp and out/abm_system_fit_lp_r_levels,
-   out/us_lp_fit.npz and out/us_lp_fit_r_levels.npz, and so on. */
-typedef enum { LP_LAYOUT_GROWTH, LP_LAYOUT_R_LEVELS } LpLayout;
-
-static inline const char *lp_layout_suffix(LpLayout layout) {
-    return layout == LP_LAYOUT_R_LEVELS ? "_r_levels" : "";
-}
-
-static inline const char *lp_layout_description(LpLayout layout) {
-    return layout == LP_LAYOUT_R_LEVELS
-        ? "R's transform_data levels: GDP, Employment, Inflation, InterestRate, Energy"
-        : "the stored series: GDP_growth, EN_growth, Employment_change, Inflation, InterestRate";
-}
-
-static inline void lp_system_series(Mat stored, LpLayout layout, Mat *y, Mat *switching) {
-    if (layout == LP_LAYOUT_R_LEVELS) lp_system_r_transform(stored, y, switching);
-    else lp_system_from_stored(stored, y, switching);
-}
-
-/* The command-line flags every local-projection script takes: --refit where
-   it fits, --r-levels for R's layout. Anything else is a caller's mistake. */
-static inline LpLayout lp_parse_flags(int argc, char **argv, int *force_refit) {
-    LpLayout layout = LP_LAYOUT_GROWTH;
-    if (force_refit) *force_refit = 0;
+/* The one command-line flag the fitting scripts take, --refit. Anything else is
+   a caller's mistake. */
+static inline int lp_parse_refit(int argc, char **argv) {
+    int force_refit = 0;
     for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "--r-levels") == 0) layout = LP_LAYOUT_R_LEVELS;
-        else if (force_refit && strcmp(argv[i], "--refit") == 0) *force_refit = 1;
-        else assert(0 && "lp_system: unknown flag; the flags are --r-levels and, where fitting, --refit");
+        if (strcmp(argv[i], "--refit") == 0) force_refit = 1;
+        else assert(0 && "lp_system: unknown flag; the only flag is --refit");
     }
-    return layout;
+    return force_refit;
 }
 
 /* The specification the R pipeline's estimate() calls lpirfs with: 4 lags, 15

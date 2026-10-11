@@ -160,7 +160,7 @@ static inline void _response_cache_fill(ResponseCache *cache, const LpSample *sa
                 }
             } else {
                 LpConfiguration c = lp_configuration_load(lp_fit_dir, input_dir, samples[sample].name,
-                                                          n_replicates, LP_LAYOUT_GROWTH);
+                                                          n_replicates);
                 for (int replicate = 0; replicate < n_replicates; replicate++) {
                     if (!lp_model_response(&c, replicate, model, response)) continue;
                     float *slot = response_slot(cache, sample, replicate);

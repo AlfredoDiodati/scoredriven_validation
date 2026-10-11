@@ -18,7 +18,7 @@ benchmark differs between them:
   (`montecarlo/sweep_grid.c`), with the results in
   `docs/MONTECARLO_VALIDATION.md`.
 
-In short: fit the driftless t-QVARMA(1,1,2) to the benchmark and to every
+In short: fit the t-QVARMA(1,1,2), the linear projection, and the nonlinear projection with combined states to the benchmark and to every
 simulated replicate of every configuration, turn each fit into its impulse
 response function, measure each replicate's distance from the benchmark's
 response by mean absolute error, and run the Model Confidence Set (Hansen,

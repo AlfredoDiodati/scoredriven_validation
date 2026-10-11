@@ -51,6 +51,7 @@ out/lp_recovery_diagnostics_report.txt. Progress to stderr.
 
 #include "applications/abm_system_lp.h"
 #include "old/montecarlo_one_benchmark/benchmark.h"
+#include "old/lp_r_levels/lp_system_r_levels.h"
 #include <et_al./inference/mcs.h>
 #include <et_al./stats.h>
 #include <et_al./frame/csv.h>

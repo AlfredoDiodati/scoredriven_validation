@@ -151,3 +151,7 @@ out/compressed_response_cache/
 # The score loss tables rebuilt by old/score_loss_reproduction.sh to check they
 # match the ones above, about 19 MB each.
 out/old/score_loss_reproduction/*.csv
+
+# The local-projection loss tables old/lp_r_levels/lp_r_levels_reproduction.sh
+# copies before rerunning, about 18 MB each.
+out/old/lp_r_levels_reproduction/before/

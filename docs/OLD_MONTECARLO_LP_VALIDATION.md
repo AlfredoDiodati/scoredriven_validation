@@ -107,7 +107,7 @@ configuration as the benchmark", describes it for both auxiliary models.
 ## The first run, on R's levels
 
 The experiment was first run on the series R's `transform_data()` builds
-(`lp_system_r_transform` in `applications/lp_system.h`): log GDP as
+(`lp_system_r_transform` in `old/lp_r_levels/lp_system_r_levels.h`): log GDP as
 `100 log(100 + cumsum(GDP_growth))`, employment as
 `0.90 + cumsum(Employment_change)`, inflation and the interest rate unchanged,
 log energy like GDP, in R's column order (GDP, employment, inflation, interest

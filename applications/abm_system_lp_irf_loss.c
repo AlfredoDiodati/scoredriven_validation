@@ -28,11 +28,7 @@ model's table and counted in the manifest.
 
 Requires out/us_lp_fit.npz, out/abm_system_fit_lp/ and dataset/abm_system/.
 Writes out/abm_system_lp_irf_loss_<model>.csv and
-out/abm_system_lp_irf_loss_manifest.txt. Nothing printed.
-
-With --r-levels, the same on R's levels, the collaborator's transformation:
-reads out/us_lp_fit_r_levels.npz and out/abm_system_fit_lp_r_levels/, writes
-out/abm_system_lp_r_levels_irf_loss_<model>.csv and its manifest.
+out/abm_system_lp_irf_loss_manifest.txt. Takes no arguments. Nothing printed.
 */
 
 #include "us_data.h"
@@ -47,12 +43,12 @@ out/abm_system_lp_r_levels_irf_loss_<model>.csv and its manifest.
 static Mat as_row(mreal *values) { return (Mat){ 1, LP_RESPONSE_DIM, LP_RESPONSE_DIM, values }; }
 
 int main(int argc, char **argv) {
-    LpLayout layout = lp_parse_flags(argc, argv, NULL);
+    (void)argv;
+    assert(argc == 1 && "abm_system_lp_irf_loss: takes no arguments");
     openblas_set_num_threads(1);
-    char us_fit_path[256], output_stem[256], fit_dir[256];
-    snprintf(us_fit_path, sizeof us_fit_path, "out/us_lp_fit%s.npz", lp_layout_suffix(layout));
-    snprintf(output_stem, sizeof output_stem, "out/abm_system_lp%s_irf_loss", lp_layout_suffix(layout));
-    snprintf(fit_dir, sizeof fit_dir, "%s%s", LP_FIT_DIR_DEFAULT, lp_layout_suffix(layout));
+    const char *us_fit_path = "out/us_lp_fit.npz";
+    const char *output_stem = "out/abm_system_lp_irf_loss";
+    const char *fit_dir = LP_FIT_DIR_DEFAULT;
 
     /* The US responses, refused unless fitted on exactly the US series. */
     static mreal reference[LP_N_LOSSES][LP_RESPONSE_DIM];
@@ -60,7 +56,7 @@ int main(int argc, char **argv) {
         Mat original = load_us_system();
         Mat stored = us_system_growth_block(original);
         Mat y, switching;
-        lp_system_series(stored, layout, &y, &switching);
+        lp_system_from_stored(stored, &y, &switching);
         int count = 0;
         LpSystemRecord *us = lp_system_read_archive(us_fit_path, lp_system_spec(), &count);
         assert(us && count == 1 && lp_system_record_matches(&us[0], y, switching) && us[0].has_responses
@@ -82,7 +78,7 @@ int main(int argc, char **argv) {
     #pragma omp parallel for schedule(dynamic)
     for (int col = 0; col < n_samples; col++) {
         LpConfiguration c = lp_configuration_load(fit_dir, LP_INPUT_DIR_DEFAULT, samples[col].name,
-                                                  n_replicates, layout);
+                                                  n_replicates);
         for (int row = 0; row < n_replicates; row++)
             for (int loss = 0; loss < LP_N_LOSSES; loss++)
                 AT(values[loss], row, col) = lp_configuration_ok(&c, row, loss)
@@ -98,7 +94,7 @@ int main(int argc, char **argv) {
     fprintf(manifest, "%d configurations, %d replicates each, loss = mean absolute difference between the US "
                       "local-projection responses and each run's (%d values, horizons 0 to %d)\n",
             n_samples, n_replicates, LP_RESPONSE_DIM, LP_SYSTEM_HOR);
-    fprintf(manifest, "series: %s\n\n", lp_layout_description(layout));
+    fprintf(manifest, "series: %s\n\n", LP_SYSTEM_SERIES_DESCRIPTION);
 
     for (int loss = 0; loss < LP_N_LOSSES; loss++) {
         int *usable = malloc((size_t)n_replicates * sizeof(int));

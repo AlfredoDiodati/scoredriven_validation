@@ -23,8 +23,9 @@ the single Monte Carlo benchmark the generating configuration came 5th under
 `q'q` and 76th under the weighted loss. On the 389 runs of `cop_0191` that
 were scored, `q'q` kept `cop_0191` in the set for 182 but ranked it first for
 only 14, through large sets, and the weighted loss could not be built for 252
-and kept `cop_0191` in 5 of the other 137. And there is no theoretical justification for using either
-quantity as a distance between a simulated configuration and the data.
+and kept `cop_0191` in 5 of the other 137. And there is no theoretical
+justification for using either quantity as a distance between a simulated
+configuration and the data.
 
 **Where it is recorded.** `docs/OLD_SCORE_LOSS.md`, and
 `docs/OLD_MONTECARLO_BENCHMARK_SUBSETS.md` for the Monte Carlo results.
@@ -74,3 +75,29 @@ including the finding that decides how the local projections are fitted.
 The drivers run with `make old-montecarlo_one_benchmark`,
 `make old-montecarlo_one_benchmark_lp` and
 `make old-montecarlo_every_run_of_cop_0191`.
+
+## Local projections on R's levels, `old/lp_r_levels/`
+
+**What it was.** The local projections fitted, on the US data and on every
+simulated run, on the series the collaborator's R function `transform_data()`
+builds: cumulative sums of the five stored series started from fixed values,
+GDP and energy in logs, in R's column order. Every experiment that remains fits
+the five series of the main transformation, the ones the t-QVARMA is fitted
+on: GDP growth, energy growth, employment change, inflation and the interest
+rate (`docs/DATA_DOCUMENTATION.md`).
+
+**Why it is out.** The main transformation loses less information. In the
+Monte Carlo experiment, where the right answer is known, the linear local
+projection on R's levels put it in the set for 0 of 100 runs of `cop_0191`,
+against 90 of 100 on the main transformation.
+
+The state-dependent local projections that remain still build the series that
+decides each period's state R's way, the 4-period moving average of log GDP;
+the series they are fitted on are the main transformation's.
+
+**Where it is recorded.** `docs/OLD_LP_R_LEVELS.md` for the US data,
+`docs/OLD_MONTECARLO_LP_VALIDATION.md` for the Monte Carlo.
+
+| folder | programs |
+| --- | --- |
+| `old/lp_r_levels/` | `lp_system_r_levels.h`, `us_lp_fit_r_levels.c`, `abm_system_fit_lp_r_levels.c`, `abm_system_lp_r_levels_irf_loss.c`, `abm_system_lp_r_levels_mcs.c`, `lp_system_r_levels_transform.c`, `lp_r_levels_reproduction.sh` |

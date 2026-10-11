@@ -5,8 +5,8 @@ shared: alpha = 0.050, 10000 resamples, block length 1, bootstrap variance, seed
 Both statistics are scored on the same resamples, drawn once and reused in every round.
 
 statistic  set size  decided by an accepted test  deciding round  last p-value  seconds
-MCS_TR            4                          yes             997        0.1643      5.0
-MCS_TMAX          4                          yes             997        0.3585      7.1
+MCS_TR            4                          yes             997        0.1643      0.8
+MCS_TMAX          4                          yes             997        0.3585      6.1
 
 sets
   in both sets 4, only in MCS_TR's 0, only in MCS_TMAX's 0
@@ -36,7 +36,7 @@ the 10 configurations MCS_TR eliminated last, with where MCS_TMAX put them
   variance  bootstrap variance of the resampled mean
   stream    seed 123, stream 0
 
-MCS over state-dependent local projection impulse-response MAE, state 2 (lags times F), MCS_TR statistic
+MCS over state-dependent local projection impulse-response MAE, state 2 (lags times F), series the stored series: GDP_growth, EN_growth, Employment_change, Inflation, InterestRate, MCS_TR statistic
   model             mean loss      MCS p  round  in set
   cop_0001_lp_s2      2.60318      0.000    529  
   cop_0002_lp_s2      2.73932      0.000    616  
@@ -1049,7 +1049,7 @@ MCS over state-dependent local projection impulse-response MAE, state 2 (lags ti
   variance  bootstrap variance of the resampled mean
   stream    seed 123, stream 0
 
-MCS over state-dependent local projection impulse-response MAE, state 2 (lags times F), MCS_TMAX statistic
+MCS over state-dependent local projection impulse-response MAE, state 2 (lags times F), series the stored series: GDP_growth, EN_growth, Employment_change, Inflation, InterestRate, MCS_TMAX statistic
   model             mean loss      MCS p  round  in set
   cop_0001_lp_s2      2.60318      0.000    592  
   cop_0002_lp_s2      2.73932      0.000    593  
