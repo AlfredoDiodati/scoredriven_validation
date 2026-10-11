@@ -23,7 +23,8 @@ configuration as the benchmark", has the full description. In short:
 - The confidence set is MCS_TR at level 0.05, 2000 bootstrap resamples, block
   length 1, bootstrap variance, seed 123 stream 0.
 - Five models give the response vector: the t-QVARMA (qvarma, p1q1r2, 525
-  entries), and the local projections of `docs/MONTECARLO_LP_VALIDATION.md`:
+  entries), and the local projections of `docs/MONTECARLO_VALIDATION.md`, "The local
+  projections":
   linear, state 1 and state 2 (400 entries each), and both states, state 1's
   and state 2's responses stacked into one vector of 800 entries as
   `_temp/Note on non-lin LP.pdf` prescribes.

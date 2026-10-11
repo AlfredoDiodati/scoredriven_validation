@@ -1,22 +1,28 @@
 /*
+Discarded from the Monte Carlo pipeline. Its benchmarks, the 1000 runs of cop_0191,
+are a subset of the ones montecarlo/sweep_grid.c runs, every run of every
+configuration, under the same loss and confidence set settings except the
+number of bootstrap resamples (10000 here, 2000 in the grid). The grid
+answers the same question on all of them. docs/OLD_EXPERIMENTS.md.
+
 The impulse-response protocol run against every replicate of cop_0191 in turn,
 to separate luck from structure.
 
 montecarlo/ promotes one simulated run to the role the US data plays and asks
 whether the confidence set returns the configuration that run came from. On the
 one benchmark it was first run against, the impulse-response loss returned it
-and the score losses in old/montecarlo/ did not. One benchmark cannot tell a protocol that works
+and the score losses in old/score_loss/ did not. One benchmark cannot tell a protocol that works
 from a protocol that got a lucky draw, so this repeats the whole thing with
 each of the benchmark configuration's 1000 replicates standing in as the
 benchmark, and reports how often the answer comes back right.
 
-Everything about each individual run is what montecarlo/irf_loss.c and
-montecarlo/mcs.c do: same loss, same hold-out, same confidence set settings.
+Everything about each individual run is what old/montecarlo_one_benchmark/irf_loss.c and
+old/montecarlo_one_benchmark/mcs.c do: same loss, same hold-out, same confidence set settings.
 The only thing this adds is the loop and the tally.
 
 What makes the loop affordable. A cell's impulse response vector does not
 depend on which benchmark it is being compared against - only the comparison
-does. montecarlo/irf_loss.c recomputes all 1,000,000 of them on every run,
+does. old/montecarlo_one_benchmark/irf_loss.c recomputes all 1,000,000 of them on every run,
 which is 574 seconds measured on this machine, and repeating that per benchmark
 would be 160 hours. They are computed once here, held as float32, and every
 benchmark's loss matrix is then one pass of mean absolute error over them. The
@@ -283,7 +289,7 @@ int main(void) {
         }
 
         /* One row per replicate kept: the benchmark's own index is held out of
-           every column, for the reason montecarlo/benchmark.h gives. */
+           every column, for the reason old/montecarlo_one_benchmark/benchmark.h gives. */
         Mat values = mat_new(n_replicates - 1, n_samples);
         int *usable = (int*)malloc((size_t)(n_replicates - 1) * sizeof(int));
         int row = 0;

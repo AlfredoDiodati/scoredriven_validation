@@ -98,9 +98,10 @@ out/abm_system_irf_loss.csv
 out/abm_system_score_loss.csv
 out/abm_system_score_loss_weighted.csv
 
-# The same three tables again, from the Monte Carlo experiment, which runs the
-# same protocols against a simulated benchmark instead of the US data. Rebuilt
-# by make montecarlo and make old-score_loss. Its reports, manifests and the record of which run it
+# The same three tables again, from the discarded single-benchmark Monte Carlo
+# experiment, which ran the same protocols against one simulated run instead of
+# the US data. Rebuilt by make old-montecarlo_one_benchmark and
+# make old-score_loss. Its reports, manifests and the record of which run it
 # promoted are small and kept.
 montecarlo/out/irf_loss.csv
 montecarlo/out/score_loss.csv

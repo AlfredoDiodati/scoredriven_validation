@@ -1,4 +1,10 @@
 /*
+Discarded from the Monte Carlo pipeline. Its single benchmark, cop_0191 run 706,
+is one of the benchmarks montecarlo/sweep_grid.c runs, every run of every
+configuration, under the same loss and confidence set settings except the
+number of bootstrap resamples (10000 here, 2000 in the grid). The grid
+answers the same question on all of them. docs/OLD_EXPERIMENTS.md.
+
 The headline confidence set of the Monte Carlo experiment: MCS_TR over
 montecarlo/out/irf_loss.csv, the impulse-response distance between one chosen
 simulated run and every configuration's replicates.

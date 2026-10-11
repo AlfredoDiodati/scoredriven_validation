@@ -4,8 +4,8 @@ The main pipeline (`docs/ABM_SYSTEM_MCS_VALIDATION.md`) asks which of the 1000
 parameter configurations of the DSK model produce dynamics closest to the US
 data, comparing impulse responses of the t-QVARMA. This runs the same
 comparison with the collaborator's local projections as the auxiliary model,
-the version `docs/MONTECARLO_LP_VALIDATION.md` checked on simulated data with a
-known answer.
+the version `docs/OLD_MONTECARLO_LP_VALIDATION.md` checked on simulated data
+with a known answer.
 
 ## What is run
 
@@ -93,7 +93,7 @@ MCS_TMAX keeps the same single configuration under all three models.
 `cop_0905` is the configuration the levels picked in the Monte Carlo
 experiment when the right answer was `cop_0191`: the one whose simulated
 responses scatter least, with the most volatile interest rate of the 1000
-(`docs/MONTECARLO_LP_VALIDATION.md`). On R's levels the local projections
+(`docs/OLD_MONTECARLO_LP_VALIDATION.md`). On R's levels the local projections
 recovered a known answer in 5 (linear), 72 (state 1) and 42 (state 2) of 1000
 repetitions, so this set says which configuration's estimates are most
 precise rather than which is closest to the US data.
@@ -107,4 +107,4 @@ precise rather than which is closest to the US data.
   variance of the US responses, is not computed.
 - The loss is the mean absolute difference, not the thesis's mean squared
   difference, and the series are the stationary ones, not the levels the
-  thesis fits; `docs/MONTECARLO_LP_VALIDATION.md` records why.
+  thesis fits; `docs/OLD_MONTECARLO_LP_VALIDATION.md` records why.

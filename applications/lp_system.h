@@ -40,7 +40,7 @@ in their own units: the collaborator's data are this project's dataset.
 The fits do not use R's levels. Fitted on them, the local projections
 recovered the configuration a simulated run came from in 0 of 100 runs of the
 Monte Carlo experiment, and fitted on the stored series in 90 of 100
-(docs/MONTECARLO_LP_VALIDATION.md). The R layout is kept because the state
+(docs/OLD_MONTECARLO_LP_VALIDATION.md). The R layout is kept because the state
 series comes from it and because it is what the collaborator's pipeline fits.
 */
 

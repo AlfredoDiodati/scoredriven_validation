@@ -1,25 +1,44 @@
 /*
-The confidence sets of the Monte Carlo experiment under the local projections:
-each of the four loss matrices montecarlo/lp_irf_loss.c writes (linear, state
-1, state 2, both states in one vector) under both Model Confidence Set
-statistics, eight confidence sets.
+Whether the two Model Confidence Set statistics et_al implements pick out the
+same ABM configurations on the two score loss matrices.
 
-The scoring is montecarlo/mcs_statistic_comparison.c's, copied, with every
-setting unchanged, so a local-projection set and a t-QVARMA set differ only in
-the auxiliary model: alpha 0.05, 10000 resamples, block length 1 for the iid
-bootstrap the independent replicates call for, the bootstrap variance of the
-resampled mean, the library's seed and stream. MCS_TR is the headline
-statistic, as in montecarlo/mcs.c; MCS_TMAX is scored on the same resamples
-beside it.
+MCS_TR compares every pair of configurations and rejects when any two look
+different. MCS_TMAX compares each configuration with the average of those still
+in the running and rejects when the worst of them looks worse than that
+average. Both are Hansen, Lunde and Nason's (2011).
+applications/abm_system_mcs.c reports MCS_TR; this runs both with every other
+setting identical and writes where they agree.
 
-The benchmark is a replicate of a known configuration, so each set can be
-marked right or wrong: it should hold the configuration the benchmark was drawn
-from.
+With the bootstrap variance et_al draws the resamples once and reuses them in
+every elimination round under both statistics, and the two runs share a seed,
+so they are scored on the same resamples and a difference between them comes
+from the statistic.
 
-Requires montecarlo/out/lp_irf_loss_<model>.csv. Writes
-montecarlo/out/lp_mcs_<model>.txt, the readable report with both elimination
-tables, and montecarlo/out/lp_mcs_<model>.csv, one row per configuration.
-Nothing printed.
+Discarded from the main pipeline: the score losses gave poor results in the
+Monte Carlo check and have no theoretical justification as a validation
+distance. docs/OLD_SCORE_LOSS.md records the experiment and its
+results. The impulse-response matrix goes through the same procedure in
+applications/abm_system_mcs_statistic_comparison.c.
+
+Two loss matrices, both written by old/score_loss/applications/abm_system_score_loss.c:
+
+  - out/abm_system_score_loss.csv, q'q with q the score of the t-QVARMA
+    log-likelihood at the real data's own estimate, evaluated on the
+    simulated series and fitting nothing.
+  - out/abm_system_score_loss_weighted.csv, that same score weighted by the
+    inverse information matrix, q' [T_sim I_1]^-1 q, which is Rao's score
+    statistic.
+
+Each matrix gets its own pair of output files, since one report already
+carries two full elimination tables of a thousand rows:
+
+  out/abm_system_mcs_statistic_comparison_score.txt and .csv
+  out/abm_system_mcs_statistic_comparison_score_weighted.txt and .csv
+
+The .txt is a summary followed by the full report of each run, the .csv one
+row per configuration with each statistic's MCS p-value, membership of the set
+and elimination round.
+In OLD_SOURCES. Nothing printed.
 */
 
 #define _POSIX_C_SOURCE 199309L
@@ -30,7 +49,14 @@ Nothing printed.
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
-#include "montecarlo/response_cache.h"
+
+#define SCORE_LOSS_PATH "out/abm_system_score_loss.csv"
+#define SCORE_REPORT_PATH "out/abm_system_mcs_statistic_comparison_score.txt"
+#define SCORE_TABLE_PATH "out/abm_system_mcs_statistic_comparison_score.csv"
+
+#define WEIGHTED_LOSS_PATH "out/abm_system_score_loss_weighted.csv"
+#define WEIGHTED_REPORT_PATH "out/abm_system_mcs_statistic_comparison_score_weighted.txt"
+#define WEIGHTED_TABLE_PATH "out/abm_system_mcs_statistic_comparison_score_weighted.csv"
 
 #define N_LAST_STANDING 10
 
@@ -42,8 +68,8 @@ static const char *const statistic_name[N_STATISTICS] = { "MCS_TR", "MCS_TMAX" }
    configuration. */
 static DataFrame read_losses(const char *path) {
     FILE *probe = fopen(path, "r");
-    assert(probe && "montecarlo/lp_mcs: a loss matrix is missing - "
-                     "bin/lp_irf_loss writes them");
+    assert(probe && "abm_system_mcs_statistic_comparison_score: a loss matrix is missing - "
+                     "old-abm_system_score_loss writes them");
     fclose(probe);
 
     DataFrame raw = df_read_csv(path, csv_read_options_default());
@@ -118,7 +144,7 @@ static void compare_statistics(const char *loss_path, const char *report_path,
     }
 
     FILE *report = fopen(report_path, "w");
-    assert(report && "montecarlo/lp_mcs: cannot open the report path for writing");
+    assert(report && "abm_system_mcs_statistic_comparison_score: cannot open the report path for writing");
     fprintf(report, "MCS_TR against MCS_TMAX on %s\n", loss_path);
     fprintf(report, "%d configurations, %d replicates each\n", n_configurations, losses.r);
     fprintf(report, "shared: alpha = %.3f, %d resamples, block length %d, bootstrap variance, seed %llu, stream %llu\n",
@@ -218,18 +244,10 @@ static void compare_statistics(const char *loss_path, const char *report_path,
 }
 
 int main(void) {
-    static const char *const description[N_MODELS] = {
-        [MODEL_LP_LIN] = "linear local projection impulse-response MAE",
-        [MODEL_LP_S1] = "state-dependent local projection impulse-response MAE, state 1 (lags times 1 - F)",
-        [MODEL_LP_S2] = "state-dependent local projection impulse-response MAE, state 2 (lags times F)",
-        [MODEL_LP_NL] = "state-dependent local projection impulse-response MAE, states 1 and 2 in one vector"
-    };
-    for (int model = MODEL_LP_LIN; model < N_MODELS; model++) {
-        char loss_path[128], report_path[128], table_path[128];
-        snprintf(loss_path, sizeof loss_path, "montecarlo/out/lp_irf_loss_%s.csv", lp_model_name(model));
-        snprintf(report_path, sizeof report_path, "montecarlo/out/lp_mcs_%s.txt", lp_model_name(model));
-        snprintf(table_path, sizeof table_path, "montecarlo/out/lp_mcs_%s.csv", lp_model_name(model));
-        compare_statistics(loss_path, report_path, table_path, description[model]);
-    }
+    compare_statistics(SCORE_LOSS_PATH, SCORE_REPORT_PATH, SCORE_TABLE_PATH,
+                       "t-QVARMA (driftless) score quadratic form at the real-data estimate, p1q1r2");
+    compare_statistics(WEIGHTED_LOSS_PATH, WEIGHTED_REPORT_PATH, WEIGHTED_TABLE_PATH,
+                       "t-QVARMA (driftless) score statistic at the real-data estimate, "
+                       "inverse information weighting, p1q1r2");
     return 0;
 }

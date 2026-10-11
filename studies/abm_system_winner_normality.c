@@ -92,7 +92,7 @@ static MardiaResult mardia_test(Mat x) {
 
     Mat mean = stats_vec_mean(x);
     Mat covariance = stats_autocov(x, 0);
-    Mat cholesky_factor = mat_chol(covariance);
+    Mat cholesky_factor = mat_chol(covariance, NULL);
 
     Mat whitened = mat_new(n, d);
     Vec centered = mat_new(d, 1);

@@ -1,7 +1,7 @@
 /*
 Discarded from the main pipeline: the score losses gave poor results in the
 Monte Carlo check and have no theoretical justification as a validation
-distance. docs/ABM_SYSTEM_SCORE_LOSS.md records the experiment and its results.
+distance. docs/OLD_SCORE_LOSS.md records the experiment and its results.
 
 Two loss matrices for the Model Confidence Set, built without fitting
 anything: how strongly each simulated series pulls the real data's own fitted
@@ -120,7 +120,7 @@ every column of both matrices, the same direction
 applications/abm_system_irf_loss.c drops in, since that keeps every
 configuration in the comparison.
 
-In OLD_APPLICATION_STEMS, buildable on its own via make old-abm_system_score_loss.
+In OLD_SOURCES, buildable on its own via make old-abm_system_score_loss.
 Nothing printed.
 */
 

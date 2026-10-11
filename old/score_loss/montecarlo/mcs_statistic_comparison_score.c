@@ -6,9 +6,9 @@ they were scored.
 
 Discarded from the main pipeline: the score losses gave poor results in this
 Monte Carlo check and have no theoretical justification as a validation
-distance. docs/ABM_SYSTEM_SCORE_LOSS.md and docs/MONTECARLO_VALIDATION.md
+distance. docs/OLD_SCORE_LOSS.md and docs/MONTECARLO_VALIDATION.md
 record the results. The impulse-response matrix goes through the same
-procedure in montecarlo/mcs_statistic_comparison.c.
+procedure in old/montecarlo_one_benchmark/mcs_statistic_comparison.c.
 
   montecarlo/out/score_loss.csv, q'q
   montecarlo/out/score_loss_weighted.csv, the score statistic
@@ -21,7 +21,7 @@ With the bootstrap variance the resamples are drawn once and reused in every
 elimination round under both statistics, and the two runs share a seed, so a
 difference between the statistics comes from the statistic.
 
-Requires the two matrices old/montecarlo/score_loss.c writes. Nothing
+Requires the two matrices old/score_loss/montecarlo/score_loss.c writes. Nothing
 printed.
 */
 
@@ -52,8 +52,8 @@ static const char *const statistic_name[N_STATISTICS] = { "MCS_TR", "MCS_TMAX" }
    configuration. */
 static DataFrame read_losses(const char *path) {
     FILE *probe = fopen(path, "r");
-    assert(probe && "old/montecarlo/mcs_statistic_comparison_score: a loss matrix is missing - "
-                     "old/montecarlo/score_loss.c writes them");
+    assert(probe && "old/score_loss/montecarlo/mcs_statistic_comparison_score: a loss matrix is missing - "
+                     "old/score_loss/montecarlo/score_loss.c writes them");
     fclose(probe);
 
     DataFrame raw = df_read_csv(path, csv_read_options_default());
@@ -128,7 +128,7 @@ static void compare_statistics(const char *loss_path, const char *report_path,
     }
 
     FILE *report = fopen(report_path, "w");
-    assert(report && "old/montecarlo/mcs_statistic_comparison_score: cannot open the report path for writing");
+    assert(report && "old/score_loss/montecarlo/mcs_statistic_comparison_score: cannot open the report path for writing");
     fprintf(report, "MCS_TR against MCS_TMAX on %s\n", loss_path);
     fprintf(report, "%d configurations, %d replicates each\n", n_configurations, losses.r);
     fprintf(report, "shared: alpha = %.3f, %d resamples, block length %d, bootstrap variance, seed %llu, stream %llu\n",

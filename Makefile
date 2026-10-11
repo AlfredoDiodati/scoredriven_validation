@@ -38,15 +38,13 @@
 #                                 so a routine build does not redo minutes of
 #                                 already-settled work every time.
 #   make asan                     under AddressSanitizer and UndefinedBehaviorSanitizer
-#   make montecarlo: build every MONTECARLO_STEMS binary and run the
-#   one-benchmark Monte Carlo experiment, montecarlo/run.sh.
-#   make montecarlo-lp: the same experiment under the local projections.
-#   make mc-<stem>: one montecarlo/ program on its own, built and run.
-#   make mc-sweep_grid: every run of every configuration as the benchmark, built
-#   at -O3 by its own rule, not part of `make montecarlo`.
-#   docs/MONTECARLO_VALIDATION.md, "The experiments", lists them all.
-#   make old-<stem>: one experiment discarded from either pipeline, built from
-#   old/ and run, OLD_APPLICATION_STEMS and OLD_MONTECARLO_STEMS.
+#   make mc-sweep_grid: the Monte Carlo experiment, every run of every
+#   configuration as the benchmark, built at -O3 by its own rule.
+#   make mc-<stem>: one other montecarlo/ program on its own, built and run.
+#   docs/MONTECARLO_VALIDATION.md describes them.
+#   make old-<stem>: one program of an experiment discarded from either
+#   pipeline, built from old/ and run. OLD_SOURCES lists them;
+#   docs/OLD_EXPERIMENTS.md says why each one was discarded.
 #
 # Three kinds of script, three directories, one stem list each. A stem maps to
 # <directory>/<stem>.c and bin/<stem>, and the targets below are generated from
@@ -140,8 +138,7 @@ STUDY_STEMS := qvarma_stuck_fits qvarma_conditioning qvarma_convergence_criteria
                abm_system_winner_tail_comparison abm_system_tail_origin \
                abm_system_gaussian_convergence abm_system_micro_clt \
                abm_system_stable_tails abm_system_marginal_fit \
-               abm_system_seed_correlation abm_system_winner_normality lp_recovery_diagnostics \
-               qvarma_recovery_diagnostics
+               abm_system_seed_correlation abm_system_winner_normality
 # us_prepare_data has to come first: it is the only script that reads
 # us_real.csv's Unemployment and Des_Energy_demand columns, and it writes
 # out/us_system.csv, which us_data.h reads back. The order here is what makes
@@ -168,22 +165,37 @@ EXPERIMENT_STEMS := us_qvarma_spec_choice \
                      abm_system_mcs_statistic_comparison \
                      abm_system_winner_irf \
                      throughput_dataset
-# The Monte Carlo experiment: the same validation protocols with one
-# simulated run promoted to the role the US data plays, so that the procedure
-# is asked a question whose answer is known. It is a pipeline of its own and
-# shares no source with applications/, which stays exactly as it is; what it
-# reuses is applications/'s output, above all the million cached fits, since it
-# estimates nothing. docs/MONTECARLO_VALIDATION.md.
-MONTECARLO_STEMS := benchmark_choice irf_loss mcs mcs_statistic_comparison \
-                     sweep_irf lp_irf_loss lp_mcs lp_sweep sweep_cops \
-                     compressed_response_recovery fit_metric_oracle fit_metric_bootstrap \
+# The Monte Carlo experiment: the validation procedure with every simulated run
+# of every configuration promoted in turn to the role the US data plays, so that
+# the procedure is asked a question whose answer is known. It is a pipeline of
+# its own and shares no source with applications/, which stays exactly as it
+# is; what it reuses is applications/'s output, above all the million cached
+# fits, since it estimates nothing. sweep_grid itself has its own rule below;
+# these are the programs that work from its response cache.
+# docs/MONTECARLO_VALIDATION.md.
+MONTECARLO_STEMS := compressed_response_recovery fit_metric_oracle fit_metric_bootstrap \
                      fit_metric_report
-# Experiments discarded from both pipelines, kept buildable under old/ with the
-# same flags as the pipeline they came from and run one at a time via
-# make old-<stem>. They write to out/ and montecarlo/out/ like the pipeline
-# they came from. docs/ABM_SYSTEM_SCORE_LOSS.md covers the score losses.
-OLD_APPLICATION_STEMS := abm_system_score_loss abm_system_mcs_statistic_comparison_score
-OLD_MONTECARLO_STEMS := score_loss mcs_statistic_comparison_score sweep_score
+# Experiments discarded from both pipelines, one folder of old/ per experiment,
+# kept buildable with the flags of the pipeline they came from and run one at a
+# time via make old-<stem>, the stem being the file name. They write to out/
+# and montecarlo/out/ like the pipeline they came from.
+# docs/OLD_EXPERIMENTS.md says why each one was discarded.
+OLD_SOURCES := old/score_loss/applications/abm_system_score_loss.c \
+               old/score_loss/applications/abm_system_mcs_statistic_comparison_score.c \
+               old/score_loss/montecarlo/score_loss.c \
+               old/score_loss/montecarlo/mcs_statistic_comparison_score.c \
+               old/score_loss/montecarlo/sweep_score.c \
+               old/montecarlo_one_benchmark/benchmark_choice.c \
+               old/montecarlo_one_benchmark/irf_loss.c \
+               old/montecarlo_one_benchmark/mcs.c \
+               old/montecarlo_one_benchmark/mcs_statistic_comparison.c \
+               old/montecarlo_one_benchmark/lp_irf_loss.c \
+               old/montecarlo_one_benchmark/lp_mcs.c \
+               old/montecarlo_one_benchmark/studies/qvarma_recovery_diagnostics.c \
+               old/montecarlo_one_benchmark/studies/lp_recovery_diagnostics.c \
+               old/montecarlo_every_run_of_cop_0191/sweep_irf.c \
+               old/montecarlo_every_run_of_cop_0191/lp_sweep.c \
+               old/montecarlo_run_0_of_every_configuration/sweep_cops.c
 
 # Whatever the application scripts share, so editing it rebuilds them.
 APPLICATION_HEADERS := applications/us_data.h applications/abm_system.h applications/lp_system.h \
@@ -226,9 +238,6 @@ $(BIN) $(OUT):
 
 $(BIN)/marginal_laws_correctness: $(MARGINAL_LAWS_HEADER)
 $(BIN)/lp_system_transform: applications/lp_system.h
-$(BIN)/lp_recovery_diagnostics: applications/lp_system.h applications/abm_system_lp.h montecarlo/benchmark.h \
-                                 studies/recovery_noise.h
-$(BIN)/qvarma_recovery_diagnostics: applications/abm_system.h montecarlo/benchmark.h studies/recovery_noise.h
 $(BIN)/abm_system_marginal_fit: $(MARGINAL_LAWS_HEADER)
 
 $(BIN)/%: tests/%.c $(HEADERS) $(TEST_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
@@ -325,19 +334,22 @@ $(foreach stem,$(MONTECARLO_STEMS),$(eval $(call montecarlo_target_for_stem,$(st
 montecarlo/out:
 	@mkdir -p montecarlo/out
 
-define old_target_for_stem
+define old_target_for_source
 .PHONY: old-$(1)
-$(BIN)/$(1): old/$(2)/$(1).c $(HEADERS) $(APPLICATION_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
+$(BIN)/$(1): $(2) $(HEADERS) $(APPLICATION_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
 	$(CC) $(CFLAGS) -DMAT_DOUBLE -fopenmp $(ETAL_CFLAGS) $(INCLUDES) $$< -o $$@ $(ETAL_LIBS)
 old-$(1): $(BIN)/$(1) | $(OUT) montecarlo/out
 	./$(BIN)/$(1)
 endef
-$(foreach stem,$(OLD_APPLICATION_STEMS),$(eval $(call old_target_for_stem,$(stem),applications)))
-$(foreach stem,$(OLD_MONTECARLO_STEMS),$(eval $(call old_target_for_stem,$(stem),montecarlo)))
+$(foreach source,$(OLD_SOURCES),$(eval $(call old_target_for_source,$(notdir $(basename $(source))),$(source))))
 
-# The local-projection scripts read the cache through one shared header, which
-# the rule above does not know about.
-$(addprefix $(BIN)/,lp_irf_loss lp_mcs lp_sweep sweep_cops sweep_grid): applications/abm_system_lp.h montecarlo/benchmark.h montecarlo/response_cache.h
+# The headers the rules above do not know about.
+OLD_BENCHMARK_HEADER := old/montecarlo_one_benchmark/benchmark.h
+$(addprefix $(BIN)/,lp_irf_loss lp_mcs lp_sweep sweep_cops sweep_grid): applications/abm_system_lp.h montecarlo/response_cache.h
+$(addprefix $(BIN)/,irf_loss lp_irf_loss lp_sweep score_loss qvarma_recovery_diagnostics lp_recovery_diagnostics): \
+    $(OLD_BENCHMARK_HEADER)
+$(addprefix $(BIN)/,qvarma_recovery_diagnostics lp_recovery_diagnostics): \
+    old/montecarlo_one_benchmark/studies/recovery_noise.h
 FIT_METRIC_BINARIES := fit_metric_oracle fit_metric_bootstrap fit_metric_report fit_metric_correctness
 $(addprefix $(BIN)/,$(FIT_METRIC_BINARIES)): montecarlo/response_cache.h montecarlo/fit_metric.h $(APPLICATION_HEADERS)
 
@@ -353,19 +365,16 @@ $(BIN)/sweep_grid: montecarlo/sweep_grid.c $(HEADERS) $(APPLICATION_HEADERS) $(E
 mc-sweep_grid: $(BIN)/sweep_grid | montecarlo/out
 	./$(BIN)/sweep_grid
 
-# The whole Monte Carlo experiment: choose the benchmark, then the
-# impulse-response loss matrix and its confidence sets against it. It reads the fit cache and the
-# dataset and rebuilds neither, so it does not run on a fresh clone.
-.PHONY: montecarlo
-montecarlo: $(addprefix $(BIN)/,$(MONTECARLO_STEMS)) | montecarlo/out
-	./montecarlo/run.sh
-
-# The same experiment with the local projections as the auxiliary model, against
-# the benchmark montecarlo already chose. It reads out/abm_system_fit_lp/, which
-# make app-abm_system_fit_lp writes, and rebuilds neither that nor the dataset.
-.PHONY: montecarlo-lp
-montecarlo-lp: $(addprefix $(BIN)/,lp_irf_loss lp_mcs) | montecarlo/out
-	./montecarlo/lp_run.sh
+# The discarded drivers, each building what it runs first: the one-benchmark
+# experiment under the t-QVARMA and under the local projections, and every run
+# of cop_0191 as the benchmark.
+.PHONY: old-montecarlo_one_benchmark old-montecarlo_one_benchmark_lp old-montecarlo_every_run_of_cop_0191
+old-montecarlo_one_benchmark: $(addprefix $(BIN)/,benchmark_choice irf_loss mcs mcs_statistic_comparison) | montecarlo/out
+	./old/montecarlo_one_benchmark/run.sh
+old-montecarlo_one_benchmark_lp: $(addprefix $(BIN)/,lp_irf_loss lp_mcs) | montecarlo/out
+	./old/montecarlo_one_benchmark/lp_run.sh
+old-montecarlo_every_run_of_cop_0191: $(BIN)/sweep_irf | montecarlo/out
+	./old/montecarlo_every_run_of_cop_0191/sweep.sh
 
 # abm_system_simulate is built but never run by a target of its own: with no
 # arguments it simulates the whole design, a million runs and about a fortnight

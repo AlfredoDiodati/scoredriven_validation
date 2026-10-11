@@ -1,19 +1,23 @@
 /*
+Discarded with the one-benchmark Monte Carlo experiment whose results it
+diagnoses: that experiment's benchmarks are a subset of the ones
+montecarlo/sweep_grid.c runs. docs/OLD_EXPERIMENTS.md.
+
 Whether the t-QVARMA's impulse responses are precise enough, compared with the
 differences between configurations, for the Monte Carlo protocol to tell
-configurations apart: the same measurements studies/lp_recovery_diagnostics.c
+configurations apart: the same measurements old/montecarlo_one_benchmark/studies/lp_recovery_diagnostics.c
 makes for the local projections, through the same code
-(studies/recovery_noise.h), so the two auxiliary models are compared on one
+(old/montecarlo_one_benchmark/studies/recovery_noise.h), so the two auxiliary models are compared on one
 arithmetic.
 
 The local projections fail to recover the stand-in's configuration because
 their estimates scatter far more within a configuration than the
 configurations' averages differ, and the protocol then ranks configurations by
-their scatter (docs/MONTECARLO_LP_VALIDATION.md). If the t-QVARMA passes only
+their scatter (docs/OLD_MONTECARLO_LP_VALIDATION.md). If the t-QVARMA passes only
 because its scatter is small, the failure belongs to the protocol rather than
 to the local projections.
 
-The responses are the ones montecarlo/irf_loss.c and montecarlo/sweep_irf.c
+The responses are the ones old/montecarlo_one_benchmark/irf_loss.c and old/montecarlo_every_run_of_cop_0191/sweep_irf.c
 compare: the total response, horizons 0 to 20, 5 x 5 x 21 = 525 values, from
 each run's stored p1q1r2 fit in out/abm_system_fit_qvarma/ and its own series.
 A fit with nu <= 2 or a non-finite response counts as missing. The stand-in is
@@ -29,8 +33,8 @@ stderr.
 */
 
 #include "applications/abm_system.h"
-#include "montecarlo/benchmark.h"
-#include "studies/recovery_noise.h"
+#include "old/montecarlo_one_benchmark/benchmark.h"
+#include "old/montecarlo_one_benchmark/studies/recovery_noise.h"
 #include <et_al./sd/qvarma.h>
 #include <et_al./frame/csv.h>
 #include <et_al./frame/frame.h>
@@ -93,7 +97,7 @@ static char **list_samples(int *count) {
     return names;
 }
 
-/* The stacked total response, horizon 0 first, as montecarlo/irf_loss.c
+/* The stacked total response, horizon 0 first, as old/montecarlo_one_benchmark/irf_loss.c
    builds it. Returns 0 for nu <= 2 or a non-finite value. */
 static int total_response(const QvarmaParams *m, Mat y, double *out) {
     if (!(m->nu > 2)) return 0;
@@ -167,7 +171,7 @@ int main(void) {
     {
         const float *slot = cache + ((size_t)stand_in_sample * n_replicates + stand_in.replicate) * DIM;
         assert(!MISNAN(slot[0]) && "qvarma_recovery_diagnostics: the stand-in has no response");
-        /* The stand-in in double, as montecarlo/irf_loss.c holds it, recomputed
+        /* The stand-in in double, as old/montecarlo_one_benchmark/irf_loss.c holds it, recomputed
            rather than taken from the float copy. */
         QvarmaParams m = spec_shape();
         char path[640], dir[560];
@@ -186,7 +190,7 @@ int main(void) {
     fprintf(f, "How precise the t-QVARMA's impulse responses are for the Monte Carlo protocol\n\n");
     fprintf(f, "Data: dataset/abm_system, %d configurations x %d runs; each run's stored p1q1r2 fit in %s.\n",
             n_samples, n_replicates, FIT_DIR);
-    fprintf(f, "Responses: total response, horizons 0 to %d, %d values per run, as montecarlo/irf_loss.c builds them.\n",
+    fprintf(f, "Responses: total response, horizons 0 to %d, %d values per run, as old/montecarlo_one_benchmark/irf_loss.c builds them.\n",
             HORIZON, DIM);
     fprintf(f, "Stand-in: %s run %d, left out of every configuration. Runs with no response: %ld.\n\n",
             stand_in.sample, stand_in.replicate, n_missing);

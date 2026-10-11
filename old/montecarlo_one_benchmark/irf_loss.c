@@ -1,4 +1,10 @@
 /*
+Discarded from the Monte Carlo pipeline. Its single benchmark, cop_0191 run 706,
+is one of the benchmarks montecarlo/sweep_grid.c runs, every run of every
+configuration, under the same loss and confidence set settings except the
+number of bootstrap resamples (10000 here, 2000 in the grid). The grid
+answers the same question on all of them. docs/OLD_EXPERIMENTS.md.
+
 The impulse-response loss matrix of the Monte Carlo experiment: how far each
 ABM configuration's simulated dynamics sit from one chosen simulated run's,
 measured through the auxiliary model.
@@ -15,8 +21,8 @@ Nothing is estimated. Every fit this reads, the benchmark's included, is one of
 the million applications/abm_system_fit_qvarma.c already wrote to
 out/abm_system_fit_qvarma/.
 
-The benchmark is whichever run montecarlo/benchmark_choice.c picked, read back
-through montecarlo/benchmark.h. Its replicate index is held out of every
+The benchmark is whichever run old/montecarlo_one_benchmark/benchmark_choice.c picked, read back
+through old/montecarlo_one_benchmark/benchmark.h. Its replicate index is held out of every
 configuration's column, not only its own: replicate n of every configuration is
 seed n+1 of the model, so the row is every simulation sharing the benchmark's
 seed. A benchmark left in its own validation set would score against itself at
@@ -37,7 +43,7 @@ neither. Writes montecarlo/out/irf_loss.csv and its manifest. Nothing printed.
 
 #include "applications/abm_system.h"
 #include <et_al./sd/qvarma.h>
-#include "montecarlo/benchmark.h"
+#include "old/montecarlo_one_benchmark/benchmark.h"
 #include <et_al./stats.h>
 #include <et_al./frame/csv.h>
 #include <et_al./frame/frame.h>

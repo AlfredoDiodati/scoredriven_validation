@@ -31,7 +31,7 @@ result driven by measurement noise (see the absolute-vs-squared error point
 below) rather than any real inability to tell the models apart. Its loss was
 never switched from parameter distance to IRF distance and its code is not
 part of this repository, so the two are not comparable side by side even if
-it were wanted. docs/ABM_SYSTEM_MCS_VALIDATION.md records that run.
+it were wanted. docs/MCS_VALIDATION_PROCEDURE.md records that run.
 
 Absolute error, not squared: abm_system_irf_loss.c computes loss as mean
 absolute error (et_al.'s stats_mae), not mean squared error (stats_mse,

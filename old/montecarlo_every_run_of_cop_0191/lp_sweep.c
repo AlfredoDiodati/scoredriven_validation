@@ -1,9 +1,15 @@
 /*
+Discarded from the Monte Carlo pipeline. Its benchmarks, the 1000 runs of cop_0191,
+are a subset of the ones montecarlo/sweep_grid.c runs, every run of every
+configuration, under the same loss and confidence set settings except the
+number of bootstrap resamples (10000 here, 2000 in the grid). The grid
+answers the same question on all of them. docs/OLD_EXPERIMENTS.md.
+
 The local-projection protocol run against every replicate of the benchmark
 configuration in turn, the local-projection counterpart of
-montecarlo/sweep_irf.c.
+old/montecarlo_every_run_of_cop_0191/sweep_irf.c.
 
-montecarlo/lp_irf_loss.c and montecarlo/lp_mcs.c ask, for one benchmark,
+old/montecarlo_one_benchmark/lp_irf_loss.c and old/montecarlo_one_benchmark/lp_mcs.c ask, for one benchmark,
 whether the confidence set returns the configuration it came from. One
 benchmark cannot tell a protocol that identifies a configuration from one that
 drew well once, so this repeats each run with every replicate of that
@@ -41,7 +47,7 @@ row per benchmark. Progress goes to stderr, so the summaries are the result.
 */
 
 #include "montecarlo/response_cache.h"
-#include "montecarlo/benchmark.h"
+#include "old/montecarlo_one_benchmark/benchmark.h"
 #include <et_al./inference/mcs.h>
 #include <et_al./stats.h>
 #include <et_al./frame/frame.h>

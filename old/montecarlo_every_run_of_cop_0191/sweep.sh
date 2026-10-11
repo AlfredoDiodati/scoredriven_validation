@@ -1,10 +1,16 @@
 #!/usr/bin/env bash
 #
+# Discarded from the Monte Carlo pipeline. Its benchmarks, the 1000 runs of cop_0191,
+# are a subset of the ones montecarlo/sweep_grid.c runs, every run of every
+# configuration, under the same loss and confidence set settings except the
+# number of bootstrap resamples (10000 here, 2000 in the grid). The grid
+# answers the same question on all of them. docs/OLD_EXPERIMENTS.md.
+#
 # The Monte Carlo experiment repeated with every replicate of the benchmark
 # configuration standing in as the benchmark, so that a protocol which
 # identifies a configuration can be told from one that drew well once.
 #
-# montecarlo/run.sh answers the question for a single benchmark. This answers
+# old/montecarlo_one_benchmark/run.sh answers the question for a single benchmark. This answers
 # it a thousand times and reports how often the impulse-response protocol
 # returns the configuration the benchmark came from, about 3 hours here.
 #
@@ -23,7 +29,7 @@
 
 set -euo pipefail
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 mkdir -p montecarlo/out
 
 echo "impulse-response protocol, every benchmark"

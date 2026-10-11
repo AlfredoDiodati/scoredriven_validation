@@ -4,12 +4,11 @@ configuration standing in as the benchmark: 1000 configurations times 1000
 runs, for the t-QVARMA and the four local projections (linear, state 1,
 state 2, both states in one vector), five million confidence sets.
 
-montecarlo/sweep_cops.c uses one run per configuration as the benchmark, run 0.
-This uses all of them. Each individual benchmark is what sweep_cops.c does for
-one: the mean absolute error between response vectors, the benchmark's run
-index held out of every column, a run with a missing response in any column
-dropped, MCS_TR with block length 1, bootstrap variance, seed 123 stream 0,
-here at 2000 resamples rather than 10000.
+Each individual benchmark is the procedure of docs/MCS_VALIDATION_PROCEDURE.md
+against that run: the mean absolute error between response vectors, the
+benchmark's run index held out of every column, a run with a missing response
+in any column dropped, MCS_TR with block length 1, bootstrap variance, seed 123
+stream 0, at 2000 resamples.
 
 The order is by run first: run 0 of every configuration, then run 1, and so on,
 so a run stopped early holds every configuration at the same number of
@@ -20,8 +19,8 @@ t-QVARMA first); a smaller block keeps the models level.
 Benchmarks are taken 64 at a time, all with the same run index, so they share
 the rows kept. Their 64 loss matrices are formed in one pass over the response
 cache, each cell's responses read once and compared against the 64 benchmark
-responses in turn. Each loss is the same sum, in the same order, as
-sweep_cops.c forms. The 64 confidence sets then run side by side, one thread
+responses in turn, each loss the same sum in the same order as a single
+benchmark's. The 64 confidence sets then run side by side, one thread
 each, which measured faster than one set at a time on every thread (0.121 s
 against 0.182 s per set, 2000 resamples, 999 x 1000 tables).
 
@@ -134,7 +133,7 @@ typedef struct {
 
 /* The confidence set over one benchmark's loss matrix, on the calling thread
    alone, and what the result records about it. Rank and the smallest mean
-   loss use stats_mean over each column, as sweep_cops.c does. */
+   loss use stats_mean over each column. */
 static Outcome run_benchmark(const DataFrame *losses, int benchmark_sample) {
     MCSOptions opt = mcs_options_default();
     opt.bootstrap = BOOTSTRAP;
@@ -264,8 +263,8 @@ static void sweep_model(int model, int run_from, int run_to, const unsigned char
             }
 
             /* Each loss is sum_i |cell_i - reference_i| over i in order,
-               divided by dim, exactly as in sweep_cops.c; the batch only
-               changes how many references one read of a cell serves. */
+               divided by dim; the batch only changes how many references
+               one read of a cell serves. */
             #pragma omp parallel for schedule(static)
             for (int row = 0; row < n_kept; row++) {
                 double sum[BATCH];

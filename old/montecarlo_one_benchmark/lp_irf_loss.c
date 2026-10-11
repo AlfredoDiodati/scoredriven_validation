@@ -1,4 +1,10 @@
 /*
+Discarded from the Monte Carlo pipeline. Its single benchmark, cop_0191 run 706,
+is one of the benchmarks montecarlo/sweep_grid.c runs, every run of every
+configuration, under the same loss and confidence set settings except the
+number of bootstrap resamples (10000 here, 2000 in the grid). The grid
+answers the same question on all of them. docs/OLD_EXPERIMENTS.md.
+
 The impulse-response loss matrices of the Monte Carlo experiment under the
 local projections of the collaborator's R pipeline, one per model:
 
@@ -8,9 +14,9 @@ local projections of the collaborator's R pipeline, one per model:
     nl    the state-dependent one with both states in one vector, s1's entries
           followed by s2's (_temp/Note on non-lin LP.pdf, equation 5)
 
-The procedure is montecarlo/irf_loss.c's with the auxiliary model changed.
-The benchmark is the simulated run montecarlo/benchmark_choice.c chose, read
-back through montecarlo/benchmark.h, so both auxiliary models are asked to
+The procedure is old/montecarlo_one_benchmark/irf_loss.c's with the auxiliary model changed.
+The benchmark is the simulated run old/montecarlo_one_benchmark/benchmark_choice.c chose, read
+back through old/montecarlo_one_benchmark/benchmark.h, so both auxiliary models are asked to
 recover the same known answer from the same series. Its replicate index is
 held out of every configuration's column, for the reason benchmark.h gives:
 replicate n of every configuration is seed n+1 of the model.
@@ -19,7 +25,7 @@ A cell's loss is the mean absolute error between the benchmark's response
 vector and the cell's, all K x (hor + 1) x K = 400 entries of one model (800
 under nl), as in the t-QVARMA protocol. The R pipeline uses the mean squared error instead; the
 absolute error is kept for comparability with the t-QVARMA results and for the
-reason montecarlo/irf_loss.c gives.
+reason old/montecarlo_one_benchmark/irf_loss.c gives.
 
 Nothing is estimated here. Every fit is read from the per-configuration
 archives in out/abm_system_fit_lp/, which applications/abm_system_fit_lp.c
@@ -38,7 +44,7 @@ one per model, and montecarlo/out/lp_irf_loss_manifest.txt. Nothing printed.
 */
 
 #include "montecarlo/response_cache.h"
-#include "montecarlo/benchmark.h"
+#include "old/montecarlo_one_benchmark/benchmark.h"
 #include <et_al./stats.h>
 #include <et_al./frame/csv.h>
 #include <et_al./frame/frame.h>

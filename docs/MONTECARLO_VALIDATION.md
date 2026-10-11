@@ -7,12 +7,14 @@ which of them cannot be told apart from it. That question has no known answer,
 so a result can be reported but not checked. This experiment asks the same
 question with the answer known in advance.
 
-One simulated run is promoted to the role the US data plays. Every loss is
-measured against it, the validation protocols run exactly as they do in the
+A simulated run is promoted to the role the US data plays. Every loss is
+measured against it, the validation procedure runs exactly as it does in the
 main pipeline, and the question becomes: does the confidence set come back
 holding the configuration the benchmark was drawn from? It should. The
-benchmark is one of that configuration's own replicates, so the configuration
-that generated it is, by construction, the right answer.
+benchmark is one of that configuration's own runs, so the configuration that
+generated it is, by construction, the right answer. Every run of every
+configuration takes that role in turn, 1,000,000 benchmarks per auxiliary
+model, so the answer is known for every configuration and not only for one.
 
 This is a check on the procedure, not on the ABM. A confidence set that misses
 the configuration its own benchmark came from would say the procedure cannot
@@ -21,41 +23,79 @@ the main pipeline's result hard to interpret. A confidence set that finds it
 says the machinery works on a case where the answer is known, and says nothing
 about whether the DSK model resembles the United States.
 
-`docs/ABM_SYSTEM_MCS_VALIDATION.md` describes the impulse-response protocol.
-Everything it says about settings, losses and their limitations applies here
-unchanged; only the benchmark differs. The two score protocols of
-`docs/ABM_SYSTEM_SCORE_LOSS.md` were run here too and are discarded: they
-missed the known answer, as "Neither score protocol recovers it" below
-records, and they have no theoretical justification as a validation distance.
-Their programs are under `old/montecarlo/`.
+`docs/MCS_VALIDATION_PROCEDURE.md` describes the procedure. Everything it says
+about settings, losses and their limitations applies here unchanged; only the
+benchmark differs.
+
+Earlier experiments used smaller sets of benchmarks: one run of `cop_0191`,
+every run of `cop_0191`, and run 0 of every configuration. Each of those sets
+is part of the grid below, so they are discarded and kept under `old/`;
+`docs/OLD_MONTECARLO_BENCHMARK_SUBSETS.md` records them and their results, and
+`docs/OLD_EXPERIMENTS.md` lists every discarded experiment with its reason.
 
 ## The experiments
 
-Five experiments, each a larger set of benchmarks than the one before. In every
-one the benchmark's run index is held out of every configuration's column, the
-loss is measured against the benchmark, and the question is whether the Model
-Confidence Set (MCS_TR, alpha 0.05, block length 1, bootstrap variance, seed 123
-stream 0) holds the benchmark's own configuration. The last row of the table
-below asks something else of the same confidence sets: how far each set's best
-configuration is from the benchmark, measured against the sampling standard
-deviation of the responses.
+The grid is the experiment. In every one of its benchmarks the benchmark's run
+index is held out of every configuration's column, the loss is measured
+against the benchmark, and the question is whether the Model Confidence Set
+(MCS_TR, alpha 0.05, block length 1, bootstrap variance, seed 123 stream 0)
+holds the benchmark's own configuration. The other two rows reuse its
+responses or its confidence sets for a different question.
 
 | experiment | benchmarks | losses and auxiliary models | resamples | program | output | written up in |
 | --- | --- | --- | --- | --- | --- | --- |
-| one benchmark | `cop_0191` run 706 | impulse response, `q'q`, `LM` (t-QVARMA); impulse response (four local projections) | 10000 | `montecarlo/run.sh`, `montecarlo/lp_run.sh` | `irf_loss.csv` to `mcs_statistic_comparison*`, `lp_*` | this file, "Results"; `docs/MONTECARLO_LP_VALIDATION.md` |
-| every run of `cop_0191` | 1000 | impulse response (t-QVARMA, four local projections); `q'q`, `LM` stopped at 389 | 10000 | `montecarlo/sweep.sh`, `bin/lp_sweep`, `old/montecarlo/sweep_score.c` | `sweep_irf.csv`, `sweep_score*.csv`, `lp_sweep_*.csv` | this file, "Every replicate as the benchmark"; `docs/MONTECARLO_LP_VALIDATION.md` |
-| run 0 of every configuration | 1000 per model | impulse response, five models | 10000 | `bin/sweep_cops` | `sweep_cops.csv.gz` | this file, "The first run of every configuration" |
 | every run of every configuration | 1,000,000 per model | impulse response, five models | 2000 | `bin/sweep_grid` | `sweep_grid.csv.gz` | this file, "Every run of every configuration" |
 | compressed responses | 5000 or 2000 per vector | the same responses mapped to a few coordinates first | 2000 | `montecarlo/compressed_response_*` | `compressed_response/` | `docs/MONTECARLO_COMPRESSED_RESPONSE.md` |
 | fit metric | 1,000,000 per model (oracle), 1000 per model (bootstrap) | the best configuration's mean loss against the responses' sampling standard deviation, five models | none | `montecarlo/fit_metric_run.sh` | `fit_metric_*` | `docs/MONTECARLO_FIT_METRIC.md` |
 
 The five models are the t-QVARMA (p1q1r2, total responses to horizon 20, 525
-entries per run) and the four local projections of
-`docs/MONTECARLO_LP_VALIDATION.md`: linear, state 1 and state 2, 400 entries per
-run, and both states, the state-dependent model's two states stacked into one
-vector of 800 entries as `_temp/Note on non-lin LP.pdf` prescribes. `q'q` and
-`LM` are the two score losses of `docs/ABM_SYSTEM_SCORE_LOSS.md`, the plain and
-the inverse-information-weighted squared score.
+entries per run) and the four local projections of "The local projections"
+below: linear, state 1 and state 2, 400 entries per run, and both states, the
+state-dependent model's two states stacked into one vector of 800 entries as
+`_temp/Note on non-lin LP.pdf` prescribes.
+
+## The local projections
+
+Every one of the 1,000,000 simulated runs (1000 configurations, 1000 runs each,
+`dataset/abm_system/`) goes through two steps.
+
+The series are the five the t-QVARMA is fitted on, as stored: GDP growth,
+energy growth, employment change, inflation and the interest rate, in that
+order (`lp_system_from_stored` in `applications/lp_system.h`). The series that
+decides the state is the one R's pipeline builds, the 4-period moving average
+of `100 log(100 + cumsum(GDP_growth))`, and the first 3 of the 400 periods are
+dropped, where that moving average does not exist: 397 periods.
+`tests/lp_system_transform.c` checks that the fitted series are the stored ones
+exactly and the state series is R's exactly.
+
+Then et_al's `lp_lin_and_nl` fits both models at R's settings: 4 lags, 15
+horizons, a unit shock with recursive ordering in the order above; the
+state-dependent model with the Hodrick-Prescott cycle of the moving average at
+lambda 1600, a logistic weight of slope 2, lagged one period. Each model's
+impulse responses are a 5 by 16 by 5 array, 400 numbers: the linear model's,
+and the state-dependent model's in state 1 (periods weighted towards GDP above
+trend) and state 2 (below).
+
+The state-dependent model is also compared as one vector, following
+`_temp/Note on non-lin LP.pdf`: state 1's 400 responses followed by state 2's,
+800 numbers, called "both states" below (`lp_nl` in the code and in the file
+names, `nl` in the `lp_*` files). Its loss, the mean absolute difference over
+the 800 entries, is exactly the average of the two states' losses, since the
+two halves have the same length; measured on the single-benchmark tables of
+`docs/OLD_MONTECARLO_LP_VALIDATION.md`, the largest relative difference between
+the two is 4.8e-15.
+
+`applications/abm_system_fit_lp.c` writes the fits to one compressed archive
+per configuration, `out/abm_system_fit_lp/cop_NNNN.npz`, one row per run, with
+the responses, the shock matrix, the fit diagnostics, the settings and a
+checksum of the data each row was fitted on; 8.6 GB in all. No run failed:
+every fit has responses, every regression at every horizon and the VAR behind
+the shocks were solved by ordinary least squares at full rank (none used the
+minimum-norm solution et_al falls back on), and no state series was constant
+(`out/abm_system_fit_lp_manifest.txt`). Fitting all 1,000,000 runs from scratch
+takes 402 seconds on this machine (AMD Ryzen 7 4800H, 16 threads); the rerun
+that replaced the R-level fits took 1680 seconds, since it first read and
+refused every stored archive.
 
 ## A separate pipeline that refits nothing
 
@@ -63,114 +103,32 @@ This is its own pipeline, in its own directory, writing to its own `out/`.
 Nothing under `applications/` is modified or read as source: the main pipeline
 stays exactly as it is, and a change here cannot affect a real-data result.
 
-What is reused is that pipeline's **output**, and the important one is
-`out/abm_system_fit_qvarma/`, the million cached fits. No model is estimated
-anywhere in this experiment. The benchmark's own parameters are one of those
-cached fits, promoted; every replicate's parameters are read from the same
-cache. That is what makes the whole experiment a few minutes rather than
-another full estimation run.
+What is reused is that pipeline's **output**: `out/abm_system_fit_qvarma/`, the
+million cached t-QVARMA fits, and `out/abm_system_fit_lp/`, the million
+local-projection fits. No model is estimated anywhere in this experiment.
 
 | file | what it is |
 | --- | --- |
-| `montecarlo/benchmark_choice.c` | picks which run is promoted, and records why |
-| `montecarlo/benchmark.h` | reads that choice back, so every step uses the same run |
-| `montecarlo/irf_loss.c` | the impulse-response loss against the benchmark |
-| `montecarlo/mcs.c` | the headline confidence set |
-| `montecarlo/mcs_statistic_comparison.c` | the impulse-response loss under both statistics |
-| `montecarlo/run.sh` | the driver |
-| `montecarlo/sweep_irf.c` | every run of `cop_0191` as the benchmark, impulse-response loss |
-| `montecarlo/sweep.sh` | runs the sweep above |
-| `old/montecarlo/score_loss.c`, `mcs_statistic_comparison_score.c`, `sweep_score.c` | the discarded score protocols: both losses in one pass, their confidence sets under both statistics, and every run of `cop_0191` as the benchmark |
-| `montecarlo/lp_irf_loss.c`, `lp_mcs.c`, `lp_run.sh` | the one-benchmark experiment under the local projections |
-| `montecarlo/lp_sweep.c` | every run of `cop_0191` as the benchmark, local projections |
 | `montecarlo/response_cache.h` | every run's response vector under one model, held as float32 and kept on disk |
-| `montecarlo/sweep_cops.c` | run 0 of every configuration as the benchmark, five models |
 | `montecarlo/sweep_grid.c` | every run of every configuration as the benchmark, five models |
-| `montecarlo/lp_nl_run.sh` | runs every experiment after the single benchmark for both states, resuming where it stopped |
+| `montecarlo/lp_nl_run.sh` | runs the grid and the experiments that read it for both states, resuming where it stopped |
 | `montecarlo/sweep_grid_presence.py` | how often each configuration sits in sets that are not its own |
 | `montecarlo/sweep_grid_cop_0191.py` | `cop_0191` as the truth, as a wrong answer, and every configuration as the truth, `docs/MONTECARLO_COP_0191.md` |
-| `montecarlo/fit_metric.h`, `fit_metric_oracle.c`, `fit_metric_bootstrap.c`, `fit_metric_report.c`, `fit_metric_run.sh`, `fit_metric_v_histograms.py` | the fit metric, oracle and bootstrap versions, `docs/MONTECARLO_FIT_METRIC.md`; the planned comparison across methods, `docs/MONTECARLO_FIT_METRIC_COMPARISON.md` |
 | `montecarlo/sweep_grid_identifiability_plots.py` | per-configuration recovery figures from the same rows |
+| `montecarlo/fit_metric.h`, `fit_metric_oracle.c`, `fit_metric_bootstrap.c`, `fit_metric_report.c`, `fit_metric_run.sh`, `fit_metric_v_histograms.py` | the fit metric, oracle and bootstrap versions, `docs/MONTECARLO_FIT_METRIC.md`; the planned comparison across methods, `docs/MONTECARLO_FIT_METRIC_COMPARISON.md` |
 | `montecarlo/compressed_response_learn.py`, `compressed_response_recovery.c`, `compressed_response_grid_baseline.py`, `compressed_response_report.py` | `docs/MONTECARLO_COMPRESSED_RESPONSE.md` |
-
-The loss and confidence-set scripts began as copies of their
-`applications/` counterparts and differ from them in three things: the
-benchmark is a cached simulated fit rather than the US fit, the benchmark's
-replicate is held out of every column, and the paths point into
-`montecarlo/out/`. They are copies, so a change to the protocol in one tree has
-to be made in the other; that is the price of the two pipelines being
-independent, and it is paid deliberately.
-
-## Which run stands in for the real data
-
-Choosing the benchmark on grounds connected to the answer would rig the
-experiment, so the grounds are fixed in advance and applied by
-`montecarlo/benchmark_choice.c`, which writes its reasoning to
-`montecarlo/out/benchmark_choice.txt`. Three requirements, in order.
-
-**It must come from a configuration the real-data confidence set kept.** The
-configurations surviving the impulse-response procedure under MCS_TR (the
-`tr_in_set` column of `out/abm_system_mcs_statistic_comparison.csv`; the
-MCS_TMAX set is not read) are the candidate pool, which is `cop_0191` alone.
-Promoting a configuration the procedure did not keep would ask whether a poor
-benchmark is recovered, which is a different question.
-
-**Among those, the configuration whose fits converged most often.** About a
-third of the million fits in this project converged, which makes convergence
-the property in shortest supply. A benchmark whose own fit did not converge is
-a point the optimizer stopped at, not an estimate, and the whole experiment
-rests on the benchmark being a real estimate.
-
-**Within it, the converged replicate with the smallest gradient norm.** Fits
-the manifest marks as inherited from another replicate are excluded; the current
-manifest (`out/abm_system_fit_qvarma_manifest.txt`, 2026-09-10) has none, its
-p1q1r2 rows being 352,470 converged and reused, 621,485 unconverged and held,
-26,045 unconverged and resumed.
-
-These three requirements apply to this one benchmark only. The later
-experiments use every run of a configuration as a benchmark with no filter, so
-most of their benchmarks are unconverged fits; "Recovery by whether the
-benchmark's fit converged" below measures what that changes.
-
-### What it selected
-
-| step | result |
-| --- | --- |
-| candidate pool | `cop_0191` |
-| convergence rate | 44.9% |
-| configuration chosen | `cop_0191` |
-| replicate chosen | 706 |
-
-`cop_0191` replicate 706: log-likelihood 124.6637, gradient norm 4.058e-03,
-converged, its own fit rather than an inherited one.
-
-When the score protocols were part of this experiment, the pool was the union
-of the sets kept under all three real-data losses, `cop_0191`, `cop_0931`,
-`cop_0409` and `cop_0599`, and the replicate also had to have a positive
-definite information matrix for the weighted score loss. Both rules gave the
-same benchmark, `cop_0191` replicate 706, because `cop_0191` had the highest
-convergence rate of the four (44.9% against 44.1%, 22.9% and 33.2%) and
-replicate 706 passed the information-matrix check on the first try.
-
-For scale, the US fit that the main pipeline uses converged with gradient norm
-4.713e-03, so the benchmark is an estimate of comparable quality to the one it
-replaces.
-
-`cop_0191` is also the configuration the main pipeline's own headline
-confidence set keeps. That is a consequence of the convergence criterion rather
-than a choice: what the protocol is being asked is whether it recovers
-`cop_0191`, and it gets no help from having picked it against different data.
 
 ## What is held out, and why
 
-Replicate 706 of **every** configuration is dropped from every loss matrix, not
-just `cop_0191`'s.
+When run n of a configuration is the benchmark, run n of **every**
+configuration is dropped from that benchmark's loss matrix, not just the
+benchmark's own.
 
-The benchmark's own cell is the obvious part: a replicate scored against itself
+The benchmark's own cell is the obvious part: a run scored against itself
 sits at a loss of essentially zero and would win by construction. The rest is
 about the seeds. `applications/abm_system_simulate.c` runs every configuration
-on the same seeds, `seed = mc + 1`, so replicate 706 of every configuration is
-seed 707 of the model. Leaving those in would let every configuration be judged
+on the same seeds, `seed = mc + 1`, so run n of every configuration is seed
+n + 1 of the model. Leaving those in would let every configuration be judged
 partly on a draw the benchmark also used.
 
 The matrices therefore have 999 rows rather than 1000, and every configuration
@@ -181,346 +139,28 @@ The project already measured what the shared seeds buy:
 `docs/ABM_SYSTEM_SIMULATION.md`, "Common random numbers", reports a mean-loss
 correlation across configuration pairs of 0.0017 at the same seed against
 -0.0001 at a shifted one, because the model consumes a different number of
-draws per period at different parameters and the streams desynchronise. So
-replicate 706 of `cop_0413` has almost nothing in common with replicate 706 of
-`cop_0191` beyond its label. The hold-out costs one observation in a thousand
-and removes the question entirely, which is cheaper than arguing it away.
-
-## Running it
-
-- `make montecarlo` runs the whole experiment.
-- `./montecarlo/run.sh` does the same thing directly.
-- `./montecarlo/run.sh --keep` reuses the benchmark already chosen.
-
-It reads `out/abm_system_fit_qvarma/` and `dataset/abm_system/` and rebuilds
-neither, so it does not run on a fresh clone. The impulse-response loss is the
-long step, since it reads a million cached fits.
-
-The discarded score protocols run with `make old-score_loss`, then
-`make old-mcs_statistic_comparison_score`, and `make old-sweep_score` for every
-run of `cop_0191` as the benchmark.
-
-`make montecarlo` builds every program in `MONTECARLO_STEMS` (all of
-`montecarlo/` except `sweep_grid`) and runs `run.sh` only. Each program also has
-its own target, `make mc-<stem>`, which builds and runs it alone.
-
-### Settings read from the environment
-
-All optional; the default is what every result in this file used.
-
-| variable | read by | default |
-| --- | --- | --- |
-| `ABM_SYSTEM_FIT_DIR` | `irf_loss`, `score_loss` (in `old/`) | `out/abm_system_fit_qvarma` |
-| `ABM_SYSTEM_INPUT_DIR` | `irf_loss`, `score_loss` (in `old/`), `lp_irf_loss`, `lp_sweep`, `sweep_cops`, `sweep_grid` | `dataset/abm_system` |
-| `ABM_SYSTEM_LP_FIT_DIR` | `lp_irf_loss`, `lp_sweep`, `sweep_cops`, `sweep_grid` | `out/abm_system_fit_lp` |
-| `ABM_SYSTEM_LOSS_PATH` | `irf_loss` | `montecarlo/out/irf_loss.csv` |
-| `ABM_SYSTEM_SCORE_LOSS_PATH` | `score_loss` (in `old/`) | `montecarlo/out/score_loss.csv` |
-| `LP_SWEEP_WORKERS` | `lp_sweep`, confidence sets side by side | every hardware thread |
-| `SWEEP_COPS_WORKERS` | `sweep_cops`, confidence sets side by side | every hardware thread |
-| `SWEEP_GRID_WORKERS`, `SWEEP_GRID_RUN_BLOCK` | `sweep_grid`, see its section | every hardware thread, all runs |
-
-The other programs take their paths as fixed constants. In particular
-`sweep_irf`, `sweep_score` (in `old/`), `benchmark_choice` and the t-QVARMA
-half of `montecarlo/response_cache.h` (used by `sweep_cops` and `sweep_grid`)
-always read `out/abm_system_fit_qvarma`, whatever `ABM_SYSTEM_FIT_DIR` says.
-
-### Outputs
-
-Everything lands in `montecarlo/out/`.
-
-| file | what it holds |
-| --- | --- |
-| `benchmark_choice.txt` | which run was promoted and why, with the numbers at each step |
-| `benchmark.env` | the choice, as two shell assignments the driver reads |
-| `irf_loss.csv`, `irf_loss_manifest.txt` | the impulse-response loss against the benchmark |
-| `mcs.txt`, `mcs.csv` | the headline confidence set, MCS_TR over the impulse-response loss |
-| `mcs_statistic_comparison.txt`, `.csv` | the impulse-response loss under both statistics |
-| `score_loss.csv`, `score_loss_weighted.csv`, `score_loss_manifest.txt` | the two discarded score losses, from `old/montecarlo/score_loss.c` |
-| `mcs_statistic_comparison_score*.txt`, `*.csv` | their confidence sets under both statistics, from `old/montecarlo/mcs_statistic_comparison_score.c` |
-
-The loss matrices are 19 MB each and are ignored by git for the same reason the
-main pipeline's are.
-
-## Results
-
-### Setup
-
-Benchmark `cop_0191` replicate 706, 400 periods, its own cached p1q1r2 fit.
-Field of 1000 configurations by 999 replicates, replicate 706 held out of every
-column, no missing cells in any of the three matrices. Confidence set settings
-identical to the main pipeline's and to each other: alpha = 0.05, 10000
-bootstrap resamples, block length 1, bootstrap variance of the resampled mean,
-seed 123, stream 0, both statistics scored on the same resamples. Every fit
-read from `out/abm_system_fit_qvarma/`; nothing estimated.
-
-### The impulse-response protocol recovers the benchmark exactly
-
-| loss | statistic | set | is the benchmark's configuration in it |
-| --- | --- | --- | --- |
-| IRF | MCS_TR | `cop_0191` | yes |
-| IRF | MCS_TMAX | `cop_0191` | yes |
-| `q'q` | MCS_TR | `cop_0429` | no |
-| `q'q` | MCS_TMAX | `cop_0429` | no |
-| `LM` | MCS_TR | 7 configurations | no |
-| `LM` | MCS_TMAX | 21 configurations | no |
-
-Under the impulse-response distance `cop_0191` has the lowest mean loss of all
-1000 configurations, 0.01006 against a runner-up of 0.01232 and a field median
-of 0.02711, and it is the single survivor under both statistics. The procedure
-was handed a question with a known answer and returned that answer.
-
-### Neither score protocol recovers it
-
-| loss | benchmark's rank | benchmark's mean loss | winner's | ratio | benchmark eliminated in round |
-| --- | --- | --- | --- | --- | --- |
-| `q'q` | 5 of 1000 | 9.922e+07 | 5.610e+07 | 1.77 | 998 of 999 |
-| `LM` | 76 of 1000 | 3.785e+03 | 2.014e+03 | 1.88 | 957 of 999 |
-
-Both put the benchmark's own configuration well behind configurations that did
-not generate the data, by a factor of about 1.8 in mean loss in each case. This
-is not a marginal miss.
-
-### This reverses the reading the real-data run invited
-
-`docs/ABM_SYSTEM_SCORE_LOSS.md` records that on the US data the weighted score
-loss was the only one of the three whose confidence set stopped because an
-equivalence test was accepted rather than because elimination ran out, and
-treats that as the mark in its favour. It does the same here: `LM` stops at
-p = 0.0783 in round 994, while both other losses eliminate to a singleton with
-a final p-value of 0.0000.
-
-On this benchmark that property is worth nothing. The loss whose set is
-"better behaved" in that sense is the one that misses the right answer by 75
-places, and the loss whose procedure never accepts a test is the one that lands
-on the right answer alone. Stopping via an accepted test says the bootstrap
-found two configurations it could not separate; it says nothing about whether
-either is correct.
-
-### Why the score losses might fail here
-
-The following is a hypothesis consistent with the numbers, not something this
-experiment establishes.
-
-The score is evaluated at one replicate's estimate. `theta_benchmark` is the
-maximiser of replicate 706's own likelihood, so it carries that replicate's
-sampling noise. Another replicate of `cop_0191` is an independent draw from the
-same process, and its score at `theta_benchmark` reflects the full
-replicate-to-replicate variability of the estimator, which is not small: the
-benchmark configuration's own mean `LM` is 3785 against a chi-square reference
-of 42. The auxiliary model at one replicate's estimate does not describe
-another replicate of the same configuration.
-
-That leaves room for a configuration that did not generate the data to score
-lower, if its series happen to push the estimate less from `theta_benchmark`
-than `cop_0191`'s own sampling spread does. The score loss then measures
-something closer to "how flat is the likelihood at this point under this
-configuration" alongside "how close is this configuration", and the two are not
-the same question. The impulse-response loss compares two estimates, both
-noisy in the same way, and is minimised when the implied dynamics agree.
-
-The signal is there, for what it is worth: 3785 for the benchmark's own
-configuration against a field median of 17980, so being the generating
-configuration lowers the score fivefold. It is simply not enough to win, and
-six configurations beat it.
-
-### The three losses rank the field differently here too
-
-Spearman rank correlation between per-configuration mean losses:
-
-| pair | rho, Monte Carlo benchmark | rho, US benchmark |
-| --- | --- | --- |
-| `LM` vs `q'q` | 0.9192 | 0.9575 |
-| `LM` vs IRF | 0.7472 | 0.4919 |
-| `q'q` vs IRF | 0.6285 | 0.4773 |
-
-The two score losses agree with each other, as they did against the US data.
-They agree with the impulse-response distance noticeably better here than they
-did there, and still not enough to pick the same configuration.
-
-## Every replicate as the benchmark
-
-One benchmark cannot separate a protocol that identifies a configuration from
-one that drew well once. `montecarlo/sweep.sh` repeats the impulse-response
-experiment with each of `cop_0191`'s 1000 replicates standing in as the
-benchmark, and reports how often it returns `cop_0191`.
-`old/montecarlo/sweep_score.c`, run with `make old-sweep_score`, does the same
-for the two discarded score losses.
-
-    ./montecarlo/sweep.sh
-
-Every individual run is what `run.sh` does for its single benchmark: same
-losses, same hold-out of the benchmark's own seed, same confidence set
-settings, MCS_TR at 10000 resamples. Only the loop and the tally are added.
-
-### What makes it affordable, and what does not
-
-Measured on 16 cores of this machine: one pass of $10^6$ filter evaluations
-plus the 15 GB dataset read takes 46 s; one pass of $10^6$ cached fits and
-impulse responses takes 574 s; one MCS_TR over 1000 models and 999
-observations takes 10.9 s.
-
-The impulse-response protocol has a shortcut. A cell's response vector does not
-depend on which benchmark it is compared against, only the comparison does, so
-`montecarlo/sweep_irf.c` computes all $10^6$ of them once, holds them as
-float32 (2.1 GB), and each benchmark's loss matrix is then one pass of mean
-absolute error over the cache. Without that the sweep would be 160 hours of
-recomputing the same responses; with it the whole protocol is about 3 hours,
-almost all of it the thousand confidence sets.
-
-The score protocols have no such shortcut. The score is evaluated at the
-benchmark's own estimate, so every cell must be filtered again for every
-benchmark: $10^9$ evaluations. `old/montecarlo/sweep_score.c` amortises the
-archives by holding a block of benchmarks at once and scoring each cell against
-all of them while its series is in hand, which leaves the filter evaluations
-themselves as the cost. About 12 hours.
-
-Both are resumable at benchmark granularity. Each finished benchmark is
-appended to its summary as it completes and skipped on a rerun, so an
-interrupted sweep continues where it stopped and a partial summary is already
-readable.
-
-### Outputs
-
-| file | what it holds |
-| --- | --- |
-| `montecarlo/out/sweep_irf.csv` | one row per benchmark, impulse-response protocol |
-| `montecarlo/out/sweep_score.csv` | the same under `q'q` |
-| `montecarlo/out/sweep_score_weighted.csv` | the same under `LM` |
-
-Each row records whether `cop_0191` ended up in the confidence set, where it
-ranked by mean loss, its MCS p-value, the size of the set, whether the
-procedure stopped on an accepted test, and how many replicates were dropped.
-
-Every one of `cop_0191`'s 1000 runs is a benchmark, whether or not its own fit
-converged (449 did), unlike the single benchmark above. A benchmark whose
-information matrix is not positive definite has no `LM` loss; it is written to
-`sweep_score_weighted.csv` with `skipped` and scored under `q'q` only.
-
-### Results
-
-**Impulse-response loss**, complete, 1000 benchmarks, run 2026-09-20.
-`cop_0191` is in the confidence set for 876 of them and has the smallest mean
-loss for 829. No run was dropped for a missing response.
-
-**Score losses**, incomplete. `bin/sweep_score` stopped after benchmarks 0 to
-388, 389 of 1000, on 2026-09-21 and has not been resumed; a rerun continues from
-benchmark 389. On those 389:
-
-- `q'q`: `cop_0191` in the set for 182, smallest mean loss for 14. Its median
-  rank by mean loss is 794 of 1000; the median set holds 23 configurations, the
-  mean 174, the largest all 1000.
-- `LM`: skipped for 252 of 389 because the benchmark's information matrix is
-  not positive definite (202 of the 211 unconverged benchmarks, 50 of the 178
-  converged). Of the 137 scored, `cop_0191` is in the set for 5, its median rank
-  is 145 and it is never first (best rank 8); the median set holds 12.
-
-So the weighted score loss cannot be built at most runs of `cop_0191`, and where
-it can, it almost never returns `cop_0191`. The single-benchmark result above
-(`LM` misses, rank 76) is the typical outcome, not an unlucky draw. The `q'q`
-result is different from the single benchmark: on that one it missed, here it
-keeps `cop_0191` about half the time, but through large sets in which it ranks
-near the bottom, not by ranking it first.
-
-The impulse-response result split by the benchmark's own fit, with convergence
-read from `out/abm_system_fit_qvarma_manifest.txt` (unchanged since
-2026-09-10, before the sweep):
-
-| benchmark's fit | benchmarks | `cop_0191` in set | smallest mean loss |
-| --- | --- | --- | --- |
-| converged | 449 | 415 (92.4%) | 400 |
-| not converged | 551 | 461 (83.7%) | 429 |
-
-## The first run of every configuration as the benchmark
-
-The sweep above asks whether the procedure identifies `cop_0191`. This asks
-whether it identifies every configuration: for each of the 1000
-configurations, its replicate 0 (seed 1 of the model) stands in as the
-benchmark, and the confidence set should return that configuration. One
-benchmark per configuration, 1000 confidence sets per model.
-
-    make bin/sweep_cops && ./bin/sweep_cops
-
-It runs the impulse-response loss only, under the t-QVARMA and the four local
-projections of `docs/MONTECARLO_LP_VALIDATION.md` (linear, state 1, state 2,
-both states).
-Every individual run is what `montecarlo/sweep_irf.c` and
-`montecarlo/lp_sweep.c` do for one benchmark: mean absolute error between
-response vectors, replicate 0 held out of every column, a replicate with a
-missing cell in any column dropped, MCS_TR at alpha 0.05 with 10000 resamples,
-block length 1, bootstrap variance, seed 123 stream 0. The row for `cop_0191`
-therefore reproduces row 0 of `sweep_irf.csv` and of `lp_sweep_<model>.csv`.
-
-The whole result is one file, `montecarlo/out/sweep_cops.csv.gz`, one row per
-model and benchmark configuration: whether the configuration is in the set,
-its rank by mean loss, its MCS p-value, the set size, whether the set was
-decided by an accepted test, the final p-value, replicates dropped, the
-configuration with the smallest mean loss, the seconds spent in the confidence
-set, and the configurations in the set. While it runs, rows go to
-`montecarlo/out/sweep_cops_progress.csv`, which a rerun resumes from and which
-is compressed and removed when all five models are done. A model added to
-the program later is run on a rerun: the finished file is unpacked back into
-the progress file, the new model's rows are appended, and the old rows are kept
-as they were.
-
-### Results
-
-The first four models were run on 2026-09-28 and 29, one confidence set at a
-time on 16 cores; one confidence set took 4.8 to 5.2 seconds on average per
-model, 14.4 at most. Both states were added on 2026-10-05, 16 confidence sets
-side by side with one thread each, 11.2 seconds per set on average and 13.4 at
-most. No response was missing under any model, so every loss matrix is 999
-replicates by 1000 configurations with nothing dropped. The rows of the first
-four models are byte for byte those written before both states were added.
-
-The `cop_0191` rows reproduce row 0 of `sweep_irf.csv` and of the four
-`lp_sweep_<model>.csv` exactly, including the state-1 and state-2 sets of 3 and
-4 configurations decided at p = 0.0777 and 0.4187.
-
-Out of 1000 benchmark configurations:
-
-| model | own configuration in the set | alone in the set | smallest mean loss | mean set size |
-| --- | --- | --- | --- | --- |
-| t-QVARMA | 97 | 34 | 51 | 2.99 |
-| LP linear | 93 | 36 | 57 | 3.09 |
-| LP state 1 | 10 | 2 | 5 | 5.27 |
-| LP state 2 | 24 | 4 | 10 | 6.61 |
-| LP both states | 14 | 5 | 6 | 6.76 |
-
-The 87.6% at which the t-QVARMA recovers `cop_0191` from its own replicates
-does not carry to the other configurations: with one benchmark each, the
-procedure returns the right configuration for fewer than one in ten of them.
-
-A few configurations take the smallest mean loss against many benchmarks
-that are not theirs: under state 1, `cop_0437` for 139 benchmarks and
-`cop_0191` for 102; under state 2, `cop_0717` for 92; under the t-QVARMA,
-`cop_0505` for 47 and `cop_0799` for 38; under both states, `cop_0437` for
-134, `cop_0717` for 110 and `cop_0410` for 95. `cop_0191` is in the set of 16
-benchmarks other than itself under the t-QVARMA, 34 under the linear local
-projection, 175 under state 1, 118 under state 2 and 143 under both states.
-
-Replicate 0's t-QVARMA fit converged for 337 of the 1000 configurations. The
-own configuration is in the set for 26 of those 337 and 71 of the other 663.
+draws per period at different parameters and the streams desynchronise. So run
+n of one configuration has almost nothing in common with run n of another
+beyond its label. The hold-out costs one observation in a thousand and removes
+the question entirely, which is cheaper than arguing it away.
 
 ## Every run of every configuration as the benchmark
 
-The experiment above uses one benchmark per configuration, so a configuration's
-result is one draw. This uses all of them: every run of every configuration is
-the benchmark in turn, 1,000,000 benchmarks per model, five million confidence
-sets in all. It answers, for each configuration, how often the procedure
+Every run of every configuration is the benchmark in turn, 1,000,000
+benchmarks per model, five million confidence sets in all. It answers, for each configuration, how often the procedure
 returns it when it is the right answer.
 
-    make mc-sweep_grid             build at -O3 and run
-    ./bin/sweep_grid               the same, once built
+- `make mc-sweep_grid` builds at -O3 and runs.
+- `./bin/sweep_grid` does the same, once built.
 
-`sweep_grid` is not in `MONTECARLO_STEMS`, so `make montecarlo` does not build
-it: it has its own rule in the Makefile because it is compiled at -O3 rather
-than -O2. The Makefile records that -O3 changes no result, measured on 8 sets
+`sweep_grid` is not in `MONTECARLO_STEMS`: it has its own rule in the Makefile
+because it is compiled at -O3 rather than -O2. The Makefile records that -O3 changes no result, measured on 8 sets
 side by side on 999 by 1000 tables at 2000 resamples: 0.13 s per set at -O2,
 0.08 s at -O3.
 
-Each benchmark is what `montecarlo/sweep_cops.c` does for one, with one setting
-changed: 2000 bootstrap resamples instead of 10000. The loss is the mean
-absolute difference between response vectors, the benchmark's run index is held
+Each benchmark is the procedure of `docs/MCS_VALIDATION_PROCEDURE.md` against
+that run, at 2000 bootstrap resamples rather than the 10000 the real-data run
+uses. The loss is the mean absolute difference between response vectors, the benchmark's run index is held
 out of every column, a run with a missing response in any column is dropped,
 MCS_TR at alpha 0.05, block length 1, bootstrap variance, seed 123 stream 0.
 
@@ -620,9 +260,7 @@ No response was missing under any model, so every loss matrix is 999 runs by
 | LP state 2 | 16,060 (1.6%) | 3,648 | 7,305 | 6.89 | 336 |
 | LP both states | 11,653 (1.2%) | 4,300 | 6,746 | 6.97 | 548 |
 
-Counts out of 1,000,000 benchmarks per model. The rates are close to those of
-"The first run of every configuration" (97, 93, 10, 24 and 14 out of 1000), so
-that experiment's result was not an unlucky choice of run.
+Counts out of 1,000,000 benchmarks per model.
 
 Stacking the two states does not help on the raw responses: both states
 recover the right configuration less often than either state alone (1.2%
@@ -660,8 +298,9 @@ exceeds the configuration's own recovery rate.
 hundreds of response entries that are mostly noise.
 
 **2000 against 10000 resamples.** Run 0 of every configuration is a benchmark
-both here (2000 resamples) and in `sweep_cops.csv.gz` (10000), on the same loss
-matrices. Over those 1000 benchmarks per model, whether the own configuration is
+both here (2000 resamples) and in the discarded `sweep_cops.csv.gz` (10000,
+`docs/OLD_MONTECARLO_BENCHMARK_SUBSETS.md`), on the same loss matrices. Over
+those 1000 benchmarks per model, whether the own configuration is
 in the set differs once in 5000 (linear local projection, 93 against 94); the
 set size differs for 51 (t-QVARMA), 27 (linear), 68 (state 1), 99 (state 2) and
 94 (both states) of 1000. The lower resample count changes the set membership of
@@ -673,15 +312,10 @@ Only the t-QVARMA has a convergence status; the local projections are least
 squares. Convergence read from `out/abm_system_fit_qvarma_manifest.txt`, whose
 fits are unchanged since 2026-09-10, before every experiment here.
 
-| experiment | converged benchmarks: own configuration in set | unconverged benchmarks: own configuration in set |
-| --- | --- | --- |
-| every run of `cop_0191` | 415 of 449 (92.4%) | 461 of 551 (83.7%) |
-| run 0 of every configuration | 26 of 337 (7.7%) | 71 of 663 (10.7%) |
-| every run of every configuration | 35,764 of 352,470 (10.1%) | 59,387 of 647,530 (9.2%) |
-
-A converged benchmark helps `cop_0191` by about nine points and makes almost no
-difference over the whole grid. Using unconverged benchmarks is not what keeps
-the grid's recovery near one in ten.
+Over the grid's t-QVARMA benchmarks, the own configuration is in the set for
+35,764 of the 352,470 converged ones (10.1%) and 59,387 of the 647,530
+unconverged ones (9.2%). Using unconverged benchmarks is not what keeps the
+grid's recovery near one in ten.
 
 ## What this experiment cannot show
 
@@ -691,24 +325,19 @@ The impulse-response protocols have now been asked about every configuration
 runs under the t-QVARMA, which only 4 configurations exceed, and from more of
 its own runs than any other configuration under each of the four local
 projections (913, 857, 780 and 916 of 1000 under linear, state 1, state 2 and
-both states). Over all configurations the rate is
-about one in ten. Results in this project that rest on `cop_0191` alone, the
-single benchmark and the sweep over its runs, describe one of the easiest
+both states). Over all configurations the rate is about one in ten. Results
+that rest on `cop_0191` alone, the discarded experiments of
+`docs/OLD_MONTECARLO_BENCHMARK_SUBSETS.md`, describe one of the easiest
 configurations to identify.
 
-That settles the confound the single benchmark raised. `cop_0191` was the
-impulse-response protocol's winner on the US data and was then chosen as the
-benchmark on convergence; the grid shows its impulse responses are unusually
-distinctive, which explains why it is recovered here without the protocol being
-good in general. The configurations the score protocols favoured on the US data
-are hard to recover under the impulse-response protocols: `cop_0409` from 45 of
-its 1000 runs under the t-QVARMA and at most 1 under the local projections,
+`cop_0191` was the impulse-response protocol's winner on the US data; the grid
+shows its impulse responses are unusually distinctive, which explains why it is
+recovered here without the procedure being good in general. The configurations
+the discarded score losses favoured on the US data (`docs/OLD_SCORE_LOSS.md`)
+are hard to recover under the impulse-response loss: `cop_0409` from 45 of its
+1000 runs under the t-QVARMA and at most 1 under the local projections,
 `cop_0931` from none under the t-QVARMA and from 27 to 238 under the local
 projections (95 under both states).
-
-The score protocols have been asked only about `cop_0191`, and only on 389 of
-its runs. Whether they recover any other configuration has not been run; at
-$10^9$ filter evaluations per thousand benchmarks it is the expensive half.
 
 On its own it cannot separate the loss from the auxiliary model: a protocol that
 fails to recover a configuration may use a poor loss, or its auxiliary model may
@@ -720,8 +349,7 @@ vector the loss compares raises recovery over the grid from about one in ten to
 
 It inherits every limitation of the protocols it runs. In particular the fits
 it reads are the main pipeline's, about a third of which converged, and
-`docs/ABM_SYSTEM_MCS_VALIDATION.md` records the measurement that the
+`docs/MCS_VALIDATION_PROCEDURE.md` records the measurement that the
 unconverged ones' log-likelihoods are not distinguishable from the converged
-ones'. The single benchmark is converged; the thousand-by-thousand field it is
-compared against is not, and neither are most benchmarks of the later
-experiments.
+ones'. Most benchmarks of the grid are unconverged fits, and "Recovery by
+whether the benchmark's fit converged" above measures what that changes.

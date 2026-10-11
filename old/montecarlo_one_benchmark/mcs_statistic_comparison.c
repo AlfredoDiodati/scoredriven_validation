@@ -1,4 +1,10 @@
 /*
+Discarded from the Monte Carlo pipeline. Its single benchmark, cop_0191 run 706,
+is one of the benchmarks montecarlo/sweep_grid.c runs, every run of every
+configuration, under the same loss and confidence set settings except the
+number of bootstrap resamples (10000 here, 2000 in the grid). The grid
+answers the same question on all of them. docs/OLD_EXPERIMENTS.md.
+
 The Monte Carlo impulse-response loss matrix, montecarlo/out/irf_loss.csv,
 under both Model Confidence Set statistics, with every other setting identical
 so that a difference between the two sets comes from the statistic.
@@ -14,7 +20,7 @@ With the bootstrap variance the resamples are drawn once and reused in every
 elimination round under both statistics, and the two runs share a seed, so a
 difference between the statistics comes from the statistic.
 
-Requires montecarlo/out/irf_loss.csv, which montecarlo/run.sh writes before
+Requires montecarlo/out/irf_loss.csv, which old/montecarlo_one_benchmark/run.sh writes before
 this. Writes montecarlo/out/mcs_statistic_comparison.txt and .csv. Nothing
 printed.
 */
@@ -43,7 +49,7 @@ static const char *const statistic_name[N_STATISTICS] = { "MCS_TR", "MCS_TMAX" }
 static DataFrame read_losses(const char *path) {
     FILE *probe = fopen(path, "r");
     assert(probe && "montecarlo/mcs_statistic_comparison: the loss matrix is missing - "
-                     "montecarlo/run.sh writes it");
+                     "old/montecarlo_one_benchmark/run.sh writes it");
     fclose(probe);
 
     DataFrame raw = df_read_csv(path, csv_read_options_default());

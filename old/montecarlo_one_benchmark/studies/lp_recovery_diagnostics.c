@@ -1,8 +1,12 @@
 /*
+Discarded with the one-benchmark Monte Carlo experiment whose results it
+diagnoses: that experiment's benchmarks are a subset of the ones
+montecarlo/sweep_grid.c runs. docs/OLD_EXPERIMENTS.md.
+
 Why the local projections fail to recover the configuration a simulated run
 came from, when the t-QVARMA succeeds.
 
-docs/MONTECARLO_LP_VALIDATION.md records the failure: with each of cop_0191's
+docs/OLD_MONTECARLO_LP_VALIDATION.md records the failure: with each of cop_0191's
 1000 runs standing in for the real data in turn, the confidence set holds
 cop_0191 in 5, 72 and 42 of 1000 repetitions under the linear model and the two
 states, against 876 of 1000 for the t-QVARMA. This study checks, one at a time,
@@ -46,14 +50,14 @@ out/lp_recovery_diagnostics_report.txt. Progress to stderr.
 */
 
 #include "applications/abm_system_lp.h"
-#include "montecarlo/benchmark.h"
+#include "old/montecarlo_one_benchmark/benchmark.h"
 #include <et_al./inference/mcs.h>
 #include <et_al./stats.h>
 #include <et_al./frame/csv.h>
 #include <et_al./frame/frame.h>
 #include <cblas.h>
 #include <math.h>
-#include "studies/recovery_noise.h"
+#include "old/montecarlo_one_benchmark/studies/recovery_noise.h"
 
 #define REPORT_PATH "out/lp_recovery_diagnostics_report.txt"
 #define REPETITIONS 100
@@ -260,7 +264,7 @@ static void compare_with_stored(FILE *f, Mat values[LP_N_LOSSES]) {
     }
 }
 
-/* How precise the linear model's responses are (studies/recovery_noise.h),
+/* How precise the linear model's responses are (old/montecarlo_one_benchmark/studies/recovery_noise.h),
    and which (response, shock) pairs the stand-in configuration's and the
    winner's losses come from. */
 static int noise_and_signal(FILE *f, float *cache, const mreal *reference, const Variant *variant) {

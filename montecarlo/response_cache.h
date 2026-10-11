@@ -4,8 +4,8 @@
 /*
 Every simulated run's impulse responses under one auxiliary model, held in
 memory as float32 so a loss matrix against any benchmark is one pass of
-absolute differences over it. Shared by montecarlo/sweep_cops.c and
-montecarlo/sweep_grid.c.
+absolute differences over it. Read by montecarlo/sweep_grid.c and the
+programs that work from the grid's responses.
 
 Five models: the t-QVARMA (p1q1r2, horizon 20, the stacked total responses,
 525 entries per run, computed from the cached fits in
@@ -17,9 +17,9 @@ The mean absolute difference over lp_nl's 800 entries is the average of the
 two states' mean absolute differences. A run with no usable response, under
 lp_nl a run missing either state, is marked by a NaN in its first entry.
 
-float32 for storage and double for the arithmetic, as in montecarlo/sweep_irf.c:
-2.1 GB for the t-QVARMA, 1.6 GB for each local projection, 3.2 GB for lp_nl.
-The cache is a file mapped into memory rather than read into it, so the kernel
+float32 for storage and double for the arithmetic, so the only precision lost
+is in the stored responses themselves: 2.1 GB for the t-QVARMA, 1.6 GB for each
+local projection, 3.2 GB for lp_nl. The cache is a file mapped into memory rather than read into it, so the kernel
 can drop pages it needs elsewhere and read them back, instead of the machine
 running out of memory with a cache larger than the memory left.
 */
@@ -97,7 +97,7 @@ static inline QvarmaParams _response_qvarma_shape(void) {
 
 /* Fills out with the stacked total responses, horizon 0 first, and returns 1.
    Returns 0 when nu <= 2, which impulse_responses would abort on, or when a
-   response comes back non-finite. The same as montecarlo/sweep_irf.c. */
+   response comes back non-finite. */
 static inline int _response_qvarma_cell(const QvarmaParams *m, Mat y, float *out) {
     if (!(m->nu > 2)) return 0;
     Mat D = qvarma_mean_score_jacobian(m, y);

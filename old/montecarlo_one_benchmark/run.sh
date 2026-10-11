@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 #
+# Discarded from the Monte Carlo pipeline. Its single benchmark, cop_0191 run 706,
+# is one of the benchmarks montecarlo/sweep_grid.c runs, every run of every
+# configuration, under the same loss and confidence set settings except the
+# number of bootstrap resamples (10000 here, 2000 in the grid). The grid
+# answers the same question on all of them. docs/OLD_EXPERIMENTS.md.
+#
 # The Monte Carlo experiment: the main pipeline's impulse-response validation
 # protocol, run against one simulated run instead of against the US data.
 #
@@ -14,15 +20,15 @@
 # two benchmarks. The replicate it picks is held out of every configuration's
 # column. docs/MONTECARLO_VALIDATION.md is the write-up.
 #
-#   ./montecarlo/run.sh           the whole experiment
-#   ./montecarlo/run.sh --keep    reuse the benchmark already chosen
+#   ./old/montecarlo_one_benchmark/run.sh the whole experiment
+#   ./old/montecarlo_one_benchmark/run.sh --keep reuse the benchmark already chosen
 #
 # Reads out/abm_system_fit_qvarma/ and dataset/abm_system/ and rebuilds
 # neither, so it does not run on a fresh clone.
 
 set -euo pipefail
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 mkdir -p montecarlo/out
 
 if [ "${1:-}" != "--keep" ] || [ ! -f montecarlo/out/benchmark.env ]; then

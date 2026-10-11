@@ -20,11 +20,12 @@ has the numbers and where they come from.
 The ten steps that produce the result, from simulation to figures, and the
 files each one writes are listed under "The main pipeline" below.
 
-`docs/ABM_SYSTEM_MCS_VALIDATION.md` describes the validation procedure: what is
-compared against what, why the comparison runs on impulse responses rather than
-on fitted parameters, the settings the confidence set is computed under, and
-the result on the design experiment.
-`docs/ABM_SYSTEM_SCORE_LOSS.md` records a discarded route to the same
+`docs/MCS_VALIDATION_PROCEDURE.md` describes the validation procedure, the same
+for the US data and for the Monte Carlo: what is compared against what, why the
+comparison runs on impulse responses rather than on fitted parameters, and the
+settings the confidence set is computed under.
+`docs/ABM_SYSTEM_MCS_VALIDATION.md` records its result on the US data.
+`docs/OLD_SCORE_LOSS.md` records a discarded route to the same
 confidence set, which scored each simulated series by the score of the
 auxiliary model's log-likelihood at the real data's own estimate, unweighted
 (`q'q`) and weighted by the inverse information matrix. It missed the known
@@ -235,10 +236,10 @@ minute. `docs/ABM_SYSTEM_SIMULATION.md` has the setup behind those numbers.
                       of the way so only one of the two is ever fitted, and
                       throughput/ is the separate dataset the throughput study
                       times fits on
-    old/              experiments discarded from the main pipeline and the
-                      Monte Carlo, in old/applications/ and old/montecarlo/.
-                      Still buildable with make old-<stem>; their write-ups
-                      stay in docs/
+    old/              experiments discarded from the main pipeline or the
+                      Monte Carlo, one folder per experiment. Still buildable
+                      with make old-<stem>; docs/OLD_EXPERIMENTS.md says why
+                      each was discarded, and their write-ups stay in docs/
     out/              every result, written here rather than printed
     docs/             the write-up and the reference documentation
 
@@ -466,7 +467,8 @@ What each step is for:
 7. Turns every fit into an impulse response and measures its distance from the
    US one.
 8. Finds the configurations whose distance cannot be told apart from the
-   smallest. `docs/ABM_SYSTEM_MCS_VALIDATION.md` has the settings and the result.
+   smallest. `docs/MCS_VALIDATION_PROCEDURE.md` has the settings and
+   `docs/ABM_SYSTEM_MCS_VALIDATION.md` the result.
 9. Averages the winning configuration's fits over its replicates and computes
    that model's impulse responses, with the sign-restricted bands of Blazsek,
    Escribano and Licht (2023).
@@ -518,13 +520,13 @@ C. Results are written to files, never printed.
 
 ### The score route, discarded
 
-`old/applications/abm_system_score_loss.c` reached a loss matrix without the
-million fits of steps 6 and 7: it held the US estimate of step 5 fixed and
+`old/score_loss/applications/abm_system_score_loss.c` reached a loss matrix
+without the million fits of steps 6 and 7: it held the US estimate of step 5 fixed and
 evaluated the score of the auxiliary model's log-likelihood on each simulated
 series, as the plain sum of squares `q'q` and as the inverse-information-weighted
 score statistic. Neither recovered the known answer in the Monte Carlo check
 and neither has a theoretical justification as a validation distance, so both
-are out of the pipeline. `docs/ABM_SYSTEM_SCORE_LOSS.md` keeps the setup and
+are out of the pipeline. `docs/OLD_SCORE_LOSS.md` keeps the setup and
 the results, and lists the `make old-<stem>` targets that still rebuild them.
 Their outputs stay where they were:
 
@@ -550,63 +552,56 @@ keeps each firm's output, which `studies/abm_system_micro_clt.c` and
 
 The procedure above cannot be checked on the US data, because nobody knows
 which configuration is really closest to the United States. `montecarlo/`
-asks the same question with the answer known: one simulated run is promoted to
-the role the US data plays, every loss is measured against it, and the
-confidence set should come back holding the configuration that run was drawn
-from.
-
-    make montecarlo            the whole experiment, results in montecarlo/out/
+asks the same question with the answer known: every simulated run of every
+configuration is promoted in turn to the role the US data plays, every loss is
+measured against it, and the confidence set should come back holding the
+configuration that run was drawn from.
 
 It is a pipeline of its own under `montecarlo/`, sharing no source with
-`applications/`, and it fits nothing: the benchmark's parameters and every
-replicate's come from the fit cache of step 6, which is the output it reuses
-and the reason it takes minutes. `cop_0191` replicate
-706 is what it promotes, chosen by `montecarlo/benchmark_choice.c` on grounds
-recorded in `montecarlo/out/benchmark_choice.txt`, and replicate 706 of every
-configuration is held out of the validation set because every configuration
-shares the same seeds. `docs/MONTECARLO_VALIDATION.md` is the write-up, and
-says what the experiment cannot show as well as what it can.
+`applications/`, and it fits nothing: every run's parameters come from the fit
+cache of step 6. When run n is the benchmark, run n of every configuration is
+held out, because every configuration shares the same seeds. It runs under the
+t-QVARMA and under the local projections of the collaborator's R pipeline
+(`_temp/main_code.R`): linear, each of two states, and both states stacked into
+one vector as `_temp/Note on non-lin LP.pdf` prescribes. The local-projection
+fits come from their own step:
 
-The same experiment runs with the auxiliary model swapped for the local
-projections of the collaborator's R pipeline (`_temp/main_code.R`): linear, and
-state dependent with two states, four loss matrices against the same
-benchmark: the linear model, each state, and both states stacked into one
-vector as `_temp/Note on non-lin LP.pdf` prescribes. Unlike the t-QVARMA route these fits are not in any cache yet, so
-the first step fits them:
+- `make app-abm_system_fit_lp` fits all 1,000,000 runs, a few minutes.
+- `make mc-sweep_grid` runs every run of every configuration as the benchmark,
+  five million confidence sets, a day to a day and a half per model.
+- `./montecarlo/lp_nl_run.sh` runs the grid and its summaries for both states
+  stacked, resuming where it stopped.
 
-    make app-abm_system_fit_lp     fits all 1,000,000 replicates, a few minutes
-    make montecarlo-lp             loss matrices and confidence sets
-    ./bin/lp_sweep                 every replicate of cop_0191 as the benchmark
-    ./bin/sweep_cops               replicate 0 of every configuration as the
-                                   benchmark, t-QVARMA and local projections
-    make mc-sweep_grid             every replicate of every configuration as
-                                   the benchmark, five million confidence sets
-    ./montecarlo/lp_nl_run.sh      the three above and the summaries for both
-                                   states stacked, resuming where it stopped
-
-`docs/MONTECARLO_VALIDATION.md`, "The experiments", lists the Monte Carlo
-experiments with their programs, settings and outputs. The recovery rate that
-`cop_0191` reaches, 876 of its own 1000 replicates under the t-QVARMA, is near
-the top of the field: over every replicate of every configuration it is about
-one in ten for the t-QVARMA and the linear local projection, and under 2% for
-each state and for both states stacked. `docs/MONTECARLO_COMPRESSED_RESPONSE.md`
+`docs/MONTECARLO_VALIDATION.md` is the write-up, and says what the experiment
+cannot show as well as what it can. Over every run of every configuration the
+right configuration is in the set about one time in ten for the t-QVARMA and
+the linear local projection, and under 2% for each state and for both states
+stacked; `cop_0191`, the US data's winner, is near the top of the field at 876
+of its own 1000 runs under the t-QVARMA. `docs/MONTECARLO_COMPRESSED_RESPONSE.md`
 shows that comparing a few combinations of the responses instead of all of
-them raises it to 80% to 95%. `docs/MONTECARLO_FIT_METRIC.md` defines a fit
-metric, the best configuration's distance against the sampling standard
+them raises recovery to 80% to 95%. `docs/MONTECARLO_FIT_METRIC.md` defines a
+fit metric, the best configuration's distance against the sampling standard
 deviation of the responses, in an oracle version that needs the simulation and
 a bootstrap version that can be computed on the US data, and compares the two
 (`./montecarlo/fit_metric_run.sh`). The bootstrap version understates the
 sampling variance: about 1.6% of the oracle value under the local projections
-and 41% under the t-QVARMA, at the median. `docs/MONTECARLO_FIT_METRIC_COMPARISON.md`
-designs the tests comparing the metric across methods.
+and 41% under the t-QVARMA, at the median.
+`docs/MONTECARLO_FIT_METRIC_COMPARISON.md` designs the tests comparing the
+metric across methods.
+
+Three earlier Monte Carlo experiments used subsets of these benchmarks: one run
+of `cop_0191`, every run of `cop_0191`, and run 0 of every configuration. The
+grid answers each of them as a special case, so they are under `old/`;
+`docs/OLD_MONTECARLO_BENCHMARK_SUBSETS.md` and
+`docs/OLD_MONTECARLO_LP_VALIDATION.md` record them.
 
 `applications/lp_system.h` builds the series the fits use, the stored series
 the t-QVARMA is fitted on plus R's moving average of log GDP to set the state,
 keeps R's `transform_data()` for reference, and defines the archive layout the
 fits are stored in, one compressed
 `out/abm_system_fit_lp/cop_NNNN.npz` per configuration, which is also where the
-US data's own fit will be read from.
-`docs/MONTECARLO_LP_VALIDATION.md` is the write-up.
+US data's own fit will be read from. `docs/MONTECARLO_VALIDATION.md`, "The
+local projections", describes the fits.
 
 The same local projections against the US data:
 

@@ -1,9 +1,15 @@
 /*
+Discarded from the Monte Carlo pipeline. Its benchmarks, run 0 of every configuration,
+are a subset of the ones montecarlo/sweep_grid.c runs, every run of every
+configuration, under the same loss and confidence set settings except the
+number of bootstrap resamples (10000 here, 2000 in the grid). The grid
+answers the same question on all of them. docs/OLD_EXPERIMENTS.md.
+
 The impulse-response protocol run with the first replicate of every
 configuration standing in as the benchmark, for the t-QVARMA and the four
 local projections (linear, state 1, state 2, both states in one vector).
 
-montecarlo/sweep_irf.c and montecarlo/lp_sweep.c ask how often the confidence
+old/montecarlo_every_run_of_cop_0191/sweep_irf.c and old/montecarlo_every_run_of_cop_0191/lp_sweep.c ask how often the confidence
 set returns cop_0191 when each of cop_0191's 1000 replicates is the benchmark
 in turn. That shows the procedure identifies one configuration. This asks the
 same question once for each of the 1000 configurations: configuration c's

@@ -17,7 +17,7 @@ the mean squared difference; the absolute one is kept for the reason
 applications/abm_system_irf_loss.c gives and for comparability with the
 t-QVARMA results. The Monte Carlo experiment with these models and this loss
 recovered a known configuration in 913 (linear), 858 (state 1) and 781 (state
-2) of 1000 repetitions (docs/MONTECARLO_LP_VALIDATION.md).
+2) of 1000 repetitions (docs/OLD_MONTECARLO_LP_VALIDATION.md).
 
 Nothing is estimated. The US fit is checked against the US series and every
 simulated fit against its own series before it is used (applications/

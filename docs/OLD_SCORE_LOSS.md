@@ -4,19 +4,21 @@
 
 This experiment is no longer part of either pipeline. The score losses, both
 `q'q` and the weighted `q' [T_sim I_1]^-1 q`, gave poor results in the Monte
-Carlo check, where the right answer is known (`docs/MONTECARLO_VALIDATION.md`,
-"Neither score protocol recovers it"), and there is no theoretical
-justification for using either one as a distance between a simulated
-configuration and the data. The code is kept under `old/`, the results below
-are kept as a record, and the outputs stay at the paths listed here.
+Carlo check, where the right answer is known
+(`docs/OLD_MONTECARLO_BENCHMARK_SUBSETS.md`, "Neither score protocol recovers
+it"), and there is no theoretical justification for using either one as a
+distance between a simulated configuration and the data. The code is kept
+under `old/score_loss/`, the results below are kept as a record, and the
+outputs stay at the paths listed here. `docs/OLD_EXPERIMENTS.md` lists every
+discarded experiment.
 
 | program | what it does |
 | --- | --- |
-| `old/applications/abm_system_score_loss.c` | both score loss matrices against the US data |
-| `old/applications/abm_system_mcs_statistic_comparison_score.c` | both matrices under MCS_TR and MCS_TMAX |
-| `old/montecarlo/score_loss.c` | both score loss matrices against the Monte Carlo benchmark |
-| `old/montecarlo/mcs_statistic_comparison_score.c` | the same four confidence sets for the Monte Carlo matrices |
-| `old/montecarlo/sweep_score.c` | both score protocols with every run of `cop_0191` as the benchmark |
+| `old/score_loss/applications/abm_system_score_loss.c` | both score loss matrices against the US data |
+| `old/score_loss/applications/abm_system_mcs_statistic_comparison_score.c` | both matrices under MCS_TR and MCS_TMAX |
+| `old/score_loss/montecarlo/score_loss.c` | both score loss matrices against the Monte Carlo benchmark |
+| `old/score_loss/montecarlo/mcs_statistic_comparison_score.c` | the same four confidence sets for the Monte Carlo matrices |
+| `old/score_loss/montecarlo/sweep_score.c` | both score protocols with every run of `cop_0191` as the benchmark |
 
 Each one builds and runs with `make old-<stem>`, for instance
 `make old-abm_system_score_loss`.
@@ -27,7 +29,7 @@ A second and a third loss matrix for the same Model Confidence Set the project
 already runs over impulse-response distance, built without fitting anything to
 the simulated data.
 
-`docs/ABM_SYSTEM_MCS_VALIDATION.md` describes the procedure this sits beside:
+`docs/MCS_VALIDATION_PROCEDURE.md` describes the procedure this sits beside:
 fit the driftless t-QVARMA(1,1,2) to the real US data and to every one of the
 million simulated replicates, compute each fit's impulse response function, and
 let the confidence set decide which of the 1000 ABM configurations cannot be
@@ -41,8 +43,8 @@ how hard would this series pull the estimate away from where the real data put
 it. That is the score of the auxiliary model's log-likelihood, evaluated at the
 real data's estimate on simulated data.
 
-Everything here is produced by `old/applications/abm_system_score_loss.c` and
-scored by `old/applications/abm_system_mcs_statistic_comparison_score.c`.
+Everything here is produced by `old/score_loss/applications/abm_system_score_loss.c` and
+scored by `old/score_loss/applications/abm_system_mcs_statistic_comparison_score.c`.
 Neither reads `out/abm_system_fit_qvarma/`.
 
 ## The quantity
@@ -273,7 +275,7 @@ call.
 
 **Do not read that as the weighted loss being the better measure.** It was read
 that way here before there was anything to check it against, and
-`docs/MONTECARLO_VALIDATION.md` then checked it. Running all three protocols
+`docs/OLD_MONTECARLO_BENCHMARK_SUBSETS.md` then checked it. Running all three protocols
 against a simulated benchmark, where the right answer is known because the
 benchmark is a replicate of a known configuration, the impulse-response
 distance returns that configuration alone and both score losses miss it: the

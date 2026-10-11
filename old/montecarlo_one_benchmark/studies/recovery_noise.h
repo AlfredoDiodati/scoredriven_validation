@@ -9,10 +9,14 @@
 #include <math.h>
 
 /*
+Discarded with the one-benchmark Monte Carlo experiment whose results it
+diagnoses: that experiment's benchmarks are a subset of the ones
+montecarlo/sweep_grid.c runs. docs/OLD_EXPERIMENTS.md.
+
 Whether an auxiliary model's impulse responses are precise enough for the
 Monte Carlo protocol to tell configurations apart, measured the same way for
-any model, so the local projections (studies/lp_recovery_diagnostics.c) and
-the t-QVARMA (studies/qvarma_recovery_diagnostics.c) are compared on the same
+any model, so the local projections (old/montecarlo_one_benchmark/studies/lp_recovery_diagnostics.c) and
+the t-QVARMA (old/montecarlo_one_benchmark/studies/qvarma_recovery_diagnostics.c) are compared on the same
 arithmetic.
 
 The protocol compares every run's response vector with one stand-in run's by

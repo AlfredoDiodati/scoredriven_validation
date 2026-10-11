@@ -79,7 +79,7 @@ counts the replicates dropped.
 
 The fits are used as they stand, converged or not. About a third of them
 converged and the rest stopped because the line search could not move;
-docs/ABM_SYSTEM_MCS_VALIDATION.md records the measurement that their
+docs/MCS_VALIDATION_PROCEDURE.md records the measurement that their
 log-likelihoods are not distinguishable from the converged ones.
 
 Not part of make applications - buildable on its own via

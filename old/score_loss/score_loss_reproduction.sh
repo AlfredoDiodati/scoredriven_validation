@@ -14,7 +14,7 @@
 
 set -u
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 check_dir=out/old/score_loss_reproduction
 mkdir -p "$check_dir"
 

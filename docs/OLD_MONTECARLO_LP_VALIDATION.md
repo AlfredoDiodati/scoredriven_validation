@@ -1,4 +1,21 @@
-# Monte Carlo validation with local projections
+# Monte Carlo validation with local projections, discarded
+
+## Status: discarded
+
+The experiments in this document, one simulated run as the real data and every
+run of `cop_0191` as the real data, under the local projections, are discarded
+for the same reason as their t-QVARMA counterparts: their benchmarks are a
+subset of the Monte Carlo grid's, which asks the same question of every run of
+every configuration under the same five models
+(`docs/OLD_MONTECARLO_BENCHMARK_SUBSETS.md`, "Status: discarded", has the
+comparison). The code is under `old/montecarlo_one_benchmark/` and
+`old/montecarlo_every_run_of_cop_0191/`; `docs/OLD_EXPERIMENTS.md` lists every
+discarded experiment.
+
+What the local projections are and how they are fitted is in
+`docs/MONTECARLO_VALIDATION.md`, "The local projections", since the grid uses
+the same fits. The finding of "Why the levels fail" below still decides how
+those fits are built: on the stored stationary series, not on R's levels.
 
 ## The question
 
@@ -15,48 +32,6 @@ projections find the right configuration about as often as the t-QVARMA does.
 Fitted on the levels R's pipeline builds, they almost never do. The first
 version of this experiment used R's levels; that run and the investigation
 that traced its failure to the levels are recorded below, after the result.
-
-## What is fitted
-
-Every one of the 1,000,000 simulated runs (1000 configurations, 1000 runs each,
-`dataset/abm_system/`) goes through two steps.
-
-The series are the five the t-QVARMA is fitted on, as stored: GDP growth,
-energy growth, employment change, inflation and the interest rate, in that
-order (`lp_system_from_stored` in `applications/lp_system.h`). The series that
-decides the state is the one R's pipeline builds, the 4-period moving average
-of `100 log(100 + cumsum(GDP_growth))`, and the first 3 of the 400 periods are
-dropped, where that moving average does not exist: 397 periods.
-`tests/lp_system_transform.c` checks that the fitted series are the stored ones
-exactly and the state series is R's exactly.
-
-Then et_al's `lp_lin_and_nl` fits both models at R's settings: 4 lags, 15
-horizons, a unit shock with recursive ordering in the order above; the
-state-dependent model with the Hodrick-Prescott cycle of the moving average at
-lambda 1600, a logistic weight of slope 2, lagged one period. Each model's
-impulse responses are a 5 by 16 by 5 array, 400 numbers: the linear model's,
-and the state-dependent model's in state 1 (periods weighted towards GDP above
-trend) and state 2 (below).
-
-The state-dependent model is also compared as one vector, following
-`_temp/Note on non-lin LP.pdf`: state 1's 400 responses followed by state 2's,
-800 numbers, called "both states" below (`lp_nl` in the code and in the file
-names, `nl` in the `lp_*` files). Its loss, the mean absolute difference over
-the 800 entries, is exactly the average of the two states' losses, since the
-two halves have the same length; measured on the single-benchmark tables
-below, the largest relative difference between the two is 4.8e-15.
-
-`applications/abm_system_fit_lp.c` writes the fits to one compressed archive
-per configuration, `out/abm_system_fit_lp/cop_NNNN.npz`, one row per run, with
-the responses, the shock matrix, the fit diagnostics, the settings and a
-checksum of the data each row was fitted on; 8.6 GB in all. No run failed:
-every fit has responses, every regression at every horizon and the VAR behind
-the shocks were solved by ordinary least squares at full rank (none used the
-minimum-norm solution et_al falls back on), and no state series was constant
-(`out/abm_system_fit_lp_manifest.txt`). Fitting all 1,000,000 runs from scratch
-takes 402 seconds on this machine (AMD Ryzen 7 4800H, 16 threads); the rerun
-that replaced the R-level fits took 1680 seconds, since it first read and
-refused every stored archive.
 
 ## One simulated run as the real data
 
@@ -90,7 +65,7 @@ alone.
 ## Every run of cop_0191 as the real data
 
 One stand-in run cannot separate a procedure that finds the right configuration
-from one that was lucky once. `montecarlo/lp_sweep.c` repeats the whole
+from one that was lucky once. `old/montecarlo_every_run_of_cop_0191/lp_sweep.c` repeats the whole
 validation 1000 times, each time with a different run of `cop_0191` (runs 0 to
 999) as the stand-in and that run's index left out of every configuration,
 under the same settings as above, MCS_TR only. It counts how often the set
@@ -125,8 +100,9 @@ repetitions under both states were added later by `montecarlo/lp_nl_run.sh`,
 
 The same protocol with replicate 0 of each of the 1000 configurations as the
 stand-in, instead of every replicate of `cop_0191`, is
-`montecarlo/sweep_cops.c`; `docs/MONTECARLO_VALIDATION.md`, "The first run of
-every configuration as the benchmark", describes it for both auxiliary models.
+`old/montecarlo_run_0_of_every_configuration/sweep_cops.c`;
+`docs/OLD_MONTECARLO_BENCHMARK_SUBSETS.md`, "The first run of every
+configuration as the benchmark", describes it for both auxiliary models.
 
 ## The first run, on R's levels
 
@@ -157,7 +133,7 @@ seconds.
 
 ## Why the levels fail
 
-`studies/lp_recovery_diagnostics.c` refits all 1,000,000 runs under several
+`old/montecarlo_one_benchmark/studies/lp_recovery_diagnostics.c` refits all 1,000,000 runs under several
 variants and checks each candidate cause. Settings: stand-in `cop_0191` run
 706, MCS_TR at 0.05 with 10000 resamples, and for the linear model runs 0 to 99
 of `cop_0191` each taking the stand-in's place. Numbers in
@@ -180,7 +156,7 @@ same linear model finds `cop_0191` in 90 of 100, the result the full run above
 confirms at 913 of 1000.
 
 Why, measured on the linear model at stand-in run 706 with
-`studies/recovery_noise.h`, the same code for every fit. For each response
+`old/montecarlo_one_benchmark/studies/recovery_noise.h`, the same code for every fit. For each response
 value, the variance of the configurations' average responses is divided by
 the variance of one configuration's runs around its own average:
 

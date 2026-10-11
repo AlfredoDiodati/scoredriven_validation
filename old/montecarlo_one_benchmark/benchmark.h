@@ -6,8 +6,14 @@
 #include <assert.h>
 
 /*
+Discarded from the Monte Carlo pipeline. Its single benchmark, cop_0191 run 706,
+is one of the benchmarks montecarlo/sweep_grid.c runs, every run of every
+configuration, under the same loss and confidence set settings except the
+number of bootstrap resamples (10000 here, 2000 in the grid). The grid
+answers the same question on all of them. docs/OLD_EXPERIMENTS.md.
+
 The simulated run promoted to the role the US data plays in the main pipeline,
-as montecarlo/benchmark_choice.c chose it.
+as old/montecarlo_one_benchmark/benchmark_choice.c chose it.
 
 The choice is made once, by that script, and written to
 montecarlo/out/benchmark.env. Every other step of one experiment reads it back

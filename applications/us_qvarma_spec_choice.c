@@ -25,7 +25,7 @@ out/us_qvarma_spec_choice_p1q1r2_fit.json and computes its impulse response
 function, which is the benchmark every simulated replicate's own response is
 compared against. r = 4 was in the pipeline as a second auxiliary spec until it
 lost the Model Confidence Set, which put no r = 4 configuration in the
-surviving set; docs/ABM_SYSTEM_MCS_VALIDATION.md records that run. It is still
+surviving set; docs/MCS_VALIDATION_PROCEDURE.md records that run. It is still
 fitted here because dropping it would remove the comparison the choice rests
 on, and it costs one fit.
 

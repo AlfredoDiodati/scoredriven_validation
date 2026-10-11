@@ -189,7 +189,7 @@ hypercube also differ in the identified parameters.
 ## The nonlinear local projections
 
 The state-dependent local projection's responses in state 1 and state 2
-(`docs/MONTECARLO_LP_VALIDATION.md`, 400 entries each, cached as
+(`docs/MONTECARLO_VALIDATION.md`, "The local projections", 400 entries each, cached as
 `out/sweep_grid_response_cache/lp_s1.f32` and `lp_s2.f32`) went through the
 same learning step and the same two setups. Stacks: the two states together
 (800 entries), and all four models together (1725 entries). The regression used

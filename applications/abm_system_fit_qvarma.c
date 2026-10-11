@@ -12,7 +12,7 @@ independent fits rather than one.
 spec_list held t-QVARMA(1,1,4) alongside r = 2 while the dataset was the 10,800
 replicates the .Rdata route produced. r = 4 was dropped because it lost the
 Model Confidence Set: the joint run over both specs put no r = 4 configuration
-in the surviving set at all, which docs/ABM_SYSTEM_MCS_VALIDATION.md records.
+in the surviving set at all, which docs/MCS_VALIDATION_PROCEDURE.md records.
 Adding it back is one entry in spec_list; applications/abm_system_irf_loss.c
 asserts on exactly one spec and has to match whatever this list holds.
 
@@ -66,7 +66,7 @@ to the outer loop over independent fits.
 Naming: this file fits the driftless t-QVARMA, which is what
 <et_al./sd/qvarma.h> provides. The drift-carrying variant belongs to an earlier
 stage of the project whose code is not part of this repository, and
-docs/ABM_SYSTEM_MCS_VALIDATION.md records why it is not used here. Output
+docs/MCS_VALIDATION_PROCEDURE.md records why it is not used here. Output
 mirrors dataset/abm_system/'s own structure exactly, so which sample and which
 replicate a cached fit belongs to is never in question - a replicate read out of
 dataset/abm_system/<sample>/batch_<NNN>.npz becomes
