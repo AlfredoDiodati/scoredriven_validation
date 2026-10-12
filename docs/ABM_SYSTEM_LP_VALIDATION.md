@@ -86,6 +86,6 @@ discarded; `docs/OLD_LP_R_LEVELS.md` records it and its result.
 - No absolute measure of fit; `docs/MONTECARLO_FIT_METRIC.md` defines one and
   tests it in the Monte Carlo, and it has not been computed on the US data.
 - The loss is the mean absolute difference, not the mean squared one
-  (`docs/MCS_VALIDATION_PROCEDURE.md`, "Absolute error, not squared error"),
+  (`docs/OLD_NAIVE_MAE_LOSS.md`, "Absolute error, not squared error"),
   and the series are the stationary ones, not cumulated levels;
   `docs/OLD_MONTECARLO_LP_VALIDATION.md`, "Why the levels fail", records why.

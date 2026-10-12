@@ -15,19 +15,20 @@ benchmark differs between them:
   results in `docs/ABM_SYSTEM_MCS_VALIDATION.md` and
   `docs/ABM_SYSTEM_LP_VALIDATION.md`;
 - the Monte Carlo experiment, where every simulated run of every configuration
-  is the benchmark in turn, so its configuration is known
-  (`montecarlo/sweep_grid.c`), with the results in
+  is the benchmark in turn, so its configuration is known, described in
   `docs/MONTECARLO_VALIDATION.md`.
 
 In short: fit an auxiliary model to the benchmark and to every simulated
 replicate of every configuration, turn each fit into its impulse response
-function, measure each replicate's distance from the benchmark's response by
-mean absolute error, and run the Model Confidence Set of Hansen, Lunde and
-Nason (2011) over the configurations, one model per configuration and one
-observation per replicate. The auxiliary models are the t-QVARMA(1,1,2) of
-Blazsek, Escribano and Licht (2023), the linear local projection, and the
-state-dependent local projection with its two states' responses stacked into
-one vector. The sections below give the reasons and the settings.
+function, and measure each replicate's distance from the benchmark's response
+by the squared error at each entry of the response minus the configuration's
+estimated variance of that entry, averaged over the entries. Then run the
+Model Confidence Set of Hansen, Lunde and Nason (2011) over the
+configurations, one model per configuration and one observation per
+replicate. The auxiliary models are the t-QVARMA(1,1,2) of Blazsek, Escribano
+and Licht (2023), the linear local projection, and the state-dependent local
+projection with its two states' responses stacked into one vector. The
+sections below give the reasons and the settings.
 
 ## Status: the empirical validation is behind the Monte Carlo
 
@@ -35,6 +36,9 @@ The procedure is being refined in the Monte Carlo study, and the empirical
 validation on the US data will be brought up to date once that is finished.
 Until then the two differ:
 
+- The Monte Carlo uses the loss described below. The empirical validation
+  uses the mean absolute error between response vectors with no variance
+  correction, documented in `docs/OLD_NAIVE_MAE_LOSS.md`.
 - The Monte Carlo runs all three auxiliary models above, plus each state of
   the state-dependent local projection on its own, five response vectors in
   all.
@@ -49,16 +53,45 @@ Everything below holds for both unless it says otherwise.
 
 ## The steps
 
+Notation: $d$ is the benchmark, $i$ a configuration, $s = 1, \dots, n$ the
+replicates of a configuration that enter the confidence set, and
+$h = 1, \dots, K$ the entries of the stacked response vector, every response
+at every horizon. On the US data $n = 1000$; in the Monte Carlo $n = 999$,
+since the benchmark's run index is held out of every configuration
+(`docs/MONTECARLO_VALIDATION.md`, "What is held out, and why").
+
 1. Fit the auxiliary model to the benchmark and to every simulated replicate,
    with the same specification.
 2. Compute each fit's impulse response function.
-3. Stack every response at every horizon into one vector per fit.
-4. The loss of a replicate is the mean absolute difference between its vector
-   and the benchmark's.
-5. Run the Model Confidence Set over the configurations on the per-replicate
-   losses. The losses are not averaged first: the confidence set estimates the
-   sampling variance of each configuration's mean loss from its repeated
-   observations, and an averaged number has none.
+3. Stack every response at every horizon into one vector per fit,
+   $\widehat{IR}_{d}$ for the benchmark and $\widehat{IR}_{is}$ for replicate
+   $s$ of configuration $i$.
+4. For each configuration and entry, estimate the variance of the response
+   across the configuration's $n$ replicates,
+   $$
+   \hat\sigma^2_{ih} = \frac{1}{n-1} \sum_{s=1}^{n} \left( \widehat{IR}_{ish} - \overline{IR}_{ih} \right)^2,
+   \qquad
+   \overline{IR}_{ih} = \frac{1}{n} \sum_{s=1}^{n} \widehat{IR}_{ish}.
+   $$
+   The replicates are exactly the rows of the loss matrix, so in the Monte
+   Carlo the benchmark's run is never among them.
+5. The loss of a replicate is the squared error minus that variance, averaged
+   over the entries:
+   $$
+   L^*_{is} = \frac{1}{K} \sum_{h=1}^{K} L^*_{ish},
+   \qquad
+   L^*_{ish} = \left( \widehat{IR}_{ish} - \widehat{IR}_{dh} \right)^2 - \hat\sigma^2_{ih}.
+   $$
+6. Run the Model Confidence Set over the configurations on the per-replicate
+   losses $L^*_{is}$. The losses are not averaged first: the confidence set
+   estimates the sampling variance of each configuration's mean loss from its
+   repeated observations, and an averaged number has none.
+
+A loss $L^*_{is}$ can be negative. The confidence set reads only differences
+between configurations' losses, so this changes nothing. The subtracted term
+is the same for every replicate of a configuration, so it moves the
+configuration's mean loss and leaves the bootstrap variance of that mean
+unchanged; the bootstrap treats $\hat\sigma^2_{ih}$ as known.
 
 `applications/abm_system_fit_qvarma.c` does step 1 for the t-QVARMA and
 `applications/abm_system_fit_lp.c` for the local projections. The confidence
@@ -66,6 +99,74 @@ set's test statistic is standardised by a nonparametric bootstrap of the
 resampled mean loss (Hansen, Lunde and Nason's own estimator,
 `MCS_VARIANCE_BOOTSTRAP` in et_al's `mcs.h`), so no normality of the mean
 losses is assumed.
+
+## Why the variance correction
+
+Let
+$$
+L_{ih} = \left( \widehat{IR}_{ih} - \widehat{IR}_{dh} \right)^2
+$$
+be the squared error between the IRF fitted on the validation data $d$ and
+the simulated series of CoP $i$ at horizon $h$, where $h$ runs over every
+entry of the stacked response vector. Here no distinction is made between
+auxiliary models, since the argument is common to all of them; moreover in
+practice there would also be an index for the simulation, but to reduce the
+verbosity of the notation it is omitted. The issue is also there with the
+mean absolute error, but the math is more tedious.
+
+Then the Model Confidence Set builds the following statistic for two CoPs $i$
+and $j$:
+$$
+d_{ijh} = L_{ih} - L_{jh}.
+$$
+
+Now the IRFs are estimates, therefore each of them is a random variable
+centred at the true $IR_k$ with variance $\sigma^2_k$, for $k$ a dummy index.
+The expectation estimated is
+$$
+E\left[ d_{ijh} \mid \widehat{IR}_d \right]
+= IR_{ih}^2 - IR_{jh}^2 - 2\, \widehat{IR}_{dh} \left( IR_{ih} - IR_{jh} \right) + \sigma^2_{ih} - \sigma^2_{jh},
+$$
+for which the Model Confidence Set finds an estimator by bootstrap. Note that
+since the noise on the real data cannot be removed, it has to be included,
+but this is not too much of a problem: assuming the auxiliary model is
+consistently estimated, $\widehat{IR}_d$ will asymptotically converge to the
+true IRF.
+
+The actual problem is in the last terms, $\sigma^2_{ih} - \sigma^2_{jh}$,
+which only relate to the estimation noise of the simulations, not their
+vicinity to the calibration data. Therefore, the Model Confidence Set could
+favour a model that has a mean IRF that is far from the data's, but has much
+less noise, giving a biased confidence set.
+
+To solve the issue, the variance of the IRF is estimated first:
+$$
+\hat\sigma^2_{ih} = \frac{1}{n-1} \sum_{s=1}^{n} \left( \widehat{IR}_{ish} - \overline{IR}_{ih} \right)^2,
+$$
+where the index $s$ denotes the simulation, $i$ the CoP and $h$ the horizon,
+and $\overline{IR}_{ih}$ is the sample mean IRF of CoP $i$. Then let
+$$
+L^*_{ish} = L_{ish} - \hat\sigma^2_{ih},
+$$
+where $L_{ish}$ is the loss $L_{ih}$ above for simulation $s$. Since
+$E[L_{ish} \mid \widehat{IR}_d] = (IR_{ih} - \widehat{IR}_{dh})^2 + \sigma^2_{ih}$
+and $\hat\sigma^2_{ih}$ is unbiased for $\sigma^2_{ih}$, the expectation of
+$L^*_{ish}$ is the distance term $(IR_{ih} - \widehat{IR}_{dh})^2$ alone. The
+rest of the procedure (aggregating the horizons, the Model Confidence Set)
+follows the same pattern. Note that in the Monte Carlo setting specifically,
+the validation data must not be included in the computation of
+$\hat\sigma^2_{ih}$.
+
+The documentation of the naive procedure, with the mean absolute error and no
+variance correction, was moved to `docs/OLD_NAIVE_MAE_LOSS.md`.
+
+## Squared error, not absolute error
+
+The variance correction is easier to apply under squared error. There the
+estimation noise of the simulated responses enters the expected loss as a
+separate additive term, $\sigma^2_{ih}$, and subtracting its estimate removes
+it. Under absolute error the noise does not separate from the distance to the
+data, so subtracting an estimate of it does not remove it.
 
 ## Why the comparison object is the impulse response, not the fitted parameters
 
@@ -99,25 +200,8 @@ response, since `nu` enters it through `1/(nu-2)` and `impulse_responses`
 asserts `nu > 2`; a response can also come back non-finite. Either way the cell
 is counted as missing, and a replicate with a missing cell is dropped from
 every configuration's column, because et_al's `mcs` requires a loss matrix with
-no holes. On the design experiment no cell was missing under any auxiliary
-model.
-
-## Absolute error, not squared error
-
-A squared loss lets one replicate with an extreme distance dominate both its
-configuration's mean loss and the bootstrap estimate of that mean's variance.
-The confidence set's statistic divides the first by the square root of the
-second, so both grow together, the statistic stays small, and nothing is
-eliminated. The mean absolute error counts the same replicate linearly.
-
-The evidence is from an earlier version of this pipeline, run on the older
-dataset of 100 configurations and 108 replicates each, with a loss computed on
-the fitted parameters rather than on impulse responses: one replicate's squared
-loss was about 3 x 10^17, against a few hundred to a few hundred thousand for
-the other 107 replicates of its configuration, and every one of the 400 models
-entered survived the confidence set. With the absolute loss, the confidence
-set on that dataset kept 3 of the 200 t-QVARMA models entered (run of
-2026-08-20, 2000 resamples).
+no holes; it is then left out of every $\hat\sigma^2_{ih}$ as well. On the
+design experiment no cell was missing under any auxiliary model.
 
 ## Auxiliary specification
 
@@ -148,10 +232,9 @@ has not been evaluated under this procedure.
 
 ## Grouping: one model per configuration
 
-Each configuration contributes one column to the loss table, for the t-QVARMA
-`out/abm_system_irf_loss.csv` with columns named `cop_NNNN_qvarma_p1q1r2`, and
-each row is one replicate. One confidence set runs over all columns at once:
-1000 models against 1000 observations.
+Each configuration contributes one column to the loss matrix, and each row is
+one replicate. One confidence set runs over all columns at once: 1000 models
+against $n$ observations, 1000 on the US data and 999 in the Monte Carlo.
 
 ## Confidence set settings
 
