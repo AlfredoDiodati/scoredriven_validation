@@ -1,11 +1,11 @@
 /*
-Discarded from both pipelines with the local projections on R's levels:
+Discarded from both pipelines with the local projections on cumulated levels:
 docs/OLD_EXPERIMENTS.md. Whether old/lp_r_levels/lp_system_r_levels.h builds
-R's transform_data(), and whether the state series the live fits use,
+the R code's transformation, and whether the state series the live fits use,
 applications/lp_system.h's lp_system_switching, is exactly the GDP_MA4 of that
 transformation.
 
-lp_system_r_transform was compared once against transform_data() itself, run
+lp_system_r_transform was compared once against that R code itself, run
 unmodified in R on four stored replicates, and agreed to 3.7e-15 relative.
 This check is what keeps that agreement without R: it compares the header
 against a reference written here as plain loops, the R code read one line at a
@@ -39,7 +39,7 @@ static void check(FILE *report, int ok, const char *what) {
     if (!ok) failures++;
 }
 
-/* transform_data() written out one period at a time, in double. */
+/* The R code's transformation written out one period at a time, in double. */
 static void reference(Mat stored, Mat *y, Mat *switching) {
     int T = stored.c, first = LP_SYSTEM_SWITCHING_WINDOW - 1, n = T - first;
     double *gdp = malloc((size_t)T * sizeof(double));

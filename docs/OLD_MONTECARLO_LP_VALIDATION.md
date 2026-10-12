@@ -15,7 +15,8 @@ discarded experiment.
 What the local projections are and how they are fitted is in
 `docs/MONTECARLO_VALIDATION.md`, "The local projections", since the grid uses
 the same fits. The finding of "Why the levels fail" below still decides how
-those fits are built: on the stored stationary series, not on R's levels.
+those fits are built: on the stored stationary series, not on the cumulated
+levels.
 
 ## The question
 
@@ -23,14 +24,17 @@ those fits are built: on the stored stationary series, not on R's levels.
 configuration it already knows the answer for: one simulated run of the ABM
 takes the place of the US data, and the Model Confidence Set should come back
 holding the configuration that run was simulated from. There the auxiliary
-model is the t-QVARMA. Here it is the local projections of the collaborator's R
-pipeline (`_temp/main_code.R`, `_temp/functions.R`), everything else unchanged,
-so the two auxiliary models are asked the same question on the same data.
+model is the t-QVARMA. Here it is the local projections of
+`docs/MONTECARLO_VALIDATION.md`, "The local projections", everything else
+unchanged, so the two auxiliary models are asked the same question on the same
+data. The `docs/MONTECARLO_VALIDATION.md` this refers to was then a single
+simulated run as the benchmark; it is now the grid over every run.
 
 The answer: fitted on the same stationary series as the t-QVARMA, the local
 projections find the right configuration about as often as the t-QVARMA does.
-Fitted on the levels R's pipeline builds, they almost never do. The first
-version of this experiment used R's levels; that run and the investigation
+Fitted on cumulated levels (defined under "The first run, on cumulated
+levels" below), they almost never do. The first version of this experiment
+used the cumulated levels; that run and the investigation
 that traced its failure to the levels are recorded below, after the result.
 
 ## One simulated run as the real data
@@ -65,11 +69,11 @@ alone.
 ## Every run of cop_0191 as the real data
 
 One stand-in run cannot separate a procedure that finds the right configuration
-from one that was lucky once. `old/montecarlo_every_run_of_cop_0191/lp_sweep.c` repeats the whole
-validation 1000 times, each time with a different run of `cop_0191` (runs 0 to
-999) as the stand-in and that run's index left out of every configuration,
-under the same settings as above, MCS_TR only. It counts how often the set
-holds `cop_0191`.
+from one that was lucky once. `old/montecarlo_every_run_of_cop_0191/lp_sweep.c`
+repeats the whole validation 1000 times, each time with a different run of
+`cop_0191` (runs 0 to 999) as the stand-in and that run's index left out of
+every configuration, under the same settings as above, MCS_TR only. It counts
+how often the set holds `cop_0191`.
 
 - linear: `cop_0191` in the set in 913 of 1000 repetitions (91.3%), alone in
   864; smallest mean loss in 886.
@@ -104,16 +108,17 @@ stand-in, instead of every replicate of `cop_0191`, is
 `docs/OLD_MONTECARLO_BENCHMARK_SUBSETS.md`, "The first run of every
 configuration as the benchmark", describes it for both auxiliary models.
 
-## The first run, on R's levels
+## The first run, on cumulated levels
 
-The experiment was first run on the series R's `transform_data()` builds
-(`lp_system_r_transform` in `old/lp_r_levels/lp_system_r_levels.h`): log GDP as
-`100 log(100 + cumsum(GDP_growth))`, employment as
-`0.90 + cumsum(Employment_change)`, inflation and the interest rate unchanged,
-log energy like GDP, in R's column order (GDP, employment, inflation, interest
-rate, energy). That transformation was checked against R's own
-`transform_data()`, run unmodified (with `zoo` and `dplyr` installed) on four
-stored runs (`cop_0191` run 706, `cop_0001` run 0, `cop_0532` run 123,
+The experiment was first run on levels rebuilt from the stored series by the
+data preparation of the R code the local-projection settings were first taken
+from, its function `transform_data()`, ported to C as `lp_system_r_transform`
+in `old/lp_r_levels/lp_system_r_levels.h`: log GDP as `100 log(100 +
+cumsum(GDP_growth))`, employment as `0.90 + cumsum(Employment_change)`,
+inflation and the interest rate unchanged, log energy like GDP, in the column
+order GDP, employment, inflation, interest rate, energy. The port was checked
+against the R function, run unmodified (with `zoo` and `dplyr` installed) on
+four stored runs (`cop_0191` run 706, `cop_0001` run 0, `cop_0532` run 123,
 `cop_1000` run 999): the largest difference, relative to the larger of 1 and
 the value, was 3.7e-15. Every other setting was as above. Its outputs are kept
 in `montecarlo/out/lp_r_levels/`.
@@ -133,22 +138,23 @@ seconds.
 
 ## Why the levels fail
 
-`old/montecarlo_one_benchmark/studies/lp_recovery_diagnostics.c` refits all 1,000,000 runs under several
-variants and checks each candidate cause. Settings: stand-in `cop_0191` run
-706, MCS_TR at 0.05 with 10000 resamples, and for the linear model runs 0 to 99
-of `cop_0191` each taking the stand-in's place. Numbers in
-`out/lp_recovery_diagnostics_report.txt` (R's levels and the variants of them)
-and `out/lp_recovery_diagnostics_growth_unit_report.txt` (the stored series).
+`old/montecarlo_one_benchmark/studies/lp_recovery_diagnostics.c` refits all
+1,000,000 runs under several variants and checks each candidate cause.
+Settings: stand-in `cop_0191` run 706, MCS_TR at 0.05 with 10000 resamples, and
+for the linear model runs 0 to 99 of `cop_0191` each taking the stand-in's
+place. Numbers in `out/lp_recovery_diagnostics_report.txt` (the cumulated
+levels and the variants of them) and
+`out/lp_recovery_diagnostics_growth_unit_report.txt` (the stored series).
 
-What was ruled out, all on R's levels:
+What was ruled out, all on the cumulated levels:
 
 - A computational error: refitting every run reproduces the stored loss tables
   to 5.4e-13 relative.
 - The shock size: with shocks of one standard deviation, `cop_0191` is in the
   linear model's set 0 times in 100.
-- R's form of the log level: with log GDP and energy as the cumulated growth
+- The form of the log level: with log GDP and energy as the cumulated growth
   rates themselves, 0 of 100, with either shock size.
-- The loss: with R's mean squared difference, the stand-in run 706 set is
+- The loss: with the mean squared difference, the stand-in run 706 set is
   again `cop_0905` alone.
 
 What changes the outcome is the series: on the stored stationary series the
@@ -156,33 +162,35 @@ same linear model finds `cop_0191` in 90 of 100, the result the full run above
 confirms at 913 of 1000.
 
 Why, measured on the linear model at stand-in run 706 with
-`old/montecarlo_one_benchmark/studies/recovery_noise.h`, the same code for every fit. For each response
-value, the variance of the configurations' average responses is divided by
-the variance of one configuration's runs around its own average:
+`old/montecarlo_one_benchmark/studies/recovery_noise.h`, the same code for
+every fit. For each response value, the variance of the configurations' average
+responses is divided by the variance of one configuration's runs around its own
+average:
 
-- the median is nearly the same for every fit: 0.059 on R's levels, 0.048 on
-  the stored series, 0.0575 for the t-QVARMA
+- the median is nearly the same for every fit: 0.059 on the cumulated levels,
+  0.048 on the stored series, 0.0575 for the t-QVARMA
   (`out/qvarma_recovery_diagnostics_report.txt`);
-- the 90th percentile separates them: 0.69 on R's levels, 4.2 on the stored
-  series, 3.97 for the t-QVARMA.
+- the 90th percentile separates them: 0.69 on the cumulated levels, 4.2 on the
+  stored series, 3.97 for the t-QVARMA.
 
 On the stationary series about a tenth of the response values differ clearly
-between configurations; on R's levels none do, and the confidence set then
-keeps the configuration whose estimates scatter least. A configuration's mean
-loss has Spearman correlation 0.999 with the scatter of its own runs on R's
-levels, against 0.970 on the stored series and 0.531 for the t-QVARMA; with its
-average's distance from the stand-in, 0.936, 0.985 and 0.887.
+between configurations; on the cumulated levels none do, and the confidence set
+then keeps the configuration whose estimates scatter least. A configuration's
+mean loss has Spearman correlation 0.999 with the scatter of its own runs on
+the cumulated levels, against 0.970 on the stored series and 0.531 for the
+t-QVARMA; with its average's distance from the stand-in, 0.936, 0.985 and
+0.887.
 
 The t-QVARMA's estimates are therefore not more precise than the local
 projections', value by value; the hypothesis that its success came from
-precision alone is not supported. The protocol does reward precise estimates, but it
-recovers the right configuration as long as some responses separate
+precision alone is not supported. The protocol does reward precise estimates,
+but it recovers the right configuration as long as some responses separate
 configurations.
 
-Under R's levels with unit shocks, the interest-rate shock carried 97.6% of
-`cop_0191`'s loss; on the stored series, 55%. The interest rate is the least
-volatile series, its volatility varies 37.6 times across configurations, and
-`cop_0905`, the levels' winner, has the most volatile interest rate of the
+Under the cumulated levels with unit shocks, the interest-rate shock carried
+97.6% of `cop_0191`'s loss; on the stored series, 55%. The interest rate is the
+least volatile series, its volatility varies 37.6 times across configurations,
+and `cop_0905`, the levels' winner, has the most volatile interest rate of the
 1000, hence the smallest responses to a unit shock to it.
 
 Not explained: an all-zero response is closer to the stand-in than 895 of the
@@ -191,13 +199,13 @@ the local projections on either kind of series.
 
 ## What this does not show
 
-The fits no longer match the collaborator's R pipeline, which fits the levels.
-A real-data comparison against the collaborator's own real-data responses would
-need those rebuilt on the stored series too.
+The fits no longer match the R code the settings were taken from, which fits
+the levels.
 
-The comparison with R is on the transformation only. The local projections
-themselves were compared with `lpirfs` in et_al (`docs/LP_DOCUMENTATION.md`),
-on synthetic data, not on this dataset.
+The comparison with R here is on the transformation only. The local
+projections themselves were compared with the R package `lpirfs` inside
+et_al, on synthetic data, not on this dataset (et_al's
+`docs/LP_DOCUMENTATION.md`).
 
-The state-dependent model's state still comes from R's log-GDP level; whether a
-state built from the growth rates would do better was not tested.
+The state-dependent model's state still comes from the rebuilt log-GDP level;
+whether a state built from the growth rates would do better was not tested.

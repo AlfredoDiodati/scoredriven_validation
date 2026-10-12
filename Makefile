@@ -3,9 +3,9 @@
 # Header-only against et_al.; nothing here builds a library of its own.
 #
 #   make                          build every test binary
-#   make test                     every test script. All of them are the DSK
-#                                 simulator's: the auxiliary model is et_al.'s
-#                                 and is tested there, not here.
+#   make test                     every test script, the DSK simulator's and
+#                                 this project's own. The auxiliary model is
+#                                 et_al.'s and is tested there, not here.
 #   make test-stress              every test script, slow checks included
 #   make test-<stem>              one of them on its own, one stem per entry in
 #                                 TEST_STEMS
@@ -14,8 +14,7 @@
 #                                 default because et_al.'s _syevd (used by
 #                                 standard_errors) has been observed to fail
 #                                 to converge under float32 on a fitted
-#                                 t-QVARMA Hessian - see
-#                                 ../et_al./KNOWN_ISSUES.md.
+#                                 t-QVARMA Hessian.
 #   make MAT_DOUBLE=0 test        float32, not recommended; see above.
 #   make study                    the robustness studies on the pipeline's own
 #   make study-robustness         result, the same target under the name that
@@ -28,9 +27,10 @@
 #   make bench                    run the benchmarks (never part of test)
 #   make bench-performance ETAL_DEV=1
 #                                 the same, built against the development et_al.
-#   make applications             fit the model to the real dataset, results to
-#                                 out/. Always built in float64. One app-<stem>
-#                                 target per stem in APPLICATION_STEMS.
+#   make applications             prepare the US data and draw the parameter
+#                                 design, results to out/ and dataset/. Always
+#                                 built in float64. One app-<stem> target per
+#                                 stem in APPLICATION_STEMS.
 #   make app-<stem>                one application on its own, EXPERIMENT_STEMS
 #                                 included - one-off structural searches
 #                                 already answered (see that variable's own
@@ -93,11 +93,12 @@ TEST_HEADERS :=
 # the test that checks them and the study that uses them. The generic rules
 # below know about tests/ and studies/ sources only.
 MARGINAL_LAWS_HEADER := studies/marginal_laws.h
-# Every stem here is the DSK simulator's. The auxiliary model lives in the
-# installed et_al. and its correctness suite lives there with it; a copy kept
-# here drifted out of date against the library it was testing and failed on a
-# contract et_al. had since changed, which is worse than not having one.
-# abm_system_layout is this project's own and tests the one header both dataset
+# Most stems here are the DSK simulator's. The auxiliary model lives in the
+# installed et_al. and its correctness suite lives there with it.
+# marginal_laws_correctness checks the densities of studies/marginal_laws.h,
+# lp_system_transform the series applications/lp_system.h builds, and
+# fit_metric_correctness montecarlo/fit_metric.h. abm_system_layout is this
+# project's own and tests the one header both dataset
 # writers and every reader agree about the stored layout through;
 # abm_system_dataset_finiteness reads the archives that header wrote and asks
 # whether every value in them is a number. dsk_dataset_reproduction and
@@ -427,7 +428,7 @@ app-us_lp_fit: app-us_prepare_data
 app-abm_system_lp_irf_loss: app-us_lp_fit
 app-abm_system_lp_mcs: app-abm_system_lp_irf_loss
 
-# The discarded route on R's levels, every output carrying _r_levels. The
+# The discarded route on cumulated levels, every output carrying _r_levels. The
 # simulated fits take minutes and are, like the default ones, not a
 # prerequisite of the loss.
 old-us_lp_fit_r_levels: app-us_prepare_data
@@ -470,8 +471,8 @@ app-throughput_fit-i$(1): $(BIN)/throughput_fit_i$(1) | $(OUT)
 endef
 $(foreach cap,$(THROUGHPUT_ITERATION_CAPS),$(eval $(call scale_fit_target_for_cap,$(cap))))
 
-# The DSK simulator itself, vendored under model/dsk_sfc with the three
-# changes docs/DSK_MODEL_CHANGES.md records. Its own script builds it rather
+# The DSK simulator itself, vendored under model/dsk_sfc with the changes
+# docs/DSK_MODEL_CHANGES.md records. Its own script builds it rather
 # than a rule here: it is 35 translation units of someone else's C++ with its
 # own vendored dependencies, and restating that here would be a second place
 # for it to go wrong. model-upstream builds the unmodified reference the
@@ -541,7 +542,7 @@ applications: $(APPLICATION_BINARIES) | $(OUT)
 bench: $(BENCH_BINARIES) | $(OUT)
 	@for binary in $(BENCH_BINARIES); do ./$$binary || exit 1; done
 
-# Eleven of the thirteen stems run the simulator, so every build they reach for has
+# Eleven of the sixteen stems run the simulator, so every build they reach for has
 # to exist before the loop starts. The per-stem targets below declare the same
 # prerequisites, but an aggregate that only depended on the test binaries would
 # pass on a tree where a simulator build happened to be left over and fail on a

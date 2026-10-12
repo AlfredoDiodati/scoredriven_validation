@@ -18,15 +18,11 @@ the long-horizon work `docs/DSK_LONG_HORIZON.md` describes.
 Nothing compiles or links against `model/dsk_sfc/upstream/`. `build.sh
 --upstream` copies a scratch tree, drops those files over their modified
 counterparts in it, and builds that, so the reference binary is upstream's code
-at upstream's flags and nothing in the working tree is disturbed. That scratch
-tree is removed on the way out; it was not, for a while, because a second
-`trap` replaced the one that removed it and tested `"$source_dir" != "$PWD"`
-after the script had already changed into `$source_dir`, so the test was always
-false. Each `make model-upstream` left a 5.6 MB copy of the tree behind.
+at upstream's flags and nothing in the working tree is disturbed. The scratch
+tree is removed on the way out.
 
-`build.sh` does not discard compiler output. It used to send it to
-`/dev/null`, which meant a translation unit that failed to compile reached the
-link stage as an undefined reference with nothing saying which file or why.
+`build.sh` shows the compiler's output, so a translation unit that fails to
+compile is named rather than surfacing as an undefined reference at the link.
 `dsk_sfc_main.cpp` is compiled with `-Wall`, since that is the unit including
 the six new headers; `newmat10`, `rapidjson` and the modules are upstream's and
 are compiled as upstream wrote them. The warnings this leaves are all
@@ -97,10 +93,10 @@ Nothing removed is read by the compiler or the program, which
 `make test-dsk_build_equivalence` confirms by still matching upstream byte for
 byte after the removals.
 
-One thing to check before this repository goes anywhere public: upstream ships
-no licence file, and neither do the three libraries whose source it carries
-inside itself (newmat10, rapidjson, CLI11). That is upstream's omission, not something to
-paper over here.
+Upstream ships no licence file, and neither do the copies of the three
+libraries it carries inside itself (newmat10, rapidjson, CLI11). The terms
+under which the model's code is redistributed here are therefore not stated in
+this repository.
 
 ## Why any of this
 
@@ -138,11 +134,12 @@ moved throughput by tens of per cent while removing instructions moved it not at
 all, and it is also why the single-run column and the throughput column in the
 tables below disagree as often as they do.
 
-The clock is what makes a single run hard to time at all now. The governor idles
-down to 1.4 GHz and takes five or six runs to come back up, so the first runs
-after any pause come in around 0.85 s against a settled 0.51 s. Every A/B in the
-later rounds was taken with the machine already warm and the first pairs
-discarded; at these run lengths an unwarmed comparison is measuring the governor.
+The clock is what makes a single run hard to time at all now. The governor
+idles down to 1.4 GHz and takes five or six runs to come back up, so the first
+runs after any pause come in around 0.85 s against a settled 0.51 s. Every A/B
+in the later rounds was taken with the machine already warm and the first pairs
+discarded; at these run lengths an unwarmed comparison is measuring the
+governor.
 
 ## What was changed
 
@@ -555,11 +552,11 @@ machine was acquired in, and its age is the current period less that, so a
 machine grows a period older when the period does and nothing has to be written.
 
 The three places that read an age set the acquisition period instead: the
-purchase in `PRODMACH()`, the two second-hand transfers in `ENTRYEXIT()`, and the
-initial stock, whose machines start at a drawn age and so are recorded as
-acquired that many periods before the first. The one thing to get right is which
-side of `UPDATE()` a read happens on - all three are before it - which fixes the
-initial stock's offset at one period rather than none.
+purchase in `PRODMACH()`, the two second-hand transfers in `ENTRYEXIT()`, and
+the initial stock, whose machines start at a drawn age and so are recorded as
+acquired that many periods before the first. The one thing to get right is
+which side of `UPDATE()` a read happens on - all three are before it - which
+fixes the initial stock's offset at one period rather than none.
 
 | measure | before | after |
 |---|---:|---:|
@@ -782,7 +779,7 @@ run off the end into whatever global follows.
 - The optimised build: segmentation fault at 66 bytes.
 
 `applications/abm_system_simulate.c` invokes the model through a symlink in a
-scratch directory, which on a cluster is `$SLURM_TMPDIR/dsk_<pid>` — squarely
+scratch directory, which on a cluster is `$SLURM_TMPDIR/dsk_<pid>`, squarely
 in the range that fails. A million runs would have come back as nonzero exit
 statuses, and the failure log would have recorded a crash with no cause.
 
@@ -997,15 +994,15 @@ digits and so carries a change of this size intact. 47 model runs.
 Eight of the nine parameters are resolved at `1e-15` or `1e-14`. A double
 carries about sixteen significant digits, so those are changes at the very last
 digit the number can hold, and they reach the printed output within a few
-periods. There is no room left for a difference in the arithmetic to hide behind
-the rounding: the model amplifies a change that small rather than absorbing it.
-Identical files mean identical arithmetic.
+periods. The model amplifies a change that small rather than absorbing it, so a
+difference in the arithmetic does not disappear in the printed rounding, and
+identical files mean identical arithmetic.
 
 `Gamma` is the exception and it is not a limit of the output. It reaches the
-model in exactly one place, `int(ROUND(nclient(i)*Gamma))` in `BROCHURE()`, where
-the product is rounded to a whole number of clients. A change smaller than half
-a client produces the identical integer and therefore the identical run. No
-output format could resolve that, because there is nothing to resolve.
+model in exactly one place, `int(ROUND(nclient(i)*Gamma))` in `BROCHURE()`,
+where the product is rounded to a whole number of clients. A change smaller
+than half a client produces the identical integer and therefore the identical
+run. No output format could resolve that, because there is nothing to resolve.
 
 ### The filename bug
 
@@ -1022,79 +1019,45 @@ path far past the old limit, and it must produce the same output it produces
 from a short path, since a name that overflowed into a neighbouring variable
 could have changed a number as easily as crashed.
 
-### The tests were reviewed as well
+### How the tests run the two programs
 
-The tests are the whole evidence for the claim that this build computes what the
-original computes, so they were audited in their own right. Three defects came
-out of that, all now fixed, and one gap that needed measuring rather than fixing
-(the precision measurement above).
-
-**The reference program was not running at all in the directory the tests gave
-it.** The original copies the output directory path into a buffer it sizes at
-exactly the path's length:
+**The reference build needs a padded directory name.** The original copies the
+output directory path into a buffer sized at exactly the path's length:
 
     char pathname[outstr.length()];
     char* filepath=strcpy(pathname,outstr.c_str());
 
 `strcpy` writes the terminating byte one past the end of that array on every
-single run. Whether that matters depends on what the compiler placed next to the
-array, which depends on the length of the path. So the original writes its files
-at some directory names and writes nothing at all - reporting nothing, exiting
-successfully - at others. This project fixed the bug, so only the reference
-build is affected, and only the tests run it.
+run. Whether that matters depends on what the compiler placed next to the
+array, which depends on the length of the path, so the original writes its
+files at some directory names and, at others, writes nothing and exits
+successfully. This project's build has the bug fixed, so only the reference
+build is affected. `tests/dsk_upstream_scratch.h` lengthens the scratch
+directory name one character at a time until the reference demonstrably writes
+a results file there, and every report states how much padding that took (one
+character so far). The same header refuses a path too long for the 64-byte
+filename buffers, the separate bug above.
 
-At the paths the tests were using, the reference wrote nothing. The tests
-stopped with "a run produced no results file" rather than passing wrongly, since
-each one deletes an output file as it reads it and so has nothing stale left to
-read, but the message named no cause and the comparison was not happening.
-`tests/dsk_upstream_scratch.h` now lengthens the scratch directory name one
-character at a time until the reference demonstrably writes a results file
-there, and every report states how much padding that took. One character, as it
-turns out. The same header refuses a path too long for the 64-byte filename
-buffers, which is the separate bug above.
+**The reference must repeat itself.** Each seed is run twice on the reference
+build and the two outputs must be identical, as described above.
 
-**Nothing checked that the reference repeats itself.** Added, as described
-above.
+**The error log is compared too.** It sits one level down, in
+`output/errors/`. `tests/dsk_full_output_equivalence.c` walks that level, 14
+files per seed, and `tests/dsk_build_equivalence.c` reads it as well.
 
-**Two tests did not compare the error log, and one of them said it did.**
-`tests/dsk_full_output_equivalence.c` listed only the files sitting directly in
-the output directory, and the error log is one level down in `output/errors/`.
-It now walks that level, which took the files compared per seed from 13 to 14.
-`tests/dsk_build_equivalence.c` reads it too.
+**Each test runs the model in a directory of its own.** The model writes beside
+the executable it was invoked as, so two tests sharing a directory would read
+each other's files. Each test makes a directory under `TMPDIR` named after the
+test and its process id. `tests/dsk_scratch.h` removes it when the test passes,
+by walking it with `nftw` under `FTW_DEPTH | FTW_PHYS` rather than calling a
+shell: the path comes from an environment variable, and `FTW_PHYS` keeps the
+walk from following the `dsk_SFC` symlink out of the scratch directory into
+this repository. A failing test keeps its directory, which holds the two files
+that differ, and prints its path.
 
-**None of the ten tests removed the directory it ran the model in.** Each gives
-the model a directory of its own under `TMPDIR`, because the model writes beside
-the executable it was invoked as and two tests sharing a directory would read
-each other's files. A 600-period run writes about 3 MB and a `-f 1` run twelve
-files and 28 MB, and several of these tests run the model tens of times, so a
-`make test` left about a dozen directories behind and they accumulated run over
-run: 36 of them, 564 MB, when this was found. `tests/dsk_upstream_scratch.h`
-also abandoned a directory for every padding length it tried before finding one
-the reference tolerates.
-
-`tests/dsk_scratch.h` now removes the tree, and only when the test passed. What
-a failed comparison leaves behind is the two files that differ, so a test that
-fails keeps its directory and prints the path; the next passing run of that test
-does not clear it either, since the path carries the process id and belongs to
-the run that made it. The walk is `nftw` under `FTW_DEPTH | FTW_PHYS` rather
-than a shell command: the path comes from `TMPDIR`, building `rm -rf` out of an
-environment variable would run whatever is in it, and `FTW_PHYS` is what stops
-the walk following the `dsk_SFC` symlink out of the scratch directory and into
-this repository. Measured after the change: a full `make test` leaves the count
-of scratch directories where it found it.
-
-A second defect came out of the same reading. `tests/dsk_good_unit_invariance.c`
-named its scratch directory `dsk_redenomination_<pid>`, copied from
-`tests/dsk_redenomination_invariance.c`. The process id kept them from
-colliding, but the directories two different tests left behind could not be told
-apart. It is named for its own test now.
-
-`make asan` builds every test itself under AddressSanitizer and
-UndefinedBehaviorSanitizer and runs it. That is what catches a mistake in a test
-rather than in the model: writing `tests/dsk_design_equivalence.c` produced one,
-freeing a `Mat` that `df_col_numeric` had returned as a view into the dataframe
-rather than as memory of its own. Under the sanitizer it reports as `bad-free`
-at the line responsible instead of as a bare abort.
+**The tests themselves run under the sanitizers.** `make asan` builds every
+test under AddressSanitizer and UndefinedBehaviorSanitizer and runs it, which
+catches a memory error in a test rather than in the model.
 
 ### Where the experiment actually ran
 
@@ -1198,8 +1161,6 @@ study reports is the model's rather than this project's. It says nothing about
 whether the study reads those runs correctly.
 
 ### What these tests do not cover
-
-Stated plainly, because a reader should not have to work it out.
 
 **Coverage is a sample, not a proof.** Three seeds for the economy-wide
 comparison, two for the per-firm files, one seed at each of four parameter
@@ -1306,18 +1267,18 @@ run is 65 times faster than upstream's, and saturated throughput is 5.5 times
 what it was before this work - 418 against the 76 measured at the same point in
 the history.
 
-The two do not move together, and which one a change moves says what it removed.
-Work that took out instructions raised the single-run time steadily and then
-stopped raising throughput at all: two changes worth 9.8% and 4.9% on one run
-moved saturated throughput from 227 to 221, which is noise. Eight runs at once
-were competing for one memory system, so the constraint had stopped being
-instructions. Work that took out memory moved it again: dropping three of the
-nine machine arrays is worth 7.5% on one run and 41% on throughput, and the
-footprint went from 163 MB to 74. That is also what decides how many runs fit on
-a cluster node, which no single-run figure shows. The gap is memory bandwidth: eight
-runs at once want their vintage arrays in cache at the same time, and there is
-one memory system between them. That also means further work on a single run
-buys steadily less of what this experiment actually costs.
+The two do not move together, and which one a change moves says what it
+removed. Work that took out instructions raised the single-run time steadily
+and then stopped raising throughput at all: two changes worth 9.8% and 4.9% on
+one run moved saturated throughput from 227 to 221, which is noise. Eight runs
+at once were competing for one memory system, so the constraint had stopped
+being instructions. Work that took out memory moved it again: dropping three of
+the nine machine arrays is worth 7.5% on one run and 41% on throughput, and the
+footprint went from 163 MB to 74. That is also what decides how many runs fit
+on a cluster node, which no single-run figure shows. The gap is memory
+bandwidth: eight runs at once want their vintage arrays in cache at the same
+time, and there is one memory system between them. That also means further work
+on a single run buys steadily less of what this experiment actually costs.
 
 The upstream column was measured earlier, at the same concurrencies but before
 the second round of changes, and it is noisier than this one - its 8-way row is

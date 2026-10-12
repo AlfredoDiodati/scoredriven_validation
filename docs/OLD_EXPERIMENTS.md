@@ -72,28 +72,31 @@ t-QVARMA and the run 0 experiment, `docs/OLD_MONTECARLO_LP_VALIDATION.md` for
 the local projections on the single benchmark and on every run of `cop_0191`,
 including the finding that decides how the local projections are fitted.
 
-The drivers run with `make old-montecarlo_one_benchmark`,
-`make old-montecarlo_one_benchmark_lp` and
-`make old-montecarlo_every_run_of_cop_0191`.
+The drivers run with `make old-montecarlo_one_benchmark`, `make
+old-montecarlo_one_benchmark_lp` and `make
+old-montecarlo_every_run_of_cop_0191`.
 
-## Local projections on R's levels, `old/lp_r_levels/`
+## Local projections on cumulated levels, `old/lp_r_levels/`
 
 **What it was.** The local projections fitted, on the US data and on every
-simulated run, on the series the collaborator's R function `transform_data()`
-builds: cumulative sums of the five stored series started from fixed values,
-GDP and energy in logs, in R's column order. Every experiment that remains fits
-the five series of the main transformation, the ones the t-QVARMA is fitted
-on: GDP growth, energy growth, employment change, inflation and the interest
-rate (`docs/DATA_DOCUMENTATION.md`).
+simulated run, on levels rebuilt by cumulating the five stored series from
+fixed starting values, with GDP and energy in logs, in the column order GDP,
+employment, inflation, interest rate, energy. This is the data preparation of
+the R code the local-projection settings were first taken from (its function
+`transform_data()`); `old/lp_r_levels/lp_system_r_levels.h` is the C port and
+states the arithmetic. Every experiment that remains fits the five series of
+the main transformation, the ones the t-QVARMA is fitted on: GDP growth, energy
+growth, employment change, inflation and the interest rate
+(`docs/DATA_DOCUMENTATION.md`).
 
-**Why it is out.** The main transformation loses less information. In the
-Monte Carlo experiment, where the right answer is known, the linear local
-projection on R's levels put it in the set for 0 of 100 runs of `cop_0191`,
+**Why it is out.** The main transformation loses less information. In the Monte
+Carlo experiment, where the right answer is known, the linear local projection
+on the cumulated levels put it in the set for 0 of 100 runs of `cop_0191`,
 against 90 of 100 on the main transformation.
 
 The state-dependent local projections that remain still build the series that
-decides each period's state R's way, the 4-period moving average of log GDP;
-the series they are fitted on are the main transformation's.
+decides each period's state the same way, the 4-period moving average of the
+rebuilt log GDP; the series they are fitted on are the main transformation's.
 
 **Where it is recorded.** `docs/OLD_LP_R_LEVELS.md` for the US data,
 `docs/OLD_MONTECARLO_LP_VALIDATION.md` for the Monte Carlo.

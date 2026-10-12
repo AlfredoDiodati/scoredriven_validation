@@ -1,7 +1,8 @@
 /*
-Discarded from both pipelines: the local projections on R's levels instead of
-on the five series the t-QVARMA is fitted on. The main transformation is kept
-because it loses less information; docs/OLD_EXPERIMENTS.md.
+Discarded from both pipelines: the local projections on cumulated levels
+instead of on the five series the t-QVARMA is fitted on. The main
+transformation is kept because it loses less information;
+docs/OLD_EXPERIMENTS.md.
 
 The local-projection loss tables against the US data: how far each
 configuration's simulated responses sit from the US responses, one table per
@@ -16,12 +17,12 @@ the local-projection counterpart of applications/abm_system_irf_loss.c.
 
 A cell's loss is the mean absolute difference between the US response vector
 (out/us_lp_fit.npz, applications/us_lp_fit.c) and the run's, over all
-K x (hor + 1) x K = 400 values of one model. The collaborator's R pipeline uses
-the mean squared difference; the absolute one is kept for the reason
-applications/abm_system_irf_loss.c gives and for comparability with the
-t-QVARMA results. The Monte Carlo experiment with these models and this loss
-recovered a known configuration in 913 (linear), 858 (state 1) and 781 (state
-2) of 1000 repetitions (docs/OLD_MONTECARLO_LP_VALIDATION.md).
+K x (hor + 1) x K = 400 values of one model. The R code the local projections
+were first run with uses the mean squared difference; the absolute one is kept
+for the reason applications/abm_system_irf_loss.c gives and for comparability
+with the t-QVARMA results. The Monte Carlo experiment with these models and
+this loss recovered a known configuration in 913 (linear), 858 (state 1) and
+781 (state 2) of 1000 repetitions (docs/OLD_MONTECARLO_LP_VALIDATION.md).
 
 Nothing is estimated. The US fit is checked against the US series and every
 simulated fit against its own series before it is used (applications/
@@ -31,7 +32,7 @@ table with one, so a replicate with a hole in any column is dropped from that
 model's table and counted in the manifest.
 
 Requires out/us_lp_fit.npz, out/abm_system_fit_lp/ and dataset/abm_system/.
-This is that table on R's levels, the collaborator's transformation: reads
+This is that table on the cumulated levels lp_system_r_levels.h builds: reads
 out/us_lp_fit_r_levels.npz and out/abm_system_fit_lp_r_levels/, writes
 out/abm_system_lp_r_levels_irf_loss_<model>.csv and its manifest. Takes no
 arguments. Nothing printed.
@@ -50,7 +51,7 @@ arguments. Nothing printed.
 static Mat as_row(mreal *values) { return (Mat){ 1, LP_RESPONSE_DIM, LP_RESPONSE_DIM, values }; }
 
 /* applications/abm_system_lp.h's lp_configuration_load, with each row checked
-   against R's levels rather than the fitted series. */
+   against cumulated levels rather than the fitted series. */
 static LpConfiguration configuration_load_r_levels(const char *fit_dir, const char *input_dir,
                                                    const char *sample, int n_replicates) {
     LpConfiguration c;

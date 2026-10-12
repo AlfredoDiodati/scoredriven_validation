@@ -2,15 +2,17 @@
 #define LP_SYSTEM_R_LEVELS_H
 
 /*
-Discarded from both pipelines: the local projections fitted on R's levels
+Discarded from both pipelines: the local projections fitted on cumulated levels
 instead of on the five series the t-QVARMA is fitted on. The main
 transformation is kept because it loses less information; on the Monte Carlo
 experiment the levels recovered the configuration a simulated run came from in
 0 of 100 runs of cop_0191 under the linear model, against 90 of 100 on the
 main transformation. docs/OLD_EXPERIMENTS.md.
 
-transform_data() of the collaborator's R pipeline (_temp/functions.R), the same
-arithmetic in the same order:
+The cumulated levels: the transformation of the R code the local projections
+were first run with, the same arithmetic in the same order: GDP, employment
+and energy cumulated back into levels from a starting value, inflation and the
+interest rate left as they are:
 
     GDP_growth        = log(init_GDP + cumsum(GDP_growth)) * 100
     Employment_change = init_Employment + cumsum(Employment_change)
@@ -23,7 +25,7 @@ with the three periods where GDP_MA4 is not defined dropped from every series,
 and the variables in R's column order: GDP, employment, inflation, interest
 rate, energy. R keeps the input column names on the transformed series, so its
 "GDP_growth" is a log level by then. Its input is this project's stored series
-in their own units: the collaborator's data are this project's dataset.
+in their own units, the same data the R code was run on.
 
 Built on applications/lp_system.h, which keeps the state series GDP_MA4 for the
 fitted series; this header adds the levels.
@@ -40,7 +42,7 @@ enum { LP_R_ROW_GDP, LP_R_ROW_EMPLOYMENT, LP_R_ROW_INFLATION, LP_R_ROW_INTEREST_
 #define LP_R_LEVELS_SERIES_DESCRIPTION "R's transform_data levels: GDP, Employment, Inflation, InterestRate, Energy"
 
 /*
-R's transform_data. stored is STORED_K x T. Fills y with the 5 x
+the R code's transformation. stored is STORED_K x T. Fills y with the 5 x
 lp_system_n_periods(T) block in R's layout and switching with the matching
 lp_system_n_periods(T) x 1 GDP_MA4. Caller must mat_free both.
 

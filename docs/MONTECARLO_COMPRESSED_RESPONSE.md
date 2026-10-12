@@ -46,17 +46,18 @@ of one configuration's runs around its own average (pooled over
 configurations, runs 500 to 999): the median entry has a ratio of 0.06 for the
 t-QVARMA and 0.05 for the local projection. A single benchmark run is one draw
 around its configuration's average, so on the median entry the benchmark's own
-noise is about twenty times larger than the difference between configurations.
+noise has a variance about twenty times the variance of the differences
+between configurations, a standard deviation about four times as large.
 
-**The signal is concentrated in few directions.** The same ratio maximised
-over linear combinations of the entries (generalised eigenvalues of the
+**The signal is concentrated in few directions.** The same ratio maximised over
+linear combinations of the entries (generalised eigenvalues of the
 between-configuration covariance against the pooled within-configuration
 covariance) is above one in only 8 directions for the t-QVARMA, 11 for the
 local projection and 14 for the two stacked
 (`montecarlo/out/compressed_response/learn_*.txt`). The leading ratios are
-large: 87, 41, 20 for the t-QVARMA, 74, 30, 24 for the local projection. A
-mean absolute error over all entries gives those few directions the same
-weight as the hundreds of noise directions.
+large: 87, 41, 20 for the t-QVARMA, 74, 30, 24 for the local projection. A mean
+absolute error over all entries gives those few directions the same weight as
+the hundreds of noise directions.
 
 **When the procedure is wrong, it is not wrong towards a neighbour.** Over
 the benchmarks where another configuration has the smallest mean loss, that
@@ -107,7 +108,8 @@ stand in for the data in turn: 5000 benchmarks. The rows of the loss matrix
 are runs 0 to 199 of every configuration minus the benchmark's own run, 199
 rows by 1000 configurations, none of them used to learn any map. Loss: mean
 absolute difference between the row's vector and the benchmark's. Confidence
-set: MCS_TR, alpha 0.05, 2000 bootstrap resamples, block length 1, bootstrap
+set: the range statistic `MCS_TR`, which compares every pair of
+configurations, alpha 0.05, 2000 bootstrap resamples, block length 1, bootstrap
 variance, seed 123 stream 0, as in `montecarlo/sweep_grid.c`. Files:
 `montecarlo/out/compressed_response/recovery_<vector>_rows200.csv`, and
 `rank_<vector>_rows200.csv` where only the rank by mean loss was computed.
@@ -174,14 +176,18 @@ the seven parameters the responses identify (below). Full table in
 `montecarlo/out/compressed_response/report.txt`.
 
 **The local projection carries more information than the t-QVARMA.**
-Held-out R2 of the parameter regression, per parameter, in the order Gamma,
-chi, psi1, psi3, alfa, taylor1, taylor2, taylor, kappa:
+Held-out R2 of the parameter regression, per design parameter, in the order
+Gamma, chi, psi1, psi3, alfa, taylor1, taylor2, taylor, kappa (what each
+parameter does in the model: `docs/ABM_SYSTEM_SIMULATION.md`, "What is being
+sampled"):
 
 - t-QVARMA: 0.00, 0.21, 0.17, 0.93, 0.55, 0.58, 0.84, 0.89, 0.35
 - local projection: 0.35, 0.32, 0.76, 1.00, 0.70, 0.43, 0.93, 0.95, 0.88
 - stacked: 0.43, 0.37, 0.74, 1.00, 0.78, 0.64, 0.95, 0.98, 0.89
 
-Gamma and chi are poorly identified by any of the three: two configurations
+Gamma (how many new customers a capital-good firm contacts) and chi (how
+strongly consumption-good firms' market shares respond to their relative
+competitiveness) are poorly identified by any of the three: two configurations
 differing mainly in those would not be told apart by any vector tried here.
 Recovery is high anyway because neighbouring configurations of the Latin
 hypercube also differ in the identified parameters.
@@ -189,22 +195,20 @@ hypercube also differ in the identified parameters.
 ## The nonlinear local projections
 
 The state-dependent local projection's responses in state 1 and state 2
-(`docs/MONTECARLO_VALIDATION.md`, "The local projections", 400 entries each, cached as
-`out/sweep_grid_response_cache/lp_s1.f32` and `lp_s2.f32`) went through the
-same learning step and the same two setups. Stacks: the two states together
-(800 entries), and all four models together (1725 entries). The regression used
-20 training runs per configuration for the two states and 10 for all four, for
-memory.
+(`docs/MONTECARLO_VALIDATION.md`, "The local projections", 400 entries each,
+cached as `out/sweep_grid_response_cache/lp_s1.f32` and `lp_s2.f32`) went
+through the same learning step and the same two setups. Stacks: the two states
+together (800 entries), and all four models together (1725 entries). The
+regression used 20 training runs per configuration for the two states and 10
+for all four, for memory.
 
 On the raw responses they are the worst of the four. Over all 1,000,000
 benchmarks of `montecarlo/out/sweep_grid.csv.gz` the true configuration is in
 the set 1.5% of the time in state 1 and 1.6% in state 2, against 9.5% for the
 t-QVARMA and 10.7% for the linear projection, and 1.2% with the two states
-stacked into one vector of 800 raw entries, the comparison
-`_temp/Note on non-lin LP.pdf` prescribes (`lp_nl` in the code). The cause is
-the same and
-stronger: 7 directions with ratio above one in each state, against 11 for the
-linear projection, with leading ratios of 23 and 22 against 74.
+stacked into one vector of 800 raw entries (`lp_nl` in the code). The cause is
+the same and stronger: 7 directions with ratio above one in each state, against
+11 for the linear projection, with leading ratios of 23 and 22 against 74.
 
 Full scale, 2000 benchmarks, setup as above:
 
@@ -259,9 +263,9 @@ outside the 1000 was not tested.
 the main setup, which has no overlap at all, gives the same ordering and
 similar margins.
 
-**The learning step is a prototype in Python.** It reproduces byte for byte
-the files the numbers above were computed from. A version in C would need two
-general pieces that belong in et_al rather than here: the directions that
+**The learning step is a prototype in Python.** Rerun, it reproduces byte for
+byte the files the numbers above were computed from. A version in C would need
+two general pieces that belong in et_al rather than here: the directions that
 maximise between-group against within-group variance (a generalised symmetric
 eigenproblem; et_al has `mat_eig_sym` and a Cholesky factorisation to build it
 from, but no routine for it), and ridge regression.
@@ -334,9 +338,9 @@ the confidence set. The main setup is `0 4 0 200`, the full-scale setup
 
     python montecarlo/compressed_response_report.py
 
-These lists are the files in `montecarlo/out/compressed_response/`. Which
-command produced each was not logged at the time, so they are reconstructed from
-the file names and the program's usage. Two differences from the files on disk:
+These lists match the files in `montecarlo/out/compressed_response/`, with two
+differences, and were written from the file names and the program's usage
+rather than from a log of the commands run:
 `qvarma_lp_lin_discriminant_40` has no rank file (never scored, "not run" in the
 directions table), and six vectors (`lp_s1_raw`, `lp_s2_raw`, the three
 `parameters` of the states and the four-model `discriminant_12`) have both a

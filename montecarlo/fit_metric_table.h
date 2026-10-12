@@ -2,7 +2,7 @@
 #define MONTECARLO_FIT_METRIC_TABLE_H
 
 /*
-The tables bin/fit_metric_report and bin/fit_metric_comparison write: cells
+The tables bin/fit_metric_pairwise writes: cells
 held as text, written once as a plain-text table and once as a LaTeX table
 labelled tab:fit_metric_<label>.
 */

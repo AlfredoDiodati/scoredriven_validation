@@ -1,7 +1,8 @@
 /*
-Discarded from both pipelines: the local projections on R's levels instead of
-on the five series the t-QVARMA is fitted on. The main transformation is kept
-because it loses less information; docs/OLD_EXPERIMENTS.md.
+Discarded from both pipelines: the local projections on cumulated levels
+instead of on the five series the t-QVARMA is fitted on. The main
+transformation is kept because it loses less information;
+docs/OLD_EXPERIMENTS.md.
 
 Fits the linear and the state-dependent local projections to the US data, the
 real-data benchmark the simulated fits of applications/abm_system_fit_lp.c are
@@ -24,17 +25,15 @@ out/us_lp_fit.npz, the layout every configuration's fits are stored in. A rerun
 keeps it when it was fitted under this specification on exactly these series,
 and fits again otherwise.
 
-This is that fit on R's levels, the collaborator's transformation, applied to
-the US growth rates exactly as to the simulated ones.
+This is that fit on the cumulated levels lp_system_r_levels.h builds, applied
+to the US growth rates exactly as to the simulated ones.
 
 - ./bin/us_lp_fit_r_levels fits unless stored.
 - ./bin/us_lp_fit_r_levels --refit fits and overwrites.
 
-Every file below carries _r_levels after us_lp_fit. The
-collaborator's own preparation of the US data (rw_data_prep.R) was not
-available; the thesis states the same transformation code runs on the real and
-the simulated data, so R's transform_data is applied to the US growth rates as
-it is to every simulated run.
+Every file below carries _r_levels after us_lp_fit. The same transformation
+is applied to the US growth rates as to every simulated run; how the R code
+prepared the US data is not in this repository.
 
 Writes out/us_lp_fit.npz, out/us_lp_fit.txt (the data, the settings and the fit
 notes) and out/us_lp_fit_irf.csv (every response: model, response, horizon,

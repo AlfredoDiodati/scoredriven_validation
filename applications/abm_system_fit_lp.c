@@ -1,6 +1,6 @@
 /*
-Fits the linear and the state-dependent local projections of the collaborator's
-R pipeline (_temp/main_code.R, estimate() in _temp/functions.R) to every
+Fits the linear and the state-dependent local projections, at the settings of
+the R code (package lpirfs) they were first run with, to every
 replicate under dataset/abm_system/, and stores the fits the way the t-QVARMA
 fits are stored: once, beside the dataset, for every later comparison to read
 rather than refit, the real data's included.

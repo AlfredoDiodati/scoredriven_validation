@@ -17,15 +17,18 @@ GDP_growth, EN_growth, Employment_change, Inflation, InterestRate).
 
 lp_system_from_stored gives the fitted series: the five stored series
 themselves, the ones the t-QVARMA is fitted on, in the same order, and as the
-series that decides the state the 4-period moving average of log GDP that the
-collaborator's R pipeline (transform_data() in _temp/functions.R) builds:
+series that decides the state the 4-period moving average of log GDP, built
+as in the R code the local projections were first run with:
 
     GDP_MA4 = rollmean(log(init_GDP + cumsum(GDP_growth)) * 100, k = 4, align = "right")
 
+that is, GDP growth cumulated into a level starting from init_GDP, 100 times
+its log, averaged over the current and the three previous periods.
+
 The first three periods are dropped, where that moving average does not exist.
 
-R's transform_data() also turns the five series into levels, and fits those.
-That variant is discarded; old/lp_r_levels/ holds it and docs/OLD_EXPERIMENTS.md
+That R code also turned the five series into levels and fitted those. That
+variant is discarded; old/lp_r_levels/ holds it and docs/OLD_EXPERIMENTS.md
 says why.
 */
 
@@ -37,7 +40,7 @@ enum { STORED_GDP_GROWTH, STORED_EN_GROWTH, STORED_EMPLOYMENT_CHANGE, STORED_INF
 #define LP_SYSTEM_K STORED_K
 
 #define LP_SYSTEM_INIT_GDP 100.0
-/* zoo::rollmean's k in transform_data. */
+/* The window of that moving average, rollmean's k. */
 #define LP_SYSTEM_SWITCHING_WINDOW 4
 
 /* Periods the local projections see out of a stored block of T periods. */
@@ -106,7 +109,7 @@ static inline int lp_parse_refit(int argc, char **argv) {
     return force_refit;
 }
 
-/* The specification the R pipeline's estimate() calls lpirfs with: 4 lags, 15
+/* The specification the R code called lpirfs with: 4 lags, 15
    horizons, unit shocks; lp_nl with the switching series' HP cycle at lambda
    1600 through a logistic of slope 2, lagged one period (lpirfs' default
    lag_switching = TRUE). The estimator of Sigma_u does not change a unit

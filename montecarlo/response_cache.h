@@ -12,7 +12,7 @@ Five models: the t-QVARMA (p1q1r2, horizon 20, the stacked total responses,
 out/abm_system_fit_qvarma/), the three local projections (linear, state 1,
 state 2, 400 entries per run, read from out/abm_system_fit_lp/), and lp_nl, the
 state-dependent local projection with its two states in one vector, state 1's
-400 entries followed by state 2's (_temp/Note on non-lin LP.pdf, equation 5).
+400 entries followed by state 2's.
 The mean absolute difference over lp_nl's 800 entries is the average of the
 two states' mean absolute differences. A run with no usable response, under
 lp_nl a run missing either state, is marked by a NaN in its first entry.

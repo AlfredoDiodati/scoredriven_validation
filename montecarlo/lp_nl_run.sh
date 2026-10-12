@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 #
 # The state-dependent local projection with both states in one vector (lp_nl,
-# _temp/Note on non-lin LP.pdf) through the Monte Carlo grid and the
-# experiments that read it. Every step skips what is already on disk, so after
-# an interruption, a crash included, running this again continues where it
-# stopped:
+# state 1's 400 entries followed by state 2's) through the Monte Carlo grid
+# and the experiments that read it. Every step skips what is already on disk,
+# so after an interruption, a crash included, running this again continues
+# where it stopped:
 #
 # - the raw stacked vector on runs 0 to 199,
 #   docs/MONTECARLO_COMPRESSED_RESPONSE.md, about 10 minutes;

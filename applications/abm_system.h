@@ -56,10 +56,8 @@ inferred from the numbers, and stated here as exactly that, an inference:
     the same way but is on a comparable raw scale, about 1.8e5 to 2.5e5) -
     100 ln(level), first-differenced, the identical transform
     applications/us_prepare_data.c's own header comment documents for the
-    real data's LogGDP and LogEnergyDemand (100 ln(x_t), Fabiano's own
-    convention, not this project's invention). That the two routes agree is
-    checked directly in tests/abm_system_layout.c rather than argued from
-    this comment.
+    real data's LogGDP and LogEnergyDemand (100 ln(x_t)). That the two
+    routes agree is checked in tests/abm_system_layout.c.
   - "Employment rate": a 0-1 proportion (checked range 0.86-1.00), not the
     real data's own 0-100 scale (Employment = 100 - Unemployment,
     us_prepare_data.c's own construction) - rescaled by 100 before
@@ -149,16 +147,14 @@ static inline int _abm_system_variable_index(const RValue *v, const char *name) 
 }
 
 /* Periods 1..ABM_SYSTEM_BURN_IN (1-indexed, matching R's own convention)
-   are discarded as transient before anything else - not this project's
-   own choice, matched from a collaborator's own R pipeline for the same
-   simulated data (`tau <- 600`, `vt <- 201:tau`, `iT <- length(vt)`,
-   i.e. periods 201:600 kept, 400 of them). Period 200 (1-indexed), the
-   one immediately before the kept window, is still used as the anchor
-   for period 201's own first difference, the same way this project's own
-   real-data series anchor their own first differenced period on the
-   observation immediately before the reported sample rather than losing
-   an extra one - so the output below has exactly 400 periods, not 399,
-   matching the collaborator's own iT exactly.
+   are discarded as transient before anything else, so periods 201 to 600
+   are kept, 400 of them, the window the R code that first analysed this
+   simulated data used. Period 200 (1-indexed), the one immediately before
+   the kept window, is still used as the anchor for period 201's first
+   difference, the same way the real-data series anchor their first
+   differenced period on the observation immediately before the reported
+   sample rather than losing an extra one, so the output below has exactly
+   400 periods, not 399.
 
    A file does not have to carry the transient for this to work. The files
    dataset/simulated/ was populated with hold every period from the first

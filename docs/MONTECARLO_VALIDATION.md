@@ -38,21 +38,23 @@ is part of the grid below, so they are discarded and kept under `old/`;
 The grid is the experiment. In every one of its benchmarks the benchmark's run
 index is held out of every configuration's column, the loss is measured
 against the benchmark, and the question is whether the Model Confidence Set
-(MCS_TR, alpha 0.05, block length 1, bootstrap variance, seed 123 stream 0)
-holds the benchmark's own configuration. The other two rows reuse its
+(range statistic `MCS_TR`, which compares every pair of configurations; alpha
+0.05, block length 1, bootstrap variance, seed 123 stream 0;
+`docs/MCS_VALIDATION_PROCEDURE.md`, "Confidence set settings") holds the
+benchmark's own configuration. The other two rows reuse its
 responses or its confidence sets for a different question.
 
 | experiment | benchmarks | losses and auxiliary models | resamples | program | output | written up in |
 | --- | --- | --- | --- | --- | --- | --- |
-| every run of every configuration | 1,000,000 per model | impulse response, five models | 2000 | `bin/sweep_grid` | `sweep_grid.csv.gz` | this file, "Every run of every configuration" |
-| compressed responses | 5000 or 2000 per vector | the same responses mapped to a few coordinates first | 2000 | `montecarlo/compressed_response_*` | `compressed_response/` | `docs/MONTECARLO_COMPRESSED_RESPONSE.md` |
-| fit metric | 1,000,000 per model (oracle), 1000 per model (bootstrap) | the best configuration's mean loss against the responses' sampling standard deviation, five models | none | `montecarlo/fit_metric_run.sh` | `fit_metric_*` | `docs/MONTECARLO_FIT_METRIC.md` |
+| every run of every configuration | 1,000,000 per model | impulse response, five models | 2000 | `bin/sweep_grid` | `montecarlo/out/sweep_grid.csv.gz` | this file, "Every run of every configuration" |
+| compressed responses | 5000 or 2000 per vector | the same responses mapped to a few coordinates first | 2000 | `montecarlo/compressed_response_*` | `montecarlo/out/compressed_response/` | `docs/MONTECARLO_COMPRESSED_RESPONSE.md` |
+| fit metric | 1,000,000 per model (oracle), 1000 per model (bootstrap) | the best configuration's mean loss against the responses' sampling standard deviation, five models | none | `montecarlo/fit_metric_run.sh` | `montecarlo/out/fit_metric_*` | `docs/MONTECARLO_FIT_METRIC.md` |
 
 The five models are the t-QVARMA (p1q1r2, total responses to horizon 20, 525
 entries per run) and the four local projections of "The local projections"
 below: linear, state 1 and state 2, 400 entries per run, and both states, the
-state-dependent model's two states stacked into one vector of 800 entries as
-`_temp/Note on non-lin LP.pdf` prescribes.
+state-dependent model's two states stacked into one vector of 800 entries, so
+that one confidence set compares the configurations on both states at once.
 
 ## The local projections
 
@@ -62,28 +64,28 @@ Every one of the 1,000,000 simulated runs (1000 configurations, 1000 runs each,
 The series are the five the t-QVARMA is fitted on, as stored: GDP growth,
 energy growth, employment change, inflation and the interest rate, in that
 order (`lp_system_from_stored` in `applications/lp_system.h`). The series that
-decides the state is the one R's pipeline builds, the 4-period moving average
-of `100 log(100 + cumsum(GDP_growth))`, and the first 3 of the 400 periods are
-dropped, where that moving average does not exist: 397 periods.
-`tests/lp_system_transform.c` checks that the fitted series are the stored ones
-exactly and the state series is R's exactly.
+decides the state is the 4-period moving average of a log GDP level rebuilt
+from the growth rates, `100 log(100 + cumsum(GDP_growth))`, and the first 3 of
+the 400 periods are dropped, where that moving average does not exist: 397
+periods. `tests/lp_system_transform.c` checks that the fitted series are the
+stored ones exactly and that the state series equals, exactly, an independent
+plain-loop implementation of the same formula.
 
-Then et_al's `lp_lin_and_nl` fits both models at R's settings: 4 lags, 15
-horizons, a unit shock with recursive ordering in the order above; the
-state-dependent model with the Hodrick-Prescott cycle of the moving average at
-lambda 1600, a logistic weight of slope 2, lagged one period. Each model's
-impulse responses are a 5 by 16 by 5 array, 400 numbers: the linear model's,
-and the state-dependent model's in state 1 (periods weighted towards GDP above
-trend) and state 2 (below).
+Then et_al's `lp_lin_and_nl`, which follows the R package `lpirfs`, fits both
+models: 4 lags, horizons 0 to 15, a unit shock with recursive ordering in the
+order above; the state-dependent model with the Hodrick-Prescott cycle of the
+moving average at lambda 1600, a logistic weight of slope 2, lagged one period.
+Each model's impulse responses are a 5 by 16 by 5 array, 400 numbers: the
+linear model's, and the state-dependent model's in state 1 (periods weighted
+towards GDP above trend) and state 2 (below).
 
-The state-dependent model is also compared as one vector, following
-`_temp/Note on non-lin LP.pdf`: state 1's 400 responses followed by state 2's,
-800 numbers, called "both states" below (`lp_nl` in the code and in the file
-names, `nl` in the `lp_*` files). Its loss, the mean absolute difference over
-the 800 entries, is exactly the average of the two states' losses, since the
-two halves have the same length; measured on the single-benchmark tables of
-`docs/OLD_MONTECARLO_LP_VALIDATION.md`, the largest relative difference between
-the two is 4.8e-15.
+The state-dependent model is also compared as one vector: state 1's 400
+responses followed by state 2's, 800 numbers, called "both states" below
+(`lp_nl` in the code and in the file names, `nl` in the `lp_*` files). Its
+loss, the mean absolute difference over the 800 entries, is exactly the average
+of the two states' losses, since the two halves have the same length; measured
+on the single-benchmark tables of `docs/OLD_MONTECARLO_LP_VALIDATION.md`, the
+largest relative difference between the two is 4.8e-15.
 
 `applications/abm_system_fit_lp.c` writes the fits to one compressed archive
 per configuration, `out/abm_system_fit_lp/cop_NNNN.npz`, one row per run, with
@@ -142,27 +144,28 @@ correlation across configuration pairs of 0.0017 at the same seed against
 draws per period at different parameters and the streams desynchronise. So run
 n of one configuration has almost nothing in common with run n of another
 beyond its label. The hold-out costs one observation in a thousand and removes
-the question entirely, which is cheaper than arguing it away.
+the question entirely.
 
 ## Every run of every configuration as the benchmark
 
 Every run of every configuration is the benchmark in turn, 1,000,000
-benchmarks per model, five million confidence sets in all. It answers, for each configuration, how often the procedure
-returns it when it is the right answer.
+benchmarks per model, five million confidence sets in all. It answers, for each
+configuration, how often the procedure returns it when it is the right answer.
 
 - `make mc-sweep_grid` builds at -O3 and runs.
 - `./bin/sweep_grid` does the same, once built.
 
 `sweep_grid` is not in `MONTECARLO_STEMS`: it has its own rule in the Makefile
-because it is compiled at -O3 rather than -O2. The Makefile records that -O3 changes no result, measured on 8 sets
-side by side on 999 by 1000 tables at 2000 resamples: 0.13 s per set at -O2,
-0.08 s at -O3.
+because it is compiled at -O3 rather than -O2. The Makefile records that -O3
+changes no result, and its time measured on 8 sets side by side on 999 by 1000
+tables at 2000 resamples: 0.13 s per set at -O2, 0.08 s at -O3.
 
 Each benchmark is the procedure of `docs/MCS_VALIDATION_PROCEDURE.md` against
 that run, at 2000 bootstrap resamples rather than the 10000 the real-data run
-uses. The loss is the mean absolute difference between response vectors, the benchmark's run index is held
-out of every column, a run with a missing response in any column is dropped,
-MCS_TR at alpha 0.05, block length 1, bootstrap variance, seed 123 stream 0.
+uses. The loss is the mean absolute difference between response vectors, the
+benchmark's run index is held out of every column, a run with a missing
+response in any column is dropped, MCS_TR at alpha 0.05, block length 1,
+bootstrap variance, seed 123 stream 0.
 
 Benchmarks are taken in order of run index: run 0 of every configuration, then
 run 1, and so on, so a stopped run holds every configuration at the same number
@@ -216,14 +219,14 @@ before resuming.
 
 Cost: the first four models spanned several sessions, the last finished on
 2026-10-04. That last session did 1,187,552 benchmarks (the rest of state 1 and
-all of state 2) at 0.0956 s of wall-clock time per benchmark, 8 workers on this
-machine (AMD Ryzen 7 4800H, 16 threads), from `out/sweep_grid.log`. The earlier
+all of state 2) at 0.0956 s of wall-clock time per benchmark, 8 workers on the
+machine the README describes (AMD Ryzen 7 4800H, 16 threads). The earlier
 sessions' timing was not kept. Both states ran from 2026-10-05 to 2026-10-07.
 A crash of the machine stopped them after 471,768 benchmarks; the session after
-it did the remaining 528,232 at 0.1196 s per benchmark, 16 workers, from
-`out/lp_nl_run.log`, comparing 800 entries per run rather than 400. The timing
-before the crash was not kept. After both
-states were added, the t-QVARMA and linear rows of the new
+it did the remaining 528,232 at 0.1196 s per benchmark, 16 workers, comparing
+800 entries per run rather than 400. The timing before the crash was not kept.
+Both timings were read from the runs' console logs, which are not tracked by
+git. After both states were added, the t-QVARMA and linear rows of the new
 `sweep_grid.csv.gz` were compared with `sweep_grid_qvarma.csv.gz` and
 `sweep_grid_lp_lin.csv.gz` and are identical; the state 1 and state 2 rows have
 no separate copy to compare with.
@@ -236,16 +239,16 @@ no separate copy to compare with.
 | `montecarlo/out/sweep_grid_qvarma.csv.gz`, `sweep_grid_lp_lin.csv.gz` | written by an earlier version of `sweep_grid.c` that split the rows per model; byte for byte the t-QVARMA and linear rows of `sweep_grid.csv.gz`, header included. The current program does not write them |
 | `montecarlo/out/sweep_grid_cop_0191.txt`, `.tex` | `montecarlo/sweep_grid_cop_0191.py`, in plain text and as LaTeX tables: per model, in percent, how often `cop_0191` is in the set, alone and first by mean loss over its own 1000 benchmarks and over the other 999,000, and how often the true configuration is over all 1,000,000; `docs/MONTECARLO_COP_0191.md` |
 | `montecarlo/out/sweep_grid_presence.txt` | `montecarlo/sweep_grid_presence.py`: per model, how often each configuration is in the sets of benchmarks that are not its own |
-| `montecarlo/out/sweep_grid_identifiability.csv`, `sweep_grid_identifiability_plots/` | `montecarlo/sweep_grid_identifiability_plots.py`: per model and configuration, the share of its own 1000 sets that hold it, and the share holding the other configuration found in them most often, with two bar charts per model |
+| `montecarlo/out/sweep_grid_identifiability.csv`, `sweep_grid_identifiability_plots/` | `montecarlo/sweep_grid_identifiability_plots.py`: per model and configuration, the share of its own 1000 sets that hold it, and the share holding the other configuration found in them most often, with two bar charts per model. The files on disk cover the t-QVARMA and the linear local projection only; see below |
 
     python montecarlo/sweep_grid_presence.py
     python montecarlo/sweep_grid_identifiability_plots.py
 
-The first needs only the Python standard library. The second needs `polars`,
-`plotly` and `kaleido`. The figures and the table on disk were drawn on
-2026-10-02, when only the t-QVARMA and the linear local projection were done, so
-they cover those two models; rerunning the script adds the three other local
-projections.
+The first needs only the Python standard library and covers all five models.
+The second needs `polars`, `plotly` and `kaleido`; its table and figures on disk
+were drawn on 2026-10-02, when only the t-QVARMA and the linear local
+projection were done, and have not been redrawn since, so they cover those two
+models. Rerunning the script adds the other three.
 
 ### Results
 

@@ -1,6 +1,11 @@
 # Comparing the fit metric across auxiliary models: test design
 
-Status: design. Nothing in this file is implemented yet.
+Status: draft, in progress. The test for null 1 below is not designed yet, and
+nothing in this file is implemented. `montecarlo/fit_metric_pairw(with its
+table writer `montecarlo/fit_metric_table.h`) ise.c` is an earlier attempt that
+tests the auxiliary models two at a time (et_al's `dm_test` on the differences
+of $v$, across CoPs and per CoP with a Bonferroni correction); it is not built
+by any make target and has not produced results.
 
 ## The question
 
@@ -65,6 +70,9 @@ $$
 
 The comparison is paired: every CoP has a value under every auxiliary model.
 
+## Null 1: the same mean $v$
+
+Not designed yet.
 
 ## Null 2: the auxiliary model has no effect
 
@@ -99,6 +107,10 @@ The reference distribution. The asymptotic $\chi^2_{I-1}$ treats the rankings
 of different CoPs as independent: $\mathrm{Var}(\bar R_i)$ is then
 $\frac{1}{J^2} \sum_j \mathrm{Var}(R_{ij})$, without the covariances between
 CoPs. The levels $v_{ij}$, and the errors $\varepsilon_{ij}$, may be dependent
-across CoPs. 
+across CoPs.
 
-In the Montecarlo setting, we can also construct a second p-value not based on the $\chi^2_{I-1}$ distribution, but on the bootstrap instead, as a way to test if the normal friedman test gives a good estimate in the empirical setting, in which we cannot bootstrap
+In the Monte Carlo a second p-value can be built without the $\chi^2_{I-1}$
+approximation, by resampling the replicates $k$. Comparing the two p-values
+says whether the $\chi^2_{I-1}$ p-value can be trusted in the empirical
+setting, where this resampling is not possible and it is the only p-value
+available.

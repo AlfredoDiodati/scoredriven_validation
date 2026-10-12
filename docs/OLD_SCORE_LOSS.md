@@ -7,10 +7,10 @@ This experiment is no longer part of either pipeline. The score losses, both
 Carlo check, where the right answer is known
 (`docs/OLD_MONTECARLO_BENCHMARK_SUBSETS.md`, "Neither score protocol recovers
 it"), and there is no theoretical justification for using either one as a
-distance between a simulated configuration and the data. The code is kept
-under `old/score_loss/`, the results below are kept as a record, and the
-outputs stay at the paths listed here. `docs/OLD_EXPERIMENTS.md` lists every
-discarded experiment.
+distance between a simulated configuration and the data. The code is kept under
+`old/score_loss/`, the results below are kept as a record, and the outputs stay
+at the paths listed here. `docs/OLD_EXPERIMENTS.md` lists every discarded
+experiment.
 
 | program | what it does |
 | --- | --- |
@@ -43,8 +43,9 @@ how hard would this series pull the estimate away from where the real data put
 it. That is the score of the auxiliary model's log-likelihood, evaluated at the
 real data's estimate on simulated data.
 
-Everything here is produced by `old/score_loss/applications/abm_system_score_loss.c` and
-scored by `old/score_loss/applications/abm_system_mcs_statistic_comparison_score.c`.
+Everything here is produced by
+`old/score_loss/applications/abm_system_score_loss.c` and scored by
+`old/score_loss/applications/abm_system_mcs_statistic_comparison_score.c`.
 Neither reads `out/abm_system_fit_qvarma/`.
 
 ## The quantity
@@ -77,16 +78,15 @@ differenced, so it is exact to machine precision.
 
     out/abm_system_score_loss.csv      loss = q_in' q_in
 
-This is the object as first specified. It has one defect, and it is not a small
-one: it is not a distance in any metric the model supplies. The coordinates of
-`theta` carry different units and differ in scale by orders of magnitude - an
-intercept, an `atanh` of an autoregressive coefficient, a log of a scale
-parameter, a `log(nu - 2)` - and a plain sum of squares weights whichever of
-them happens to be largest. It also changes if a coordinate is rescaled, so
-two parameterizations of the same model give two different rankings of the same
-configurations.
+This is the object as first specified. It is not a distance in any metric the
+model supplies. The coordinates of `theta` carry different units and differ in
+scale by orders of magnitude - an intercept, an `atanh` of an autoregressive
+coefficient, a log of a scale parameter, a `log(nu - 2)` - and a plain sum of
+squares weights whichever of them happens to be largest. It also changes if a
+coordinate is rescaled, so two parameterizations of the same model give two
+different rankings of the same configurations.
 
-Measured rather than argued, on `cop_0001` replicate 0, total 3.5684e+07:
+Its split over the coordinates on `cop_0001` replicate 0, total 3.5684e+07:
 
 | coordinate | share | cumulative |
 | --- | --- | --- |
@@ -102,8 +102,7 @@ GDP growth, so under this loss the confidence set is mostly ranking
 configurations on one covariance. The manifest recomputes this table on every
 run, beside the weighted split below.
 
-It is kept, and it is kept first, because it is what the weighted version has
-to be compared against.
+It is reported beside the weighted version as the unweighted reference.
 
 ### The score statistic
 
@@ -121,9 +120,8 @@ reparameterization `theta -> g(theta)` the score and the information transform
 by the same Jacobian, `q -> J' q` and `I -> J' I J`, and the quadratic form
 `q' I^-1 q` is unchanged. The weighted loss therefore measures the same thing
 whether it is computed in the optimizer's unconstrained coordinates or in the
-paper's own parameters, and the complaint against `q'q` above does not apply to
-it. This is the whole reason for the weighting; the null distribution below is
-a bonus.
+paper's own parameters, so the dependence on scale that `q'q` has does not
+apply to it.
 
 **It has a reference distribution.** Under the hypothesis that a replicate came
 from the auxiliary model at `theta_US`, `LM_in` is asymptotically chi-square on
@@ -140,22 +138,21 @@ estimate:
 over the 187 quarters the US block holds, divided by 187 to put it per
 observation and multiplied by 400 to match a simulated replicate's length.
 et_al.'s `_qvarma_hessian` differences the analytic gradient of the *negative*
-log-likelihood, so what it returns is `I_US` directly, with no sign to get
-wrong.
+log-likelihood, so what it returns is `I_US` directly.
 
 **One weighting matrix for every cell, from the real data.** The alternative -
 estimating the variance of `q_in` separately within each configuration, from
-its own thousand replicates - is tempting and wrong for this purpose. It gives
-every configuration its own metric, and losses measured in different metrics
-cannot be compared. Comparing them is the entire job of the confidence set.
+its own thousand replicates - would give every configuration its own metric,
+and the confidence set compares losses across configurations, which needs one
+metric.
 
 **The price of that choice.** The chi-square calibration holds under the null
 only. Where a configuration is far from the US data, the variance of `q_in`
 under that configuration's own data-generating process is not `I_US`, so
 `LM_in` is a distance in a fixed, model-supplied metric rather than a statistic
-with a valid per-cell p-value. That is what the confidence set needs and it is
-not more than that. The numbers below show the null is rejected in every cell
-by a very large margin, so nothing in this project treats `LM_in` as a test.
+with a valid per-cell p-value. The numbers below show the null is rejected in
+every cell by a very large margin, so `LM_in` is used only as a distance, never
+as a test.
 
 **Conditioning.** The weighting divides by the eigenvalues of `I_US`, so its
 conditioning is the weighting's own reliability, and the smallest eigenvalue of
@@ -163,7 +160,7 @@ a finite-differenced Hessian is the part of it known least accurately. The
 manifest reports the spectrum, whether the matrix is positive definite, the
 condition number, and how the statistic splits across eigen-directions on one
 replicate, so that a weighting concentrated on a single direction would be
-visible rather than assumed away.
+visible.
 
 No inverse is formed. The matrix `T_sim/T_US * I_US` is Cholesky-factored once,
 before the parallel loop, and each cell costs one triangular solve: with the
@@ -235,11 +232,10 @@ The information matrix is positive definite: smallest eigenvalue 1.166e-01,
 largest 2.239e+05, condition number 1.921e+06, no flat directions against a
 floor of 2.088e-09.
 
-A condition number of about two million is worth checking rather than waving
-at, because the weighting divides by the eigenvalues and a statistic that lived
-entirely in the flattest direction would be as one-dimensional as `q'q` is,
-only less legibly. Splitting the statistic as `sum_k (v_k . q)^2 / lambda_k` on
-`cop_0001` replicate 0:
+With a condition number of about two million, the statistic could be dominated
+by the flattest direction, since the weighting divides by the eigenvalues, and
+would then be as one-dimensional as `q'q`. Splitting the statistic as `sum_k
+(v_k . q)^2 / lambda_k` on `cop_0001` replicate 0:
 
 | direction | eigenvalue | share | cumulative |
 | --- | --- | --- | --- |
@@ -275,13 +271,14 @@ call.
 
 **Do not read that as the weighted loss being the better measure.** It was read
 that way here before there was anything to check it against, and
-`docs/OLD_MONTECARLO_BENCHMARK_SUBSETS.md` then checked it. Running all three protocols
-against a simulated benchmark, where the right answer is known because the
-benchmark is a replicate of a known configuration, the impulse-response
-distance returns that configuration alone and both score losses miss it: the
-generating configuration comes 5th under `q'q` and 76th under `LM`, by a factor
-of about 1.8 in mean loss. The weighted loss stopped on an accepted test there
-too, at p = 0.0783, and the set it stopped on did not contain the right answer.
+`docs/OLD_MONTECARLO_BENCHMARK_SUBSETS.md` then checked it. Running all three
+protocols against a simulated benchmark, where the right answer is known
+because the benchmark is a replicate of a known configuration, the
+impulse-response distance returns that configuration alone and both score
+losses miss it: the generating configuration comes 5th under `q'q` and 76th
+under `LM`, by a factor of about 1.8 in mean loss. The weighted loss stopped on
+an accepted test there too, at p = 0.0783, and the set it stopped on did not
+contain the right answer.
 
 Stopping because a test was accepted means the bootstrap could not separate the
 last few configurations. It carries no information about whether any of them is
@@ -392,7 +389,7 @@ in the table above are the same under TR and TMAX.
 
 The procedure ranks configurations against one another. It does not test
 whether the best one is close to the US data in any absolute sense, and the
-chi-square numbers above say plainly that it is not: every replicate of every
+chi-square numbers above show that it is not: every replicate of every
 configuration is rejected as a draw from the auxiliary model at the real data's
 estimate. `docs/ABM_SYSTEM_MCS_VALIDATION.md`, "What the confidence set does
 not say", makes the same point for the impulse-response route and its
@@ -415,8 +412,7 @@ et_al. does not have one.
 
 ## Where the general primitives belong
 
-`_qvarma_hessian` now has a second caller. Its own comment in
-`et_al./sd/qvarma.h` says it lives in the model file only until that happens: a
-numerical second derivative of a scalar objective is general and belongs in a
-lower layer. It should move into et_al.'s solver or statistics module, and this
-project's use of it is the case that qualifies it.
+`_qvarma_hessian` is called by `abm_system_score_loss.c` as well as inside
+et_al. Its own comment in `et_al./sd/qvarma.h` says it lives in the model file
+only until it has a second caller: a numerical second derivative of a scalar
+objective is general and belongs in et_al's solver or statistics module.

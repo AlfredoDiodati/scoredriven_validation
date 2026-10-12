@@ -40,15 +40,23 @@ For the single benchmark, run 706 of `cop_0191`, the grid's set holds
 both.
 
 The single-benchmark experiment also ran the two score losses, which are
-discarded for their own reason, `docs/OLD_SCORE_LOSS.md`. The two studies in
+discarded for their own reason, `docs/OLD_SCORE_LOSS.md`: the unweighted one,
+written `q'q`, the sum of squares of the score of the t-QVARMA log-likelihood
+at the benchmark's estimate, and the weighted one, written `LM`, the same score
+weighted by the inverse information matrix (the Lagrange multiplier
+statistic). Both labels are used in the tables below. The impulse-response
+loss is written IRF. `MCS_TR` and `MCS_TMAX` are the two statistics of the
+confidence set, every pair of configurations compared and each configuration
+against the average of the rest (`docs/MCS_VALIDATION_PROCEDURE.md`,
+"Confidence set settings"). The two studies in
 `old/montecarlo_one_benchmark/studies/` diagnosed this experiment's results and
 moved with it. `docs/OLD_EXPERIMENTS.md` lists every discarded experiment.
 
-The outputs stay where they were, under `montecarlo/out/`. Every program
-builds and runs with `make old-<stem>`, the stem being its file name, and the
-three drivers with `make old-montecarlo_one_benchmark`,
-`make old-montecarlo_one_benchmark_lp` and
-`make old-montecarlo_every_run_of_cop_0191`.
+The outputs stay where they were, under `montecarlo/out/`. Every program builds
+and runs with `make old-<stem>`, the stem being its file name, and the three
+drivers with `make old-montecarlo_one_benchmark`, `make
+old-montecarlo_one_benchmark_lp` and `make
+old-montecarlo_every_run_of_cop_0191`.
 
 ## Which run stands in for the real data
 
@@ -105,10 +113,11 @@ For scale, the US fit that the main pipeline uses converged with gradient norm
 4.713e-03, so the benchmark is an estimate of comparable quality to the one it
 replaces.
 
-`cop_0191` is also the configuration the main pipeline's own headline
-confidence set keeps. That is a consequence of the convergence criterion rather
-than a choice: what the protocol is being asked is whether it recovers
-`cop_0191`, and it gets no help from having picked it against different data.
+`cop_0191` is the configuration the main pipeline's confidence set keeps on
+the US data, which is why it is the only candidate under the first requirement.
+That does not help the experiment towards the answer: the question is whether
+the procedure recovers `cop_0191` from one of its own simulated runs, and the
+US data plays no part in that.
 
 ## Results
 
@@ -146,8 +155,7 @@ was handed a question with a known answer and returned that answer.
 | `LM` | 76 of 1000 | 3.785e+03 | 2.014e+03 | 1.88 | 957 of 999 |
 
 Both put the benchmark's own configuration well behind configurations that did
-not generate the data, by a factor of about 1.8 in mean loss in each case. This
-is not a marginal miss.
+not generate the data, by a factor of about 1.8 in mean loss in each case.
 
 ### This reverses the reading the real-data run invited
 
@@ -187,10 +195,10 @@ configuration" alongside "how close is this configuration", and the two are not
 the same question. The impulse-response loss compares two estimates, both
 noisy in the same way, and is minimised when the implied dynamics agree.
 
-The signal is there, for what it is worth: 3785 for the benchmark's own
+The score does carry the right configuration: 3785 for the benchmark's own
 configuration against a field median of 17980, so being the generating
-configuration lowers the score fivefold. It is simply not enough to win, and
-six configurations beat it.
+configuration lowers it fivefold. That is not enough to win: 75 configurations
+have a lower mean `LM` loss.
 
 ### The three losses rank the field differently here too
 
@@ -209,39 +217,41 @@ did there, and still not enough to pick the same configuration.
 ## Every replicate as the benchmark
 
 One benchmark cannot separate a protocol that identifies a configuration from
-one that drew well once. `old/montecarlo_every_run_of_cop_0191/sweep.sh` repeats the impulse-response
-experiment with each of `cop_0191`'s 1000 replicates standing in as the
-benchmark, and reports how often it returns `cop_0191`.
-`old/score_loss/montecarlo/sweep_score.c`, run with `make old-sweep_score`, does the same
-for the two discarded score losses.
+one that drew well once. `old/montecarlo_every_run_of_cop_0191/sweep.sh`
+repeats the impulse-response experiment with each of `cop_0191`'s 1000
+replicates standing in as the benchmark, and reports how often it returns
+`cop_0191`. `old/score_loss/montecarlo/sweep_score.c`, run with `make
+old-sweep_score`, does the same for the two discarded score losses.
 
     ./old/montecarlo_every_run_of_cop_0191/sweep.sh
 
-Every individual run is what `run.sh` does for its single benchmark: same
-losses, same hold-out of the benchmark's own seed, same confidence set
-settings, MCS_TR at 10000 resamples. Only the loop and the tally are added.
+Every individual run is what `old/montecarlo_one_benchmark/run.sh` does for its
+single benchmark: same losses, same hold-out of the benchmark's own seed, same
+confidence set settings, MCS_TR at 10000 resamples. Only the loop and the tally
+are added.
 
 ### What makes it affordable, and what does not
 
-Measured on 16 cores of this machine: one pass of $10^6$ filter evaluations
+Measured with 16 threads on the machine the README describes (8 cores, 2
+threads each): one pass of $10^6$ filter evaluations
 plus the 15 GB dataset read takes 46 s; one pass of $10^6$ cached fits and
 impulse responses takes 574 s; one MCS_TR over 1000 models and 999
 observations takes 10.9 s.
 
 The impulse-response protocol has a shortcut. A cell's response vector does not
 depend on which benchmark it is compared against, only the comparison does, so
-`old/montecarlo_every_run_of_cop_0191/sweep_irf.c` computes all $10^6$ of them once, holds them as
-float32 (2.1 GB), and each benchmark's loss matrix is then one pass of mean
-absolute error over the cache. Without that the sweep would be 160 hours of
-recomputing the same responses; with it the whole protocol is about 3 hours,
-almost all of it the thousand confidence sets.
+`old/montecarlo_every_run_of_cop_0191/sweep_irf.c` computes all $10^6$ of them
+once, holds them as float32 (2.1 GB), and each benchmark's loss matrix is then
+one pass of mean absolute error over the cache. Without that the sweep would be
+160 hours of recomputing the same responses; with it the whole protocol is
+about 3 hours, almost all of it the thousand confidence sets.
 
 The score protocols have no such shortcut. The score is evaluated at the
 benchmark's own estimate, so every cell must be filtered again for every
-benchmark: $10^9$ evaluations. `old/score_loss/montecarlo/sweep_score.c` amortises the
-archives by holding a block of benchmarks at once and scoring each cell against
-all of them while its series is in hand, which leaves the filter evaluations
-themselves as the cost. About 12 hours.
+benchmark: $10^9$ evaluations. `old/score_loss/montecarlo/sweep_score.c`
+amortises the archives by holding a block of benchmarks at once and scoring
+each cell against all of them while its series is in hand, which leaves the
+filter evaluations themselves as the cost. About 12 hours.
 
 Both are resumable at benchmark granularity. Each finished benchmark is
 appended to its summary as it completes and skipped on a rerun, so an
@@ -310,14 +320,15 @@ benchmark per configuration, 1000 confidence sets per model.
     make bin/sweep_cops && ./bin/sweep_cops
 
 It runs the impulse-response loss only, under the t-QVARMA and the four local
-projections of `docs/OLD_MONTECARLO_LP_VALIDATION.md` (linear, state 1, state 2,
-both states).
-Every individual run is what `old/montecarlo_every_run_of_cop_0191/sweep_irf.c` and
-`old/montecarlo_every_run_of_cop_0191/lp_sweep.c` do for one benchmark: mean absolute error between
-response vectors, replicate 0 held out of every column, a replicate with a
-missing cell in any column dropped, MCS_TR at alpha 0.05 with 10000 resamples,
-block length 1, bootstrap variance, seed 123 stream 0. The row for `cop_0191`
-therefore reproduces row 0 of `sweep_irf.csv` and of `lp_sweep_<model>.csv`.
+projections of `docs/OLD_MONTECARLO_LP_VALIDATION.md` (linear, state 1, state
+2, both states). Every individual run is what
+`old/montecarlo_every_run_of_cop_0191/sweep_irf.c` and
+`old/montecarlo_every_run_of_cop_0191/lp_sweep.c` do for one benchmark: mean
+absolute error between response vectors, replicate 0 held out of every column,
+a replicate with a missing cell in any column dropped, MCS_TR at alpha 0.05
+with 10000 resamples, block length 1, bootstrap variance, seed 123 stream 0.
+The row for `cop_0191` therefore reproduces row 0 of `sweep_irf.csv` and of
+`lp_sweep_<model>.csv`.
 
 The whole result is one file, `montecarlo/out/sweep_cops.csv.gz`, one row per
 model and benchmark configuration: whether the configuration is in the set,

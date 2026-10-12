@@ -10,8 +10,11 @@ bootstrap the independent replicates call for, the bootstrap variance of the
 resampled mean, the library's seed and stream. MCS_TR is the headline
 statistic; MCS_TMAX is scored on the same resamples beside it.
 
-The collaborator's thesis also runs a set on the two states together; how it
-combines them is not written down, so that set is not computed here.
+No set is run on the two states together here. The Monte Carlo experiment
+stacks them into one response of 800 entries (montecarlo/response_cache.h);
+the empirical side has not caught up with that yet
+(docs/MCS_VALIDATION_PROCEDURE.md, "Status: the empirical validation is behind
+the Monte Carlo").
 
 Requires out/abm_system_lp_irf_loss_<model>.csv. Writes
 out/abm_system_lp_mcs_<model>.txt, the readable report with both elimination

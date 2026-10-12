@@ -1,160 +1,89 @@
-# Data sources and the transformations used
+# The US data and how it is transformed
 
-## What is actually used
+## Source
 
-`us_real.csv` only. `applications/us_prepare_data.c` reads it and writes
-`out/us_system.csv`, five columns plus a `Quarter` column, 1973Q1 to 2019Q4,
-188 quarters. Every other application script reads that CSV through
-`applications/us_data.h` and never touches `us_real.csv` directly.
+`dataset/us_real.csv`: quarterly US series, 193 rows from 1973Q1 to 2021Q1,
+with the columns `Quarter`, `GDP`, `Consumption`, `Cpi`, `Investment`,
+`Unemployment`, `Energy_demand`, `Des_Energy_demand`, `Total_CO2_Emissions`,
+`Des_Total_CO2_Emissions` and `Fed_rate`. `Quarter` is written as the last
+month of the quarter, `1973 March` for 1973Q1. The file was received as US data
+built from FRED-QD; the download date and vintage of each column are not
+recorded in this repository. Five of the columns are used.
 
-`qvarma_data.txt` — Blazsek, Escribano and Licht's own three-series file — is
-not read anywhere in that path. It was used once, by a transformation-search
-diagnostic that checked a candidate transformation of `us_real.csv` against a
-published one; that script is not part of this repository and neither is the
-file it read. The background section at the end of this file is the record of
-what that diagnostic established; it explains why `qvarma_data.txt` is
-excluded, not how the current variables are built.
+## Two steps
 
-## The five variables and their transformation
+The US data reaches the auxiliary models in two steps, and the simulated data
+is stored in the form the second step produces.
 
-The variable set and which three are non-stationary follow Fabiano,
-"Evaluating Nonlinear Simulation Models with Model Confidence Sets" (Pisa /
-Sant'Anna, thesis), section 4.2, which uses this same FRED-QD-sourced US data:
-GDP, employment, CPI, the interest rate and energy demand. The thesis itself is
-not in this repository.
+**Step 1, levels.** `applications/us_prepare_data.c` reads `us_real.csv` and
+writes `out/us_system.csv`: five columns plus `Quarter`, rows 0 to 187 of the
+source, 1973Q1 to 2019Q4, 188 quarters. Nothing else reads `us_real.csv`;
+every other script loads `out/us_system.csv` through `load_us_system` in
+`applications/us_data.h`.
 
-| column in `out/us_system.csv` | `us_real.csv` source | transformation |
+| column in `out/us_system.csv` | source column | transformation |
 |---|---|---|
 | `LogGDP` | `GDP` | `100 ln(GDP_t)` |
-| `Employment` | `Unemployment` | `100 - Unemployment_t`, untransformed |
+| `Employment` | `Unemployment` | `100 - Unemployment_t`, the employment rate in per cent |
 | `LogCPI` | `Cpi` | `100 ln(Cpi_t)` |
-| `InterestRate` | `Fed_rate` | untransformed |
+| `InterestRate` | `Fed_rate` | none, per cent |
 | `LogEnergyDemand` | `Des_Energy_demand` | `100 ln(x_t)` |
 
-GDP, CPI and energy demand are Fabiano's own trend non-stationary,
-co-integrated three, so each is a log-level rather than a growth rate or a
-difference: differencing a co-integrated variable throws the relation away
-(Sims et al. 1990; Cochrane 1997), so the levels are kept and the log is only
-what stabilises their variance. Employment and the interest rate are
-Fabiano's own stationary two and are left in their natural units,
-untransformed: nothing about being stationary requires logging a series, and
-Fabiano logging all five was a uniform-specification choice for his own VAR
-rather than a requirement this project needs to inherit.
+GDP, the price level and energy demand trend upwards and are put in logs to
+stabilise their variance; employment and the interest rate are already rates
+and are kept in their own units. Energy demand uses the seasonally adjusted
+column, since the raw `Energy_demand` has a strong quarterly pattern.
 
-Column names carry no spaces, since they are read back by name in
-`applications/us_data.h` and a name with a space in it is one more thing a
-reader has to quote correctly.
+**Step 2, the five series the models are fitted on.** The first difference of
+every level except the interest rate, one quarter shorter:
 
-Employment is not a column `us_real.csv` has; it is `100` minus
-`Unemployment`, the identity this file's background section records, and every
-unit root or co-integration statistic used in this project is invariant to that
-affine map. Energy demand uses the deseasonalised
-column: the raw `Energy_demand` column has a pronounced quarterly pattern a
-level transformation does nothing to remove, and FRED-QD's own series are
-seasonally adjusted to begin with.
+| series | built from step 1 | units |
+|---|---|---|
+| `GDP_growth` | `LogGDP_t - LogGDP_{t-1}` | 100 times the quarterly log change |
+| `EN_growth` | `LogEnergyDemand_t - LogEnergyDemand_{t-1}` | 100 times the quarterly log change |
+| `Employment_change` | `Employment_t - Employment_{t-1}` | percentage points |
+| `Inflation` | `LogCPI_t - LogCPI_{t-1}` | 100 times the quarterly log change |
+| `InterestRate` | `InterestRate_t` | per cent |
+
+The sample is then 1973Q2 to 2019Q4, 187 quarters. This is `build_block` in
+`applications/us_qvarma_spec_choice.c`, which the t-QVARMA is fitted on, and
+the same arithmetic as `us_system_growth_block` in `applications/us_data.h`,
+which the local projections use. The local projections drop three further
+quarters, where the four-quarter moving average of log GDP that decides their
+state does not exist: 184 quarters, 1974Q1 to 2019Q4.
+
+Every simulated run is stored in this second form, by the same arithmetic
+applied to the model's own levels (`applications/abm_system.h`;
+`docs/ABM_SYSTEM_SIMULATION.md`, "The observables").
+`tests/abm_system_layout.c` checks that the simulated route and the US route
+agree.
+
+In the t-QVARMA, the first three series are treated as stationary and
+inflation and the interest rate as co-integrated with rank one, the Fisher
+relation (`docs/MCS_VALIDATION_PROCEDURE.md`, "Auxiliary specification").
 
 ## The sample
 
-1973Q1 to 2019Q4, `us_real.csv` rows 0 to 187, 188 quarters.
+The sample ends at 2019Q4 to exclude the COVID quarters, where `Unemployment`
+goes from 3.8 to 13.07 and GDP growth to -10.03 in a single quarter. It starts
+at the first row of `us_real.csv`, 1973Q1.
 
-Fabiano's own sample is reported as 1973:Q2 to 2019:Q4, T = 188. `us_real.csv`
-row 0 is 1973Q1, and 188 quarters from there lands on 2019Q4 exactly, matching
-the row count precisely; starting at 1973Q2 as the thesis text states would
-give T = 187, one short. Either the thesis summary's quarter is off by one or
-its own source starts a quarter later than this file — not established here —
-but the row count is the fact this file can check, and 188 from 1973Q1 is what
-it confirms. The end, 2019Q4, is the same choice Fabiano makes and this
-project already made independently: excluding the COVID quarters, where
-`Unemployment` goes from 3.8 to 13.07 and GDP growth to -10.03 in a single
-quarter.
+## A caveat on the interest rate
+
+`Fed_rate` was compared with the effective federal funds rate series Blazsek,
+Escribano and Licht (2023) estimated on, which the authors supplied and which
+is not distributed here. Aligned on the quarter that GDP growth gives (the two
+files' GDP growth agree to a mean absolute gap of 0.003 at that alignment),
+the mean absolute gap between the two interest rates is 0.70 percentage points,
+and one quarter later it is 0.22. `Fed_rate` therefore looks shifted by one
+quarter relative to `GDP` within `us_real.csv`. The pipeline uses `Fed_rate`
+as it stands, unshifted. What that costs has not been measured.
 
 ## Reproducing this
 
     make app-us_prepare_data
 
-writes `out/us_system.csv`. It runs before `app-us_qvarma_spec_choice` and
-before `make applications`, which the Makefile declares as prerequisites, so a
-standalone run of either regenerates the CSV rather than reading a stale one.
-
-## Background: why `qvarma_data.txt` plays no part in this
-
-Kept for the record. This is what a transformation-search diagnostic
-established when the project's variables were still being taken partly from
-Blazsek, Escribano and Licht's own file; it is why that file was dropped from
-the empirical pipeline rather than merely deprioritised. Neither the script nor
-`qvarma_data.txt` is part of this repository, so what follows is the conclusion
-and not something that can be re-run here.
-
-### The two files, as the search saw them
-
-| file | rows | span | contents |
-|---|---|---|---|
-| `us_real.csv` | 193 | 1973Q1 to 2021Q1 | raw levels: GDP, Consumption, Cpi, Investment, Unemployment, Energy_demand, Des_Energy_demand, Total_CO2_Emissions, Des_Total_CO2_Emissions, Fed_rate |
-| `qvarma_data.txt` | 264 | 1954Q3 to 2020Q2 | the authors' own three series, tab separated, no header: GDP growth, inflation rate, effective federal funds rate |
-
-`qvarma_data.txt` is the data Blazsek, Escribano and Licht estimated on,
-supplied by them. That it is their exact dataset rather than a reconstruction
-was checked against the paper's Table 2, and all six figures agreed:
-
-| column | mean | sample sd | Table 2 |
-|---|---|---|---|
-| GDP growth | 2.9455 | 2.4139 | 2.9455, 2.4139 |
-| inflation rate | 3.1082 | 2.1252 | 3.1082, 2.1252 |
-| federal funds rate | 4.7419 | 3.5797 | 4.7419, 3.5797 |
-
-The minima and maxima agreed too: -10.0275 and 8.7343, 0.2616 and 10.3687,
-0.0600 and 17.7800. Note the standard deviation there is the `1/(n-1)` one;
-`stats_var` in et_al returns the `1/n` variance, which gives 2.4093, 2.1212 and
-3.5729 instead.
-
-Row 74 of `qvarma_data.txt` is row 0 of `us_real.csv`, both being 1973Q1,
-established two ways that agreed: by search, the smallest average absolute gap
-anywhere in the alignment search, 0.003013, fell at offset 74; by arithmetic,
-their row 0 is 1954Q3, and 1954Q3 plus 74 quarters is 1973Q1.
-
-### Why each of their three series was rejected as a source
-
-**GDP growth** reproduced almost exactly:
-`100 (ln GDP_t - ln GDP_{t-4})` against their column, average absolute gap
-0.003013, correlation 0.999861. This is not why it was dropped — it is dropped
-now because the model uses the level, not the growth rate, per Fabiano's own
-specification, not because `us_real.csv` could not supply the growth rate.
-
-**The inflation rate could not be reproduced from `Cpi`.** No candidate came
-close enough to be their construction:
-
-| candidate | average gap | correlation |
-|---|---|---|
-| year-over-year log change of the four-quarter mean level | 0.713757 | 0.967051 |
-| four-quarter mean of the year-over-year log change | 0.714957 | 0.967003 |
-| `100 ln(Cpi_t / Cpi_{t-4})` | 0.760999 | 0.950423 |
-| `400 ln(Cpi_t / Cpi_{t-1})` | 1.431469 | 0.806786 |
-
-An average gap of 0.71 on a series whose own mean is 3.11 is a 23 per cent
-relative error, against GDP's 0.003 from the same kind of transformation of
-the same file. This is moot now that the model wants the level, `100 ln(Cpi_t)`,
-built from `Cpi` directly with no reconstruction problem at all — the
-inflation-rate reconstruction difficulty was specific to differencing a series
-whose underlying index might be a different vintage; the level itself is not
-in question.
-
-**The federal funds rate was a level but not their column.** Against
-`us_real.csv`'s `Fed_rate`:
-
-| alignment | average gap | correlation |
-|---|---|---|
-| offset 74, the alignment GDP establishes | 0.697421 | 0.948107 |
-| offset 75, one quarter later | 0.222434 | 0.992677 |
-
-`Fed_rate` fit best one quarter away from the alignment the `GDP` column in
-the same file establishes — a misalignment inside `us_real.csv` itself,
-`Fed_rate` offset by one quarter relative to `GDP`. This project's earlier
-answer was to take the rate from `qvarma_data.txt` instead and, if `Fed_rate`
-were ever used, to correct the offset first. The current pipeline instead
-takes `Fed_rate` as it stands, no shift, on the view that whatever internal
-offset `us_real.csv` carries is a property of this file's own vintage of the
-series and not something to correct by borrowing values from a different one.
-What that choice costs has not been measured here.
-
-**Unemployment and energy demand were never in the authors' file at all,**
-so both always came from `us_real.csv`, regardless of this question.
+writes `out/us_system.csv`. The `make app-<name>` targets that read it depend
+on `app-us_prepare_data`, directly or through the US fit, so they regenerate it
+rather than read a stale copy. The studies under `studies/` do not, and read
+whatever is on disk.

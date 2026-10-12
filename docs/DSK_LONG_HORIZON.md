@@ -1,16 +1,19 @@
 # The simulator on long horizons
 
 The experiment in `docs/ABM_SYSTEM_SIMULATION.md` runs the DSK model for 600
-periods. A second pipeline wants one run of the winning configuration for
-400,200 periods. The model cannot do that as it stands: every run longer than
-about 1,640 periods is rejected, and every run longer than 2,787 periods never
-finishes. This file records why, what each failure is, and which of them are
-bugs rather than properties of the model.
+periods. Much longer runs, such as one run of the winning configuration over
+400,200 periods in place of many short ones, fail in the model as published:
+every run longer than about 1,640 periods is rejected, and every run longer
+than 2,787 periods never finishes. This file records why, what each failure
+is, and which of them are bugs rather than properties of the model.
 
 `docs/DSK_MODEL_CHANGES.md` is the record of how `model/dsk_sfc` differs from
-upstream and how that is tested. The three failures that are bugs or costs are
-now changed in `model/dsk_sfc`; each section ends with what was changed and how
-it was checked. The two limits that are properties of the model are not.
+upstream and how that is tested. Each section below that ends with
+**Changed** says what was changed in `model/dsk_sfc` and how it was checked:
+the two bugs, the cost of rationing, and the growth of machine counts, money
+and real output, the last three handled by counting in bigger units. The
+growth of world emissions is not changed, so a run still overflows near period
+127,672.
 
 ## How the failures were found
 
@@ -49,8 +52,8 @@ file and error log are byte-identical to this project's up to that point. Both
 failures below that happen before period 2,788 are therefore upstream's.
 
 Where a run stops was found with the model's own `-v 1` trace, which prints each
-function as it returns, and then with counters and prints added to a scratch
-copy of the source outside this repository. None of that instrumentation is in
+function as it returns, and then with counters and prints added to a temporary
+copy of the source. None of that instrumentation is in
 `model/dsk_sfc`.
 
 ## The failures, in the order a long run meets them
@@ -72,8 +75,9 @@ The last two are computed, not observed; their sections say how.
 `CLIMATEBOX()` in `modules/module_climate_sfc.cpp` splits carbon between the
 atmosphere and the upper ocean by iterating on the atmospheric stock until the
 remaining imbalance `Cay` is below `1e-10` in absolute terms, for at most
-`niterclim = 20` iterations. `dsk_sfc_main.cpp:302` logs the error when the
-twentieth iteration is reached.
+`niterclim = 20` iterations. The main loop in `dsk_sfc_main.cpp` logs the error
+("Carbon content loop did not converge") when the twentieth iteration is
+reached.
 
 The stock it iterates on grows without limit (see "World emissions" below). At
 period 1,640 the total carbon being split, `Ctot1`, is 1,206,784. The spacing
@@ -112,16 +116,16 @@ further apart than the tolerance, which needs a carbon total of about a million,
 far past anything a 600-period run reaches.
 
 The same division by zero turns up a second way, much later. At period 6,288 of
-`cop_0191`, seed 1, the carbon total is 9.8e16, where neighbouring doubles are 16
-apart, and the gradient worked out before the first iteration already uses a
+`cop_0191`, seed 1, the carbon total is 9.8e16, where neighbouring doubles are
+16 apart, and the gradient worked out before the first iteration already uses a
 nearby point six units away, which rounds onto the guess itself. So the
-iteration is also skipped when that first nearby point equals the guess, and the
-guess is kept. Where the first gradient is not 0/0 nothing changes.
+iteration is also skipped when that first nearby point equals the guess, and
+the guess is kept. Where the first gradient is not 0/0 nothing changes.
 
-Checked on `cop_0191`, seed 1, `T = 2,400`, against the build without the change:
-the results files are identical in every cell except column 47 from period
-1,756 on, where the unchanged build holds NaN, and the error log is empty where
-the unchanged build's has 9,180 bytes of the convergence message.
+Checked on `cop_0191`, seed 1, `T = 2,400`, against the build without the
+change: the results files are identical in every cell except column 47 from
+period 1,756 on, where the unchanged build holds NaN, and the error log is
+empty where the unchanged build's has 9,180 bytes of the convergence message.
 
 ### Sold second-hand machines are marked with a price of 1,000,000
 
@@ -130,7 +134,7 @@ consumption-good firms on the second-hand market, cheapest vintage first. It
 fills `C_secondhand` with the unit cost of each vintage on offer, and a vintage
 qualifies when its unit cost is no larger than the smallest entry. After a
 vintage is sold its entry is overwritten with `1000000` so that it drops out of
-the minimum (`dsk_sfc_main.cpp:5286`, upstream's `dsk_sfc_main.cpp:4954`). The
+the minimum (the assignment to `C_secondhand(tt,i)` inside `ENTRYEXIT()`). The
 loop repeats until every machine to be sold, `n_mach_exit2`, is gone.
 
 `1000000` stands in for "larger than any unit cost". Unit costs are nominal and
@@ -147,7 +151,8 @@ with infinity in a scratch copy lets the same run continue past period 2,788 to
 period 8,888, where the next section begins.
 
 The rest of the matrix is already set to infinity every period
-(`dsk_sfc_main.cpp:2109`), so infinity is also the value the code uses
+(`C_secondhand=std::numeric_limits<double>::infinity()` in
+`dsk_sfc_main.cpp`), so infinity is also the value the code uses
 elsewhere for the same purpose.
 
 **Changed.** A sold vintage is now marked with infinity. While every unit cost
@@ -159,8 +164,8 @@ the same as before. Checked on `cop_0191`, seed 1: `T = 3,200` finishes with all
 
 `LABOR()` in `modules/module_macro_sfc.cpp` scales production back when labour
 demand exceeds supply. For a capital-good firm that means cancelling
-`reduction` machines of its customers' orders, and `module_macro_sfc.cpp:46`
-does it one machine per pass: draw one of the 200 consumption-good firms at
+`reduction` machines of its customers' orders, and upstream's `LABOR()` does it
+one machine per pass: draw one of the 200 consumption-good firms at
 random, and cancel one machine if that firm is a customer with an order
 outstanding. With about one customer in twenty that is roughly twenty random
 draws per machine.
@@ -189,12 +194,13 @@ value of every design parameter, `cop_0191` and 60 design rows drawn at random
 with seed 7, each at seeds 1, 2 and 3 - the largest was 86.
 
 **Changed.** Past 10,000 machines, `LABOR()` hands the cancellation to
-`dsk_sfc_bulk_cancellation.h`, which draws how many machines each customer loses
-as binomial counts from the model's own random stream, with the distribution the
-loop has. At or below 10,000 the loop runs exactly as upstream wrote it, which is
-more than a hundred times the largest count any 600-period run above produced.
-Past the threshold a run is no longer the run the loop would have produced, only
-one with the same distribution, because the random draws differ.
+`dsk_sfc_bulk_cancellation.h`, which draws how many machines each customer
+loses as binomial counts from the model's own random stream, with the
+distribution the loop has. At or below 10,000 the loop runs exactly as upstream
+wrote it, which is more than a hundred times the largest count any 600-period
+run above produced. Past the threshold a run is no longer the run the loop
+would have produced, only one with the same distribution, because the random
+draws differ.
 
 `tests/dsk_bulk_cancellation_distribution.cpp` checks that distribution against
 exact probabilities worked out by enumerating the loop's own process, and runs
@@ -208,15 +214,15 @@ wrote it.
 
 ### Machine counts pass the largest whole number a double holds exactly
 
-Machines are counted in doubles, and every whole number is exact in a double only
-up to 2^53, about 9.007e15. The number of machines grows with real output. At
-period 12,908 of `cop_0191`, seed 1, the exiting consumption-good firms hold
+Machines are counted in doubles, and every whole number is exact in a double
+only up to 2^53, about 9.007e15. The number of machines grows with real output.
+At period 12,908 of `cop_0191`, seed 1, the exiting consumption-good firms hold
 11,917,600,000,000,000 machines between them, above that limit, and the counts
-added into the second-hand pool and the counts handed out of it no longer come to
-the same total. Eleven firms enter; the last of them, firm 194, is owed one
+added into the second-hand pool and the counts handed out of it no longer come
+to the same total. Eleven firms enter; the last of them, firm 194, is owed one
 machine when the pool is empty, and the loop in `ENTRYEXIT()` that hands out
-second-hand machines draws a capital-good firm at random, looking for stock, for
-ever.
+second-hand machines draws a capital-good firm at random, looking for stock,
+for ever.
 
 Measured with a scratch build printing the machines to sell, the pool left and
 the machines owed, on every pass of that loop whose number is a power of two.
@@ -254,16 +260,16 @@ the prices it paid - are re-derived from the rounded holdings rather than left
 to drift.
 
 Unlike redenominating money, this cannot be exact: halving an odd count leaves
-half a machine. At the ceiling a holding is around 1e12 machines, so the rounding
-moves it by about one part in 1e12. `tests/dsk_machine_lot_rebase.c` measures
-what that does: in the period of the first rebase, real GDP, consumption,
-investment, employment and the capital stock are within 6e-12 of a run that
-never rebased, and every period before it is identical. After it the two runs
-are different paths, which is what the model does with any perturbation - its
-own `dsk_ulp_sensitivity` test shows a change of one part in 1e15 reaching the
-output within a few periods - so what the test compares from there on is the
-process: mean growth of real GDP and of the price level over the following 1,600
-periods agree within half a standard error.
+half a machine. At the ceiling a holding is around 1e12 machines, so the
+rounding moves it by about one part in 1e12. `tests/dsk_machine_lot_rebase.c`
+measures what that does: in the period of the first rebase, real GDP,
+consumption, investment, employment and the capital stock are within 6e-12 of a
+run that never rebased, and every period before it is identical. After it the
+two runs are different paths, which is what the model does with any
+perturbation - its own `dsk_ulp_sensitivity` test shows a change of one part in
+1e15 reaching the output within a few periods - so what the test compares from
+there on is the process: mean growth of real GDP and of the price level over
+the following 1,600 periods agree within half a standard error.
 
 With this, a run reaches period 14,000, past the 12,908 where it used to stop.
 
@@ -271,9 +277,10 @@ With this, a run reaches period 14,000, past the 12,908 where it used to stop.
 
 `CLIMATEBOX()` multiplies the rest of the world's emissions, `Emiss_global`, by
 `g_emiss_global = 1.02185` once per simulated year (every `freqclim = 4`
-periods) and nothing else ever changes it (`module_climate_sfc.cpp:61`). It was
-5.7963e12 at period 1,756. Multiplying by 1.02185 overflows the largest double,
-about 1.8e308, after 31,479 more years, which is period 127,672.
+periods) and nothing else ever changes it
+(`Emiss_global=Emiss_global*g_emiss_global` in `module_climate_sfc.cpp`). It
+was 5.7963e12 at period 1,756. Multiplying by 1.02185 overflows the largest
+double, about 1.8e308, after 31,479 more years, which is period 127,672.
 
 This is not measured: it is the arithmetic of a constant factor, from the value
 printed at period 1,756. What the climate block does after the overflow has not
@@ -296,8 +303,8 @@ parameter file names others, and a 600-period run never comes near either, so
 the equivalence tests against upstream still compare identical files.
 
 What counts as money is a list of 214 variables in that header, and it is the
-whole difficulty. `tests/dsk_redenomination_invariance.c` is what makes the list
-honest: it runs the model with the ceiling low enough to fire several times and
+whole difficulty. `tests/dsk_redenomination_invariance.c` checks the list: it
+runs the model with the ceiling low enough to fire several times and
 requires every value in the results file to come back either unchanged or scaled
 by exactly the factor applied, which fails if a money variable is left out or a
 real one is included. Getting it to pass took six rounds, and what it caught is
@@ -394,14 +401,15 @@ None of it is meant to make the model slower, and the experiment is billed in
 runs a minute, so both were measured.
 
 Setup: three builds - the commit before this work (`0a8d6e74`), the commit with
-the first three fixes (`dcf3b4a6`), and the working tree with the redenomination
-and the machine lots on top - each built by `model/dsk_sfc/build.sh` from its own
-copy of the tree, all reading the same `dsk_sfc_inputs.json` (md5 checked equal),
-600 periods. One batch ran them in that order and a second in the reverse order,
-because this machine drifts several per cent over a session. Single runs: seed 1,
-eight and twelve rounds, the first two discarded, median reported. Throughput:
-eighty runs, eight processes of ten seeds each, four rounds, median reported.
-Nothing else was running.
+the first three fixes (`dcf3b4a6`), and the working tree with the
+redenomination and the machine lots on top - each built by
+`model/dsk_sfc/build.sh` from its own copy of the tree, all reading the same
+`dsk_sfc_inputs.json` (md5 checked equal), 600 periods. One batch ran them in
+that order and a second in the reverse order, because this machine drifts
+several per cent over a session. Single runs: seed 1, eight and twelve rounds,
+the first two discarded, median reported. Throughput: eighty runs, eight
+processes of ten seeds each, four rounds, median reported. Nothing else was
+running.
 
 | | before | first three fixes | redenomination and lots |
 |---|---:|---:|---:|
@@ -420,8 +428,7 @@ the million-run experiment 4% is about an hour and a half.
 Where that 3% sits has not been traced. The fixes add a comparison per carbon
 iteration, a comparison per rationing event and one changed constant, none of
 which accounts for it on its own; a shift in code layout under link-time
-optimisation would. It was measured rather than argued, and it buys runs that
-do not stop at period 2,788.
+optimisation would.
 
 ## Two costs that decide whether a long run is practical
 
@@ -440,10 +447,10 @@ An earlier version of this section said the vintage loops cover every period
 since the start. That was wrong. `OVERBOOST()` advances `t0`, the oldest vintage
 they cover, past every vintage nobody holds, at the end of every period.
 
-With all three changes above, `cop_0191`, seed 1, a scratch build printing
-`t - t0 + 1` and the elapsed time every 250 periods: 21 vintages held at every
-sample from period 250 to period 12,750, and 27.8 s from period 250 to period 12,500, about
-2.2 ms a period, rising slowly (1.7 s per thousand periods near the start, 2.9 s
-near period 12,000). The 41 ms a period measured before the labour change was
-that loop. Periods between samples were not measured, so the largest window is
-not known.
+With all three changes above, `cop_0191`, seed 1, a scratch build printing `t -
+t0 + 1` and the elapsed time every 250 periods: 21 vintages held at every
+sample from period 250 to period 12,750, and 27.8 s from period 250 to period
+12,500, about 2.2 ms a period, rising slowly (1.7 s per thousand periods near
+the start, 2.9 s near period 12,000). The 41 ms a period measured before the
+labour change was that loop. Periods between samples were not measured, so the
+largest window is not known.

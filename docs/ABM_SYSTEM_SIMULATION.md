@@ -33,25 +33,27 @@ Nine structural parameters are varied. Every other element of the model's
 calibration is held at its baseline value, so the experiment identifies nothing
 about them; they are part of the maintained specification, not of the design.
 
-| parameter | lower | upper |
-|---|---:|---:|
-| Gamma | 0.05 | 0.25 |
-| chi | -1.50 | -1.25 |
-| psi1 | 0.10 | 0.50 |
-| psi3 | 0.10 | 0.50 |
-| alfa | 0.10 | 0.50 |
-| taylor1 | 1.00 | 1.50 |
-| taylor2 | 0.00 | 0.50 |
-| taylor | 0.50 | 0.95 |
-| kappa | 0.50 | 0.95 |
+| parameter | lower | upper | what it does in the model |
+|---|---:|---:|---|
+| Gamma | 0.05 | 0.25 | share of its current customers a capital-good firm adds as newly contacted potential customers each period |
+| chi | -1.50 | -1.25 | how strongly consumption-good firms' market shares respond to their competitiveness relative to the average (replicator dynamics) |
+| psi1 | 0.10 | 0.50 | sensitivity of wage growth to inflation above target |
+| psi3 | 0.10 | 0.50 | sensitivity of wage growth to the change in unemployment |
+| alfa | 0.10 | 0.50 | persistence of consumption-good firms' adaptive demand expectations |
+| taylor1 | 1.00 | 1.50 | Taylor rule: response of the policy rate to inflation above target |
+| taylor2 | 0.00 | 0.50 | Taylor rule: response of the policy rate to unemployment below its natural rate |
+| taylor | 0.50 | 0.95 | smoothing of the policy rate: weight on last period's rate |
+| kappa | 0.50 | 0.95 | persistence of the long-run average of productivity growth that enters wage growth |
 
-The names are the model's own and the interpretation of each parameter belongs
-to the model, not to this design; the supports in the table are the whole of
-what the design asserts. Two readings are worth stating as inferences from the supports
-alone, since they are what makes the bounds look deliberate rather than
-arbitrary: `taylor1` starting exactly at 1 is where the Taylor principle binds,
-and `taylor` confined to $(0,1)$ is the shape of an interest-rate smoothing
-coefficient. Neither is verified against the model's source here.
+The names are the model's own. The descriptions are read from the model's
+source: its comments in `model/dsk_sfc/dsk_sfc_parameters.h` and the line where
+each parameter is used, for instance
+`r_a=r_base+taylor1*(inflation_a-d_cpi_target_a)+taylor2*(ustar-U(1))` and
+`r=taylor*r+(1-taylor)*((1+r_a)^0.25-1)` in `modules/module_macro_sfc.cpp` for
+the three Taylor-rule parameters. The economic interpretation beyond that
+belongs to the model's authors. `taylor1` starting at 1 is where the Taylor
+principle binds, so every configuration responds to inflation more than one for
+one.
 
 ### The shock flags stay off
 
@@ -129,12 +131,11 @@ uniform and the pairing across margins is a uniform permutation, with no
 maximin-distance or orthogonality post-optimisation. It is not reproducible
 against R's `lhs` package, whose API et_al's follows: both draw from the same
 distribution, but the generators differ, so the same seed does not give the
-same points. The design is therefore
-space-filling in the marginal sense and only in that sense; a sample
-correlation between two parameters is not zero by construction, it is merely
-$O(n^{-1/2})$. Rows are checked for exact duplication, which a continuous
-sampler should never produce and which would indicate the sampler was
-misconfigured.
+same points. The design is therefore space-filling in the marginal sense and
+only in that sense; a sample correlation between two parameters is not zero by
+construction, it is merely $O(n^{-1/2})$. Rows are checked for exact
+duplication, which a continuous sampler should never produce and which would
+indicate the sampler was misconfigured.
 
 The design is drawn under a fixed seed, so the 1000 configurations are the same
 object on every machine and the design table can be rebuilt rather than
@@ -193,27 +194,26 @@ Output: `out/abm_system_seed_correlation_report.txt`.
 | loss correlation, shifted seed | $-0.0001$ | $-0.0449$ | $-0.0031$ | $0.0522$ |
 | variance ratio, same seed | $0.9988$ | $0.9609$ | $1.0007$ | $1.0306$ |
 
-The variance ratio is
-$\operatorname{Var}(L_i - L_j) / (\operatorname{Var}(L_i) + \operatorname{Var}(L_j))$,
-which is $1$ when the seeds bought nothing. It is $0.9988$. The share of pairs
-correlated above $2/\sqrt{1000} = 0.063$ is 3.27 per cent at the same seed
-against 2.93 per cent at the shifted one, which is the difference between two
-numbers that would both be about 2.3 per cent if nothing were shared at all.
-Correlation does not fall with distance in the design either: the Spearman rank
-correlation between a pair's design distance and its loss correlation is
-$0.0009$ over the 71,357 pairs sampled, and the mean loss correlation by
-distance quartile, nearest first, is $0.0021$, $0.0017$, $0.0016$, $0.0019$.
+The variance ratio is $\operatorname{Var}(L_i - L_j) / (\operatorname{Var}(L_i)
++ \operatorname{Var}(L_j))$, which is $1$ when the seeds bought nothing. It is
+$0.9988$. The share of pairs correlated above $2/\sqrt{1000} = 0.063$ is 3.27
+per cent at the same seed against 2.93 per cent at the shifted one, which is
+the difference between two numbers that would both be about 2.3 per cent if
+nothing were shared at all. Correlation does not fall with distance in the
+design either: the Spearman rank correlation between a pair's design distance
+and its loss correlation is $0.0009$ over the 71,357 pairs sampled, and the
+mean loss correlation by distance quartile, nearest first, is $0.0021$,
+$0.0017$, $0.0016$, $0.0019$.
 
 On the pair the confidence set separated last, `cop_0191` against `cop_0148`,
 the standard error of the mean loss difference is $0.000151$ treating
 replicates as independent and $0.000149$ using the paired differences, so the
 shared seeds moved the test statistic from $3.34$ to $3.37$ standard errors.
 
-The desynchronisation described above is what this looks like when it happens,
-and it happens completely: the streams share a seed and nothing else. The
-convention costs nothing and is kept because it makes a replication traceable
-to its seed, not because it reduces any variance. Any claim that it does should
-be read against this measurement.
+This is the desynchronisation described above, and it is complete: the
+streams share a seed and nothing else. The convention costs nothing and is kept
+because it makes a replication traceable to its seed, not because it reduces
+any variance.
 
 The seed a replication came from is its own index plus one, and the archive
 records that index beside the series, so a stored replication can always be
@@ -228,7 +228,7 @@ draws rather than destroyed by them.
 ## The observables
 
 The model writes 83 whitespace-separated columns per period with no header.
-Eight are kept:
+Five are kept:
 
 | name stored | model expression | column |
 |---|---|---:|
@@ -264,8 +264,10 @@ itself in the data.
   again nothing breaks, it only stops answering the question asked.
 
 The five columns are not stored in the model's own units. Each run is
-transformed as soon as it is read, by the same code the older dataset goes
-through, into what the auxiliary model is actually fitted on: GDP and energy
+transformed as soon as it is read into what the auxiliary model is fitted on,
+by the same code that converts the older dataset (100 configurations of 108
+replications each, delivered as `.Rdata` files before this design was run, and
+read by `applications/abm_system_convert_rdata.c`): GDP and energy
 as $100$ times the first difference of their logarithms, the price level the
 same way, giving inflation, the employment rate as $100$ times its first
 difference, and the interest rate as $100$ times its level, which turns the
@@ -312,8 +314,7 @@ average.
 
 ## What is written, and when
 
-Simulation is the whole pipeline's only step that is not C, and it is not one
-either: `applications/abm_system_simulate.c` reads the design, runs the model,
+`applications/abm_system_simulate.c`, in C, reads the design, runs the model,
 transforms each run and writes it. Nothing between the model executable and
 the auxiliary model's fit is anything but C, the standard library and et_al.
 
@@ -376,27 +377,26 @@ operation. A batch is skipped whole, its failures included: the model is
 deterministic in its seed, so a run that failed once fails the same way again,
 and the failure log is where that is recorded.
 
-The model is `model/dsk_sfc`, whose source is kept in this repository and built by
-`make model`; `docs/DSK_MODEL_CHANGES.md` records what this project changed in
-it, what those changes are tested to leave alone, and the bug they fixed. It
+The model is `model/dsk_sfc`, whose source is kept in this repository and built
+by `make model`; `docs/DSK_MODEL_CHANGES.md` records what this project changed
+in it, what those changes are tested to leave alone, and the bug they fixed. It
 reads one JSON parameter file and one seed per execution and writes its output
-into the directory holding the executable it was invoked as. Each
-process therefore reaches the executable through a symlink inside its own
-scratch directory: the baseline JSON is parsed, the nine design parameters and
-the horizon are overwritten, and the result is written next to that symlink,
-which is what lets many processes share one build without colliding. The
-parameter file is rewritten in full rather than patched textually, and the
-101 fields of the baseline that the design does not touch come through
-unchanged.
+into the directory holding the executable it was invoked as. Each process
+therefore reaches the executable through a symlink inside its own scratch
+directory: the baseline JSON is parsed, the nine design parameters and the
+horizon are overwritten, and the result is written next to that symlink, which
+is what lets many processes share one build without colliding. The parameter
+file is rewritten in full rather than patched textually, and the 101 fields of
+the baseline that the design does not touch come through unchanged.
 
 ## Cost, and what the cost estimate rests on
 
-One replication is 10,619 bytes, the mean over the 108 replications of
-`EstimationSeriesSample1_1` re-extracted through the current writer, so it is
-measured on real dynamics rather than on synthetic test data. A configuration
-is 10.6 MB and the design 10.6 GB. The same replications were 29,356 bytes
-each as CSV, 29.4 GB, and 12,297 bytes each in one archive per replication,
-12.3 GB.
+Before the run, storage was projected from the first configuration of the
+older dataset: its 108 replications, re-extracted through the current writer,
+took 10,619 bytes each, which projected 10.6 GB for the design. The same
+replications took 29,356 bytes each as CSV and 12,297 bytes each with one
+archive per replication. The pilot below projected 14.1 GB, and the design run
+stored 15 GB, about 15 kB per replication.
 
 What is left below this is not a format question. Storing the model's levels
 rather than the transformed series would compress better, because levels are
@@ -455,9 +455,8 @@ between them. An array already on disk is skipped rather than recomputed, which
 is what makes an interrupted run resumable and a job array re-submittable. Each
 task reaches the executable through a symlink in its own scratch directory,
 because the model writes its output into the directory holding the path it was
-invoked as - concurrent tasks sharing one
-directory would overwrite each other's results and put a million small writes on
-a shared filesystem.
+invoked as - concurrent tasks sharing one directory would overwrite each
+other's results and put a million small writes on a shared filesystem.
 
 
 ### Running it
@@ -487,11 +486,12 @@ Two things the script refuses, both because
 cannot tell one dataset from another.
 
 It refuses an output directory holding subdirectories this experiment did not
-write. `dataset/abm_system` now holds the thousand `cop_NNNN` directories of the
-design run; the hundred the older `.Rdata` route produced were moved to
-`dataset/abm_system_rdata`, which is where `applications/abm_system_convert_rdata.c`
-writes by default now and which it refuses to leave. Either move an old dataset
-aside or set `ABM_SYSTEM_OUTPUT_DIR` to somewhere else.
+write. `dataset/abm_system` now holds the thousand `cop_NNNN` directories of
+the design run; the hundred the older `.Rdata` route produced were moved to
+`dataset/abm_system_rdata`, which is where
+`applications/abm_system_convert_rdata.c` writes by default now and which it
+refuses to leave. Either move an old dataset aside or set
+`ABM_SYSTEM_OUTPUT_DIR` to somewhere else.
 
 It also refuses an output directory filled under a different parameter design.
 A configuration number is a row index into `dataset/abm_system_design.csv` and
@@ -586,10 +586,8 @@ model's error log, came back the wrong shape, or contained a missing or infinite
 value. `out/abm_system_simulate_all_provenance.txt` holds the same numbers
 alongside the checksums of the design and the model binary that produced them.
 
-What a pilot checks is not correctness of the pipeline but the failure rate: the
-completion count is the one quantity whose behaviour across the parameter space
-cannot be predicted from the design, and it decides whether the experiment as
-specified is worth its 147 hours. Sixteen contiguous rows are a weaker probe of
-that than the corners of the box would be, so a second pilot at the design rows
-holding the extreme parameter values is worth the two minutes before committing
-two days.
+What the pilot checked was the failure rate, the one quantity whose behaviour
+across the parameter space cannot be predicted from the design. Sixteen
+contiguous rows are a weaker probe of that than the corners of the box would
+have been; no pilot at the corners was run, and in the full run no replication
+failed.

@@ -1,7 +1,8 @@
 /*
-Discarded from both pipelines: the local projections on R's levels instead of
-on the five series the t-QVARMA is fitted on. The main transformation is kept
-because it loses less information; docs/OLD_EXPERIMENTS.md.
+Discarded from both pipelines: the local projections on cumulated levels
+instead of on the five series the t-QVARMA is fitted on. The main
+transformation is kept because it loses less information;
+docs/OLD_EXPERIMENTS.md.
 
 The confidence sets of the local projections against the US data: each of the
 three loss tables applications/abm_system_lp_irf_loss.c writes (linear, state
@@ -14,13 +15,12 @@ bootstrap the independent replicates call for, the bootstrap variance of the
 resampled mean, the library's seed and stream. MCS_TR is the headline
 statistic; MCS_TMAX is scored on the same resamples beside it.
 
-The collaborator's thesis also runs a set on the two states together; how it
-combines them is not written down, so that set is not computed here.
+No set is run on the two states together.
 
 Requires out/abm_system_lp_irf_loss_<model>.csv. Writes
 out/abm_system_lp_mcs_<model>.txt, the readable report with both elimination
 tables, and out/abm_system_lp_mcs_<model>.csv, one row per configuration.
-This is that run on R's levels: every one of these names carries _r_levels
+This is that run on cumulated levels: every one of these names carries _r_levels
 after abm_system_lp. Takes no arguments. Nothing printed.
 */
 

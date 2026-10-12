@@ -20,30 +20,39 @@ has the numbers and where they come from.
 The ten steps that produce the result, from simulation to figures, and the
 files each one writes are listed under "The main pipeline" below.
 
-`docs/MCS_VALIDATION_PROCEDURE.md` describes the validation procedure, the same
-for the US data and for the Monte Carlo: what is compared against what, why the
-comparison runs on impulse responses rather than on fitted parameters, and the
-settings the confidence set is computed under.
-`docs/ABM_SYSTEM_MCS_VALIDATION.md` records its result on the US data.
-`docs/OLD_SCORE_LOSS.md` records a discarded route to the same
-confidence set, which scored each simulated series by the score of the
-auxiliary model's log-likelihood at the real data's own estimate, unweighted
-(`q'q`) and weighted by the inverse information matrix. It missed the known
-answer in the Monte Carlo check and has no theoretical justification, so its
-code is under `old/`.
-`docs/MONTECARLO_VALIDATION.md` describes the check that the validation
-procedure recovers an answer it already knows: one simulated run replaces the
-US data, and the confidence set should return the configuration that run came
-from.
-`docs/DATA_DOCUMENTATION.md` records where the US series come from and how each
-one is transformed. `docs/ABM_SYSTEM_SIMULATION.md` describes the design the
-simulations run over and how they are stored, and
-`docs/DSK_MODEL_CHANGES.md` records what this project changed in the simulator
-and what those changes are measured and tested to leave alone.
-`docs/Model_Simulation.Rmd` is not this project's writing: it is the brief the
-simulation workflow was derived from, kept for reference. Everything else
-written down lives in `docs/` too; no directory in this tree carries a note of
-its own.
+**Status.** The validation procedure is being refined in the Monte Carlo study,
+and the empirical validation on the US data is behind it: it will be brought up
+to date once the Monte Carlo is finished. `docs/MCS_VALIDATION_PROCEDURE.md`,
+"Status", says where the two differ now.
+
+The documentation, all of it under `docs/`:
+
+- `docs/MCS_VALIDATION_PROCEDURE.md`: the validation procedure, the same for
+  the US data and for the Monte Carlo: what is compared against what, why the
+  comparison runs on impulse responses, and the confidence set's settings.
+- `docs/ABM_SYSTEM_MCS_VALIDATION.md` and `docs/ABM_SYSTEM_LP_VALIDATION.md`:
+  its result on the US data, under the t-QVARMA and under the local
+  projections.
+- `docs/MONTECARLO_VALIDATION.md`: the check that the procedure recovers an
+  answer it already knows, with every simulated run of every configuration in
+  turn standing in for the US data. `docs/MONTECARLO_COP_0191.md`,
+  `docs/MONTECARLO_COMPRESSED_RESPONSE.md`, `docs/MONTECARLO_FIT_METRIC.md` and
+  `docs/MONTECARLO_FIT_METRIC_COMPARISON.md` follow it up.
+- `docs/DATA_DOCUMENTATION.md`: the US series and how each is transformed.
+- `docs/ABM_SYSTEM_SIMULATION.md`: the parameter design, the simulations and
+  how they are stored. `docs/ABM_SYSTEM_DISTRIBUTION.md`: the distribution of
+  the simulated series.
+- `docs/DSK_MODEL_CHANGES.md` and `docs/DSK_LONG_HORIZON.md`: what this project
+  changed in the simulator, and the tests that show the changes leave its
+  output alone.
+- `docs/QVARMA_FIT_STUDIES.md`: the studies of the t-QVARMA fits.
+  `docs/BENCHMARKS.md`: how long a fit takes, and the throughput study.
+- `docs/OLD_EXPERIMENTS.md`: the discarded experiments, each with its reason
+  and its own `docs/OLD_*.md` write-up.
+- `docs/Model_Simulation.Rmd` is not this project's writing: it is the R
+  Markdown brief the simulation workflow was derived from, kept for reference.
+
+Every reference cited is listed under "References" at the end.
 
 ## The agent-based model
 
@@ -116,11 +125,10 @@ byte for byte. `make model-upstream` compiles the authors' unmodified source,
 the tests run both programs on the same seeds, and the files they write must
 match exactly. A change that moves a single digit does not go in.
 
-Eleven tests, each answering one question. The first six are the byte-equality
-gate; the last five came with the long-horizon work of
-`docs/DSK_LONG_HORIZON.md`, which added mechanisms that fire only past horizons
-no 600-period run reaches and so cannot be checked by comparison against
-upstream alone.
+Twelve tests, each answering one question; "Tests" below lists them by name.
+Four came with the long-horizon work of `docs/DSK_LONG_HORIZON.md`, which added
+mechanisms that fire only past horizons no 600-period run reaches and so cannot
+be checked by comparison against upstream alone.
 
 - **Does the economy-wide output match?** The 83-column results file, compared
   byte for byte. The unmodified program is also run twice per seed and required
@@ -138,13 +146,13 @@ upstream alone.
   past the end of an array and happens to read a plausible number.
 - **How small a difference would those comparisons actually catch?** The files
   are printed to ten decimals, so in principle a smaller difference could hide
-  in the rounding. Measured rather than assumed: each input parameter is nudged
-  by smaller and smaller amounts until the output changes. For eight of the nine
+  in the rounding. Each input parameter is nudged by smaller and smaller
+  amounts until the output changes. For eight of the nine
   parameters, changing them by a factor of 1.000000000000001 is enough, and the
   change reaches the output within a few simulated periods. That is the last
-  digit a double-precision number can hold, so there is no room left underneath
-  it for a difference to hide.
-- **Does the one bug that was fixed stay fixed?** The published code writes
+  digit a double-precision number can hold, so a difference in the arithmetic
+  would show in the files.
+- **Does the filename bug stay fixed?** The published code writes
   output filenames into 64-byte buffers and corrupts memory past about 26
   characters of directory path, which is shorter than a cluster scratch
   directory.
@@ -224,6 +232,7 @@ minute. `docs/ABM_SYSTEM_SIMULATION.md` has the setup behind those numbers.
                       abm_system.h, which describe this project's own data
     model/dsk_sfc/    the DSK simulator itself, a copy of upstream's source
                       with the speed work of docs/DSK_MODEL_CHANGES.md applied
+    montecarlo/       the Monte Carlo pipeline, with its own out/
     tests/            pass or fail. A failure stops make test and the build
     benchmarks/       how long something takes. Never part of make test: a
                       function that returns the wrong answer quickly is not fast
@@ -241,19 +250,15 @@ minute. `docs/ABM_SYSTEM_SIMULATION.md` has the setup behind those numbers.
                       with make old-<stem>; docs/OLD_EXPERIMENTS.md says why
                       each was discarded, and their write-ups stay in docs/
     out/              every result, written here rather than printed
+    bin/              the compiled programs, rebuilt by make, not tracked
     docs/             the write-up and the reference documentation
 
 A script's directory says what kind of thing it is, and its name says what it
-does rather than how it was once done. Three conventions follow from that and
-are worth stating, because each of them was violated somewhere before:
+does rather than how it was once done. Three conventions follow:
 
-- A name states the question, not an abandoned answer. The loss table is
-  `abm_system_irf_loss`, not `abm_system_mse_qvarma`: the loss has been a mean
-  absolute error since squared error was measured and dropped, and a filename
-  that still said `mse` outlived the decision by months.
+- A name states the question, not a method that may change. The loss table is
+  `abm_system_irf_loss`, not `abm_system_mae_qvarma`.
 - A suffix that distinguished two things is removed when only one is left.
-  `_joint` meant "over both auxiliary specifications" and survived the drop to
-  one spec on four output files.
 - A file under `tests/` does not repeat the word test in its name; the directory
   already says that. The name states what is being verified, specifically enough
   that a sibling covering a different aspect of the same subject cannot collide
@@ -265,12 +270,14 @@ are worth stating, because each of them was violated somewhere before:
 - A C++11 compiler, for the simulator under `model/dsk_sfc`; `make
   model` builds it without cmake
 - et_al, installed so that `pkg-config et_al.-core` resolves
-- Python with `polars`, `plotly` and `kaleido`, for the figures only; plotly
-  writes the PDFs through kaleido
+- Python with `polars`, `plotly` and `kaleido` for the figures (plotly writes
+  the PDFs through kaleido), and `numpy`, `scipy` and `pandas` for the
+  compressed-response prototype of `docs/MONTECARLO_COMPRESSED_RESPONSE.md`
 
 ### The platform everything here was run on
 
-One machine, and nothing in this repository has been run on any other:
+One machine, and nothing in this repository except the benchmarks of
+2026-08-29 (`docs/BENCHMARKS.md`) has been run on any other:
 
     $ uname -srmo
     Linux 6.19.14-arch1-1 x86_64 GNU/Linux
@@ -356,18 +363,19 @@ gives visibly different series is not.
 
 ## Built on et_al
 
-This project depends on [et_al](https://github.com/AlfredoDiodati/et_al.): nothing general is implemented here. The auxiliary model
-itself, the optimiser that fits it, the tests run on the residuals and the
-Model Confidence Set are all et_al's:
+This project depends on [et_al](https://github.com/AlfredoDiodati/et_al.):
+nothing general is implemented here. The auxiliary model itself, the optimiser
+that fits it, the tests run on the residuals and the Model Confidence Set are
+all et_al's:
 
-- `et_al./sd/qvarma.h` — the t-QVARMA model: filter, link, fit, impulse
-  responses and sign-restricted bands
-- `et_al./solver/lbfgs.h` — the limited-memory BFGS the fit descends with
-- `et_al./mcs.h` — the Model Confidence Set
-
-- `et_al./qlr_test.h` — the quasi-likelihood ratio test for the absence of
+- `et_al./sd/qvarma.h`: the t-QVARMA model, with its filter, link, fit,
+  impulse responses and sign-restricted bands
+- `et_al./lp/lp.h`: the linear and state-dependent local projections
+- `et_al./solver/lbfgs.h`: the limited-memory BFGS the fit descends with
+- `et_al./mcs.h`: the Model Confidence Set
+- `et_al./qlr_test.h`: the quasi-likelihood ratio test for the absence of
   score-driven dynamics, with the tabulated critical values compiled in
-- `et_al./ad.h`, `et_al./linalg/`, `et_al./frame/`, `et_al./random.h` —
+- `et_al./ad.h`, `et_al./linalg/`, `et_al./frame/`, `et_al./random.h`:
   automatic differentiation, linear algebra, dataframes with CSV and .Rdata
   readers, random number generation
 
@@ -476,19 +484,24 @@ What each step is for:
     to a different configuration from the one step 8 keeps now.
 
 `make app-<name>` also reruns the steps listed as its prerequisites in the
-Makefile: step 5 reruns 4; step 7 reruns 4 and 5; step 8 reruns 4, 5 and 7; step
-9 reruns 4, 5, 7 and 8. So `make app-abm_system_winner_irf` rebuilds the loss
-table and the confidence set before the impulse responses. Steps 1, 3 and 6 are
-never rerun that way. To run one step alone
-on what is already on disk, build its binary and run it, for example
-`make bin/abm_system_mcs && ./bin/abm_system_mcs`.
+Makefile: step 5 reruns 4; step 7 reruns 4 and 5; step 8 reruns 4, 5 and 7;
+step 9 reruns 4, 5, 7 and 8. So `make app-abm_system_winner_irf` rebuilds the
+loss table and the confidence set before the impulse responses. Steps 1, 3 and
+6 are never rerun that way. To run one step alone on what is already on disk,
+build its binary and run it, for example `make bin/abm_system_mcs &&
+./bin/abm_system_mcs`.
 
 Times on this machine for the steps after the fitting: the loss table takes
 minutes, the confidence set 14 seconds, the impulse responses 21 seconds and the
 figures 35 seconds.
 
-The figures use Python with `polars`, `plotly` and `kaleido`; everything else is
-C. Results are written to files, never printed.
+The figures use Python with `polars`, `plotly` and `kaleido`; everything else in
+the main pipeline is C. The Monte Carlo has a few Python scripts of its own,
+which its documents list. Results are written to files, never printed.
+
+The empirical validation is behind the Monte Carlo study (see "Status" at the
+top): these steps are the current US pipeline, t-QVARMA only, and will change
+once the Monte Carlo is finished.
 
 ### Outputs of the main pipeline
 
@@ -521,14 +534,15 @@ C. Results are written to files, never printed.
 ### The score route, discarded
 
 `old/score_loss/applications/abm_system_score_loss.c` reached a loss matrix
-without the million fits of steps 6 and 7: it held the US estimate of step 5 fixed and
-evaluated the score of the auxiliary model's log-likelihood on each simulated
-series, as the plain sum of squares `q'q` and as the inverse-information-weighted
-score statistic. Neither recovered the known answer in the Monte Carlo check
-and neither has a theoretical justification as a validation distance, so both
-are out of the pipeline. `docs/OLD_SCORE_LOSS.md` keeps the setup and
-the results, and lists the `make old-<stem>` targets that still rebuild them.
-Their outputs stay where they were:
+without the million fits of steps 6 and 7: it held the US estimate of step 5
+fixed and evaluated the score of the auxiliary model's log-likelihood on each
+simulated series, as the plain sum of squares `q'q` and as the
+inverse-information-weighted score statistic. Neither recovered the known
+answer in the Monte Carlo check and neither has a theoretical justification as
+a validation distance, so both are out of the pipeline.
+`docs/OLD_SCORE_LOSS.md` keeps the setup and the results, and lists the `make
+old-<stem>` targets that still rebuild them. Their outputs stay where they
+were:
 
 | file | what it holds |
 |---|---|
@@ -561,10 +575,10 @@ It is a pipeline of its own under `montecarlo/`, sharing no source with
 `applications/`, and it fits nothing: every run's parameters come from the fit
 cache of step 6. When run n is the benchmark, run n of every configuration is
 held out, because every configuration shares the same seeds. It runs under the
-t-QVARMA and under the local projections of the collaborator's R pipeline
-(`_temp/main_code.R`): linear, each of two states, and both states stacked into
-one vector as `_temp/Note on non-lin LP.pdf` prescribes. The local-projection
-fits come from their own step:
+t-QVARMA and under local projections (et_al's `lp/lp.h`, which follows the R
+package `lpirfs`): linear, each of two states of a state-dependent model, and
+both states' responses stacked into one vector. The local-projection fits come
+from their own step:
 
 - `make app-abm_system_fit_lp` fits all 1,000,000 runs, a few minutes.
 - `make mc-sweep_grid` runs every run of every configuration as the benchmark,
@@ -577,12 +591,13 @@ cannot show as well as what it can. Over every run of every configuration the
 right configuration is in the set about one time in ten for the t-QVARMA and
 the linear local projection, and under 2% for each state and for both states
 stacked; `cop_0191`, the US data's winner, is near the top of the field at 876
-of its own 1000 runs under the t-QVARMA. `docs/MONTECARLO_COMPRESSED_RESPONSE.md`
-shows that comparing a few combinations of the responses instead of all of
-them raises recovery to 80% to 95%. `docs/MONTECARLO_FIT_METRIC.md` defines a
-fit metric, the best configuration's distance against the sampling standard
-deviation of the responses, in an oracle version that needs the simulation and
-a bootstrap version that can be computed on the US data, and compares the two
+of its own 1000 runs under the t-QVARMA.
+`docs/MONTECARLO_COMPRESSED_RESPONSE.md` shows that comparing a few
+combinations of the responses instead of all of them raises recovery to 80% to
+95%. `docs/MONTECARLO_FIT_METRIC.md` defines a fit metric, the best
+configuration's distance against the sampling standard deviation of the
+responses, in an oracle version that needs the simulation and a bootstrap
+version that can be computed on the US data, and compares the two
 (`./montecarlo/fit_metric_run.sh`). The bootstrap version understates the
 sampling variance: about 1.6% of the oracle value under the local projections
 and 41% under the t-QVARMA, at the median.
@@ -596,8 +611,8 @@ grid answers each of them as a special case, so they are under `old/`;
 `docs/OLD_MONTECARLO_LP_VALIDATION.md` record them.
 
 `applications/lp_system.h` builds the series the fits use, the stored series
-the t-QVARMA is fitted on plus R's moving average of log GDP to set the state,
-and defines the archive layout the fits are stored in, one compressed
+the t-QVARMA is fitted on plus a 4-quarter moving average of log GDP to set the
+state, and defines the archive layout the fits are stored in, one compressed
 `out/abm_system_fit_lp/cop_NNNN.npz` per configuration, which is also where the
 US data's own fit will be read from. `docs/MONTECARLO_VALIDATION.md`, "The
 local projections", describes the fits.
@@ -609,7 +624,7 @@ The same local projections against the US data:
 keeps `cop_0191` alone under the linear model and state 1, as the t-QVARMA
 does, and four configurations including it under state 2.
 `docs/ABM_SYSTEM_LP_VALIDATION.md` has the setup and the numbers. The same
-local projections fitted on the levels the collaborator's R pipeline builds are
+local projections fitted on levels rebuilt by cumulating the stored series are
 discarded, `docs/OLD_LP_R_LEVELS.md`.
 
 ### Not part of the main pipeline
@@ -629,8 +644,8 @@ Scripts in `applications/` that the ten steps do not use:
   refuses to start if the directory it is about to write into already holds
   `cop_*` directories. `ABM_SYSTEM_RDATA_DIR` overrides where it writes.
 - `throughput_dataset.c`, `throughput_fit.c` and
-  `throughput_iteration_budget.c` are a throughput study of the
-  fitting step on a separate 500 by 1000 dataset.
+  `throughput_iteration_budget.c` are a throughput study of the fitting step on
+  a separate 500 by 1000 dataset, `docs/BENCHMARKS.md`.
 
 Files in `out/` the ten steps do not write:
 
@@ -641,20 +656,21 @@ Files in `out/` the ten steps do not write:
 - `out/abm_system_convert_rdata_manifest.txt`, from the older route above.
 - `out/throughput_*`, `out/fit_speedup_options.txt` and the shell scripts
   `out/hold_awake.sh`, `out/record_run_walltime.sh` and
-  `out/run_throughput_fit_detached.sh`, from the throughput study. The scripts are
-  tooling rather than results and sit here only because that is where the study
-  was run from.
+  `out/run_throughput_fit_detached.sh`, from the throughput study
+  (`docs/BENCHMARKS.md`). The scripts are the tooling that study was run with.
 - `out/dsk_dual_layout_experiment.txt`, the run behind one of the rejected
   changes in `docs/DSK_MODEL_CHANGES.md`. Nothing writes it; it is kept because
   the document cites it.
-- `out/dsk_*`, `out/qvarma_*`, `out/abm_system_layout_report.txt` and
-  `out/fit_contention_source.txt`, written by the tests and studies below.
-
-Nothing under `out/` is a snapshot of a superseded run. The copies kept from
-before the resume logic existed, the throughput run from before an et_al fix,
-and the loss-table manifest under its old name were removed once the runs that
-replaced them were on disk: two names differing by a suffix, for the same step,
-is a worse problem than not having the older one.
+- `out/dsk_*` and the other `*_report.txt` files of the tests below.
+- `out/qvarma_*` and `out/fit_contention_source.txt`, from the benchmarks
+  (`docs/BENCHMARKS.md`) and the studies (`docs/QVARMA_FIT_STUDIES.md`), and
+  `out/abm_system_*` files not listed above, from the studies.
+- `out/refactor_equality_check/` and `out/winner_normality_rerun/`: checks that
+  moving code to `old/` changed no result. The first reruns the four
+  statistic-comparison programs and diffs their outputs against git: the CSVs
+  are identical and the text reports differ only in the time column. The
+  second reruns `studies/abm_system_winner_normality.c`; its report is
+  identical apart from a title line added since.
 
 ## Tests
 
@@ -663,13 +679,10 @@ is a worse problem than not having the older one.
 
 The auxiliary model is et_al's and is tested there, not here: `make test` in an
 et_al clone runs its correctness suite, including the cache and resume
-behaviour `applications/abm_system_fit_qvarma.c` relies on. A copy of that suite
-used to live in this repository and is gone, because it drifted out of date
-against the library it was testing and failed on a contract et_al had since
-changed.
+behaviour `applications/abm_system_fit_qvarma.c` relies on.
 
-What `make test` runs is two tests of this project's own data and eleven of the
-simulator. The two data tests:
+What `make test` runs is five tests of this project's own code and data and
+twelve of the simulator. The five:
 
     make test-abm_system_layout             applications/abm_system.h stores and
                                             returns what it says it does: the
@@ -682,6 +695,16 @@ simulator. The two data tests:
                                             shape the layout promises, and every
                                             configuration holds each replication
                                             once. Needs the experiment's archives
+    make test-lp_system_transform           applications/lp_system.h builds the
+                                            series the local projections are
+                                            fitted on and the state series
+                                            exactly
+    make test-fit_metric_correctness        montecarlo/fit_metric.h, the checks
+                                            of docs/MONTECARLO_FIT_METRIC.md,
+                                            "Verification"
+    make test-marginal_laws_correctness     the densities and fits of
+                                            studies/marginal_laws.h,
+                                            docs/ABM_SYSTEM_DISTRIBUTION.md
 
 The simulator's twelve are the gate on any change to it:
 
@@ -717,13 +740,44 @@ explains what each mechanism is for.
 
     make study        the robustness checks on the pipeline's own result
     make study-robustness   the same target, under the name that says what it is
+    make study-<stem>       one of them
 
 Every study reads what the pipeline wrote to `out/` and `dataset/` and none
 rebuilds it, so none runs on a fresh clone. `make study` checks for the dataset,
 the fit cache and the confidence set first and says which is missing.
+`docs/QVARMA_FIT_STUDIES.md` lists every study and where it is written up.
+
+    make bench        the benchmarks, docs/BENCHMARKS.md
 
 `test-dsk_build_equivalence` builds the reference itself and then runs it seven
 times for three seeds - once to check the scratch path works, twice per seed to
 check it repeats itself - so it takes about four and a half minutes. The
 unmodified binary carries no optimisation and one of its runs is 35 seconds.
 
+## References
+
+- S. Blazsek, A. Escribano, A. Licht (2023). Co-integration with score-driven
+  models: an application to US real GDP growth, US inflation rate, and
+  effective federal funds rate. *Macroeconomic Dynamics* 27, 203-223.
+- P. R. Hansen, A. Lunde, J. M. Nason (2011). The Model Confidence Set.
+  *Econometrica* 79(2), 453-497.
+- P. Adaemmer (2019). lpirfs: an R package to estimate impulse response
+  functions by local projections. *The R Journal* 11(2), 421-438.
+- M. D. McKay, R. J. Beckman, W. J. Conover (1979). A comparison of three
+  methods for selecting values of input variables in the analysis of output
+  from a computer code. *Technometrics* 21(2), 239-245.
+- M. Stein (1987). Large sample properties of simulations using Latin hypercube
+  sampling. *Technometrics* 29(2), 143-151.
+- K. V. Mardia (1970). Measures of multivariate skewness and kurtosis with
+  applications. *Biometrika* 57(3), 519-530.
+- K. V. Mardia (1974). Applications of some measures of multivariate skewness
+  and kurtosis in testing normality and robustness studies. *Sankhya B* 36(2),
+  115-128.
+- J. M. Chambers, C. L. Mallows, B. W. Stuck (1976). A method for simulating
+  stable random variables. *Journal of the American Statistical Association*
+  71(354), 340-344.
+- B. M. Hill (1975). A simple general approach to inference about the tail of a
+  distribution. *The Annals of Statistics* 3(5), 1163-1174.
+
+The DSK model itself: the repository and commit under "The agent-based model"
+above.

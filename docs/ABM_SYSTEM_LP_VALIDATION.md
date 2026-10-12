@@ -3,26 +3,35 @@
 The main pipeline (`docs/ABM_SYSTEM_MCS_VALIDATION.md`) asks which of the 1000
 parameter configurations of the DSK model produce dynamics closest to the US
 data, comparing impulse responses of the t-QVARMA. This runs the same
-comparison with the collaborator's local projections as the auxiliary model,
-the version the Monte Carlo grid checks on simulated data with a known answer
+comparison with local projections as the auxiliary model, the version the
+Monte Carlo grid checks on simulated data with a known answer
 (`docs/MONTECARLO_VALIDATION.md`).
+
+**Status.** The empirical validation is behind the Monte Carlo study, where the
+procedure is being refined (`docs/MCS_VALIDATION_PROCEDURE.md`, "Status"). In
+particular the confidence set over the two states stacked into one vector,
+which the Monte Carlo runs, is not computed here yet. The results below will be
+redone once the Monte Carlo is finished.
 
 ## What is run
 
-- **Data.** The US series (`out/us_system.csv`) turned into the five series
-  the t-QVARMA is fitted on: GDP growth, energy growth, employment change,
+- **Data.** The US series (`out/us_system.csv`) turned into the five series the
+  t-QVARMA is fitted on: GDP growth, energy growth, employment change,
   inflation, interest rate (`us_system_growth_block` in
-  `applications/us_data.h`). The first three quarters are dropped, where R's
-  4-period moving average of log GDP, the series that decides the state, does
-  not exist: 184 quarters, 1974Q1 to 2019Q4. The simulated runs, 1000 per
-  configuration, 397 periods each, go through the same route
-  (`lp_system_from_stored` in `applications/lp_system.h`).
-- **Models.** The collaborator's settings (`_temp/estimate.R`), fitted by
-  et_al's `lp_lin_and_nl`: 4 lags, horizons 0 to 15, unit shocks identified
-  recursively in the order above; the state-dependent model with the HP cycle
-  (lambda 1600) of the moving average through a logistic of slope 2, lagged one
-  period. Three sets of responses, 400 values each: linear, state 1 (mostly
-  periods with GDP above trend) and state 2 (mostly below).
+  `applications/us_data.h`; `docs/DATA_DOCUMENTATION.md`). The first three
+  quarters are dropped, where the 4-quarter moving average of log GDP, the
+  series that decides the state, does not exist: 184 quarters, 1974Q1 to
+  2019Q4. The simulated runs, 1000 per configuration, 397 periods each, go
+  through the same route (`lp_system_from_stored` in
+  `applications/lp_system.h`).
+- **Models.** Fitted by et_al's `lp_lin_and_nl`: 4 lags, horizons 0 to 15,
+  unit shocks identified recursively in the order above. The state-dependent
+  model weights each period by a logistic function, slope 2, of the
+  Hodrick-Prescott cycle (smoothing parameter lambda 1600) of the moving
+  average, lagged one period. Three sets of responses, 400 values each: linear,
+  state 1 (mostly periods with GDP above trend) and state 2 (mostly below).
+  `docs/MONTECARLO_VALIDATION.md`, "The local projections", has the full
+  description.
 - **US fit.** `applications/us_lp_fit.c`, stored in `out/us_lp_fit.npz`, with
   the fit notes in `out/us_lp_fit.txt` and every response in
   `out/us_lp_fit_irf.csv`. Every regression was solved at full rank.
@@ -32,8 +41,10 @@ the version the Monte Carlo grid checks on simulated data with a known answer
   configurations, no cell missing.
 - **Confidence set.** `applications/abm_system_lp_mcs.c`: level 0.05, 10000
   bootstrap resamples of single runs, the bootstrap variance, et_al's seed 123,
-  MCS_TR as the headline statistic and MCS_TMAX beside it, the t-QVARMA
-  pipeline's settings (`out/abm_system_lp_mcs_<model>.txt` and `.csv`).
+  the range statistic `MCS_TR` (every pair of configurations compared) as the
+  headline and `MCS_TMAX` (each configuration against the average of those
+  left) beside it, the t-QVARMA pipeline's settings
+  (`out/abm_system_lp_mcs_<model>.txt` and `.csv`).
 
     make app-abm_system_lp_mcs      the US fit, the loss tables, the sets
 
@@ -57,23 +68,24 @@ The t-QVARMA pipeline on the same data keeps `cop_0191` alone
 (`out/abm_system_mcs_statistic_comparison.csv`). The two auxiliary models
 agree.
 
-`cop_0191` is also the configuration the Monte Carlo experiments used as their
-known answer, chosen there because the t-QVARMA's US set had kept it and its
-fits converged most often; nothing in the local-projection route was tuned to
-it.
+`cop_0191` is also the configuration the discarded single-benchmark Monte Carlo
+experiments used as their known answer
+(`docs/OLD_MONTECARLO_BENCHMARK_SUBSETS.md`), chosen there because the
+t-QVARMA's US set had kept it; nothing in the local-projection route was tuned
+to it.
 
-## The same on the collaborator's transformation
+## The same on cumulated levels
 
-The same comparison on R's levels is discarded; `docs/OLD_LP_R_LEVELS.md`
-records it and its result.
+The same comparison on levels rebuilt by cumulating the stored series is
+discarded; `docs/OLD_LP_R_LEVELS.md` records it and its result.
 
 ## What this does not do
 
-- The collaborator's thesis also runs a confidence set on the two states
-  together. How it combines them is not written down in the thesis or in the
-  scripts received, so that set is not computed.
-- The thesis's validation score, the mean distance relative to a bootstrap
-  variance of the US responses, is not computed.
-- The loss is the mean absolute difference, not the thesis's mean squared
-  difference, and the series are the stationary ones, not the levels the
-  thesis fits; `docs/OLD_MONTECARLO_LP_VALIDATION.md` records why.
+- No confidence set over both states stacked into one vector; see "Status"
+  above.
+- No absolute measure of fit; `docs/MONTECARLO_FIT_METRIC.md` defines one and
+  tests it in the Monte Carlo, and it has not been computed on the US data.
+- The loss is the mean absolute difference, not the mean squared one
+  (`docs/MCS_VALIDATION_PROCEDURE.md`, "Absolute error, not squared error"),
+  and the series are the stationary ones, not cumulated levels;
+  `docs/OLD_MONTECARLO_LP_VALIDATION.md`, "Why the levels fail", records why.

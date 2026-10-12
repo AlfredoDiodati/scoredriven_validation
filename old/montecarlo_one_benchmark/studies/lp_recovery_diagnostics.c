@@ -21,7 +21,7 @@ the things in the local-projection protocol that could be wrong.
    variable's own residual standard deviation, so configurations differ by how
    volatile their variables are, whatever their dynamics. Refitted with shocks
    of one standard deviation.
-3. The transformation. R's transform_data builds log GDP as
+3. The transformation. The R code's transformation builds log GDP as
    100 log(100 + cumsum(GDP_growth)), which is not the log level when the
    growth rates are already 100 log differences, as they are here. Refitted
    with the log levels themselves, the cumulated growth rates.

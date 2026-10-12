@@ -1,43 +1,30 @@
 /*
-The one place us_real.csv is read and turned into the five-variable system the
-rest of applications/ uses. Blazsek, Escribano and Licht's own three-series file
-is not read here or by anything downstream of this script; it was a diagnostic
-only, and docs/DATA_DOCUMENTATION.md records what that diagnostic established.
+The one place dataset/us_real.csv is read and turned into the five-variable
+system the rest of applications/ uses: GDP, employment, CPI, the interest rate
+and energy demand.
 
-The five variables follow Fabiano, "Evaluating Nonlinear Simulation Models with
-Model Confidence Sets" (Pisa / Sant'Anna, thesis), section 4.2, which uses this
-same FRED-QD-sourced US data: GDP, employment, CPI, the interest rate and
-energy demand. Only the three Fabiano's own ADF and Johansen results find
-trend non-stationary and co-integrated - GDP, CPI and energy demand - are put
-in log-levels times 100,
+GDP, CPI and energy demand trend upwards and are put in log-levels times 100,
 
     x_var_t = 100 ln(x_t)
 
-which is what keeps a co-integrating relation from being differenced away
-(Sims et al. 1990; Cochrane 1997). Employment and the interest rate are
-Fabiano's own two stationary variables and enter in their natural units,
-untransformed: logging a variable that is already stationary is not needed to
-preserve anything.
+to stabilise their variance. Employment and the interest rate are already
+rates and enter in their own units. The models are fitted on first
+differences of these levels, built later (build_block in
+applications/us_qvarma_spec_choice.c and us_system_growth_block in
+applications/us_data.h); this script writes the levels only.
 
-Employment is not a column us_real.csv has; it is 100 minus Unemployment, the
-identity docs/DATA_DOCUMENTATION.md records. Energy demand uses the
-deseasonalised column,
-Des_Energy_demand: the raw column has a pronounced quarterly pattern that a
-level transformation does nothing to remove, and FRED-QD's own series are
-seasonally adjusted to begin with.
+Employment is not a column us_real.csv has; it is 100 minus Unemployment.
+Energy demand uses the seasonally adjusted column, Des_Energy_demand: the raw
+column has a pronounced quarterly pattern that a level transformation does
+nothing to remove.
 
-Fabiano's own sample is summarised as 1973:Q2 to 2019:Q4 with T = 188, and
-those two do not agree: 1973Q2 to 2019Q4 inclusive is 187 quarters, not 188.
-Post-2019 is excluded either way, to avoid the COVID quarters. us_real.csv's
-row 0 is 1973Q1, and 188 quarters from there lands on 2019Q4 exactly, so this
-takes rows 0 to 187 and labels them from 1973Q1. The count is the fact that is
-checkable here; the quarter the summary names is not. Differencing in
-applications/us_qvarma_spec_choice.c then reports 187 quarters, 1973Q2 to
-2019Q4, which is the sample the model is actually estimated on.
+The sample is us_real.csv's rows 0 to 187, 1973Q1 to 2019Q4, 188 quarters.
+Post-2019 is excluded to avoid the COVID quarters. Differencing then leaves 187
+quarters, 1973Q2 to 2019Q4, the sample the t-QVARMA is estimated on.
 
 Writes out/us_system.csv, the five variables over that sample, with a Quarter
 column so a reader does not have to count rows against this comment. Nothing
-printed.
+printed. docs/DATA_DOCUMENTATION.md describes both steps.
 */
 
 #include <et_al./linalg/mat.h>
@@ -62,8 +49,8 @@ static const char *variable_name[N_VARIABLES] = {
 };
 
 /* Which of the five are logged, in the same order as the enum: GDP, CPI and
-   energy demand are Fabiano's non-stationary, co-integrated three; employment
-   and the interest rate are his stationary two and stay in their own units. */
+   energy demand trend upwards; employment and the interest rate are rates and
+   stay in their own units. */
 static const int is_logged[N_VARIABLES] = { 1, 0, 1, 0, 1 };
 
 #define QUARTER_LABEL_SIZE 8

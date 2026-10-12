@@ -1,7 +1,8 @@
 # cop_0191 against the whole Monte Carlo grid
 
 `cop_0191` is the configuration the impulse-response protocol keeps on the US
-data and the one every single-benchmark experiment uses as the truth. This page
+data, and the one the discarded single-benchmark Monte Carlo experiments used
+as the truth (`docs/OLD_MONTECARLO_BENCHMARK_SUBSETS.md`). This page
 asks two questions of the 1000 by 1000 Monte Carlo: how often is `cop_0191`
 recovered when it generated the data, and how often is it returned when another
 configuration did. The third table puts both against the recovery rate of
@@ -20,14 +21,15 @@ configuration as the benchmark", has the full description. In short:
   and the benchmark's. The benchmark's run index is held out of every
   configuration, so each confidence set compares 1000 configurations on 999
   runs. No run was dropped for a missing response.
-- The confidence set is MCS_TR at level 0.05, 2000 bootstrap resamples, block
-  length 1, bootstrap variance, seed 123 stream 0.
+- The confidence set uses the range statistic `MCS_TR`, which compares every
+  pair of configurations, at level 0.05, 2000 bootstrap resamples, block
+  length 1, bootstrap variance, seed 123 stream 0
+  (`docs/MCS_VALIDATION_PROCEDURE.md`, "Confidence set settings").
 - Five models give the response vector: the t-QVARMA (qvarma, p1q1r2, 525
-  entries), and the local projections of `docs/MONTECARLO_VALIDATION.md`, "The local
-  projections":
-  linear, state 1 and state 2 (400 entries each), and both states, state 1's
-  and state 2's responses stacked into one vector of 800 entries as
-  `_temp/Note on non-lin LP.pdf` prescribes.
+  entries), and the local projections of `docs/MONTECARLO_VALIDATION.md`, "The
+  local projections": linear, state 1 and state 2 (400 entries each), and both
+  states, state 1's and state 2's responses stacked into one vector of 800
+  entries.
 
 Three outcomes are counted for each benchmark, all about one named
 configuration: whether the confidence set holds it, whether it is the only

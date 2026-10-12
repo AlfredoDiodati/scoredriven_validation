@@ -6,10 +6,9 @@
 # number of bootstrap resamples (10000 here, 2000 in the grid). The grid
 # answers the same question on all of them. docs/OLD_EXPERIMENTS.md.
 #
-# The Monte Carlo experiment under the local projections of the collaborator's
-# R pipeline: the same benchmark run as old/montecarlo_one_benchmark/run.sh,
-# the same hold-out
-# and the same confidence set settings, with the local projections in place of
+# The Monte Carlo experiment under the local projections: the same benchmark
+# run as old/montecarlo_one_benchmark/run.sh, the same hold-out and the same
+# confidence set settings, with the local projections in place of
 # the t-QVARMA as the auxiliary model.
 #
 # The benchmark is the one montecarlo/out/benchmark.env already names, so both

@@ -4,16 +4,12 @@ configuration's simulated dynamics sit from the real US data's, measured
 through the auxiliary model.
 
 The comparison object is the impulse response function, not the fitted
-parameters themselves. That is the point of the whole file, and it changed
-from an earlier version that compared constrained parameter vectors directly.
-Parameter distance matched neither the procedure this project replicates (a
-thesis using the same Model Confidence Set protocol over local-projection
-IRFs - "Evaluating Nonlinear Simulation Models with Model Confidence Sets",
-Fabiano, Pisa/Sant'Anna) nor what a loss between two fitted models is supposed
-to measure: two QVARMA fits with different-looking coefficients can imply
-nearly identical dynamics, and two with similar-looking coefficients can imply
-very different ones. The IRF is the object whose distance answers "do these
-two models behave alike", which raw parameter distance does not.
+parameters themselves: two QVARMA fits with different-looking coefficients can
+imply nearly identical dynamics, and two with similar-looking coefficients can
+imply very different ones. The IRF is the object whose distance answers "do
+these two models behave alike", which raw parameter distance does not
+(docs/MCS_VALIDATION_PROCEDURE.md, "Why the comparison object is the impulse
+response, not the fitted parameters").
 
 For the auxiliary spec p1q1r2:
   1. Fit the real-data QVARMA (out/us_qvarma_spec_choice_p1q1r2_fit.json,
@@ -25,17 +21,14 @@ For the auxiliary spec p1q1r2:
      function the same way.
   3. Stack every horizon's K x K response matrix (qvarma.h's own "total",
      contemporaneous + stationary + cointegrated) into one flat vector per
-     model, horizon 0 first - the same "vectorize and stack across
-     horizons" step the thesis's own protocol uses (its Sec 3.3, step 3).
+     model, horizon 0 first.
   4. Loss is the mean absolute error between the real model's IRF vector
      and each simulated model's IRF vector, absolute rather than squared
      because a squared difference lets one badly-behaved fit's IRF
      dominate both the mean and the bootstrap variance abm_system_mcs.c
-     estimates from, which is exactly what left every model
-     indistinguishable from every other one before this file used absolute
-     error at the parameter-vector stage - nothing about switching the
-     comparison object to IRFs removes that risk, since a divergent fit
-     produces a divergent IRF too.
+     estimates from, and a divergent fit produces a divergent IRF
+     (docs/MCS_VALIDATION_PROCEDURE.md, "Absolute error, not squared
+     error").
 
 nu <= 2 fits are skipped, not fed through impulse_responses: qvarma.h's own
 impulse_responses asserts m->nu > 2 (the multivariate-t degrees of freedom

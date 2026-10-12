@@ -1,10 +1,11 @@
 /*
-Discarded from both pipelines: the local projections on R's levels instead of
-on the five series the t-QVARMA is fitted on. The main transformation is kept
-because it loses less information; docs/OLD_EXPERIMENTS.md.
+Discarded from both pipelines: the local projections on cumulated levels
+instead of on the five series the t-QVARMA is fitted on. The main
+transformation is kept because it loses less information;
+docs/OLD_EXPERIMENTS.md.
 
-Fits the linear and the state-dependent local projections of the collaborator's
-R pipeline (_temp/main_code.R, estimate() in _temp/functions.R) to every
+Fits the linear and the state-dependent local projections, at the settings of
+the R code (package lpirfs) they were first run with, to every
 replicate under dataset/abm_system/, and stores the fits the way the t-QVARMA
 fits are stored: once, beside the dataset, for every later comparison to read
 rather than refit, the real data's included.
@@ -34,7 +35,7 @@ rewritten. A fit without d (the VAR behind the shocks had no Cholesky factor,
 or the data held a NaN) is stored as a row with has_responses 0 and counted, so
 it is not retried on every run only to fail the same way.
 
-This is that fit on R's levels, the collaborator's transformation, into
+This is that fit on the cumulated levels lp_system_r_levels.h builds, into
 out/abm_system_fit_lp_r_levels/.
 
 - ./bin/abm_system_fit_lp_r_levels fits what is not stored.

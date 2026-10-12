@@ -8,10 +8,11 @@ later, sees its series through that header, so a wrong row order, a
 moving average aligned one period off, or a cumulative sum started in the
 wrong place changes every response without any downstream output noticing.
 
-R's transform_data() was compared once against the header, run unmodified in R
-on four stored replicates, and agreed to 3.7e-15 relative. This test is what
-keeps that agreement without R: it compares the header against a reference
-written here as plain loops, the R code read one line at a time.
+The R code's transformation was compared once against the header, run
+unmodified in R on four stored replicates, and agreed to 3.7e-15 relative.
+This test is what keeps that agreement without R: it compares the header
+against a reference written here as plain loops, the R code read one line at a
+time.
 
 1. The reference GDP_MA4 on a series with random growth rates, every element.
    Then the fitted series: the stored rows from period 3 on, exactly, and the
@@ -47,7 +48,7 @@ static void check(FILE *report, int ok, const char *what) {
     if (!ok) failures++;
 }
 
-/* transform_data()'s GDP_MA4 written out one period at a time, in double. */
+/* The R code's GDP_MA4 written out one period at a time, in double. */
 static Mat reference_switching(Mat stored) {
     int T = stored.c, first = LP_SYSTEM_SWITCHING_WINDOW - 1, n = T - first;
     double *gdp = malloc((size_t)T * sizeof(double));

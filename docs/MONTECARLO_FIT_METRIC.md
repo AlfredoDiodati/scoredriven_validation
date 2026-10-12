@@ -197,11 +197,12 @@ files carry the settings in their names, so the default result is left alone.
 It is resumable at benchmark granularity: each benchmark's five rows go to a
 progress file when it finishes, and a rerun skips what that file holds.
 
-Cost on this machine (AMD Ryzen 7 4800H, 16 threads): the oracle program took
-4 minutes for all 5,000,000 benchmarks (28 to 61 s per method, the caches
-already on disk); the bootstrap 9.1 s of wall-clock time per benchmark at
-$B = 200$ with 16 benchmarks side by side, one per thread, almost all of it in
-the t-QVARMA refits, so about 2.5 hours for 1000 benchmarks. Each block-length run (100 benchmarks at $B = 50$) took about 4 minutes.
+Cost on this machine (AMD Ryzen 7 4800H, 16 threads): the oracle program took 4
+minutes for all 5,000,000 benchmarks (28 to 61 s per method, the caches already
+on disk); the bootstrap 9.1 s of wall-clock time per benchmark at $B = 200$
+with 16 benchmarks side by side, one per thread, almost all of it in the
+t-QVARMA refits, so about 2.5 hours for 1000 benchmarks. Each block-length run
+(100 benchmarks at $B = 50$) took about 4 minutes.
 
 ### Verification
 
@@ -223,14 +224,15 @@ the t-QVARMA refits, so about 2.5 hours for 1000 benchmarks. Each block-length r
   (every resample is the series itself; largest value $2.1 \times 10^{-32}$),
   and that the same seed gives the same $\sigma^{2*}$.
 
-On the grid itself, $d$ for the single benchmark of
-`docs/MONTECARLO_VALIDATION.md` (`cop_0191` run 706) reproduces the mean losses
-published there: 0.01006 under the t-QVARMA, 0.689 linear, 1.336 state 1,
-1.383 both states, and 1.408 under state 2, where the best configuration is
-`cop_0437`. The benchmarks whose best configuration is the true one, counted
-from `fit_metric_oracle.csv.gz`, are the "smallest mean loss" counts of the
-grid's results table (53,926 for the t-QVARMA, 63,433 linear, 7,854, 7,305 and
-6,746 for state 1, state 2 and both states).
+On the grid itself, $d$ for `cop_0191` run 706, the benchmark of the discarded
+single-benchmark experiment, reproduces the mean losses that experiment
+recorded (`docs/OLD_MONTECARLO_BENCHMARK_SUBSETS.md` and
+`docs/OLD_MONTECARLO_LP_VALIDATION.md`): 0.01006 under the t-QVARMA, 0.689
+linear, 1.336 state 1, 1.383 both states, and 1.408 under state 2, where the
+best configuration is `cop_0437`. The benchmarks whose best configuration is
+the true one, counted from `fit_metric_oracle.csv.gz`, are the "smallest mean
+loss" counts of the grid's results table (53,926 for the t-QVARMA, 63,433
+linear, 7,854, 7,305 and 6,746 for state 1, state 2 and both states).
 
 ## Results
 
@@ -335,6 +337,6 @@ much is not established by these runs.
 ### Next
 
 `docs/MONTECARLO_FIT_METRIC_COMPARISON.md` designs the tests of whether the
-oracle $v$ differs across the five auxiliary models, one test over all five at
-once for each of two nulls (equal means, and the auxiliary model has no
-effect). Not implemented yet.
+oracle $v$ differs across the five auxiliary models. It is a draft, and the
+tests it designs are not implemented yet; a first program of pairwise tests,
+`montecarlo/fit_metric_pairwise.c`, exists and has not produced results.

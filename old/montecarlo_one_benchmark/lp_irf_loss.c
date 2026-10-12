@@ -6,13 +6,14 @@ number of bootstrap resamples (10000 here, 2000 in the grid). The grid
 answers the same question on all of them. docs/OLD_EXPERIMENTS.md.
 
 The impulse-response loss matrices of the Monte Carlo experiment under the
-local projections of the collaborator's R pipeline, one per model:
+local projections, at the settings of the R code they were first run with, one
+per model:
 
     lin   the linear local projection, irf_lin_mean
     s1    the state-dependent one in state 1 (lags times 1 - F), irf_s1_mean
     s2    the same in state 2 (lags times F), irf_s2_mean
     nl    the state-dependent one with both states in one vector, s1's entries
-          followed by s2's (_temp/Note on non-lin LP.pdf, equation 5)
+          followed by s2's
 
 The procedure is old/montecarlo_one_benchmark/irf_loss.c's with the auxiliary model changed.
 The benchmark is the simulated run old/montecarlo_one_benchmark/benchmark_choice.c chose, read

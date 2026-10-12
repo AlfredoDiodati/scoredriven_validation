@@ -1,6 +1,6 @@
 /*
 Pairwise tests of whether one auxiliary model's fit metric v is higher than
-another's (docs/MONTECARLO_FIT_METRIC_COMPARISON.md, "Pairwise tests"), on the
+another's (docs/MONTECARLO_FIT_METRIC_COMPARISON.md, "Status"), on the
 oracle rows bin/fit_metric_oracle writes: v_ijk for auxiliary model i, CoP j
 and benchmark run k.
 
