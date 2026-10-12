@@ -24,14 +24,14 @@ describes the design. The same procedure runs in two places, and only the
 benchmark differs between them:
 
 - the empirical validation, where the benchmark is the US data
-  (`applications/abm_system_irf_loss.c`, `applications/abm_system_mcs.c` for
-  the t-QVARMA, `applications/abm_system_lp_irf_loss.c`,
-  `applications/abm_system_lp_mcs.c` for the local projections), with the
-  results in `docs/ABM_SYSTEM_MCS_VALIDATION.md` and
-  `docs/ABM_SYSTEM_LP_VALIDATION.md`;
+  (`old/naive_mae_loss/applications/abm_system_irf_loss.c`, `old/naive_mae_loss/applications/abm_system_mcs.c` for
+  the t-QVARMA, `old/naive_mae_loss/applications/abm_system_lp_irf_loss.c`,
+  `old/naive_mae_loss/applications/abm_system_lp_mcs.c` for the local projections), with the
+  results in `docs/OLD_ABM_SYSTEM_MCS_VALIDATION.md` and
+  `docs/OLD_ABM_SYSTEM_LP_VALIDATION.md`;
 - the Monte Carlo experiment, where every simulated run of every configuration
   is the benchmark in turn, so its configuration is known
-  (`montecarlo/sweep_grid.c`), with the results in
+  (`old/naive_mae_loss/montecarlo/sweep_grid.c`), with the results in
   `docs/MONTECARLO_VALIDATION.md`.
 
 In short: fit an auxiliary model to the benchmark and to every simulated
@@ -55,7 +55,7 @@ Until then the two differ:
   all.
 - The empirical validation runs the t-QVARMA as the main pipeline, and the
   linear local projection and each state separately as a side run
-  (`docs/ABM_SYSTEM_LP_VALIDATION.md`). The confidence set over both states
+  (`docs/OLD_ABM_SYSTEM_LP_VALIDATION.md`). The confidence set over both states
   stacked is not computed on the US data.
 - The Monte Carlo uses 2000 bootstrap resamples per confidence set, the
   empirical validation 10000.
@@ -102,7 +102,7 @@ The compared vector is the total response, `.total` (the contemporaneous,
 stationary and co-integrated parts summed), at horizons 0 to 20
 (`ImpulseOptions.horizon = 20`): one 5 by 5 matrix per horizon, stacked horizon
 0 first into 5 x 5 x 21 = 525 numbers (`flatten_total_irf` in
-`applications/abm_system_irf_loss.c`).
+`old/naive_mae_loss/applications/abm_system_irf_loss.c`).
 
 For the local projections it is the response of each of the five series to a
 unit shock in each, recursively identified, at horizons 0 to 15: 5 x 16 x 5 =
@@ -153,8 +153,8 @@ their residual checks in `out/us_qvarma_spec_choice.txt`.
 
 Putting (1,1,4) back is one entry in `spec_list` in
 `applications/abm_system_fit_qvarma.c` and one in
-`applications/abm_system_irf_loss.c`, plus a join of the two loss tables on
-`replicate`. `applications/abm_system_mcs.c` needs no change: it reads however
+`old/naive_mae_loss/applications/abm_system_irf_loss.c`, plus a join of the two loss tables on
+`replicate`. `old/naive_mae_loss/applications/abm_system_mcs.c` needs no change: it reads however
 many columns the file holds.
 
 The drift-carrying variant of the model is not used. It was dropped at an
@@ -164,7 +164,7 @@ has not been evaluated under this procedure.
 ## Grouping: one model per configuration
 
 Each configuration contributes one column to the loss table, for the t-QVARMA
-`out/abm_system_irf_loss.csv` with columns named `cop_NNNN_qvarma_p1q1r2`, and
+`old/naive_mae_loss/out/abm_system_irf_loss.csv` with columns named `cop_NNNN_qvarma_p1q1r2`, and
 each row is one replicate. One confidence set runs over all columns at once:
 1000 models against 1000 observations.
 
@@ -174,7 +174,7 @@ each row is one replicate. One confidence set runs over all columns at once:
   losses, scaled by its bootstrap standard deviation; a round rejects when the
   largest of them is too large. et_al's default, `MCS_TMAX`, compares each
   model with the average of the models still in the set; it is run alongside
-  as a check, `docs/ABM_SYSTEM_MCS_VALIDATION.md`, "Does the statistic
+  as a check, `docs/OLD_ABM_SYSTEM_MCS_VALIDATION.md`, "Does the statistic
   matter".
 - `block_length = 1`: the replicates are independent simulations, not a time
   series, so the bootstrap resamples single replicates.

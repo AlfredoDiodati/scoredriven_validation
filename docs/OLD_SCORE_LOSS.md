@@ -185,7 +185,7 @@ Outputs:
 | `out/abm_system_score_loss_weighted.csv` | `LM`, same shape |
 | `out/abm_system_score_loss_manifest.txt` | the weighting's diagnostics and every missing cell |
 
-Both matrices carry the column names `applications/abm_system_irf_loss.c` uses
+Both matrices carry the column names `old/naive_mae_loss/applications/abm_system_irf_loss.c` uses
 for the same configurations, so the three can be read side by side. A replicate
 with a missing cell anywhere is dropped from every column of both, the
 direction `abm_system_irf_loss.c` already drops in, because a hole in one
@@ -319,7 +319,7 @@ matters when three losses pick three different winners. The table below is the
 round each winning configuration was eliminated in under each of the three
 procedures, out of 999 elimination rounds over 1000 configurations. A higher
 round means it survived longer. `MCS_TR` throughout, the statistic
-`applications/abm_system_mcs.c` reports, so that one rule is being compared
+`old/naive_mae_loss/applications/abm_system_mcs.c` reports, so that one rule is being compared
 across three losses rather than two rules across three losses.
 
 | configuration | IRF | `q'q` | `LM` |
@@ -391,7 +391,7 @@ The procedure ranks configurations against one another. It does not test
 whether the best one is close to the US data in any absolute sense, and the
 chi-square numbers above show that it is not: every replicate of every
 configuration is rejected as a draw from the auxiliary model at the real data's
-estimate. `docs/ABM_SYSTEM_MCS_VALIDATION.md`, "What the confidence set does
+estimate. `docs/OLD_ABM_SYSTEM_MCS_VALIDATION.md`, "What the confidence set does
 not say", makes the same point for the impulse-response route and its
 measurements apply here unchanged.
 

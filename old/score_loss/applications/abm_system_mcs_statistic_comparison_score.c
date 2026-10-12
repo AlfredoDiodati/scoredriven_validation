@@ -6,7 +6,7 @@ MCS_TR compares every pair of configurations and rejects when any two look
 different. MCS_TMAX compares each configuration with the average of those still
 in the running and rejects when the worst of them looks worse than that
 average. Both are Hansen, Lunde and Nason's (2011).
-applications/abm_system_mcs.c reports MCS_TR; this runs both with every other
+old/naive_mae_loss/applications/abm_system_mcs.c reports MCS_TR; this runs both with every other
 setting identical and writes where they agree.
 
 With the bootstrap variance et_al draws the resamples once and reuses them in
@@ -18,7 +18,7 @@ Discarded from the main pipeline: the score losses gave poor results in the
 Monte Carlo check and have no theoretical justification as a validation
 distance. docs/OLD_SCORE_LOSS.md records the experiment and its
 results. The impulse-response matrix goes through the same procedure in
-applications/abm_system_mcs_statistic_comparison.c.
+old/naive_mae_loss/applications/abm_system_mcs_statistic_comparison.c.
 
 Two loss matrices, both written by old/score_loss/applications/abm_system_score_loss.c:
 

@@ -1,6 +1,6 @@
 /*
 Discarded from the Monte Carlo pipeline. Its benchmarks, run 0 of every configuration,
-are a subset of the ones montecarlo/sweep_grid.c runs, every run of every
+are a subset of the ones old/naive_mae_loss/montecarlo/sweep_grid.c runs, every run of every
 configuration, under the same loss and confidence set settings except the
 number of bootstrap resamples (10000 here, 2000 in the grid). The grid
 answers the same question on all of them. docs/OLD_EXPERIMENTS.md.
@@ -27,7 +27,7 @@ Response vectors are read once per model and held as float32, as in the two
 sweeps this extends: 2.1 GB for the t-QVARMA (525 entries per cell), 1.6 GB for
 each local projection (400 entries), 3.2 GB for both states in one vector. The
 caches are montecarlo/response_cache.h's files, shared with
-montecarlo/sweep_grid.c, and one model's is released before the next is
+old/naive_mae_loss/montecarlo/sweep_grid.c, and one model's is released before the next is
 opened.
 
 SWEEP_COPS_WORKERS benchmarks run side by side, one thread each, default one

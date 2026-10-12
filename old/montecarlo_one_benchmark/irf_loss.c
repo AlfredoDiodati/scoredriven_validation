@@ -1,6 +1,6 @@
 /*
 Discarded from the Monte Carlo pipeline. Its single benchmark, cop_0191 run 706,
-is one of the benchmarks montecarlo/sweep_grid.c runs, every run of every
+is one of the benchmarks old/naive_mae_loss/montecarlo/sweep_grid.c runs, every run of every
 configuration, under the same loss and confidence set settings except the
 number of bootstrap resamples (10000 here, 2000 in the grid). The grid
 answers the same question on all of them. docs/OLD_EXPERIMENTS.md.
@@ -9,7 +9,7 @@ The impulse-response loss matrix of the Monte Carlo experiment: how far each
 ABM configuration's simulated dynamics sit from one chosen simulated run's,
 measured through the auxiliary model.
 
-This is applications/abm_system_irf_loss.c's procedure with the benchmark
+This is old/naive_mae_loss/applications/abm_system_irf_loss.c's procedure with the benchmark
 changed. There the benchmark is the US data and its fit; here it is one
 simulated replicate and its own cached fit, so the right answer is known - the
 configuration that replicate was drawn from - and the confidence set can be
@@ -30,7 +30,7 @@ a loss of zero.
 
 Loss is the mean absolute error between the benchmark's stacked impulse
 response vector and each simulated fit's own, horizon 0 first, absolute rather
-than squared for the reason applications/abm_system_irf_loss.c gives: one
+than squared for the reason old/naive_mae_loss/applications/abm_system_irf_loss.c gives: one
 divergent fit's IRF would otherwise dominate both the mean and the bootstrap
 variance the confidence set estimates from.
 

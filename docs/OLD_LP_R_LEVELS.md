@@ -40,7 +40,7 @@ Carlo, `montecarlo/out/lp_r_levels/`.
 
 ## Against the US data
 
-Every step of `docs/ABM_SYSTEM_LP_VALIDATION.md` run again on the cumulated
+Every step of `docs/OLD_ABM_SYSTEM_LP_VALIDATION.md` run again on the cumulated
 levels: the simulated runs and the US series put through
 `lp_system_r_transform` in `old/lp_r_levels/lp_system_r_levels.h`, log GDP as
 `100 log(100 + cumsum(GDP_growth))`, employment as `0.90 +

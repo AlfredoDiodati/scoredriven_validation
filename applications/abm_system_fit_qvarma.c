@@ -13,7 +13,7 @@ spec_list held t-QVARMA(1,1,4) alongside r = 2 while the dataset was the 10,800
 replicates the .Rdata route produced. r = 4 was dropped because it lost the
 Model Confidence Set: the joint run over both specs put no r = 4 configuration
 in the surviving set at all, which docs/MCS_VALIDATION_PROCEDURE.md records.
-Adding it back is one entry in spec_list; applications/abm_system_irf_loss.c
+Adding it back is one entry in spec_list; old/naive_mae_loss/applications/abm_system_irf_loss.c
 asserts on exactly one spec and has to match whatever this list holds.
 
 A cached fit is reused only when it converged. An unconverged one is treated

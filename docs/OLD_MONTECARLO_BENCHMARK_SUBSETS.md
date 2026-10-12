@@ -3,7 +3,7 @@
 ## Status: discarded
 
 These three experiments asked the Monte Carlo question of
-`docs/MONTECARLO_VALIDATION.md` on fewer benchmarks than the grid does:
+`docs/OLD_MONTECARLO_NAIVE_MAE_GRID.md` on fewer benchmarks than the grid does:
 
 | experiment | benchmarks | code |
 | --- | --- | --- |
@@ -11,7 +11,7 @@ These three experiments asked the Monte Carlo question of
 | every run of `cop_0191` | the 1000 runs of `cop_0191` | `old/montecarlo_every_run_of_cop_0191/` |
 | run 0 of every configuration | run 0 of each of the 1000 configurations | `old/montecarlo_run_0_of_every_configuration/` |
 
-Each set of benchmarks is part of the grid, `montecarlo/sweep_grid.c`, which
+Each set of benchmarks is part of the grid, `old/naive_mae_loss/montecarlo/sweep_grid.c`, which
 makes every run of every configuration the benchmark in turn with the same
 loss, the same hold-out and the same confidence set settings, except for the
 number of bootstrap resamples: 10000 here, 2000 in the grid. The grid answers
@@ -21,9 +21,9 @@ The resample count is the one difference, and it was measured: run 0 of every
 configuration is a benchmark both in the grid and in the third experiment, on
 the same loss matrices, and whether the benchmark's own configuration is in
 the set differs in 1 of the 5000 benchmarks across the five auxiliary models
-(`docs/MONTECARLO_VALIDATION.md`, "2000 against 10000 resamples"). The
+(`docs/OLD_MONTECARLO_NAIVE_MAE_GRID.md`, "2000 against 10000 resamples"). The
 benchmarks of the other two experiments are rows of the grid as well, and were
-compared on 2026-10-11 by counting, in `montecarlo/out/sweep_grid.csv.gz`
+compared on 2026-10-11 by counting, in `old/naive_mae_loss/montecarlo/out/sweep_grid.csv.gz`
 against the old outputs, the benchmarks whose set holds `cop_0191`:
 
 | model | grid, 2000 resamples | every run of `cop_0191`, 10000 resamples |
@@ -67,7 +67,7 @@ experiment, so the grounds are fixed in advance and applied by
 
 **It must come from a configuration the real-data confidence set kept.** The
 configurations surviving the impulse-response procedure under MCS_TR (the
-`tr_in_set` column of `out/abm_system_mcs_statistic_comparison.csv`; the
+`tr_in_set` column of `old/naive_mae_loss/out/abm_system_mcs_statistic_comparison.csv`; the
 MCS_TMAX set is not read) are the candidate pool, which is `cop_0191` alone.
 Promoting a configuration the procedure did not keep would ask whether a poor
 benchmark is recovered, which is a different question.
@@ -386,7 +386,7 @@ own configuration is in the set for 26 of those 337 and 71 of the other 663.
 Only the t-QVARMA has a convergence status; the local projections are least
 squares. Convergence read from `out/abm_system_fit_qvarma_manifest.txt`, whose
 fits are unchanged since 2026-09-10, before every experiment here. The last row
-is the grid's, from `docs/MONTECARLO_VALIDATION.md`, for comparison.
+is the grid's, from `docs/OLD_MONTECARLO_NAIVE_MAE_GRID.md`, for comparison.
 
 | experiment | converged benchmarks: own configuration in set | unconverged benchmarks: own configuration in set |
 | --- | --- | --- |

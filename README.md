@@ -9,35 +9,28 @@ and Student-t innovations. The distance between two economies is the distance
 between the impulse responses their fits imply, and the Model Confidence Set of
 Hansen, Lunde and Nason (2011) decides which configurations survive.
 
-The procedure ranks configurations against one another; it does not test
-whether the closest one is close. On this design it is not: 965 of the 1000
-configurations score a worse impulse-response distance than a model whose
-responses are identically zero, and no configuration reproduces the variance of
-the US interest rate or the skewness of US GDP growth.
-`docs/ABM_SYSTEM_MCS_VALIDATION.md`, "What the confidence set does not say",
-has the numbers and where they come from.
+**Status.** The distance is the squared error between impulse responses minus
+each configuration's estimated response variance
+(`docs/MCS_VALIDATION_PROCEDURE.md`). Nothing runs it yet: the Monte Carlo
+study is being written first, and the empirical validation on the US data will
+follow once it is finished. Every result produced so far used the naive loss,
+the mean absolute error with no variance correction, which biases the
+confidence set towards configurations whose responses are less noisy; its
+code, its outputs and the studies built on its winner are under
+`old/naive_mae_loss/` (`docs/OLD_EXPERIMENTS.md`, "The naive loss").
 
-The ten steps that produce the result, from simulation to figures, and the
-files each one writes are listed under "The main pipeline" below.
-
-**Status.** The validation procedure is being refined in the Monte Carlo study,
-and the empirical validation on the US data is behind it: it will be brought up
-to date once the Monte Carlo is finished. `docs/MCS_VALIDATION_PROCEDURE.md`,
-"Status", says where the two differ now.
+The six steps that produce the data and the fits the procedure compares, from
+simulation to the fitted auxiliary models, are listed under "The main pipeline"
+below.
 
 The documentation, all of it under `docs/`:
 
 - `docs/MCS_VALIDATION_PROCEDURE.md`: the validation procedure, the same for
   the US data and for the Monte Carlo: what is compared against what, why the
   comparison runs on impulse responses, and the confidence set's settings.
-- `docs/ABM_SYSTEM_MCS_VALIDATION.md` and `docs/ABM_SYSTEM_LP_VALIDATION.md`:
-  its result on the US data, under the t-QVARMA and under the local
-  projections.
 - `docs/MONTECARLO_VALIDATION.md`: the check that the procedure recovers an
   answer it already knows, with every simulated run of every configuration in
-  turn standing in for the US data. `docs/MONTECARLO_COP_0191.md`,
-  `docs/MONTECARLO_COMPRESSED_RESPONSE.md`, `docs/MONTECARLO_FIT_METRIC.md` and
-  `docs/MONTECARLO_FIT_METRIC_COMPARISON.md` follow it up.
+  turn standing in for the US data.
 - `docs/DATA_DOCUMENTATION.md`: the US series and how each is transformed.
 - `docs/ABM_SYSTEM_SIMULATION.md`: the parameter design, the simulations and
   how they are stored. `docs/ABM_SYSTEM_DISTRIBUTION.md`: the distribution of
@@ -270,9 +263,10 @@ does rather than how it was once done. Three conventions follow:
 - A C++11 compiler, for the simulator under `model/dsk_sfc`; `make
   model` builds it without cmake
 - et_al, installed so that `pkg-config et_al.-core` resolves
-- Python with `polars`, `plotly` and `kaleido` for the figures (plotly writes
-  the PDFs through kaleido), and `numpy`, `scipy` and `pandas` for the
-  compressed-response prototype of `docs/MONTECARLO_COMPRESSED_RESPONSE.md`
+- Python, only to rerun the discarded experiments under `old/`: `polars`,
+  `plotly` and `kaleido` for their figures (plotly writes the PDFs through
+  kaleido), and `numpy`, `scipy` and `pandas` for the compressed-response
+  prototype of `docs/OLD_MONTECARLO_COMPRESSED_RESPONSE.md`
 
 ### The platform everything here was run on
 
@@ -391,7 +385,7 @@ et_al after a change is what makes the next `make` here recompile.
 
 Three things have to be in place before anything builds: OpenBLAS, et_al, and
 this repository. The Python packages come last and are needed only for the
-figures.
+figures of the discarded experiments under `old/`.
 
 OpenBLAS first, because et_al links against it and against nothing else:
 
@@ -429,7 +423,7 @@ Then this repository, and the tests, which need nothing beyond the above:
     cd scoredriven_validation
     make test
 
-The figures are the one part that leaves C:
+The figures of the discarded experiments are the one part that leaves C:
 
     pip install polars plotly kaleido
 
@@ -438,9 +432,11 @@ install and removes the model tier with it.
 
 ## The main pipeline
 
-Ten steps take the project from the parameter design to the figures of the
-configuration the Model Confidence Set keeps. Each step reads what the steps
-before it wrote.
+Six steps take the project from the parameter design to the fitted auxiliary
+models the validation procedure compares. Each step reads what the steps before
+it wrote. The steps after them, the loss under the variance correction and the
+confidence set on the US data, are not written yet; the naive-loss versions are
+under `old/naive_mae_loss/applications/`.
 
 | step | script | command |
 |---|---|---|
@@ -450,10 +446,6 @@ before it wrote.
 | 4. Prepare the US data | `applications/us_prepare_data.c` | `make app-us_prepare_data` |
 | 5. Fit the auxiliary model to the US data | `applications/us_qvarma_spec_choice.c` | `make app-us_qvarma_spec_choice` |
 | 6. Fit the auxiliary model to every simulation | `applications/abm_system_fit_qvarma.c` | `make app-abm_system_fit_qvarma` |
-| 7. Build the loss table | `applications/abm_system_irf_loss.c` | `make app-abm_system_irf_loss` |
-| 8. Run the Model Confidence Set | `applications/abm_system_mcs.c` | `make app-abm_system_mcs` |
-| 9. Compute the winning configuration's impulse responses | `applications/abm_system_winner_irf.c` | `make app-abm_system_winner_irf` |
-| 10. Draw the figures | `applications/abm_system_winner_irf_plots.py` | `python applications/abm_system_winner_irf_plots.py` |
 
 What each step is for:
 
@@ -472,36 +464,13 @@ What each step is for:
 6. Fits the t-QVARMA(1,1,2) to each of the 1,000,000 simulated replicates. It
    caches every fit as it finishes and resumes from the cache, so it can be run
    several times; it was run eight times here, hours each.
-7. Turns every fit into an impulse response and measures its distance from the
-   US one.
-8. Finds the configurations whose distance cannot be told apart from the
-   smallest. `docs/MCS_VALIDATION_PROCEDURE.md` has the settings and
-   `docs/ABM_SYSTEM_MCS_VALIDATION.md` the result.
-9. Averages the winning configuration's fits over its replicates and computes
-   that model's impulse responses, with the sign-restricted bands of Blazsek,
-   Escribano and Licht (2023).
-10. Draws those responses. It stops without drawing if step 9's output belongs
-    to a different configuration from the one step 8 keeps now.
 
 `make app-<name>` also reruns the steps listed as its prerequisites in the
-Makefile: step 5 reruns 4; step 7 reruns 4 and 5; step 8 reruns 4, 5 and 7;
-step 9 reruns 4, 5, 7 and 8. So `make app-abm_system_winner_irf` rebuilds the
-loss table and the confidence set before the impulse responses. Steps 1, 3 and
-6 are never rerun that way. To run one step alone on what is already on disk,
-build its binary and run it, for example `make bin/abm_system_mcs &&
-./bin/abm_system_mcs`.
+Makefile: step 5 reruns 4. Steps 1, 3 and 6 are never rerun that way.
 
-Times on this machine for the steps after the fitting: the loss table takes
-minutes, the confidence set 14 seconds, the impulse responses 21 seconds and the
-figures 35 seconds.
-
-The figures use Python with `polars`, `plotly` and `kaleido`; everything else in
-the main pipeline is C. The Monte Carlo has a few Python scripts of its own,
-which its documents list. Results are written to files, never printed.
-
-The empirical validation is behind the Monte Carlo study (see "Status" at the
-top): these steps are the current US pipeline, t-QVARMA only, and will change
-once the Monte Carlo is finished.
+The pipeline is C. The discarded experiments under `old/` have a few Python
+scripts of their own, which their documents list. Results are written to files,
+never printed.
 
 ### Outputs of the main pipeline
 
@@ -519,17 +488,6 @@ once the Monte Carlo is finished.
 | `out/abm_system_fit_qvarma/cop_NNNN/replicate_NNN_p1q1r2_fit.json` | 6 | one fitted parameter set per replicate, which is also the cache; not tracked by git |
 | `out/abm_system_fit_qvarma/cop_NNNN/lineage.txt` | 6 | which replicates took another replicate's parameters |
 | `out/abm_system_fit_qvarma_manifest.txt` | 6 | per fit: log-likelihood, gradient, convergence, cumulative iterations, why the solver stopped |
-| `out/abm_system_irf_loss.csv` | 7 | the loss table: one row per replicate, one column per configuration |
-| `out/abm_system_irf_loss_manifest.txt` | 7 | missing cells and dropped replicates |
-| `out/abm_system_mcs.txt` | 8 | the confidence set, as a readable report |
-| `out/abm_system_mcs.csv` | 8 | per configuration: mean loss, MCS p-value, whether it is in the set, the round it was eliminated in |
-| `out/abm_system_winner_irf.csv` | 9 | the winner's impulse responses: one row per component, horizon, shock and response, with the band |
-| `out/abm_system_winner_irf_theta.json` | 9 | the averaged parameter set |
-| `out/abm_system_winner_irf_manifest.txt` | 9 | which configuration, how many fits were averaged and converged, how many rotations were accepted |
-| `out/abm_system_winner_irf_plots/sign_restricted/` | 10 | the figures under the paper's sign restrictions |
-| `out/abm_system_winner_irf_plots/recursive/` | 10 | the figures under the recursive ordering |
-
-`docs/ABM_SYSTEM_MCS_VALIDATION.md` lists every figure and what it shows.
 
 ### The score route, discarded
 
@@ -546,7 +504,7 @@ were:
 
 | file | what it holds |
 |---|---|
-| `out/abm_system_score_loss.csv` | the unweighted loss table, same shape as step 7's |
+| `out/abm_system_score_loss.csv` | the unweighted loss table, one row per replicate and one column per configuration |
 | `out/abm_system_score_loss_weighted.csv` | the score statistic, same shape |
 | `out/abm_system_score_loss_manifest.txt` | the information matrix's spectrum and conditioning, how the statistic splits over eigen-directions, and every missing cell |
 | `out/abm_system_mcs_statistic_comparison_score*.*` | the confidence sets under both MCS statistics |
@@ -564,9 +522,9 @@ keeps each firm's output, which `studies/abm_system_micro_clt.c` and
 
 ### Does the procedure recover an answer it already knows
 
-The procedure above cannot be checked on the US data, because nobody knows
-which configuration is really closest to the United States. `montecarlo/`
-asks the same question with the answer known: every simulated run of every
+The procedure cannot be checked on the US data, because nobody knows which
+configuration is really closest to the United States. `montecarlo/` asks the
+same question with the answer known: every simulated run of every
 configuration is promoted in turn to the role the US data plays, every loss is
 measured against it, and the confidence set should come back holding the
 configuration that run was drawn from.
@@ -578,62 +536,30 @@ held out, because every configuration shares the same seeds. It runs under the
 t-QVARMA and under local projections (et_al's `lp/lp.h`, which follows the R
 package `lpirfs`): linear, each of two states of a state-dependent model, and
 both states' responses stacked into one vector. The local-projection fits come
-from their own step:
+from their own step, `make app-abm_system_fit_lp`, all 1,000,000 runs in a few
+minutes.
 
-- `make app-abm_system_fit_lp` fits all 1,000,000 runs, a few minutes.
-- `make mc-sweep_grid` runs every run of every configuration as the benchmark,
-  five million confidence sets, a day to a day and a half per model.
-- `./montecarlo/lp_nl_run.sh` runs the grid and its summaries for both states
-  stacked, resuming where it stopped.
-
-`docs/MONTECARLO_VALIDATION.md` is the write-up, and says what the experiment
-cannot show as well as what it can. Over every run of every configuration the
-right configuration is in the set about one time in ten for the t-QVARMA and
-the linear local projection, and under 2% for each state and for both states
-stacked; `cop_0191`, the US data's winner, is near the top of the field at 876
-of its own 1000 runs under the t-QVARMA.
-`docs/MONTECARLO_COMPRESSED_RESPONSE.md` shows that comparing a few
-combinations of the responses instead of all of them raises recovery to 80% to
-95%. `docs/MONTECARLO_FIT_METRIC.md` defines a fit metric, the best
-configuration's distance against the sampling standard deviation of the
-responses, in an oracle version that needs the simulation and a bootstrap
-version that can be computed on the US data, and compares the two
-(`./montecarlo/fit_metric_run.sh`). The bootstrap version understates the
-sampling variance: about 1.6% of the oracle value under the local projections
-and 41% under the t-QVARMA, at the median.
-`docs/MONTECARLO_FIT_METRIC_COMPARISON.md` designs the tests comparing the
-metric across methods.
-
-Three earlier Monte Carlo experiments used subsets of these benchmarks: one run
-of `cop_0191`, every run of `cop_0191`, and run 0 of every configuration. The
-grid answers each of them as a special case, so they are under `old/`;
+The grid under the variance-corrected loss is not written yet.
+`docs/MONTECARLO_VALIDATION.md` describes the design it shares with the
+discarded naive-loss grid, whose results and follow-ups are recorded in
+`docs/OLD_MONTECARLO_NAIVE_MAE_GRID.md` and the documents it names. Three
+earlier Monte Carlo experiments used subsets of the grid's benchmarks;
 `docs/OLD_MONTECARLO_BENCHMARK_SUBSETS.md` and
 `docs/OLD_MONTECARLO_LP_VALIDATION.md` record them.
 
 `applications/lp_system.h` builds the series the fits use, the stored series
 the t-QVARMA is fitted on plus a 4-quarter moving average of log GDP to set the
 state, and defines the archive layout the fits are stored in, one compressed
-`out/abm_system_fit_lp/cop_NNNN.npz` per configuration, which is also where the
-US data's own fit will be read from. `docs/MONTECARLO_VALIDATION.md`, "The
-local projections", describes the fits.
-
-The same local projections against the US data:
-
-    make app-abm_system_lp_mcs     US fit, loss tables, confidence sets
-
-keeps `cop_0191` alone under the linear model and state 1, as the t-QVARMA
-does, and four configurations including it under state 2.
-`docs/ABM_SYSTEM_LP_VALIDATION.md` has the setup and the numbers. The same
-local projections fitted on levels rebuilt by cumulating the stored series are
-discarded, `docs/OLD_LP_R_LEVELS.md`.
+`out/abm_system_fit_lp/cop_NNNN.npz` per configuration. `applications/us_lp_fit.c`
+fits the same local projections to the US data, `out/us_lp_fit.npz`.
+`docs/MONTECARLO_VALIDATION.md`, "The local projections", describes the fits.
+The same local projections fitted on levels rebuilt by cumulating the stored
+series are discarded, `docs/OLD_LP_R_LEVELS.md`.
 
 ### Not part of the main pipeline
 
-Scripts in `applications/` that the ten steps do not use:
+Scripts in `applications/` that the six steps do not use:
 
-- `abm_system_mcs_statistic_comparison.c` reruns step 8 under both statistics
-  et_al implements, as a check, and writes
-  `out/abm_system_mcs_statistic_comparison.txt` and `.csv`.
 - `abm_system_convert_rdata.c` is the older way to fill a dataset directory: it
   converts the 108 `.Rdata` files under `dataset/simulated/` instead of running
   the simulator. Use one or the other, never both: step 6 fits every
@@ -647,9 +573,8 @@ Scripts in `applications/` that the ten steps do not use:
   `throughput_iteration_budget.c` are a throughput study of the fitting step on
   a separate 500 by 1000 dataset, `docs/BENCHMARKS.md`.
 
-Files in `out/` the ten steps do not write:
+Files in `out/` the six steps do not write:
 
-- `out/abm_system_mcs_statistic_comparison.*`, from the check above.
 - `out/abm_system_score_loss*.csv`, `out/abm_system_score_loss_manifest.txt`
   and `out/abm_system_mcs_statistic_comparison_score*.*`, from the discarded
   score route above.
@@ -665,11 +590,12 @@ Files in `out/` the ten steps do not write:
 - `out/qvarma_*` and `out/fit_contention_source.txt`, from the benchmarks
   (`docs/BENCHMARKS.md`) and the studies (`docs/QVARMA_FIT_STUDIES.md`), and
   `out/abm_system_*` files not listed above, from the studies.
-- `out/refactor_equality_check/` and `out/winner_normality_rerun/`: checks that
-  moving code to `old/` changed no result. The first reruns the four
-  statistic-comparison programs and diffs their outputs against git: the CSVs
-  are identical and the text reports differ only in the time column. The
-  second reruns `studies/abm_system_winner_normality.c`; its report is
+- `out/refactor_equality_check/` and
+  `old/naive_mae_loss/out/winner_normality_rerun/`: checks that moving code to
+  `old/` changed no result. The first reruns the four statistic-comparison
+  programs and diffs their outputs against git: the CSVs are identical and the
+  text reports differ only in the time column. The second reruns
+  `old/naive_mae_loss/studies/abm_system_winner_normality.c`; its report is
   identical apart from a title line added since.
 
 ## Tests
@@ -681,8 +607,8 @@ The auxiliary model is et_al's and is tested there, not here: `make test` in an
 et_al clone runs its correctness suite, including the cache and resume
 behaviour `applications/abm_system_fit_qvarma.c` relies on.
 
-What `make test` runs is five tests of this project's own code and data and
-twelve of the simulator. The five:
+What `make test` runs is four tests of this project's own code and data and
+twelve of the simulator. The four:
 
     make test-abm_system_layout             applications/abm_system.h stores and
                                             returns what it says it does: the
@@ -699,9 +625,6 @@ twelve of the simulator. The five:
                                             series the local projections are
                                             fitted on and the state series
                                             exactly
-    make test-fit_metric_correctness        montecarlo/fit_metric.h, the checks
-                                            of docs/MONTECARLO_FIT_METRIC.md,
-                                            "Verification"
     make test-marginal_laws_correctness     the densities and fits of
                                             studies/marginal_laws.h,
                                             docs/ABM_SYSTEM_DISTRIBUTION.md
@@ -743,8 +666,8 @@ explains what each mechanism is for.
     make study-<stem>       one of them
 
 Every study reads what the pipeline wrote to `out/` and `dataset/` and none
-rebuilds it, so none runs on a fresh clone. `make study` checks for the dataset,
-the fit cache and the confidence set first and says which is missing.
+rebuilds it, so none runs on a fresh clone. `make study` checks for the dataset
+and the fit cache first and says which is missing.
 `docs/QVARMA_FIT_STUDIES.md` lists every study and where it is written up.
 
     make bench        the benchmarks, docs/BENCHMARKS.md

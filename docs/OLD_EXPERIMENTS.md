@@ -2,8 +2,9 @@
 
 Experiments that are no longer part of the main pipeline or the Monte Carlo
 pipeline. Their code is under `old/`, one folder per experiment; their
-write-ups stay in `docs/`; their outputs stay where they were written, under
-`out/` and `montecarlo/out/`. Every program still builds and runs with
+write-ups stay in `docs/`. Their outputs stay where they were written, under
+`out/` and `montecarlo/out/`, except those of the naive loss, which moved with
+their code to `old/naive_mae_loss/out/` and `old/naive_mae_loss/montecarlo/out/`. Every program still builds and runs with
 `make old-<stem>`, the stem being its file name, and the Makefile's
 `OLD_SOURCES` lists them all.
 
@@ -51,7 +52,7 @@ benchmarks than the grid does:
 | `old/montecarlo_run_0_of_every_configuration/` | run 0 of each of the 1000 configurations (`sweep_cops.c`) |
 
 **Why they are out.** Each set of benchmarks is part of the grid,
-`montecarlo/sweep_grid.c`, which makes every run of every configuration the
+`old/naive_mae_loss/montecarlo/sweep_grid.c`, which makes every run of every configuration the
 benchmark in turn, with the same loss, the same hold-out and the same
 confidence set settings. They are special cases of it. The one difference is
 the number of bootstrap resamples, 10000 in these and 2000 in the grid, and on
@@ -104,3 +105,57 @@ rebuilt log GDP; the series they are fitted on are the main transformation's.
 | folder | programs |
 | --- | --- |
 | `old/lp_r_levels/` | `lp_system_r_levels.h`, `us_lp_fit_r_levels.c`, `abm_system_fit_lp_r_levels.c`, `abm_system_lp_r_levels_irf_loss.c`, `abm_system_lp_r_levels_mcs.c`, `lp_system_r_levels_transform.c`, `lp_r_levels_reproduction.sh` |
+
+## The naive loss, `old/naive_mae_loss/`
+
+**What it was.** The validation procedure with the naive loss: the mean
+absolute error between a replicate's impulse-response vector and the
+benchmark's, with no correction for the estimation noise of the simulated
+responses. It ran on the US data, under the t-QVARMA and the local projections,
+and in the Monte Carlo grid over every run of every configuration, and the
+experiments that read either run used it too: the confidence set's winner and
+its impulse responses, the robustness studies of that winner, the compressed
+responses, the fit metric and `cop_0191` as the truth.
+
+**Why it is out.** The expected difference between two configurations' losses
+contains the difference of their response variances, which says nothing about
+how close either is to the data. The confidence set can therefore favour a
+configuration whose mean response is far from the data's but whose responses
+are less noisy. `docs/MCS_VALIDATION_PROCEDURE.md`, "Why the variance
+correction", gives the argument and the corrected loss.
+
+**Where it is recorded.** `docs/OLD_NAIVE_MAE_LOSS.md` for the procedure,
+`docs/OLD_ABM_SYSTEM_MCS_VALIDATION.md` and
+`docs/OLD_ABM_SYSTEM_LP_VALIDATION.md` for the US data,
+`docs/OLD_MONTECARLO_NAIVE_MAE_GRID.md` for the Monte Carlo grid, and
+`docs/OLD_MONTECARLO_COP_0191.md`,
+`docs/OLD_MONTECARLO_COMPRESSED_RESPONSE.md`,
+`docs/OLD_MONTECARLO_FIT_METRIC.md` and
+`docs/OLD_MONTECARLO_FIT_METRIC_COMPARISON.md` for the experiments that read
+the grid. `docs/QVARMA_FIT_STUDIES.md` still describes the studies of the
+winner.
+
+| folder | programs |
+| --- | --- |
+| `old/naive_mae_loss/applications/` | `abm_system_irf_loss.c`, `abm_system_mcs.c`, `abm_system_mcs_statistic_comparison.c`, `abm_system_lp_irf_loss.c`, `abm_system_lp_mcs.c`, `abm_system_winner_irf.c`, `abm_system_winner_irf_plots.py` |
+| `old/naive_mae_loss/studies/` | `us_qvarma_nu_sensitivity.c`, `abm_system_winner_diagnostics.c`, `abm_system_winner_diagnostics_plots.py`, `abm_system_winner_nu_profile.c`, `abm_system_winner_nu_likelihood_scan.c`, `abm_system_winner_tail_comparison.c`, `abm_system_winner_normality.c`, `abm_system_seed_correlation.c` |
+| `old/naive_mae_loss/montecarlo/` | `sweep_grid.c`, `lp_nl_run.sh`, `sweep_grid_presence.py`, `sweep_grid_cop_0191.py`, `sweep_grid_identifiability_plots.py`, `compressed_response_learn.py`, `compressed_response_recovery.c`, `compressed_response_grid_baseline.py`, `compressed_response_report.py`, `fit_metric.h`, `fit_metric_table.h`, `fit_metric_oracle.c`, `fit_metric_bootstrap.c`, `fit_metric_pairwise.c`, `fit_metric_report.c`, `fit_metric_run.sh`, `fit_metric_v_histograms.py` |
+| `old/naive_mae_loss/tests/` | `fit_metric_correctness.c` |
+
+The C programs build and run with `make old-<stem>`; the grid with `make
+old-sweep_grid`, still at -O3. The loss and confidence-set targets keep their
+prerequisites, so `make old-abm_system_winner_irf` reruns the US loss table and
+confidence set first. The Python scripts and the two shell drivers run from the
+repository root, for example `./old/naive_mae_loss/montecarlo/fit_metric_run.sh`.
+
+The response caches the grid built, `out/sweep_grid_response_cache/`, stay
+where they are: they hold the responses, not the loss, and the Monte Carlo
+under the corrected loss reads them.
+
+Checked after the move: the moved programs build without warnings, and
+`bin/abm_system_mcs`, `bin/fit_metric_report` and
+`old/naive_mae_loss/montecarlo/sweep_grid_presence.py`, rerun from their new
+location, rewrote `old/naive_mae_loss/out/abm_system_mcs.csv` and `.txt`,
+`old/naive_mae_loss/montecarlo/out/fit_metric_report.txt` and `.tex` and
+`old/naive_mae_loss/montecarlo/out/sweep_grid_presence.txt` byte for byte. The
+other programs were not rerun.

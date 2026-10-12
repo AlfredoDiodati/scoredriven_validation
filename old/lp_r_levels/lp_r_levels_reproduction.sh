@@ -21,7 +21,7 @@ cd "$(dirname "$0")/../.."
 check_dir=out/old/lp_r_levels_reproduction
 mkdir -p "$check_dir/before"
 
-untracked="out/abm_system_lp_irf_loss_lin.csv out/abm_system_lp_irf_loss_s1.csv out/abm_system_lp_irf_loss_s2.csv
+untracked="old/naive_mae_loss/out/abm_system_lp_irf_loss_lin.csv old/naive_mae_loss/out/abm_system_lp_irf_loss_s1.csv old/naive_mae_loss/out/abm_system_lp_irf_loss_s2.csv
 out/abm_system_lp_r_levels_irf_loss_lin.csv out/abm_system_lp_r_levels_irf_loss_s1.csv
 out/abm_system_lp_r_levels_irf_loss_s2.csv"
 for f in $untracked; do cp "$f" "$check_dir/before/"; done

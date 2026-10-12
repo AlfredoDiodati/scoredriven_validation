@@ -1,6 +1,6 @@
 /*
 Discarded from the Monte Carlo pipeline. Its single benchmark, cop_0191 run 706,
-is one of the benchmarks montecarlo/sweep_grid.c runs, every run of every
+is one of the benchmarks old/naive_mae_loss/montecarlo/sweep_grid.c runs, every run of every
 configuration, under the same loss and confidence set settings except the
 number of bootstrap resamples (10000 here, 2000 in the grid). The grid
 answers the same question on all of them. docs/OLD_EXPERIMENTS.md.
@@ -9,7 +9,7 @@ The headline confidence set of the Monte Carlo experiment: MCS_TR over
 montecarlo/out/irf_loss.csv, the impulse-response distance between one chosen
 simulated run and every configuration's replicates.
 
-This is applications/abm_system_mcs.c's procedure over a different loss matrix.
+This is old/naive_mae_loss/applications/abm_system_mcs.c's procedure over a different loss matrix.
 Every numeric column except "replicate" is a model, one per configuration, and
 every row is an observation, one per replicate kept - 999 of them, the
 benchmark's own seed being held out of all of them.
@@ -18,7 +18,7 @@ The question here has a known answer. The benchmark is a replicate of a
 particular configuration, so that configuration should come back in the set.
 docs/MONTECARLO_VALIDATION.md reports whether it does.
 
-Settings identical to applications/abm_system_mcs.c so the two runs are
+Settings identical to old/naive_mae_loss/applications/abm_system_mcs.c so the two runs are
 comparable: MCS_TR rather than the library default MCS_TMAX, 10000 resamples,
 block length 1 for the iid bootstrap the independent replicates call for, and
 the bootstrap variance of the resampled mean. That file's own header comment

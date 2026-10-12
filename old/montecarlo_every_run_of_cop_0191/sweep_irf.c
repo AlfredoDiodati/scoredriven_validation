@@ -1,6 +1,6 @@
 /*
 Discarded from the Monte Carlo pipeline. Its benchmarks, the 1000 runs of cop_0191,
-are a subset of the ones montecarlo/sweep_grid.c runs, every run of every
+are a subset of the ones old/naive_mae_loss/montecarlo/sweep_grid.c runs, every run of every
 configuration, under the same loss and confidence set settings except the
 number of bootstrap resamples (10000 here, 2000 in the grid). The grid
 answers the same question on all of them. docs/OLD_EXPERIMENTS.md.

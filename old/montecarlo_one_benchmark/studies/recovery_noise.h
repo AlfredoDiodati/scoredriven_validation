@@ -11,7 +11,7 @@
 /*
 Discarded with the one-benchmark Monte Carlo experiment whose results it
 diagnoses: that experiment's benchmarks are a subset of the ones
-montecarlo/sweep_grid.c runs. docs/OLD_EXPERIMENTS.md.
+old/naive_mae_loss/montecarlo/sweep_grid.c runs. docs/OLD_EXPERIMENTS.md.
 
 Whether an auxiliary model's impulse responses are precise enough for the
 Monte Carlo protocol to tell configurations apart, measured the same way for

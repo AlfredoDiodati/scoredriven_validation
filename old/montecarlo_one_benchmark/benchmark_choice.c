@@ -1,6 +1,6 @@
 /*
 Discarded from the Monte Carlo pipeline. Its single benchmark, cop_0191 run 706,
-is one of the benchmarks montecarlo/sweep_grid.c runs, every run of every
+is one of the benchmarks old/naive_mae_loss/montecarlo/sweep_grid.c runs, every run of every
 configuration, under the same loss and confidence set settings except the
 number of bootstrap resamples (10000 here, 2000 in the grid). The grid
 answers the same question on all of them. docs/OLD_EXPERIMENTS.md.
@@ -37,7 +37,7 @@ norm.
 Fits taken from another replicate's parameters are excluded: the manifest marks
 them inherited, and a benchmark should be the estimate its own data produced.
 
-Reads out/abm_system_mcs_statistic_comparison.csv and the fit manifest. Writes
+Reads old/naive_mae_loss/out/abm_system_mcs_statistic_comparison.csv and the fit manifest. Writes
 montecarlo/out/benchmark_choice.txt, the report, and
 montecarlo/out/benchmark.env, two shell assignments the driver reads so the
 choice is made once and every downstream step runs against the same run.
@@ -55,7 +55,7 @@ Nothing printed.
 #define ENV_PATH "montecarlo/out/benchmark.env"
 
 static const char *const winner_table[] = {
-    "out/abm_system_mcs_statistic_comparison.csv"
+    "old/naive_mae_loss/out/abm_system_mcs_statistic_comparison.csv"
 };
 #define N_WINNER_TABLES ((int)(sizeof winner_table / sizeof winner_table[0]))
 

@@ -7,7 +7,7 @@ Two loss matrices for the Model Confidence Set, built without fitting
 anything: how strongly each simulated series pulls the real data's own fitted
 auxiliary model away from where the real data put it.
 
-applications/abm_system_irf_loss.c fits a t-QVARMA to every simulated
+old/naive_mae_loss/applications/abm_system_irf_loss.c fits a t-QVARMA to every simulated
 replicate and measures the distance between that fit's impulse responses and
 the real data's. Here nothing is estimated. The real data's fitted parameter
 vector theta_US (out/us_qvarma_spec_choice_p1q1r2_fit.json, the same p1q1r2
@@ -107,7 +107,7 @@ either loss.
 
 Output: two CSVs, one row per replicate and one column per configuration plus
 a leading "replicate" column, with the column names
-applications/abm_system_irf_loss.c uses for the same configurations so the
+old/naive_mae_loss/applications/abm_system_irf_loss.c uses for the same configurations so the
 matrices can be read side by side. The manifest is named after the unweighted
 table, out/abm_system_score_loss_manifest.txt, covers both, and records the
 information matrix's eigenvalues and condition number, since a weighting that
@@ -117,7 +117,7 @@ Neither matrix has holes, which et_al's mcs requires: one NaN in a model's
 column loses every comparison that model takes part in and the p-values come
 back looking ordinary. Where a cell is missing the replicate is dropped from
 every column of both matrices, the same direction
-applications/abm_system_irf_loss.c drops in, since that keeps every
+old/naive_mae_loss/applications/abm_system_irf_loss.c drops in, since that keeps every
 configuration in the comparison.
 
 In OLD_SOURCES, buildable on its own via make old-abm_system_score_loss.

@@ -4,7 +4,7 @@
 /*
 Every simulated run's impulse responses under one auxiliary model, held in
 memory as float32 so a loss matrix against any benchmark is one pass of
-absolute differences over it. Read by montecarlo/sweep_grid.c and the
+absolute differences over it. Read by old/naive_mae_loss/montecarlo/sweep_grid.c and the
 programs that work from the grid's responses.
 
 Five models: the t-QVARMA (p1q1r2, horizon 20, the stacked total responses,

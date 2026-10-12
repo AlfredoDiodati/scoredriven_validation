@@ -5,11 +5,11 @@ transformation is kept because it loses less information;
 docs/OLD_EXPERIMENTS.md.
 
 The confidence sets of the local projections against the US data: each of the
-three loss tables applications/abm_system_lp_irf_loss.c writes (linear, state
+three loss tables old/naive_mae_loss/applications/abm_system_lp_irf_loss.c writes (linear, state
 1, state 2) under both Model Confidence Set statistics, six confidence sets.
 
-The settings are the t-QVARMA's in applications/abm_system_mcs.c and
-applications/abm_system_mcs_statistic_comparison.c, and the Monte Carlo
+The settings are the t-QVARMA's in old/naive_mae_loss/applications/abm_system_mcs.c and
+old/naive_mae_loss/applications/abm_system_mcs_statistic_comparison.c, and the Monte Carlo
 experiment's: alpha 0.05, 10000 resamples, block length 1 for the iid
 bootstrap the independent replicates call for, the bootstrap variance of the
 resampled mean, the library's seed and stream. MCS_TR is the headline
@@ -17,9 +17,9 @@ statistic; MCS_TMAX is scored on the same resamples beside it.
 
 No set is run on the two states together.
 
-Requires out/abm_system_lp_irf_loss_<model>.csv. Writes
-out/abm_system_lp_mcs_<model>.txt, the readable report with both elimination
-tables, and out/abm_system_lp_mcs_<model>.csv, one row per configuration.
+Requires old/naive_mae_loss/out/abm_system_lp_irf_loss_<model>.csv. Writes
+old/naive_mae_loss/out/abm_system_lp_mcs_<model>.txt, the readable report with both elimination
+tables, and old/naive_mae_loss/out/abm_system_lp_mcs_<model>.csv, one row per configuration.
 This is that run on cumulated levels: every one of these names carries _r_levels
 after abm_system_lp. Takes no arguments. Nothing printed.
 */

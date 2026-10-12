@@ -1,6 +1,6 @@
 /*
 Discarded from the Monte Carlo pipeline. Its benchmarks, the 1000 runs of cop_0191,
-are a subset of the ones montecarlo/sweep_grid.c runs, every run of every
+are a subset of the ones old/naive_mae_loss/montecarlo/sweep_grid.c runs, every run of every
 configuration, under the same loss and confidence set settings except the
 number of bootstrap resamples (10000 here, 2000 in the grid). The grid
 answers the same question on all of them. docs/OLD_EXPERIMENTS.md.
@@ -26,7 +26,7 @@ As in sweep_irf.c, a cell's response vector does not depend on the benchmark,
 so every cell's vector is read once and held as float32, and each benchmark's
 loss matrix is one pass of absolute differences over that cache, accumulated
 in double. The cache is montecarlo/response_cache.h's, the same files
-montecarlo/sweep_grid.c keeps: 1.6 GB per model, 3.2 GB for both states. The
+old/naive_mae_loss/montecarlo/sweep_grid.c keeps: 1.6 GB per model, 3.2 GB for both states. The
 models are swept one after another, each cache released before the next is
 opened.
 

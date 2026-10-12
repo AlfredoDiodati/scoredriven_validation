@@ -13,13 +13,13 @@ model,
           with GDP above trend), irf_s1_mean
     s2    the same in state 2 (lags times F, mostly below trend), irf_s2_mean
 
-the local-projection counterpart of applications/abm_system_irf_loss.c.
+the local-projection counterpart of old/naive_mae_loss/applications/abm_system_irf_loss.c.
 
 A cell's loss is the mean absolute difference between the US response vector
 (out/us_lp_fit.npz, applications/us_lp_fit.c) and the run's, over all
 K x (hor + 1) x K = 400 values of one model. The R code the local projections
 were first run with uses the mean squared difference; the absolute one is kept
-for the reason applications/abm_system_irf_loss.c gives and for comparability
+for the reason old/naive_mae_loss/applications/abm_system_irf_loss.c gives and for comparability
 with the t-QVARMA results. The Monte Carlo experiment with these models and
 this loss recovered a known configuration in 913 (linear), 858 (state 1) and
 781 (state 2) of 1000 repetitions (docs/OLD_MONTECARLO_LP_VALIDATION.md).

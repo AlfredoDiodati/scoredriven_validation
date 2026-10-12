@@ -20,7 +20,7 @@ against nu/(nu-2) Sigma, autocorrelation with Ljung-Box, the quadratic form
 against its F reference, and the mean squared residual.
 
 The r = 2 fit is also an input rather than only a diagnostic:
-applications/abm_system_irf_loss.c reads
+old/naive_mae_loss/applications/abm_system_irf_loss.c reads
 out/us_qvarma_spec_choice_p1q1r2_fit.json and computes its impulse response
 function, which is the benchmark every simulated replicate's own response is
 compared against. r = 4 was in the pipeline as a second auxiliary spec until it

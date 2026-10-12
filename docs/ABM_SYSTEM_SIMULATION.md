@@ -179,14 +179,15 @@ configuration's path distribution - only the variance reduction is lost.
 
 ### It was measured, and the gain is nothing
 
-`studies/abm_system_seed_correlation.c` reads
-`out/abm_system_irf_loss.csv`, 1000 replicates by 1000 configurations,
-and computes the Pearson correlation of the per-replicate losses for every one
+`old/naive_mae_loss/studies/abm_system_seed_correlation.c` reads
+`old/naive_mae_loss/out/abm_system_irf_loss.csv`, the loss table of the naive
+loss (`docs/OLD_EXPERIMENTS.md`), 1000 replicates by 1000 configurations, and
+computes the Pearson correlation of the per-replicate losses for every one
 of the 499,500 configuration pairs. The reference for no shared randomness is
 the same correlation with the second configuration's rows shifted down by one,
 pairing seed $n$ with seed $n+1$ and wrapping at the end. Under independence
 both have mean zero and standard deviation about $1/\sqrt{1000} = 0.032$.
-Output: `out/abm_system_seed_correlation_report.txt`.
+Output: `old/naive_mae_loss/out/abm_system_seed_correlation_report.txt`.
 
 | over all 499,500 pairs | mean | p05 | p50 | p95 |
 |---|---:|---:|---:|---:|

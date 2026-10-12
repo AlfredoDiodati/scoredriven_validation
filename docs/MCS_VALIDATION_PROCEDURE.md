@@ -8,12 +8,7 @@ of Parameters), is one row of the parameter design in
 describes the design. The same procedure runs in two places, and only the
 benchmark differs between them:
 
-- the empirical validation, where the benchmark is the US data
-  (`applications/abm_system_irf_loss.c`, `applications/abm_system_mcs.c` for
-  the t-QVARMA, `applications/abm_system_lp_irf_loss.c`,
-  `applications/abm_system_lp_mcs.c` for the local projections), with the
-  results in `docs/ABM_SYSTEM_MCS_VALIDATION.md` and
-  `docs/ABM_SYSTEM_LP_VALIDATION.md`;
+- the empirical validation, where the benchmark is the US data;
 - the Monte Carlo experiment, where every simulated run of every configuration
   is the benchmark in turn, so its configuration is known, described in
   `docs/MONTECARLO_VALIDATION.md`.
@@ -30,23 +25,24 @@ and Licht (2023), the linear local projection, and the state-dependent local
 projection with its two states' responses stacked into one vector. The
 sections below give the reasons and the settings.
 
-## Status: the empirical validation is behind the Monte Carlo
+## Status: not implemented yet
 
-The procedure is being refined in the Monte Carlo study, and the empirical
-validation on the US data will be brought up to date once that is finished.
-Until then the two differ:
+Neither place runs this procedure yet. The Monte Carlo is being written first,
+and the empirical validation on the US data will be brought up to date once
+the Monte Carlo is finished. Both ran earlier with the naive loss, the mean
+absolute error between response vectors with no variance correction; that
+code and its outputs are under `old/naive_mae_loss/`, and
+`docs/OLD_NAIVE_MAE_LOSS.md` documents it. Beyond the loss, those two runs
+differed in this:
 
-- The Monte Carlo uses the loss described below. The empirical validation
-  uses the mean absolute error between response vectors with no variance
-  correction, documented in `docs/OLD_NAIVE_MAE_LOSS.md`.
-- The Monte Carlo runs all three auxiliary models above, plus each state of
+- The Monte Carlo ran all three auxiliary models above, plus each state of
   the state-dependent local projection on its own, five response vectors in
   all.
-- The empirical validation runs the t-QVARMA as the main pipeline, and the
+- The empirical validation ran the t-QVARMA as the main pipeline, and the
   linear local projection and each state separately as a side run
-  (`docs/ABM_SYSTEM_LP_VALIDATION.md`). The confidence set over both states
-  stacked is not computed on the US data.
-- The Monte Carlo uses 2000 bootstrap resamples per confidence set, the
+  (`docs/OLD_ABM_SYSTEM_LP_VALIDATION.md`). The confidence set over both states
+  stacked was not computed on the US data.
+- The Monte Carlo used 2000 bootstrap resamples per confidence set, the
   empirical validation 10000.
 
 Everything below holds for both unless it says otherwise.
@@ -188,7 +184,8 @@ The compared vector is the total response, `.total` (the contemporaneous,
 stationary and co-integrated parts summed), at horizons 0 to 20
 (`ImpulseOptions.horizon = 20`): one 5 by 5 matrix per horizon, stacked horizon
 0 first into 5 x 5 x 21 = 525 numbers (`flatten_total_irf` in
-`applications/abm_system_irf_loss.c`).
+`old/naive_mae_loss/applications/abm_system_irf_loss.c`, the program that
+built the naive loss on the US data).
 
 For the local projections it is the response of each of the five series to a
 unit shock in each, recursively identified, at horizons 0 to 15: 5 x 16 x 5 =
@@ -220,11 +217,8 @@ all (1,1,2), and no (1,1,4) configuration survived.
 `applications/us_qvarma_spec_choice.c` fits both to the US data and records
 their residual checks in `out/us_qvarma_spec_choice.txt`.
 
-Putting (1,1,4) back is one entry in `spec_list` in
-`applications/abm_system_fit_qvarma.c` and one in
-`applications/abm_system_irf_loss.c`, plus a join of the two loss tables on
-`replicate`. `applications/abm_system_mcs.c` needs no change: it reads however
-many columns the file holds.
+Putting (1,1,4) back starts with one entry in `spec_list` in
+`applications/abm_system_fit_qvarma.c`, which fits it to every simulation.
 
 The drift-carrying variant of the model is not used. It was dropped at an
 earlier stage of the project, before the loss moved to impulse responses, and
@@ -241,9 +235,9 @@ against $n$ observations, 1000 on the US data and 999 in the Monte Carlo.
 - `stat = MCS_TR`, the range statistic: every pairwise difference of mean
   losses, scaled by its bootstrap standard deviation; a round rejects when the
   largest of them is too large. et_al's default, `MCS_TMAX`, compares each
-  model with the average of the models still in the set; it is run alongside
-  as a check, `docs/ABM_SYSTEM_MCS_VALIDATION.md`, "Does the statistic
-  matter".
+  model with the average of the models still in the set; it was run alongside
+  as a check under the naive loss, `docs/OLD_ABM_SYSTEM_MCS_VALIDATION.md`,
+  "Does the statistic matter".
 - `block_length = 1`: the replicates are independent simulations, not a time
   series, so the bootstrap resamples single replicates.
 - `variance = MCS_VARIANCE_BOOTSTRAP`, as above.

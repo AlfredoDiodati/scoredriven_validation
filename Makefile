@@ -38,9 +38,7 @@
 #                                 so a routine build does not redo minutes of
 #                                 already-settled work every time.
 #   make asan                     under AddressSanitizer and UndefinedBehaviorSanitizer
-#   make mc-sweep_grid: the Monte Carlo experiment, every run of every
-#   configuration as the benchmark, built at -O3 by its own rule.
-#   make mc-<stem>: one other montecarlo/ program on its own, built and run.
+#   make mc-<stem>: one montecarlo/ program on its own, built and run.
 #   docs/MONTECARLO_VALIDATION.md describes them.
 #   make old-<stem>: one program of an experiment discarded from either
 #   pipeline, built from old/ and run. OLD_SOURCES lists them;
@@ -96,8 +94,8 @@ MARGINAL_LAWS_HEADER := studies/marginal_laws.h
 # Most stems here are the DSK simulator's. The auxiliary model lives in the
 # installed et_al. and its correctness suite lives there with it.
 # marginal_laws_correctness checks the densities of studies/marginal_laws.h,
-# lp_system_transform the series applications/lp_system.h builds, and
-# fit_metric_correctness montecarlo/fit_metric.h. abm_system_layout is this
+# and lp_system_transform the series applications/lp_system.h builds.
+# abm_system_layout is this
 # project's own and tests the one header both dataset
 # writers and every reader agree about the stored layout through;
 # abm_system_dataset_finiteness reads the archives that header wrote and asks
@@ -112,7 +110,7 @@ TEST_STEMS := abm_system_layout abm_system_dataset_finiteness dsk_long_path \
                dsk_memory_safety dsk_ulp_sensitivity dsk_redenomination_invariance \
                dsk_machine_lot_rebase dsk_good_unit_invariance \
                dsk_dataset_reproduction dsk_tail_replicate_reproduction \
-               marginal_laws_correctness lp_system_transform fit_metric_correctness
+               marginal_laws_correctness lp_system_transform
 # Where the wall time of a t-QVARMA fit goes, and what each way of speeding it
 # up is worth. Measured 2026-08-29 against a 500,000-fit run of
 # abm_system_fit_qvarma; out/fit_speedup_options.txt collects the numbers and
@@ -127,19 +125,10 @@ BENCH_STEMS := qvarma_fit_cost qvarma_fit_io qvarma_iteration_budget \
 # never rebuilds it, so none can run on a fresh clone: `study` checks for the
 # dataset and the fit cache first and says so rather than letting the first
 # binary fail on an assert.
-#
-# The order is load-bearing in two places, which is why this is a list and not a
-# set: abm_system_winner_diagnostics writes the theta table
-# abm_system_winner_normality reads, and us_qvarma_nu_sensitivity writes the
-# held-nu US fits abm_system_winner_tail_comparison reads. Each producer comes
-# before its consumer here and `study` runs them in this order.
 STUDY_STEMS := qvarma_stuck_fits qvarma_conditioning qvarma_convergence_criteria \
-               us_qvarma_nu_sensitivity abm_system_winner_diagnostics \
-               abm_system_winner_nu_profile abm_system_winner_nu_likelihood_scan \
-               abm_system_winner_tail_comparison abm_system_tail_origin \
+               abm_system_tail_origin \
                abm_system_gaussian_convergence abm_system_micro_clt \
-               abm_system_stable_tails abm_system_marginal_fit \
-               abm_system_seed_correlation abm_system_winner_normality
+               abm_system_stable_tails abm_system_marginal_fit
 # us_prepare_data has to come first: it is the only script that reads
 # us_real.csv's Unemployment and Des_Energy_demand columns, and it writes
 # out/us_system.csv, which us_data.h reads back. The order here is what makes
@@ -160,22 +149,16 @@ APPLICATION_STEMS := us_prepare_data abm_system_design
 # would give a second way to write the same tree.
 EXPERIMENT_STEMS := us_qvarma_spec_choice \
                      abm_system_convert_rdata abm_system_fit_qvarma abm_system_fit_lp \
-                     us_lp_fit abm_system_lp_irf_loss abm_system_lp_mcs \
+                     us_lp_fit \
                      abm_system_micro_simulate \
-                     abm_system_irf_loss abm_system_mcs \
-                     abm_system_mcs_statistic_comparison \
-                     abm_system_winner_irf \
                      throughput_dataset
 # The Monte Carlo experiment: the validation procedure with every simulated run
 # of every configuration promoted in turn to the role the US data plays, so that
 # the procedure is asked a question whose answer is known. It is a pipeline of
 # its own and shares no source with applications/, which stays exactly as it
 # is; what it reuses is applications/'s output, above all the million cached
-# fits, since it estimates nothing. sweep_grid itself has its own rule below;
-# these are the programs that work from its response cache.
-# docs/MONTECARLO_VALIDATION.md.
-MONTECARLO_STEMS := compressed_response_recovery fit_metric_oracle fit_metric_bootstrap \
-                     fit_metric_report
+# fits, since it estimates nothing. docs/MONTECARLO_VALIDATION.md.
+MONTECARLO_STEMS :=
 # Experiments discarded from both pipelines, one folder of old/ per experiment,
 # kept buildable with the flags of the pipeline they came from and run one at a
 # time via make old-<stem>, the stem being the file name. They write to out/
@@ -201,7 +184,26 @@ OLD_SOURCES := old/score_loss/applications/abm_system_score_loss.c \
                old/lp_r_levels/abm_system_fit_lp_r_levels.c \
                old/lp_r_levels/abm_system_lp_r_levels_irf_loss.c \
                old/lp_r_levels/abm_system_lp_r_levels_mcs.c \
-               old/lp_r_levels/lp_system_r_levels_transform.c
+               old/lp_r_levels/lp_system_r_levels_transform.c \
+               old/naive_mae_loss/applications/abm_system_irf_loss.c \
+               old/naive_mae_loss/applications/abm_system_mcs.c \
+               old/naive_mae_loss/applications/abm_system_mcs_statistic_comparison.c \
+               old/naive_mae_loss/applications/abm_system_lp_irf_loss.c \
+               old/naive_mae_loss/applications/abm_system_lp_mcs.c \
+               old/naive_mae_loss/applications/abm_system_winner_irf.c \
+               old/naive_mae_loss/studies/us_qvarma_nu_sensitivity.c \
+               old/naive_mae_loss/studies/abm_system_winner_diagnostics.c \
+               old/naive_mae_loss/studies/abm_system_winner_nu_profile.c \
+               old/naive_mae_loss/studies/abm_system_winner_nu_likelihood_scan.c \
+               old/naive_mae_loss/studies/abm_system_winner_tail_comparison.c \
+               old/naive_mae_loss/studies/abm_system_seed_correlation.c \
+               old/naive_mae_loss/studies/abm_system_winner_normality.c \
+               old/naive_mae_loss/montecarlo/compressed_response_recovery.c \
+               old/naive_mae_loss/montecarlo/fit_metric_oracle.c \
+               old/naive_mae_loss/montecarlo/fit_metric_bootstrap.c \
+               old/naive_mae_loss/montecarlo/fit_metric_pairwise.c \
+               old/naive_mae_loss/montecarlo/fit_metric_report.c \
+               old/naive_mae_loss/tests/fit_metric_correctness.c
 
 # Whatever the application scripts share, so editing it rebuilds them.
 APPLICATION_HEADERS := applications/us_data.h applications/abm_system.h applications/lp_system.h \
@@ -298,10 +300,6 @@ study-inputs:
 	  echo "out/abm_system_fit_qvarma/ is missing. The studies read the fit cache and"; \
 	  echo "never rebuild it; make app-abm_system_fit_qvarma produces it."; \
 	  exit 1; }
-	@test -f out/abm_system_mcs.csv || { \
-	  echo "out/abm_system_mcs.csv is missing. The studies read the confidence"; \
-	  echo "set and never rebuild it; make app-abm_system_mcs produces it."; \
-	  exit 1; }
 
 .PHONY: study-inputs study-robustness
 # One name per thing: study-robustness says what these are, study is the name
@@ -352,6 +350,7 @@ $(foreach source,$(OLD_SOURCES),$(eval $(call old_target_for_source,$(notdir $(b
 # The headers the rules above do not know about.
 OLD_BENCHMARK_HEADER := old/montecarlo_one_benchmark/benchmark.h
 $(addprefix $(BIN)/,lp_irf_loss lp_mcs lp_sweep sweep_cops sweep_grid): applications/abm_system_lp.h montecarlo/response_cache.h
+$(addprefix $(BIN)/,abm_system_lp_irf_loss abm_system_lp_mcs): applications/abm_system_lp.h
 $(addprefix $(BIN)/,irf_loss lp_irf_loss lp_sweep score_loss qvarma_recovery_diagnostics lp_recovery_diagnostics): \
     $(OLD_BENCHMARK_HEADER)
 $(addprefix $(BIN)/,qvarma_recovery_diagnostics lp_recovery_diagnostics): \
@@ -359,20 +358,25 @@ $(addprefix $(BIN)/,qvarma_recovery_diagnostics lp_recovery_diagnostics): \
 $(addprefix $(BIN)/,us_lp_fit_r_levels abm_system_fit_lp_r_levels abm_system_lp_r_levels_irf_loss \
     abm_system_lp_r_levels_mcs lp_system_r_levels_transform lp_recovery_diagnostics): \
     old/lp_r_levels/lp_system_r_levels.h
-FIT_METRIC_BINARIES := fit_metric_oracle fit_metric_bootstrap fit_metric_report fit_metric_correctness
-$(addprefix $(BIN)/,$(FIT_METRIC_BINARIES)): montecarlo/response_cache.h montecarlo/fit_metric.h $(APPLICATION_HEADERS)
+FIT_METRIC_BINARIES := fit_metric_oracle fit_metric_bootstrap fit_metric_pairwise fit_metric_report \
+                       fit_metric_correctness
+$(addprefix $(BIN)/,$(FIT_METRIC_BINARIES)): montecarlo/response_cache.h old/naive_mae_loss/montecarlo/fit_metric.h \
+    old/naive_mae_loss/montecarlo/fit_metric_table.h $(APPLICATION_HEADERS)
 
-# The grid's five million confidence sets are built at -O3, where GCC
+# The naive-loss grid's five million confidence sets are built at -O3, where GCC
 # vectorises mcs()'s pair spreads; without -ffast-math that changes no
 # addition's order, so the results are the -O2 build's bit for bit. Measured
 # with 8 sets side by side on 999 x 1000 tables at 2000 resamples: about 0.13
 # s per set at -O2, 0.08 s at -O3. Its own rule, because the one above fixes
 # the flags when it is generated.
-.PHONY: mc-sweep_grid
-$(BIN)/sweep_grid: montecarlo/sweep_grid.c $(HEADERS) $(APPLICATION_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
+.PHONY: old-sweep_grid
+$(BIN)/sweep_grid: old/naive_mae_loss/montecarlo/sweep_grid.c $(HEADERS) $(APPLICATION_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
 	$(CC) $(subst -O2,-O3,$(CFLAGS)) -DMAT_DOUBLE -fopenmp $(ETAL_CFLAGS) $(INCLUDES) $< -o $@ $(ETAL_LIBS)
-mc-sweep_grid: $(BIN)/sweep_grid | montecarlo/out
+old-sweep_grid: $(BIN)/sweep_grid | old/naive_mae_loss/montecarlo/out
 	./$(BIN)/sweep_grid
+
+old/naive_mae_loss/out old/naive_mae_loss/montecarlo/out:
+	@mkdir -p $@
 
 # The discarded drivers, each building what it runs first: the one-benchmark
 # experiment under the t-QVARMA and under the local projections, and every run
@@ -411,22 +415,27 @@ app-us_qvarma_spec_choice: app-us_prepare_data
 # throughput_dataset deliberately does not appear as a prerequisite of
 # app-throughput_fit: it writes 21 GB and takes tens of minutes, so
 # rerunning the throughput test must not rebuild the dataset it reads.
-app-abm_system_irf_loss: app-us_qvarma_spec_choice
-app-abm_system_mcs: app-abm_system_irf_loss
-app-abm_system_mcs_statistic_comparison: app-abm_system_irf_loss
+old-abm_system_irf_loss: app-us_qvarma_spec_choice
+old-abm_system_mcs: old-abm_system_irf_loss
+old-abm_system_mcs_statistic_comparison: old-abm_system_irf_loss
 # The score loss needs the same real-data fit and no fit of its own: it
 # evaluates the score of that estimate on every simulated series rather than
 # fitting one, so it does not depend on app-abm_system_fit_qvarma the way the
 # IRF loss does.
 old-abm_system_score_loss: app-us_qvarma_spec_choice
 old-abm_system_mcs_statistic_comparison_score: old-abm_system_score_loss
-app-abm_system_winner_irf: app-abm_system_mcs
+old-abm_system_winner_irf: old-abm_system_mcs
+# Two of the naive-loss studies read another one's output and are not chained
+# to it, since each takes minutes: old-abm_system_winner_normality reads the
+# theta table old-abm_system_winner_diagnostics writes, and
+# old-abm_system_winner_tail_comparison the held-nu US fits
+# old-us_qvarma_nu_sensitivity writes. Run the producer first.
 # The local-projection route against the US data. The simulated fits come from
 # app-abm_system_fit_lp, which, like app-abm_system_fit_qvarma, is not rerun
 # as a prerequisite.
 app-us_lp_fit: app-us_prepare_data
-app-abm_system_lp_irf_loss: app-us_lp_fit
-app-abm_system_lp_mcs: app-abm_system_lp_irf_loss
+old-abm_system_lp_irf_loss: app-us_lp_fit
+old-abm_system_lp_mcs: old-abm_system_lp_irf_loss
 
 # The discarded route on cumulated levels, every output carrying _r_levels. The
 # simulated fits take minutes and are, like the default ones, not a

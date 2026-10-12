@@ -99,7 +99,7 @@ dropped. Which configurations shared the set is not recorded.
 
 The whole chain, refit, single stand-in and 1000 repetitions of the three
 original models, took 12.2 hours, one confidence set at a time. The 1000
-repetitions under both states were added later by `montecarlo/lp_nl_run.sh`,
+repetitions under both states were added later by `old/naive_mae_loss/montecarlo/lp_nl_run.sh`,
 16 confidence sets side by side; their time was not kept.
 
 The same protocol with replicate 0 of each of the 1000 configurations as the

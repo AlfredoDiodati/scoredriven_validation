@@ -7,7 +7,7 @@
 
 /*
 Discarded from the Monte Carlo pipeline. Its single benchmark, cop_0191 run 706,
-is one of the benchmarks montecarlo/sweep_grid.c runs, every run of every
+is one of the benchmarks old/naive_mae_loss/montecarlo/sweep_grid.c runs, every run of every
 configuration, under the same loss and confidence set settings except the
 number of bootstrap resamples (10000 here, 2000 in the grid). The grid
 answers the same question on all of them. docs/OLD_EXPERIMENTS.md.

@@ -12,7 +12,7 @@
 /*
 One configuration's impulse responses under the three local projections, read
 back from the archive applications/abm_system_fit_lp.c writes, for the loss
-tables of applications/abm_system_lp_irf_loss.c against the US data and of
+tables of old/naive_mae_loss/applications/abm_system_lp_irf_loss.c against the US data and of
 montecarlo/response_cache.h against a simulated run.
 
 The three responses of a replicate are irf_lin_mean, irf_s1_mean and

@@ -1,6 +1,6 @@
 # The distribution of the simulated series
 
-`docs/ABM_SYSTEM_MCS_VALIDATION.md`, "What the confidence set does not say",
+`docs/OLD_ABM_SYSTEM_MCS_VALIDATION.md`, "What the confidence set does not say",
 reports that no configuration of the design reproduces the variance of the US
 interest rate and inflation or the skewness of US GDP growth and employment
 change, and that the simulated series have much lighter tails than the US
@@ -97,7 +97,7 @@ Anderson-Darling, Jarque-Bera, skewness and excess kurtosis are general
 statistics and none of them is in et_al's `stats.h`. They are written inside
 the study for now, as `sample_excess_kurtosis` is in
 `studies/abm_system_tail_origin.c` and Mardia's test is in
-`studies/abm_system_winner_normality.c`. They belong in et_al.
+`old/naive_mae_loss/studies/abm_system_winner_normality.c`. They belong in et_al.
 
 ## The cross-section of firms behind GDP
 

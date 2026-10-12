@@ -1,6 +1,6 @@
 /*
 Discarded from the Monte Carlo pipeline. Its single benchmark, cop_0191 run 706,
-is one of the benchmarks montecarlo/sweep_grid.c runs, every run of every
+is one of the benchmarks old/naive_mae_loss/montecarlo/sweep_grid.c runs, every run of every
 configuration, under the same loss and confidence set settings except the
 number of bootstrap resamples (10000 here, 2000 in the grid). The grid
 answers the same question on all of them. docs/OLD_EXPERIMENTS.md.
@@ -9,7 +9,7 @@ The Monte Carlo impulse-response loss matrix, montecarlo/out/irf_loss.csv,
 under both Model Confidence Set statistics, with every other setting identical
 so that a difference between the two sets comes from the statistic.
 
-This is applications/abm_system_mcs_statistic_comparison.c's procedure over the
+This is old/naive_mae_loss/applications/abm_system_mcs_statistic_comparison.c's procedure over the
 Monte Carlo matrix.
 
 The benchmark is a replicate of a known configuration, so unlike the real-data
