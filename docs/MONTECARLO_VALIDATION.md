@@ -38,11 +38,72 @@ run of `cop_0191`, and run 0 of every configuration,
 `docs/OLD_MONTECARLO_BENCHMARK_SUBSETS.md`. `docs/OLD_EXPERIMENTS.md` lists
 every discarded experiment with its reason.
 
-## The experiments
+## The experiment: every run of every configuration as the benchmark
 
-None is current. The grid under the loss of
-`docs/MCS_VALIDATION_PROCEDURE.md`, squared error with the variance
-correction, is still to be written.
+Every run of every configuration is the benchmark in turn, 1,000,000
+benchmarks per model, five million confidence sets in all, under the five
+models: the t-QVARMA (p1q1r2, total responses to horizon 20, 525 entries per
+run) and the four local projections of "The local projections" below, linear,
+state 1 and state 2 (400 entries each) and both states stacked (800 entries).
+It answers, for each configuration, how often the procedure returns it when it
+is the right answer.
+
+- `make mc-true_configuration_recovery` builds at -O3 and runs.
+- `./bin/true_configuration_recovery` does the same, once built.
+
+Each benchmark is the procedure of `docs/MCS_VALIDATION_PROCEDURE.md` against
+that run: the loss is the squared error between response vectors averaged over
+the entries, minus each configuration's response variance averaged over the
+entries; the benchmark's run index is held out of every column and of every
+variance ("What is held out, and why" below); MCS_TR at alpha 0.05, block
+length 1, bootstrap variance, 2000 resamples, seed 123 stream 0.
+`montecarlo/recovery_loss.h` computes the loss, and
+`tests/recovery_loss_correctness.c` checks it against a reference written from
+the definitions and checks, on simulated responses, that it removes the bias
+the uncorrected loss has.
+
+Benchmarks are taken in order of run index: run 0 of every configuration, then
+run 1, and so on, so a stopped run holds every configuration at the same
+number of benchmarks. For each run index the configurations' variances are
+computed once. Benchmarks sharing the run index then go in batches whose size
+is the smallest multiple of the hardware thread count that is at least 64:
+their loss matrices are formed in one pass over the response cache, then their
+confidence sets run side by side, one per thread. Every hardware thread is
+used, counted at run time.
+
+Settings read from the environment:
+
+- `TRUE_CONFIGURATION_RECOVERY_RUN_BLOCK`: how many run indices one model does
+  before the next model takes the same ones, default all 1000 (one model at a
+  time, t-QVARMA first).
+- `ABM_SYSTEM_LP_FIT_DIR`, `ABM_SYSTEM_INPUT_DIR`: where the local-projection
+  fits and the dataset are read from, default `out/abm_system_fit_lp` and
+  `dataset/abm_system`.
+
+Compile-time overrides for a test build over part of the grid: `BOOTSTRAP`,
+`FIRST_MODEL`, `LAST_MODEL`, `RUN_LIMIT`, `BENCHMARK_LIMIT`, `PROGRESS_PATH`,
+`RESULT_PATH`, `RESPONSE_CACHE_DIR`. A test build leaves its rows in its
+progress file and writes no result.
+
+Resumable at benchmark granularity. Rows go to
+`montecarlo/out/true_configuration_recovery_progress.csv` as each batch
+finishes; a rerun skips what that file holds. When every model is done the
+rows are compressed to `montecarlo/out/true_configuration_recovery.csv.gz` and
+the progress file is removed. If the result exists and no progress file does,
+the finished rows are unpacked back into the progress file and only the models
+missing from them are run.
+
+One row per model and benchmark: model, benchmark configuration and run,
+whether the configuration is in the set, its rank by mean loss, its MCS
+p-value, the set size, whether the set was decided by an accepted test, the
+final p-value, runs dropped, the configuration with the smallest mean loss, the
+configurations in the set. The columns are those of the naive-loss grid, so the
+two can be compared row by row.
+
+The full grid was started on 2026-10-12 as the user service
+`true-configuration-recovery` (`systemd-run --user`, memory capped at 6 GB, all
+16 hardware threads), log in `out/true_configuration_recovery.log`. No results
+of it yet.
 
 ## The local projections
 

@@ -11,9 +11,8 @@ Hansen, Lunde and Nason (2011) decides which configurations survive.
 
 **Status.** The distance is the squared error between impulse responses minus
 each configuration's estimated response variance
-(`docs/MCS_VALIDATION_PROCEDURE.md`). Nothing runs it yet: the Monte Carlo
-study is being written first, and the empirical validation on the US data will
-follow once it is finished. Every result produced so far used the naive loss,
+(`docs/MCS_VALIDATION_PROCEDURE.md`). The Monte Carlo study runs it, and the
+empirical validation on the US data will follow once that is finished. Every result produced so far used the naive loss,
 the mean absolute error with no variance correction, which biases the
 confidence set towards configurations whose responses are less noisy; its
 code, its outputs and the studies built on its winner are under
@@ -539,8 +538,9 @@ both states' responses stacked into one vector. The local-projection fits come
 from their own step, `make app-abm_system_fit_lp`, all 1,000,000 runs in a few
 minutes.
 
-The grid under the variance-corrected loss is not written yet.
-`docs/MONTECARLO_VALIDATION.md` describes the design it shares with the
+`make mc-true_configuration_recovery` runs every run of every configuration as
+the benchmark, five million confidence sets, about a day per model.
+`docs/MONTECARLO_VALIDATION.md` is the write-up. It shares its design with the
 discarded naive-loss grid, whose results and follow-ups are recorded in
 `docs/OLD_MONTECARLO_NAIVE_MAE_GRID.md` and the documents it names. Three
 earlier Monte Carlo experiments used subsets of the grid's benchmarks;
@@ -607,8 +607,8 @@ The auxiliary model is et_al's and is tested there, not here: `make test` in an
 et_al clone runs its correctness suite, including the cache and resume
 behaviour `applications/abm_system_fit_qvarma.c` relies on.
 
-What `make test` runs is four tests of this project's own code and data and
-twelve of the simulator. The four:
+What `make test` runs is five tests of this project's own code and data and
+twelve of the simulator. The five:
 
     make test-abm_system_layout             applications/abm_system.h stores and
                                             returns what it says it does: the
@@ -625,6 +625,10 @@ twelve of the simulator. The four:
                                             series the local projections are
                                             fitted on and the state series
                                             exactly
+    make test-recovery_loss_correctness     montecarlo/recovery_loss.h computes
+                                            the variance-corrected loss, and
+                                            the correction removes the bias
+                                            of the uncorrected one
     make test-marginal_laws_correctness     the densities and fits of
                                             studies/marginal_laws.h,
                                             docs/ABM_SYSTEM_DISTRIBUTION.md

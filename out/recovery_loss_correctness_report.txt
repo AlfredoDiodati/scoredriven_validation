@@ -1,0 +1,25 @@
+montecarlo/recovery_loss.h against its definition, 16 hardware threads
+
+1. against a reference from the definitions
+      1 thread(s): largest relative error against the reference 1.279e-13
+pass  loss matches the reference to 1e-9 relative at 1 thread(s)
+      16 thread(s): largest relative error against the reference 1.279e-13
+pass  loss matches the reference to 1e-9 relative at 16 thread(s)
+pass  one thread and every thread give the same losses
+
+2. two kept runs, and a configuration with zero variance
+pass  two kept runs, the smallest legal case, match the reference
+pass  a configuration with equal runs has zero variance, its loss is the squared error
+
+3. the bias of the uncorrected loss, and its removal
+      average over 200 benchmarks, true A and wrong B:
+      uncorrected  A 1.9964  B 1.3969   (expected 2.00 and 1.40)
+      corrected    A 1.0031  B 1.3574   (expected 1.00 and 1.36)
+      largest miss of the corrected mean loss from its target 0.0320
+      smallest miss of A's uncorrected mean loss from its target 0.9679
+pass  the uncorrected loss prefers the wrong, less noisy configuration
+pass  the corrected loss prefers the true configuration
+pass  every corrected mean loss is within 0.1 of its squared distance
+pass  negative control: the uncorrected loss of A misses its target by more than 0.5
+
+passed, 0 failure(s)

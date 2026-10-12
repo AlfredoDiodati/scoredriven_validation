@@ -38,7 +38,9 @@
 #                                 so a routine build does not redo minutes of
 #                                 already-settled work every time.
 #   make asan                     under AddressSanitizer and UndefinedBehaviorSanitizer
-#   make mc-<stem>: one montecarlo/ program on its own, built and run.
+#   make mc-true_configuration_recovery: the Monte Carlo experiment, every
+#   run of every configuration as the benchmark, built at -O3 by its own rule.
+#   make mc-<stem>: one other montecarlo/ program on its own, built and run.
 #   docs/MONTECARLO_VALIDATION.md describes them.
 #   make old-<stem>: one program of an experiment discarded from either
 #   pipeline, built from old/ and run. OLD_SOURCES lists them;
@@ -94,7 +96,8 @@ MARGINAL_LAWS_HEADER := studies/marginal_laws.h
 # Most stems here are the DSK simulator's. The auxiliary model lives in the
 # installed et_al. and its correctness suite lives there with it.
 # marginal_laws_correctness checks the densities of studies/marginal_laws.h,
-# and lp_system_transform the series applications/lp_system.h builds.
+# lp_system_transform the series applications/lp_system.h builds, and
+# recovery_loss_correctness the loss of montecarlo/recovery_loss.h.
 # abm_system_layout is this
 # project's own and tests the one header both dataset
 # writers and every reader agree about the stored layout through;
@@ -110,7 +113,7 @@ TEST_STEMS := abm_system_layout abm_system_dataset_finiteness dsk_long_path \
                dsk_memory_safety dsk_ulp_sensitivity dsk_redenomination_invariance \
                dsk_machine_lot_rebase dsk_good_unit_invariance \
                dsk_dataset_reproduction dsk_tail_replicate_reproduction \
-               marginal_laws_correctness lp_system_transform
+               marginal_laws_correctness lp_system_transform recovery_loss_correctness
 # Where the wall time of a t-QVARMA fit goes, and what each way of speeding it
 # up is worth. Measured 2026-08-29 against a 500,000-fit run of
 # abm_system_fit_qvarma; out/fit_speedup_options.txt collects the numbers and
@@ -157,7 +160,8 @@ EXPERIMENT_STEMS := us_qvarma_spec_choice \
 # the procedure is asked a question whose answer is known. It is a pipeline of
 # its own and shares no source with applications/, which stays exactly as it
 # is; what it reuses is applications/'s output, above all the million cached
-# fits, since it estimates nothing. docs/MONTECARLO_VALIDATION.md.
+# fits, since it estimates nothing. true_configuration_recovery has its own
+# rule below. docs/MONTECARLO_VALIDATION.md.
 MONTECARLO_STEMS :=
 # Experiments discarded from both pipelines, one folder of old/ per experiment,
 # kept buildable with the flags of the pipeline they came from and run one at a
@@ -246,6 +250,7 @@ $(BIN) $(OUT):
 
 $(BIN)/marginal_laws_correctness: $(MARGINAL_LAWS_HEADER)
 $(BIN)/lp_system_transform: applications/lp_system.h
+$(BIN)/recovery_loss_correctness: montecarlo/recovery_loss.h montecarlo/response_cache.h $(APPLICATION_HEADERS)
 $(BIN)/abm_system_marginal_fit: $(MARGINAL_LAWS_HEADER)
 
 $(BIN)/%: tests/%.c $(HEADERS) $(TEST_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
@@ -362,6 +367,16 @@ FIT_METRIC_BINARIES := fit_metric_oracle fit_metric_bootstrap fit_metric_pairwis
                        fit_metric_correctness
 $(addprefix $(BIN)/,$(FIT_METRIC_BINARIES)): montecarlo/response_cache.h old/naive_mae_loss/montecarlo/fit_metric.h \
     old/naive_mae_loss/montecarlo/fit_metric_table.h $(APPLICATION_HEADERS)
+
+# The grid's five million confidence sets are built at -O3, as the naive-loss
+# grid's were below. Its own rule, because the generic one fixes the flags when
+# it is generated.
+.PHONY: mc-true_configuration_recovery
+$(BIN)/true_configuration_recovery: montecarlo/true_configuration_recovery.c montecarlo/recovery_loss.h \
+    montecarlo/response_cache.h $(HEADERS) $(APPLICATION_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
+	$(CC) $(subst -O2,-O3,$(CFLAGS)) -DMAT_DOUBLE -fopenmp $(ETAL_CFLAGS) $(INCLUDES) $< -o $@ $(ETAL_LIBS)
+mc-true_configuration_recovery: $(BIN)/true_configuration_recovery | montecarlo/out
+	./$(BIN)/true_configuration_recovery
 
 # The naive-loss grid's five million confidence sets are built at -O3, where GCC
 # vectorises mcs()'s pair spreads; without -ffast-math that changes no

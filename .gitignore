@@ -122,8 +122,14 @@ __pycache__/
 _temp/
 
 # The grid Monte Carlo's response caches, 7 GB in all, rebuilt by
-# bin/sweep_grid from the fits and the dataset when missing.
+# bin/true_configuration_recovery from the fits and the dataset when missing.
 out/sweep_grid_response_cache/
+
+# The Monte Carlo's running log of finished benchmarks, about 260 MB when
+# complete. bin/true_configuration_recovery compresses it into its result,
+# montecarlo/out/true_configuration_recovery.csv.gz, which is tracked, and
+# removes it when every model is done.
+montecarlo/out/true_configuration_recovery_progress.csv
 
 # The grid Monte Carlo's running log of finished benchmarks, 260 MB when
 # complete. bin/sweep_grid compresses it into sweep_grid.csv.gz and removes it

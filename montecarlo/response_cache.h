@@ -3,25 +3,25 @@
 
 /*
 Every simulated run's impulse responses under one auxiliary model, held in
-memory as float32 so a loss matrix against any benchmark is one pass of
-absolute differences over it. Read by old/naive_mae_loss/montecarlo/sweep_grid.c and the
-programs that work from the grid's responses.
+memory as float32 so a loss matrix against any benchmark is one pass over it.
+Read by montecarlo/true_configuration_recovery.c through
+montecarlo/recovery_loss.h, and by the discarded naive-loss programs under
+old/naive_mae_loss/montecarlo/.
 
 Five models: the t-QVARMA (p1q1r2, horizon 20, the stacked total responses,
 525 entries per run, computed from the cached fits in
 out/abm_system_fit_qvarma/), the three local projections (linear, state 1,
 state 2, 400 entries per run, read from out/abm_system_fit_lp/), and lp_nl, the
 state-dependent local projection with its two states in one vector, state 1's
-400 entries followed by state 2's.
-The mean absolute difference over lp_nl's 800 entries is the average of the
-two states' mean absolute differences. A run with no usable response, under
-lp_nl a run missing either state, is marked by a NaN in its first entry.
+400 entries followed by state 2's. A run with no usable response, under lp_nl a
+run missing either state, is marked by a NaN in its first entry.
 
 float32 for storage and double for the arithmetic, so the only precision lost
 is in the stored responses themselves: 2.1 GB for the t-QVARMA, 1.6 GB for each
-local projection, 3.2 GB for lp_nl. The cache is a file mapped into memory rather than read into it, so the kernel
-can drop pages it needs elsewhere and read them back, instead of the machine
-running out of memory with a cache larger than the memory left.
+local projection, 3.2 GB for lp_nl. The cache is a file mapped into memory
+rather than read into it, so the kernel can drop pages it needs elsewhere and
+read them back, instead of the machine running out of memory with a cache
+larger than the memory left.
 */
 
 #include "applications/abm_system_lp.h"

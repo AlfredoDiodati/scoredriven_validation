@@ -25,11 +25,11 @@ and Licht (2023), the linear local projection, and the state-dependent local
 projection with its two states' responses stacked into one vector. The
 sections below give the reasons and the settings.
 
-## Status: not implemented yet
+## Status: the empirical validation is behind the Monte Carlo
 
-Neither place runs this procedure yet. The Monte Carlo is being written first,
-and the empirical validation on the US data will be brought up to date once
-the Monte Carlo is finished. Both ran earlier with the naive loss, the mean
+The Monte Carlo runs this procedure, `montecarlo/true_configuration_recovery.c`.
+The empirical validation on the US data does not yet, and will be brought up
+to date once the Monte Carlo is finished. Both ran earlier with the naive loss, the mean
 absolute error between response vectors with no variance correction; that
 code and its outputs are under `old/naive_mae_loss/`, and
 `docs/OLD_NAIVE_MAE_LOSS.md` documents it. Beyond the loss, those two runs
