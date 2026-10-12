@@ -5,15 +5,6 @@ benchmark series by comparing impulse response functions. A configuration, a
 "CoP" (Configuration of Parameters), is one point of the parameter design,
 simulated for $n$ independent replicates.
 
-In short: take the estimated impulse response function of the benchmark and
-of every simulated replicate of every configuration, and measure each
-replicate's distance from the benchmark's response by the squared error at
-each entry of the response minus the replicate's own scaled squared deviation
-from its configuration's mean response, averaged over the entries. Then run
-the Model Confidence Set of Hansen, Lunde and Nason (2011) over the
-configurations, one model per configuration and one observation per
-replicate, using the equivalence test of Seri et al. (2021).
-
 ## The steps
 
 Notation: $d$ is the benchmark, $i$ a configuration, $s = 1, \dots, n$ the
@@ -46,9 +37,10 @@ L^*_{is} = \frac{1}{K} \sum_{h=1}^{K} L^*_{ish}.
 $$
 
 **Step 3.** Run the Model Confidence Set over the configurations on the
-per-replicate losses $L^*_{is}$. The losses are not averaged first: the
-confidence set estimates the mean and variance of each configuration's loss
-from its repeated observations, and an averaged number has none.
+per-replicate losses $L^*_{is}$, as described in the section on the Model
+Confidence Set below. The losses are not averaged first: the confidence set
+estimates the mean and variance of each configuration's loss from its
+repeated observations, and an averaged number has none.
 
 A loss $L^*_{is}$ can be negative. The confidence set reads only differences
 between configurations' losses, so this changes nothing.
@@ -150,36 +142,125 @@ $\overline{IR}_{ih}$. The dependence is of order $1/n$.
 
 ## The Model Confidence Set
 
-Each configuration contributes one model, and each replicate one
-observation. The confidence set is built by the sequential procedure of
-Hansen, Lunde and Nason (2011):
+The confidence set is built by the sequential testing and elimination of
+Hansen, Lunde and Nason (2011), with the equivalence test and the
+elimination rule of Seri et al. (2021, Section 4.2). Each configuration
+contributes one model, and each replicate one observation.
 
-1. Start with the set of all configurations.
-2. Test, at level $\alpha = 0.05$, the null hypothesis that every
-   configuration in the set has the same expected loss, against the
-   alternative that at least two differ.
-3. If the null is rejected, remove the configuration with the largest mean
-   loss and return to step 2.
-4. When the null is no longer rejected, the configurations left form the
-   confidence set.
+### Mean and variance of each configuration's loss
 
-The mean and variance of each configuration's loss, on which the test in
-step 2 is based, are estimated by Gaussian quasi-likelihood, following Seri
-et al. (2021). As set out by Martinoli et al. (2024), this estimation
-requires that the vectors of losses across configurations be independent and
-identically distributed over the replicates, and that each configuration's
-loss have finite mean and variance. Independent replicates simulated from the
-same configuration satisfy these, up to the $1/n$ dependence introduced by
-the correction.
+For each configuration $i$, the mean and variance of its loss are estimated
+from its $n$ replicates:
+
+$$
+\bar L_i = \frac{1}{n} \sum_{s=1}^{n} L^*_{is},
+\qquad
+\hat\sigma^2_i = \frac{1}{n} \sum_{s=1}^{n} \left( L^*_{is} \right)^2 - \bar L_i^2 .
+$$
+
+### The equivalence test
+
+Let $M$ be a set of $m$ configurations, labelled $1, \dots, m$ in any order,
+and $\bar{\mathbf L} = (\bar L_1, \dots, \bar L_m)'$. The null hypothesis is
+that all configurations in $M$ have the same expected loss, and the
+alternative is that at least two differ:
+
+$$
+H_{0,M}: E[L^*_{is}] = E[L^*_{js}] \;\; \forall i, j \in M,
+\qquad
+H_{A,M}: \exists\, i, j \in M : E[L^*_{is}] \neq E[L^*_{js}] .
+$$
+
+Write the null as $A \bar{\mathbf L} = \mathbf 0$ with the
+$(m-1) \times m$ contrast matrix
+
+$$
+A = \begin{bmatrix} \mathbf u_{m-1} & -I_{m-1} \end{bmatrix},
+$$
+
+where $\mathbf u_{m-1}$ is a vector of $m-1$ ones and $I_{m-1}$ the identity,
+so that the entries of $A \bar{\mathbf L}$ are $\bar L_1 - \bar L_k$ for
+$k = 2, \dots, m$. The test statistic is
+
+$$
+W_M = n \left( A \bar{\mathbf L} \right)'
+\left( \hat\sigma^2_1 U_{m-1} + \hat\Sigma_{-1} \right)^{-1}
+\left( A \bar{\mathbf L} \right),
+$$
+
+where $U_{m-1}$ is the $(m-1) \times (m-1)$ matrix of ones and
+$\hat\Sigma_{-1} = \mathrm{diag}(\hat\sigma^2_2, \dots, \hat\sigma^2_m)$.
+Under the null, $W_M$ is asymptotically $\chi^2_{m-1}$, and the p-value of
+the test is
+
+$$
+p_{H_0,M} = 1 - F_{\chi^2_{m-1}}\left( W_M \right).
+$$
+
+The same statistic can be computed without inverting a matrix. With the
+precision-weighted mean loss
+
+$$
+\tilde L = \frac{\sum_{i \in M} \bar L_i / \hat\sigma^2_i}{\sum_{i \in M} 1 / \hat\sigma^2_i},
+$$
+
+it equals
+
+$$
+W_M = n \sum_{i \in M} \frac{\left( \bar L_i - \tilde L \right)^2}{\hat\sigma^2_i}.
+$$
+
+This form does not depend on which configuration is labelled first.
+
+### Elimination and the confidence set
+
+When the null is rejected, the configuration with the largest mean loss is
+removed:
+
+$$
+e_M = \arg\max_{i \in M} \bar L_i .
+$$
+
+Since the elimination rule depends only on the mean losses, the order of
+elimination is the order of the configurations by decreasing $\bar L_i$.
+Sort the configurations in that order, $e_1, e_2, \dots, e_{m_0}$, where
+$m_0$ is the total number of configurations, and let
+$M_k = \{e_k, e_{k+1}, \dots, e_{m_0}\}$ be the set left before the $k$-th
+elimination. For each $k$, compute the p-value $p_{H_0,M_k}$ of the test on
+$M_k$, with the convention $p_{H_0,M_{m_0}} = 1$. The p-values of the test
+are not necessarily decreasing in $k$, so the MCS p-value of configuration
+$e_k$ is
+
+$$
+\hat p_{e_k} = \max_{j \le k} \, p_{H_0,M_j} .
+$$
+
+The Model Confidence Set at level $1-\alpha$ is the set of configurations
+with $\hat p_{e_k} \ge \alpha$. It is the set obtained by starting from all
+configurations, testing, removing $e_M$ while the null is rejected at level
+$\alpha$, and stopping at the first set where it is not. The MCS p-values
+give the confidence set for every $\alpha$ at once.
+
+### Requirements
+
+The test requires that every simulation run be independent of all the
+others, across replicates and across configurations, that the runs of a
+configuration be identically distributed, and that each configuration's
+loss have finite mean and variance (Seri et al., 2021, assumptions A1 and
+A5). The diagonal form of $\hat\Sigma_{-1}$ relies on the independence of
+the runs of different configurations. The correction of step 2 adds a
+dependence of order $1/n$ among the replicates of one configuration, through
+$\overline{IR}_{ih}$.
+
+Under these assumptions, as $n$ grows, the confidence set contains the
+configurations with the smallest expected loss with probability at least
+$1-\alpha$, and excludes every other configuration with probability
+approaching one (Seri et al., 2021, Theorem 2).
 
 ## References
 
 Hansen, P. R., Lunde, A., and Nason, J. M. (2011). The model confidence set.
 *Econometrica*, 79(2), 453–497.
-
-Martinoli, M., Moneta, A., and Pallante, G. (2024). Calibration and
-validation of macroeconomic simulation models by statistical causal search.
-*Journal of Economic Behavior & Organization*, 228, 106786.
 
 Seri, R., Martinoli, M., Secchi, D., and Centorrino, S. (2021). Model
 calibration and validation via confidence sets. *Econometrics and
