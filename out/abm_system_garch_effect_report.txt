@@ -1,0 +1,79 @@
+Whether the simulated macro series have a GARCH effect.
+
+Test: McLeod-Li, the Ljung-Box test on the squared residuals of an
+autoregression of the series as stored, with an intercept and 4 lags, at
+4 and 8 lags of the squares. Rejection is p < 0.05.
+
+Columns. 'samples' is how many series were tested. 'degenerate' is how
+many could not be, because the squared residuals were constant over a
+window the test correlates, as they are for a rate on the floor
+throughout. 'reject L' is the share of the others rejected at L lags.
+'acf1 sq' is the mean first-order autocorrelation of the squared
+residuals.
+
+PART 1. Calibration. 10000 samples from each law, seed 20261016,
+x_t = (1 - phi) mu + phi x_(t-1) + e_t with phi = 0.9. The Gaussian, the
+Student t4 and the floored AR(1) have no GARCH effect; the GARCH(1,1) has
+omega = 0.05, alpha = 0.10, beta = 0.85. Run at the simulated length and
+at the US length.
+
+  400 values per sample
+  law                          samples degenerate   reject 4   reject 8      acf1 sq
+  Gaussian                       10000          0     0.0465     0.0542      -0.0051
+  Student t4                     10000          0     0.0467     0.0614      -0.0045
+  GARCH(1,1)                     10000          0     0.7890     0.8396       0.1216
+  floored AR(1)                  10000          0     0.0656     0.0745       0.0008
+
+  187 values per sample
+  law                          samples degenerate   reject 4   reject 8      acf1 sq
+  Gaussian                       10000          0     0.0478     0.0589      -0.0095
+  Student t4                     10000          0     0.0452     0.0563      -0.0083
+  GARCH(1,1)                     10000          0     0.4322     0.4926       0.0892
+  floored AR(1)                  10000          0     0.0586     0.0648      -0.0064
+
+PART 2. The experiment's own series, 1000 configurations, 1000000 replicates,
+the 400 quarters after burn-in of each, one test per replicate and series.
+0.9 minutes.
+
+  series                       samples degenerate   reject 4   reject 8      acf1 sq
+  GDP growth                   1000000          0     0.4279     0.4007       0.1118
+  energy growth                1000000          0     0.4455     0.4153       0.1167
+  employment change            1000000          0     0.4462     0.4185       0.1171
+  inflation                    1000000          0     0.4885     0.4487       0.1257
+  interest rate                1000000          0     0.6069     0.6745       0.0546
+
+The interest rate by the share of a replicate's quarters on the floor. A
+quarter is on the floor when the stored rate is at most 1.5e-04 per cent.
+
+  interest rate replicates     samples degenerate   reject 4   reject 8      acf1 sq
+  never on the floor            974094          0     0.6075     0.6744       0.0544
+  floor share (0, 0.05]          25906          0     0.5848     0.6777       0.0622
+  floor share (0.05, 0.25]           0          0        nan        nan          nan
+  floor share above 0.25             0          0        nan        nan          nan
+
+PART 3. Rejection share at 4 lags across the 1000 configurations, each
+configuration's share over its own replicates: quartiles, and how many
+configurations reject in fewer than 10 per cent and in more than 90 per
+cent of their replicates.
+
+  series                   lower q   median  upper q   below 0.10   above 0.90
+  GDP growth                 0.233    0.401    0.615           19            0
+  energy growth              0.255    0.424    0.625            6            0
+  employment change          0.256    0.427    0.632            9            0
+  inflation                  0.321    0.485    0.651            1            4
+  interest rate              0.409    0.631    0.808            2          106
+
+PART 4. The US series, 187 quarters from 1973Q2. Each row is one test, so
+the columns are p-values rather than rejection shares; read them against
+Part 1 at 187 values. The last row is the interest rate on the 141 quarters
+up to 2008Q2, before the first quarter below 0.25 per cent.
+
+  series                       values   p at 4   p at 8      acf1 sq
+  GDP growth                      187    0.0083    0.0004       0.0488
+  energy growth                   187    0.3035    0.6019      -0.0067
+  employment change               187    0.0000    0.0000       0.2986
+  inflation                       187    0.9035    0.9571      -0.0103
+  interest rate                   187    0.0000    0.0000       0.2557
+  interest rate before floor      141    0.0000    0.0000       0.2355
+
+Every configuration's own row is in out/abm_system_garch_effect_by_configuration.csv, the US rows in out/abm_system_garch_effect_us.csv.

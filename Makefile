@@ -137,7 +137,8 @@ BENCH_STEMS := qvarma_fit_cost qvarma_fit_io qvarma_iteration_budget \
 STUDY_STEMS := qvarma_stuck_fits qvarma_conditioning qvarma_convergence_criteria \
                abm_system_tail_origin \
                abm_system_gaussian_convergence abm_system_micro_clt \
-               abm_system_stable_tails abm_system_marginal_fit
+               abm_system_stable_tails abm_system_marginal_fit \
+               abm_system_garch_effect
 # us_prepare_data has to come first: it is the only script that reads
 # us_real.csv's Unemployment and Des_Energy_demand columns, and it writes
 # out/us_system.csv, which us_data.h reads back. The order here is what makes

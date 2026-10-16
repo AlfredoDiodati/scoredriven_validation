@@ -1,0 +1,40 @@
+Whether the simulated interest rate has a GARCH effect.
+
+Test: McLeod-Li, the Ljung-Box test on the squared residuals of an
+autoregression of the rate in levels with an intercept and 4 lags, at 4
+and 8 lags of the squares. Rejection is p < 0.05.
+
+Columns. 'samples' is how many series were tested. 'degenerate' is how
+many could not be, because the squared residuals were constant over a
+window the test correlates, as they are for a run on the floor
+throughout. 'reject L' is the share of the others rejected at L lags.
+'acf1 sq' is the mean first-order autocorrelation of the squared
+residuals.
+
+PART 1. Calibration. 10000 samples of 400 values from each law, seed 20261016,
+x_t = (1 - phi) mu + phi x_(t-1) + e_t with phi = 0.9. The Gaussian, the
+Student t4 and the floored AR(1) have no GARCH effect; the GARCH(1,1) has
+omega = 0.05, alpha = 0.10, beta = 0.85.
+
+  law                          samples degenerate   reject 4   reject 8      acf1 sq
+  Gaussian                       10000          0     0.0465     0.0542      -0.0051
+  Student t4                     10000          0     0.0467     0.0614      -0.0045
+  GARCH(1,1)                     10000          0     0.7890     0.8396       0.1216
+  floored AR(1)                  10000          0     0.0656     0.0745       0.0008
+
+PART 2. The experiment's interest rate, 1000 configurations, 1000000
+replicates, the 400 quarters after burn-in of each, one test per replicate.
+A quarter is on the floor when the stored rate is at most 1.5e-04 per cent.
+0.6 minutes.
+
+  replicates                   samples degenerate   reject 4   reject 8      acf1 sq
+  all                          1000000          0     0.6069     0.6745       0.0546
+  never on the floor            974094          0     0.6075     0.6744       0.0544
+  floor share (0, 0.05]          25906          0     0.5848     0.6777       0.0622
+  floor share (0.05, 0.25]           0          0        nan        nan          nan
+  floor share above 0.25             0          0        nan        nan          nan
+
+Across configurations, at 4 lags: 641 of 1000 configurations reject in more
+than half of their replicates, 106 in more than 90 per cent.
+
+Every configuration's own row is in out/abm_system_interest_rate_garch_effect_by_configuration.csv.
