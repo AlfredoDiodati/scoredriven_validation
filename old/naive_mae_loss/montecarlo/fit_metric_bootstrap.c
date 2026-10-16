@@ -8,7 +8,7 @@ A benchmark is run R of configuration j (FIT_METRIC_RUN, default 0). Its own
 series is resampled B times by the moving-block bootstrap, every method is
 re-estimated on every resample, and sigma2_star is the variance of each
 response entry across the resamples, divisor B - 1, averaged over the entries.
-d and the oracle sigma2 are read from old/naive_mae_loss/montecarlo/out/fit_metric_oracle.csv.gz,
+d and the oracle sigma2 are read from out/old/naive_mae_loss/montecarlo/fit_metric_oracle.csv.gz,
 so bin/fit_metric_oracle runs first; s_star = d / sqrt(sigma2_star) and
 v_star = 1 / (1 + s_star) are formed here.
 
@@ -25,9 +25,9 @@ thread draws them or in what order the benchmarks finish.
 
 One benchmark per thread, every thread busy. Resumable at benchmark
 granularity: a benchmark's five rows go to
-old/naive_mae_loss/montecarlo/out/fit_metric_bootstrap_progress.csv together when it finishes,
+out/old/naive_mae_loss/montecarlo/fit_metric_bootstrap_progress.csv together when it finishes,
 and a rerun skips the configurations that file holds. When every configuration
-is done the rows are sorted into old/naive_mae_loss/montecarlo/out/fit_metric_bootstrap.csv and
+is done the rows are sorted into out/old/naive_mae_loss/montecarlo/fit_metric_bootstrap.csv and
 the progress file is removed. Under any setting other than the defaults both
 names carry the settings, as in
 fit_metric_bootstrap_run0_B50_block25_iterations4000_first100.csv, so a run
@@ -36,7 +36,7 @@ B, block length, usable resamples, converged t-QVARMA fits, their mean
 iterations, the configuration with the smallest mean loss, d, sigma2,
 sigma2_star, s, v, s_star and v_star.
 
-Reads dataset/abm_system/ and out/abm_system_fit_qvarma/ (the benchmark's own
+Reads out/dataset/abm_system/ and out/abm_system_fit_qvarma/ (the benchmark's own
 t-QVARMA estimate, where every resample's fit starts) and rebuilds neither.
 Progress goes to stderr.
 */
@@ -46,9 +46,9 @@ Progress goes to stderr.
 #include <cblas.h>
 
 #ifndef ORACLE_PATH
-#define ORACLE_PATH "old/naive_mae_loss/montecarlo/out/fit_metric_oracle.csv.gz"
+#define ORACLE_PATH "out/old/naive_mae_loss/montecarlo/fit_metric_oracle.csv.gz"
 #endif
-#define OUT_STEM "old/naive_mae_loss/montecarlo/out/fit_metric_bootstrap"
+#define OUT_STEM "out/old/naive_mae_loss/montecarlo/fit_metric_bootstrap"
 #define SEED 123
 #define HEADER "model,benchmark_cop,benchmark_run,n_bootstrap,block_length,n_usable,n_qvarma_converged," \
                "qvarma_mean_iterations,lowest_loss_cop,d,sigma2,sigma2_star,s,v,s_star,v_star\n"
@@ -89,7 +89,7 @@ static OracleRow *read_oracle(const LpSample *samples, int n_samples, int run) {
     for (int i = 0; i < N_MODELS * n_samples; i++) rows[i] = (OracleRow){ NAN, NAN, -1 };
 
     FILE *f = fopen(ORACLE_PATH, "rb");
-    assert(f && "fit_metric_bootstrap: old/naive_mae_loss/montecarlo/out/fit_metric_oracle.csv.gz is missing, run bin/fit_metric_oracle");
+    assert(f && "fit_metric_bootstrap: out/old/naive_mae_loss/montecarlo/fit_metric_oracle.csv.gz is missing, run bin/fit_metric_oracle");
     fseek(f, 0, SEEK_END);
     size_t length = (size_t)ftell(f);
     fseek(f, 0, SEEK_SET);

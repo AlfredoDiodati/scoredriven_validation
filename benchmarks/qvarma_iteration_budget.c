@@ -73,7 +73,7 @@ typedef struct { const char *sample; int replicate; } Series;
 
 static Mat load_series(Series series) {
     char path[560];
-    snprintf(path, sizeof path, "dataset/abm_system/%s", series.sample);
+    snprintf(path, sizeof path, "out/dataset/abm_system/%s", series.sample);
     return abm_system_read_replicate(path, series.replicate);
 }
 

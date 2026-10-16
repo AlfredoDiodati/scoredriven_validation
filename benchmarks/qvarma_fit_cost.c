@@ -3,7 +3,7 @@ Where the wall time of one qvarma fit goes, so that a plan for a 500-folder run
 can be ranked against measured numbers rather than guesses. Not part of the
 pipeline; run explicitly. Writes out/qvarma_fit_cost.txt.
 
-Measures, on one replicate of dataset/abm_system, for both specs the pipeline
+Measures, on one replicate of out/dataset/abm_system, for both specs the pipeline
 fits (r = 2 and r = 4):
   - one objective evaluation with the gradient (forward tape plus backward pass)
   - one objective evaluation without it (what a line search costs)
@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
     int repeats = argc > 3 ? atoi(argv[3]) : 200;
 
     char csv_path[560];
-    snprintf(csv_path, sizeof csv_path, "dataset/abm_system/%s", sample);
+    snprintf(csv_path, sizeof csv_path, "out/dataset/abm_system/%s", sample);
     Mat y = abm_system_read_replicate(csv_path, replicate);
 
     FILE *report = fopen("out/qvarma_fit_cost.txt", "w");

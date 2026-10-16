@@ -13,7 +13,7 @@
 # differing lines are printed instead of a verdict.
 #
 # Reads out/us_system.csv, out/abm_system_fit_lp/, out/abm_system_fit_lp_r_levels/
-# and dataset/abm_system/. Writes out/old/lp_r_levels_reproduction/.
+# and out/dataset/abm_system/. Writes out/old/lp_r_levels_reproduction/.
 
 set -u
 
@@ -21,7 +21,7 @@ cd "$(dirname "$0")/../.."
 check_dir=out/old/lp_r_levels_reproduction
 mkdir -p "$check_dir/before"
 
-untracked="old/naive_mae_loss/out/abm_system_lp_irf_loss_lin.csv old/naive_mae_loss/out/abm_system_lp_irf_loss_s1.csv old/naive_mae_loss/out/abm_system_lp_irf_loss_s2.csv
+untracked="out/old/naive_mae_loss/abm_system_lp_irf_loss_lin.csv out/old/naive_mae_loss/abm_system_lp_irf_loss_s1.csv out/old/naive_mae_loss/abm_system_lp_irf_loss_s2.csv
 out/abm_system_lp_r_levels_irf_loss_lin.csv out/abm_system_lp_r_levels_irf_loss_s1.csv
 out/abm_system_lp_r_levels_irf_loss_s2.csv"
 for f in $untracked; do cp "$f" "$check_dir/before/"; done

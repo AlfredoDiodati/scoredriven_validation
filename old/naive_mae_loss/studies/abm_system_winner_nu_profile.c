@@ -26,19 +26,19 @@ Two differences are summarised per grid value:
 nu_grid starts at the US benchmark's value, so the first row also says how far
 this configuration's data are from the US tails in likelihood terms.
 
-Each refit is cached under old/naive_mae_loss/out/abm_system_winner_nu_profile/, named for the
+Each refit is cached under out/old/naive_mae_loss/abm_system_winner_nu_profile/, named for the
 replicate and the held nu. The data fingerprint and parameter shape stored in it
 invalidate it when either changes; --refit estimates every one again. An
 optional first argument limits the run to the first N replicates, for a pilot.
 
-Requires old/naive_mae_loss/out/abm_system_mcs.csv, out/us_qvarma_spec_choice_p1q1r2_fit.json,
-out/us_system.csv, the fit cache and dataset/abm_system/. None are Makefile
+Requires out/old/naive_mae_loss/abm_system_mcs.csv, out/us_qvarma_spec_choice_p1q1r2_fit.json,
+out/us_system.csv, the fit cache and out/dataset/abm_system/. None are Makefile
 prerequisites, because rebuilding them reruns a million fits.
 
 Output, none of it printed:
-    old/naive_mae_loss/out/abm_system_winner_nu_profile.txt   the summary
-    old/naive_mae_loss/out/abm_system_winner_nu_profile.csv   one row per replicate and grid value
-    old/naive_mae_loss/out/abm_system_winner_nu_profile/      the cached refits
+    out/old/naive_mae_loss/abm_system_winner_nu_profile.txt   the summary
+    out/old/naive_mae_loss/abm_system_winner_nu_profile.csv   one row per replicate and grid value
+    out/old/naive_mae_loss/abm_system_winner_nu_profile/      the cached refits
 */
 
 #include "applications/abm_system.h"
@@ -69,12 +69,12 @@ Output, none of it printed:
 #define MAX_ITERATIONS 20000
 
 #define FIT_DIR "out/abm_system_fit_qvarma"
-#define INPUT_DIR "dataset/abm_system"
+#define INPUT_DIR "out/dataset/abm_system"
 #define BENCHMARK_FIT_PATH "out/us_qvarma_spec_choice_p1q1r2_fit.json"
-#define CONFIDENCE_SET_PATH "old/naive_mae_loss/out/abm_system_mcs.csv"
-#define PROFILE_DIR "old/naive_mae_loss/out/abm_system_winner_nu_profile"
-#define REPORT_PATH "old/naive_mae_loss/out/abm_system_winner_nu_profile.txt"
-#define TABLE_PATH "old/naive_mae_loss/out/abm_system_winner_nu_profile.csv"
+#define CONFIDENCE_SET_PATH "out/old/naive_mae_loss/abm_system_mcs.csv"
+#define PROFILE_DIR "out/old/naive_mae_loss/abm_system_winner_nu_profile"
+#define REPORT_PATH "out/old/naive_mae_loss/abm_system_winner_nu_profile.txt"
+#define TABLE_PATH "out/old/naive_mae_loss/abm_system_winner_nu_profile.csv"
 
 /* The US benchmark's nu first, then roughly logarithmic steps through the range
    the winner's fits cover. */

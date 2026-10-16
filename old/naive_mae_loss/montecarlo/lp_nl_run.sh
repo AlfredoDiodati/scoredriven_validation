@@ -13,7 +13,7 @@
 #
 # NUMPY_PYTHON is a Python with numpy, scipy and pandas (default python3);
 # PLOT_PYTHON one with polars, plotly and kaleido, and the figures are skipped
-# when it is not set. Reads out/abm_system_fit_lp/, dataset/abm_system/ and
+# when it is not set. Reads out/abm_system_fit_lp/, out/dataset/abm_system/ and
 # out/sweep_grid_response_cache/, and rebuilds none of them.
 
 set -euo pipefail
@@ -25,7 +25,7 @@ make bin/sweep_grid bin/compressed_response_recovery
 # A crash can leave the progress file ending in zero bytes, the part of the
 # last write that never reached the disk. Every line before them is complete,
 # so the file is cut at the first zero byte and those benchmarks are redone.
-progress=old/naive_mae_loss/montecarlo/out/sweep_grid_progress.csv
+progress=out/old/naive_mae_loss/montecarlo/sweep_grid_progress.csv
 if [ -f $progress ]; then
     first_zero=$(grep -abo -m1 -P '\x00' $progress | head -1 | cut -d: -f1 || true)
     if [ -n "$first_zero" ]; then
@@ -35,8 +35,8 @@ if [ -f $progress ]; then
 fi
 
 echo "the raw stacked vector on runs 0 to 199 $(date)"
-raw=old/naive_mae_loss/out/compressed_response_cache/lp_nl_raw.f32
-recovery=old/naive_mae_loss/montecarlo/out/compressed_response/recovery_lp_nl_raw_rows200.csv
+raw=out/old/naive_mae_loss/compressed_response_cache/lp_nl_raw.f32
+recovery=out/old/naive_mae_loss/montecarlo/compressed_response/recovery_lp_nl_raw_rows200.csv
 [ -f $raw ] || $NUMPY_PYTHON old/naive_mae_loss/montecarlo/compressed_response_learn.py lp_nl raw_only
 [ -f $recovery ] || ./bin/compressed_response_recovery $raw 0 4 0 200 $recovery
 

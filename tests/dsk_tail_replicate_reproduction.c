@@ -2,7 +2,7 @@
 Whether the tails studies/abm_system_tail_origin.c measures are the model's or
 this project's.
 
-That study reads every replicate under dataset/abm_system and reports that the
+That study reads every replicate under out/dataset/abm_system and reports that the
 simulated series are thinner tailed than the US ones: over 400 periods the
 median configuration has excess kurtosis near 0.61 in GDP growth against 2.87
 in the US series, and 0.17 in the first difference of the interest rate against
@@ -66,7 +66,7 @@ comparisons are spread over the cores with OpenMP, as is the sweep.
 
     ./bin/dsk_tail_replicate_reproduction [SELECTED]
 
-Needs `make model`, `make model-upstream` and dataset/abm_system. Nothing is
+Needs `make model`, `make model-upstream` and out/dataset/abm_system. Nothing is
 written anywhere but a scratch directory of this process's own and
 out/dsk_tail_replicate_reproduction.txt; the archives are only read.
 */
@@ -94,8 +94,8 @@ out/dsk_tail_replicate_reproduction.txt; the archives are only read.
 #define MODEL "model/dsk_sfc/dsk_SFC"
 #define UPSTREAM "bin/dsk_SFC_upstream"
 #define INPUTS "model/dsk_sfc/dsk_sfc_inputs.json"
-#define DESIGN "dataset/abm_system_design.csv"
-#define DATASET "dataset/abm_system"
+#define DESIGN "out/dataset/abm_system_design.csv"
+#define DATASET "out/dataset/abm_system"
 #define REPORT "out/dsk_tail_replicate_reproduction.txt"
 #define RUN_NAME "r"
 #define N_STEPS 600
@@ -213,7 +213,7 @@ static void block_tails(Mat y, double *scratch, double *heaviest_kurtosis,
    ascending. Caller must free. */
 static int *list_configurations(int *count) {
     DIR *handle = opendir(DATASET);
-    assert(handle && "dsk_tail_replicate_reproduction: cannot open dataset/abm_system");
+    assert(handle && "dsk_tail_replicate_reproduction: cannot open out/dataset/abm_system");
 
     int *cop = NULL, n = 0, cap = 0;
     struct dirent *entry;

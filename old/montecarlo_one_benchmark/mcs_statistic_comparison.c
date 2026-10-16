@@ -5,7 +5,7 @@ configuration, under the same loss and confidence set settings except the
 number of bootstrap resamples (10000 here, 2000 in the grid). The grid
 answers the same question on all of them. docs/OLD_EXPERIMENTS.md.
 
-The Monte Carlo impulse-response loss matrix, montecarlo/out/irf_loss.csv,
+The Monte Carlo impulse-response loss matrix, out/montecarlo/irf_loss.csv,
 under both Model Confidence Set statistics, with every other setting identical
 so that a difference between the two sets comes from the statistic.
 
@@ -20,8 +20,8 @@ With the bootstrap variance the resamples are drawn once and reused in every
 elimination round under both statistics, and the two runs share a seed, so a
 difference between the statistics comes from the statistic.
 
-Requires montecarlo/out/irf_loss.csv, which old/montecarlo_one_benchmark/run.sh writes before
-this. Writes montecarlo/out/mcs_statistic_comparison.txt and .csv. Nothing
+Requires out/montecarlo/irf_loss.csv, which old/montecarlo_one_benchmark/run.sh writes before
+this. Writes out/montecarlo/mcs_statistic_comparison.txt and .csv. Nothing
 printed.
 */
 
@@ -34,9 +34,9 @@ printed.
 #include <stdlib.h>
 #include <time.h>
 
-#define IRF_LOSS_PATH "montecarlo/out/irf_loss.csv"
-#define IRF_REPORT_PATH "montecarlo/out/mcs_statistic_comparison.txt"
-#define IRF_TABLE_PATH "montecarlo/out/mcs_statistic_comparison.csv"
+#define IRF_LOSS_PATH "out/montecarlo/irf_loss.csv"
+#define IRF_REPORT_PATH "out/montecarlo/mcs_statistic_comparison.txt"
+#define IRF_TABLE_PATH "out/montecarlo/mcs_statistic_comparison.csv"
 
 #define N_LAST_STANDING 10
 

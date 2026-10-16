@@ -12,7 +12,7 @@ is smaller than the independent sum. In an agent-based model the parameters
 change how many random draws each period consumes, so the streams of two
 configurations fall out of step and the correlation can vanish.
 
-Reads old/naive_mae_loss/out/abm_system_irf_loss.csv, one row per replicate and one column
+Reads out/old/naive_mae_loss/abm_system_irf_loss.csv, one row per replicate and one column
 per configuration, and for every pair of configurations computes the Pearson
 correlation of their per-replicate losses. The reference for no shared
 randomness is the same correlation with the rows of the second configuration
@@ -31,9 +31,9 @@ with the standard error of its mean loss difference computed both ways.
 Whether nearby configurations keep more of the correlation is measured by the
 rank correlation between a pair's loss correlation and its distance in the
 parameter design, each of the nine parameters scaled to [0, 1] by its range in
-dataset/abm_system_design.csv.
+out/dataset/abm_system_design.csv.
 
-Reads only. Writes old/naive_mae_loss/out/abm_system_seed_correlation_report.txt.
+Reads only. Writes out/old/naive_mae_loss/abm_system_seed_correlation_report.txt.
 */
 #include "applications/abm_system.h"
 #include <et_al./stats.h>
@@ -43,10 +43,10 @@ Reads only. Writes old/naive_mae_loss/out/abm_system_seed_correlation_report.txt
 #include <stdlib.h>
 #include <math.h>
 
-#define LOSS_TABLE_PATH "old/naive_mae_loss/out/abm_system_irf_loss.csv"
-#define CONFIDENCE_SET_PATH "old/naive_mae_loss/out/abm_system_mcs.csv"
-#define DESIGN_PATH "dataset/abm_system_design.csv"
-#define REPORT_PATH "old/naive_mae_loss/out/abm_system_seed_correlation_report.txt"
+#define LOSS_TABLE_PATH "out/old/naive_mae_loss/abm_system_irf_loss.csv"
+#define CONFIDENCE_SET_PATH "out/old/naive_mae_loss/abm_system_mcs.csv"
+#define DESIGN_PATH "out/dataset/abm_system_design.csv"
+#define REPORT_PATH "out/old/naive_mae_loss/abm_system_seed_correlation_report.txt"
 
 /* Pairs sampled for the rank correlation against design distance. Every pair
    is used for everything else. */

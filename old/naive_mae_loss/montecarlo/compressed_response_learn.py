@@ -17,9 +17,9 @@
 #     on the response vector; the compression is the nine fitted values.
 #
 # Writes the compressed vectors of all runs, in the response-cache layout, to
-# old/naive_mae_loss/out/compressed_response_cache/<label>.f32 (ignored by git), the raw caches
+# out/old/naive_mae_loss/compressed_response_cache/<label>.f32 (ignored by git), the raw caches
 # restricted to runs 0-199 beside them, and what was learned to
-# old/naive_mae_loss/montecarlo/out/compressed_response/learn_<label>.txt, <label> being the model
+# out/old/naive_mae_loss/montecarlo/compressed_response/learn_<label>.txt, <label> being the model
 # names joined by underscores.
 #
 # usage: python old/naive_mae_loss/montecarlo/compressed_response_learn.py qvarma
@@ -36,8 +36,8 @@ import pandas as pd
 import scipy.linalg as sl
 
 RESPONSE_CACHE = 'out/sweep_grid_response_cache'
-CACHE_DIR = 'old/naive_mae_loss/out/compressed_response_cache'
-REPORT_DIR = 'old/naive_mae_loss/montecarlo/out/compressed_response'
+CACHE_DIR = 'out/old/naive_mae_loss/compressed_response_cache'
+REPORT_DIR = 'out/old/naive_mae_loss/montecarlo/compressed_response'
 TRAINING_FROM = 500
 RAW_RUNS_KEPT = 200
 RIDGE_RUNS = int(os.environ.get('RIDGE_RUNS', '40'))
@@ -146,7 +146,7 @@ def main():
         write_raw_subset(label)
         return
     os.makedirs(REPORT_DIR, exist_ok=True)
-    design = pd.read_csv('dataset/abm_system_design.csv')
+    design = pd.read_csv('out/dataset/abm_system_design.csv')
     theta = ((design - design.mean()) / design.std(ddof=0)).to_numpy()
     caches = [open_cache(name) for name in names]
 

@@ -12,7 +12,7 @@ experiment actually ran, and against two references at once:
   - the authors' code, built unchanged by `make model-upstream`, run on the same
     configuration and seed. The 83-column results file and the error log must
     match byte for byte.
-  - the archives in dataset/abm_system, which applications/abm_system_simulate.c
+  - the archives in out/dataset/abm_system, which applications/abm_system_simulate.c
     wrote from the simulator as it was then. The five series are rebuilt from
     this run exactly as the driver rebuilds them, and every one of the 5 x 400
     numbers must equal the stored one exactly. Not to a tolerance: the stored
@@ -36,7 +36,7 @@ Default 20 and 5, which is 100 pairs. Nothing is written anywhere but a scratch
 directory of this process's own and out/dsk_dataset_reproduction.txt; the
 archives are only read.
 
-Needs `make model`, `make model-upstream`, and dataset/abm_system.
+Needs `make model`, `make model-upstream`, and out/dataset/abm_system.
 */
 
 #define _XOPEN_SOURCE 700
@@ -62,8 +62,8 @@ Needs `make model`, `make model-upstream`, and dataset/abm_system.
 #define MODEL "model/dsk_sfc/dsk_SFC"
 #define UPSTREAM "bin/dsk_SFC_upstream"
 #define INPUTS "model/dsk_sfc/dsk_sfc_inputs.json"
-#define DESIGN "dataset/abm_system_design.csv"
-#define DATASET "dataset/abm_system"
+#define DESIGN "out/dataset/abm_system_design.csv"
+#define DATASET "out/dataset/abm_system"
 #define REPORT "out/dsk_dataset_reproduction.txt"
 #define RUN_NAME "r"
 #define N_STEPS 600

@@ -8,8 +8,8 @@
 # A CoP with a high off-target rate is one the procedure keeps when the right
 # answer is something else.
 #
-# Reads old/naive_mae_loss/montecarlo/out/sweep_grid.csv.gz, streamed row by row, so memory stays
-# small. Writes old/naive_mae_loss/montecarlo/out/sweep_grid_presence.txt, one block per model in
+# Reads out/old/naive_mae_loss/montecarlo/sweep_grid.csv.gz, streamed row by row, so memory stays
+# small. Writes out/old/naive_mae_loss/montecarlo/sweep_grid_presence.txt, one block per model in
 # the order the models appear in the file. Nothing printed.
 #
 # usage: python old/naive_mae_loss/montecarlo/sweep_grid_presence.py
@@ -17,8 +17,8 @@ import csv
 import gzip
 from collections import defaultdict
 
-ROWS_PATH = 'old/naive_mae_loss/montecarlo/out/sweep_grid.csv.gz'
-REPORT_PATH = 'old/naive_mae_loss/montecarlo/out/sweep_grid_presence.txt'
+ROWS_PATH = 'out/old/naive_mae_loss/montecarlo/sweep_grid.csv.gz'
+REPORT_PATH = 'out/old/naive_mae_loss/montecarlo/sweep_grid_presence.txt'
 TOP = 10
 
 

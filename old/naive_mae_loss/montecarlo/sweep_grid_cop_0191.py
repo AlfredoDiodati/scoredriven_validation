@@ -10,18 +10,18 @@
 #   every true configuration   all 1,000,000 benchmarks, the configuration is the
 #                              benchmark's own
 #
-# Reads old/naive_mae_loss/montecarlo/out/sweep_grid.csv.gz, streamed row by row. Writes the three
-# tables in percent to old/naive_mae_loss/montecarlo/out/sweep_grid_cop_0191.txt and, as LaTeX
-# tables, to old/naive_mae_loss/montecarlo/out/sweep_grid_cop_0191.tex. Nothing printed.
+# Reads out/old/naive_mae_loss/montecarlo/sweep_grid.csv.gz, streamed row by row. Writes the three
+# tables in percent to out/old/naive_mae_loss/montecarlo/sweep_grid_cop_0191.txt and, as LaTeX
+# tables, to out/old/naive_mae_loss/montecarlo/sweep_grid_cop_0191.tex. Nothing printed.
 #
 # usage: python old/naive_mae_loss/montecarlo/sweep_grid_cop_0191.py
 import csv
 import gzip
 from collections import Counter, defaultdict
 
-ROWS_PATH = 'old/naive_mae_loss/montecarlo/out/sweep_grid.csv.gz'
-REPORT_PATH = 'old/naive_mae_loss/montecarlo/out/sweep_grid_cop_0191.txt'
-LATEX_PATH = 'old/naive_mae_loss/montecarlo/out/sweep_grid_cop_0191.tex'
+ROWS_PATH = 'out/old/naive_mae_loss/montecarlo/sweep_grid.csv.gz'
+REPORT_PATH = 'out/old/naive_mae_loss/montecarlo/sweep_grid_cop_0191.txt'
+LATEX_PATH = 'out/old/naive_mae_loss/montecarlo/sweep_grid_cop_0191.tex'
 COP = 191
 MODEL_NAMES = {'qvarma': 'qvarma', 'lp_lin': 'linear', 'lp_s1': 'state 1', 'lp_s2': 'state 2',
                'lp_nl': 'both states'}

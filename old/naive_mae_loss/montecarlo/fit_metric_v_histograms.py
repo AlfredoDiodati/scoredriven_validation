@@ -16,8 +16,8 @@ bars rather than a million points.
 v = 1 / (1 + d / sigma) does not depend on the units of the responses, so the
 histograms of different models can be read against each other.
 
-Reads old/naive_mae_loss/montecarlo/out/fit_metric_oracle.csv.gz. Writes one pdf per histogram to
-old/naive_mae_loss/montecarlo/out/fit_metric_v_histograms/. Needs polars, plotly and kaleido.
+Reads out/old/naive_mae_loss/montecarlo/fit_metric_oracle.csv.gz. Writes one pdf per histogram to
+out/old/naive_mae_loss/montecarlo/fit_metric_v_histograms/. Needs polars, plotly and kaleido.
 Nothing is printed.
 """
 
@@ -26,7 +26,7 @@ from pathlib import Path
 import polars as pl
 import plotly.graph_objects as go
 
-OUT_DIR = Path("old/naive_mae_loss/montecarlo/out")
+OUT_DIR = Path("out/old/naive_mae_loss/montecarlo")
 ORACLE_PATH = OUT_DIR / "fit_metric_oracle.csv.gz"
 FIGURE_DIR = OUT_DIR / "fit_metric_v_histograms"
 COP = 191

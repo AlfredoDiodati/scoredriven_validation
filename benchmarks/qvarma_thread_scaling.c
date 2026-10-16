@@ -109,7 +109,7 @@ int main(void) {
     int r_of[N_FITS];
     for (int i = 0; i < N_FITS; i++) {
         char path[256];
-        snprintf(path, sizeof path, "dataset/abm_system/EstimationSeriesSample1_1/replicate_%03d.csv",
+        snprintf(path, sizeof path, "out/dataset/abm_system/EstimationSeriesSample1_1/replicate_%03d.csv",
                  i / 2);
         series[i] = load_series(path);
         r_of[i] = (i % 2) ? 4 : 2;

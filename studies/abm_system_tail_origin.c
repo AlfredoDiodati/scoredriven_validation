@@ -14,7 +14,7 @@ the hundreds to thousands. Two explanations predict different things:
                                       not follow its raw kurtosis
 
 Part 1 compares the raw series. Every replicate of every configuration under
-dataset/abm_system/ is read as stored, which is already the transformation the
+out/dataset/abm_system/ is read as stored, which is already the transformation the
 auxiliary model is fitted on: GDP growth, energy demand growth and the change in
 employment as 100 times a first difference, inflation as 100 times the first
 difference of the log price level, and the interest rate in percentage points,
@@ -70,7 +70,7 @@ Reads only. Writes:
 #define PHI_STAR_BOUND ((mreal)1)
 #define SPEC_LABEL "p1q1r2"
 
-#define INPUT_DIR "dataset/abm_system"
+#define INPUT_DIR "out/dataset/abm_system"
 #define FIT_DIR "out/abm_system_fit_qvarma"
 #define REPORT_PATH "out/abm_system_tail_origin_report.txt"
 #define CONFIGURATIONS_PATH "out/abm_system_tail_origin_configurations.csv"
@@ -254,7 +254,7 @@ static Mat build_us_block(void) {
 
 static char **list_configurations(int *count) {
     DIR *handle = opendir(INPUT_DIR);
-    assert(handle && "abm_system_tail_origin: cannot open dataset/abm_system");
+    assert(handle && "abm_system_tail_origin: cannot open out/dataset/abm_system");
     char **names = NULL;
     int n = 0, cap = 0;
     struct dirent *entry;

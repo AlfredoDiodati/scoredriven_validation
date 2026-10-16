@@ -94,7 +94,7 @@ static void keep_the_arena_resident(void) {
 int main(void) {
     keep_the_arena_resident();
     openblas_set_num_threads(1);
-    const char *csv_path = "dataset/abm_system/EstimationSeriesSample1_1";  /* replicate 0 */
+    const char *csv_path = "out/dataset/abm_system/EstimationSeriesSample1_1";  /* replicate 0 */
 
     Mat y = read_series(csv_path);
     QvarmaParams start = build_start(y, SPEC_R);

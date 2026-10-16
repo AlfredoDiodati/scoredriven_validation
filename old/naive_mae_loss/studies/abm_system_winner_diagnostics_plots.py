@@ -35,7 +35,7 @@ over the fits.
                     link then maps
 
 The script stops without drawing if the table names a different configuration
-from the one old/naive_mae_loss/out/abm_system_mcs.csv keeps now. Nothing is printed.
+from the one out/old/naive_mae_loss/abm_system_mcs.csv keeps now. Nothing is printed.
 """
 
 import math
@@ -46,11 +46,11 @@ import polars as pl
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-PARAMETERS_PATH = Path("old/naive_mae_loss/out/abm_system_winner_diagnostics_parameters.csv")
-WINNER_PARAMETERS_PATH = Path("old/naive_mae_loss/out/abm_system_winner_diagnostics_winner_parameters.csv")
-WINNER_THETA_PATH = Path("old/naive_mae_loss/out/abm_system_winner_diagnostics_winner_theta.csv")
-MCS_PATH = Path("old/naive_mae_loss/out/abm_system_mcs.csv")
-OUT_DIR = Path("old/naive_mae_loss/out/abm_system_winner_diagnostics_plots")
+PARAMETERS_PATH = Path("out/old/naive_mae_loss/abm_system_winner_diagnostics_parameters.csv")
+WINNER_PARAMETERS_PATH = Path("out/old/naive_mae_loss/abm_system_winner_diagnostics_winner_parameters.csv")
+WINNER_THETA_PATH = Path("out/old/naive_mae_loss/abm_system_winner_diagnostics_winner_theta.csv")
+MCS_PATH = Path("out/old/naive_mae_loss/abm_system_mcs.csv")
+OUT_DIR = Path("out/old/naive_mae_loss/abm_system_winner_diagnostics_plots")
 
 # The neutrals of old/naive_mae_loss/applications/abm_system_winner_irf_plots.py, so the two sets
 # of figures read as one.

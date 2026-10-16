@@ -96,7 +96,7 @@ back from the filter as minus infinity with a zeroed gradient, which would
 read as a perfect loss of zero. That case is counted as a missing cell, not as
 a zero.
 
-Requires dataset/abm_system/ (applications/abm_system_simulate.c or
+Requires out/dataset/abm_system/ (applications/abm_system_simulate.c or
 applications/abm_system_convert_rdata.c),
 out/us_qvarma_spec_choice_p1q1r2_fit.json
 (applications/us_qvarma_spec_choice.c) and out/us_system.csv
@@ -152,7 +152,7 @@ Nothing printed.
 #define REAL_FIT_PATH "out/us_qvarma_spec_choice_p1q1r2_fit.json"
 #define REAL_PERIODS (ESTIMATION_PERIODS - 1)
 
-#define INPUT_DIR_DEFAULT "dataset/abm_system"
+#define INPUT_DIR_DEFAULT "out/dataset/abm_system"
 #define OUTPUT_PATH_DEFAULT "out/abm_system_score_loss.csv"
 
 /* Overridable so the pass can be run over a couple of configurations before it
@@ -190,7 +190,7 @@ static Mat build_real_block(Mat original) {
 
 typedef struct { char *name; int index; } SampleEntry;
 
-/* dataset/abm_system/cop_<N>'s own <N>, so column order is 1, 2, ..., 1000
+/* out/dataset/abm_system/cop_<N>'s own <N>, so column order is 1, 2, ..., 1000
    rather than readdir's arbitrary order or a string sort's "_10" before
    "_2". */
 static int trailing_index(const char *name) {
@@ -205,7 +205,7 @@ static int compare_sample_entries(const void *a, const void *b) {
 
 static SampleEntry *list_samples(const char *dir, int *count) {
     DIR *handle = opendir(dir);
-    assert(handle && "abm_system_score_loss: cannot open dataset/abm_system/ - "
+    assert(handle && "abm_system_score_loss: cannot open out/dataset/abm_system/ - "
                       "run applications/abm_system_simulate_all.sh first");
 
     SampleEntry *entries = NULL;
@@ -254,7 +254,7 @@ static int count_replicates(const char *sample) {
 /* One replicate, to size the information matrix's rescaling and to have
    something concrete to report the weighting's own behaviour on. The periods
    are read from the data rather than assumed, since the two routes that wrote
-   dataset/abm_system/ do not agree about them. Caller must mat_free. */
+   out/dataset/abm_system/ do not agree about them. Caller must mat_free. */
 static Mat first_replicate(const char *sample) {
     char dir[560];
     snprintf(dir, sizeof dir, "%s/%s", INPUT_DIR, sample);
@@ -553,7 +553,7 @@ int main(void) {
 
     int n_samples;
     SampleEntry *samples = list_samples(INPUT_DIR, &n_samples);
-    assert(n_samples > 0 && "abm_system_score_loss: no configuration directories under dataset/abm_system/");
+    assert(n_samples > 0 && "abm_system_score_loss: no configuration directories under out/dataset/abm_system/");
     n_replicates = count_replicates(samples[0].name);
     Mat probe_y = first_replicate(samples[0].name);
     int sim_periods = probe_y.c;

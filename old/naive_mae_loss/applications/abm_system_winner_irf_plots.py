@@ -1,15 +1,15 @@
 """
-Figures for old/naive_mae_loss/out/abm_system_winner_irf.csv, which
+Figures for out/old/naive_mae_loss/abm_system_winner_irf.csv, which
 old/naive_mae_loss/applications/abm_system_winner_irf.c writes: the impulse responses of the
 model the Model Confidence Set kept. The script stops without drawing if that
 file names a different configuration from the one
-old/naive_mae_loss/out/abm_system_mcs.csv keeps now.
+out/old/naive_mae_loss/abm_system_mcs.csv keeps now.
 
 The same responses are drawn twice, under two identifications, because the
 two answer different questions and neither one's shock labels mean what the
 other's do.
 
-old/naive_mae_loss/out/abm_system_winner_irf_plots/sign_restricted/ is section 4.3 of Blazsek,
+out/old/naive_mae_loss/abm_system_winner_irf_plots/sign_restricted/ is section 4.3 of Blazsek,
 Escribano and Licht (2023). The structural shocks are whatever the rotations
 satisfying the paper's Table 1 make them, so a shock is named for the sign
 pattern that defines it and not for a variable: a rotation mixes the
@@ -20,7 +20,7 @@ restriction on named variables that defines it, so nothing about the naming
 is left implicit. The line is the 50th percentile over accepted rotations and
 the band is the 10th and 90th.
 
-old/naive_mae_loss/out/abm_system_winner_irf_plots/recursive/ is the unrotated response, Q = I,
+out/old/naive_mae_loss/abm_system_winner_irf_plots/recursive/ is the unrotated response, Q = I,
 the one point in the identified set that Omega_inv's Cholesky orientation
 picks out. Omega_inv is lower triangular, so shock b there is the part of
 variable b's innovation orthogonal to the variables before it in the row
@@ -60,10 +60,10 @@ import polars as pl
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-IRF_PATH = Path("old/naive_mae_loss/out/abm_system_winner_irf.csv")
-MANIFEST_PATH = Path("old/naive_mae_loss/out/abm_system_winner_irf_manifest.txt")
-MCS_PATH = Path("old/naive_mae_loss/out/abm_system_mcs.csv")
-OUT_DIR = Path("old/naive_mae_loss/out/abm_system_winner_irf_plots")
+IRF_PATH = Path("out/old/naive_mae_loss/abm_system_winner_irf.csv")
+MANIFEST_PATH = Path("out/old/naive_mae_loss/abm_system_winner_irf_manifest.txt")
+MCS_PATH = Path("out/old/naive_mae_loss/abm_system_mcs.csv")
+OUT_DIR = Path("out/old/naive_mae_loss/abm_system_winner_irf_plots")
 
 # Slots 1 to 3 of the data-visualization reference palette, the subset
 # documented as clearing the colorblind and normal-vision separation floors

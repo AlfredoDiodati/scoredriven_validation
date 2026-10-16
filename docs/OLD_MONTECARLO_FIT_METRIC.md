@@ -130,7 +130,7 @@ configuration with the smallest mean loss. The loss is the one of the
 experiment, the mean absolute difference between the two response vectors
 over their $K$ entries, with the benchmark's run index held out of every
 configuration. The configuration with the smallest mean loss is the one
-`old/naive_mae_loss/montecarlo/out/sweep_grid.csv.gz` records for each benchmark, and it is in the
+`out/old/naive_mae_loss/montecarlo/sweep_grid.csv.gz` records for each benchmark, and it is in the
 final confidence set in all 5,000,000 rows, so it is the best configuration in
 the set. $d$ is recomputed from the same response caches
 (`out/sweep_grid_response_cache/`), over the same runs, with the same sums the
@@ -187,17 +187,17 @@ starting values, which is the general piece a residual bootstrap needs.
 | `old/naive_mae_loss/montecarlo/fit_metric_bootstrap.c` | $\sigma^{2*}$, $s^*$, $v^*$ for one run of every configuration, beside the oracle values of the same benchmarks |
 | `old/naive_mae_loss/montecarlo/fit_metric_report.c` | the tables below |
 | `old/naive_mae_loss/montecarlo/fit_metric_run.sh` | runs the three in turn, the block-length comparison included, resuming where it stopped |
-| `old/naive_mae_loss/montecarlo/fit_metric_v_histograms.py` | histograms of the oracle $v$ per model, over every benchmark and over `cop_0191`'s runs, into `old/naive_mae_loss/montecarlo/out/fit_metric_v_histograms/`; needs polars, plotly and kaleido, and is not run by the driver |
+| `old/naive_mae_loss/montecarlo/fit_metric_v_histograms.py` | histograms of the oracle $v$ per model, over every benchmark and over `cop_0191`'s runs, into `out/old/naive_mae_loss/montecarlo/fit_metric_v_histograms/`; needs polars, plotly and kaleido, and is not run by the driver |
 | `old/naive_mae_loss/tests/fit_metric_correctness.c` | the checks under "Verification" |
 
     ./old/naive_mae_loss/montecarlo/fit_metric_run.sh
 
 | output | what it holds |
 | --- | --- |
-| `old/naive_mae_loss/montecarlo/out/fit_metric_oracle.csv.gz` | one row per method and benchmark, 5,000,000 rows: method, benchmark configuration and run, the configuration with the smallest mean loss, $d$, $\sigma^2$, $s$, $v$; 130 MB, ignored by git |
-| `old/naive_mae_loss/montecarlo/out/fit_metric_bootstrap.csv` | one row per method and configuration, run 0: $B$, block length, usable resamples, converged t-QVARMA refits and their mean iterations, the configuration with the smallest mean loss, $d$, $\sigma^2$, $\sigma^{2*}$, $s$, $v$, $s^*$, $v^*$ |
-| `old/naive_mae_loss/montecarlo/out/fit_metric_bootstrap_run0_B50_block<L>_iterations4000_first100.csv` | the same for the first 100 configurations at 50 resamples and blocks of $L$ periods |
-| `old/naive_mae_loss/montecarlo/out/fit_metric_report.txt`, `.tex` | the tables, as text and as LaTeX tables |
+| `out/old/naive_mae_loss/montecarlo/fit_metric_oracle.csv.gz` | one row per method and benchmark, 5,000,000 rows: method, benchmark configuration and run, the configuration with the smallest mean loss, $d$, $\sigma^2$, $s$, $v$; 130 MB, ignored by git |
+| `out/old/naive_mae_loss/montecarlo/fit_metric_bootstrap.csv` | one row per method and configuration, run 0: $B$, block length, usable resamples, converged t-QVARMA refits and their mean iterations, the configuration with the smallest mean loss, $d$, $\sigma^2$, $\sigma^{2*}$, $s$, $v$, $s^*$, $v^*$ |
+| `out/old/naive_mae_loss/montecarlo/fit_metric_bootstrap_run0_B50_block<L>_iterations4000_first100.csv` | the same for the first 100 configurations at 50 resamples and blocks of $L$ periods |
+| `out/old/naive_mae_loss/montecarlo/fit_metric_report.txt`, `.tex` | the tables, as text and as LaTeX tables |
 
 `bin/fit_metric_bootstrap` takes its settings from the environment:
 `FIT_METRIC_RUN` (which run of each configuration is the benchmark, default 0),

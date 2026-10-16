@@ -36,7 +36,7 @@ both transformations.
 
 The outputs stay where they were: `out/abm_system_fit_lp_r_levels/`,
 `out/us_lp_fit_r_levels.*`, `out/abm_system_lp_r_levels_*` and, for the Monte
-Carlo, `montecarlo/out/lp_r_levels/`.
+Carlo, `out/montecarlo/lp_r_levels/`.
 
 ## Against the US data
 

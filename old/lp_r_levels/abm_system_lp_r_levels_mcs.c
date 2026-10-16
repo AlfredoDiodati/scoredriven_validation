@@ -17,9 +17,9 @@ statistic; MCS_TMAX is scored on the same resamples beside it.
 
 No set is run on the two states together.
 
-Requires old/naive_mae_loss/out/abm_system_lp_irf_loss_<model>.csv. Writes
-old/naive_mae_loss/out/abm_system_lp_mcs_<model>.txt, the readable report with both elimination
-tables, and old/naive_mae_loss/out/abm_system_lp_mcs_<model>.csv, one row per configuration.
+Requires out/old/naive_mae_loss/abm_system_lp_irf_loss_<model>.csv. Writes
+out/old/naive_mae_loss/abm_system_lp_mcs_<model>.txt, the readable report with both elimination
+tables, and out/old/naive_mae_loss/abm_system_lp_mcs_<model>.csv, one row per configuration.
 This is that run on cumulated levels: every one of these names carries _r_levels
 after abm_system_lp. Takes no arguments. Nothing printed.
 */

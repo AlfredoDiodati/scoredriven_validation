@@ -1,0 +1,9 @@
+Noise: a configuration's mean response variance over its 1000 runs, averaged over the entries of the response vector. Rank 1 is the least noisy of the 1000 configurations.
+Own rate: share of a configuration's own sets holding it. Off-target rate: share of the other configurations' sets holding it. Correlations are Spearman, across configurations.
+
+model, cop_0191 noise, median noise, cop_0191 noise rank, noise against own rate Seri, naive, noise against off-target rate Seri, naive
+qvarma, 0.0004384, 0.002071, 47 of 1000, -0.561, -0.506, -0.423, -0.549
+lp_lin, 0.974, 12.45, 3 of 1000, 0.343, -0.019, -0.273, -0.445
+lp_s1, 4.151, 48.96, 3 of 1000, 0.341, -0.078, -0.259, -0.530
+lp_s2, 4.664, 53.69, 6 of 1000, 0.284, -0.186, -0.166, -0.670
+lp_nl, 4.407, 51.2, 4 of 1000, -0.048, -0.050, -0.802, -0.740

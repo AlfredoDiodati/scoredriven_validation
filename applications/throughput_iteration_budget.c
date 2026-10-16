@@ -47,7 +47,7 @@ being computable: the density's own (nu + K)/2 log(1 + q/nu) term is a
 cancellation of two large quantities, and past nu of about 3.6e9 it loses
 decimal places, past about 5e11 it returns values with no relation to the
 likelihood at all. Measured on
-dataset/throughput/EstimationSeriesSample1_47_noise4/series_743.csv by
+out/dataset/throughput/EstimationSeriesSample1_47_noise4/series_743.csv by
 sweeping theta_nu at that series' own 2000-iteration estimate: the value sits
 at 393.788 - the Gaussian limit the t tends to - from nu of 6.6e7 through
 8.0e8, wobbles in the low decimals from 3.6e9, and by nu of 1.1e13 reads 616,
@@ -116,7 +116,7 @@ run, since a partial second budget is a normal state to want a comparison of.
 #define STRINGIFY_(x) #x
 #define STRINGIFY(x) STRINGIFY_(x)
 
-#define INPUT_DIR "dataset/throughput"
+#define INPUT_DIR "out/dataset/throughput"
 #define BASE_DIR "out/throughput_fit_i" STRINGIFY(BASE_ITERATIONS)
 #define HIGH_DIR "out/throughput_fit_i" STRINGIFY(HIGH_ITERATIONS)
 #define BASE_TIMING "out/throughput_fit_i" STRINGIFY(BASE_ITERATIONS) "_timing.txt"
@@ -143,7 +143,7 @@ static int compare_names(const void *a, const void *b) {
 
 static char **list_subdirs(const char *dir, int *count) {
     DIR *handle = opendir(dir);
-    assert(handle && "throughput_iteration_budget: cannot open dataset/throughput/");
+    assert(handle && "throughput_iteration_budget: cannot open out/dataset/throughput/");
     char **names = NULL;
     int n = 0, cap = 0;
     struct dirent *entry;

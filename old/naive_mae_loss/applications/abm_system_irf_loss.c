@@ -48,7 +48,7 @@ exist (applications/us_prepare_data.c), which load_us_system reads directly to
 rebuild the real data's own K x ESTIMATION_PERIODS block the same way
 applications/us_qvarma_spec_choice.c itself does.
 
-Output: old/naive_mae_loss/out/abm_system_irf_loss.csv, the loss matrix
+Output: out/old/naive_mae_loss/abm_system_irf_loss.csv, the loss matrix
 old/naive_mae_loss/applications/abm_system_mcs.c reads. One row per replicate and one column per
 configuration, plus a leading "replicate" column, so over the design experiment
 that is 1000 rows and 1001 columns. Each column is named for its configuration
@@ -66,7 +66,7 @@ configuration from every row, since a missing cell belongs to one
 not change which models are being compared.
 The manifest is named after the loss table rather than after this script, so
 the two cannot be separated: the default is
-old/naive_mae_loss/out/abm_system_irf_loss_manifest.txt, and pointing
+out/old/naive_mae_loss/abm_system_irf_loss_manifest.txt, and pointing
 ABM_SYSTEM_LOSS_PATH somewhere else moves both. It names every missing cell and
 counts the replicates dropped.
 
@@ -109,8 +109,8 @@ static int n_replicates = 0;
 #define IRF_DIM (K * K * (HORIZON + 1))
 
 #define FIT_DIR_DEFAULT "out/abm_system_fit_qvarma"
-#define INPUT_DIR_DEFAULT "dataset/abm_system"
-#define OUTPUT_PATH_DEFAULT "old/naive_mae_loss/out/abm_system_irf_loss.csv"
+#define INPUT_DIR_DEFAULT "out/dataset/abm_system"
+#define OUTPUT_PATH_DEFAULT "out/old/naive_mae_loss/abm_system_irf_loss.csv"
 
 /* Overridable so the whole pass can be run over a couple of configurations,
    which is how the parallel loop was checked against the serial one. */
@@ -138,7 +138,7 @@ static QvarmaParams spec_shape(int r) {
 /* Real data, applications/us_qvarma_spec_choice.c's own build_block:
    growth/change of GDP, energy demand and employment, inflation, and the
    interest rate in levels - identical row convention to what
-   dataset/abm_system/'s own simulated series already use (both feed the
+   out/dataset/abm_system/'s own simulated series already use (both feed the
    same K=5, same row order, into the same fit code, and ROW_GDP_GROWTH
    etc. below are abm_system.h's own enum, not a fresh one), which is what
    makes comparing their IRFs meaningful at all. */
@@ -214,7 +214,7 @@ static int count_replicates(const char *sample, const char *label) {
 
 typedef struct { char *name; int index; } SampleEntry;
 
-/* dataset/abm_system/EstimationSeriesSample1_<N>'s own <N>, so column order
+/* out/dataset/abm_system/EstimationSeriesSample1_<N>'s own <N>, so column order
    is 1, 2, ..., 100 rather than readdir's arbitrary order or a string
    sort's "_10" before "_2". */
 static int trailing_index(const char *name) {

@@ -10,7 +10,7 @@ which original sample and which replicate is never in question.
 This is the older of the two ways to fill a dataset directory. The design
 experiment the project now reports is filled by
 applications/abm_system_simulate.c instead, which runs the simulator over
-dataset/abm_system_design.csv and writes cop_NNNN directories. The two
+out/dataset/abm_system_design.csv and writes cop_NNNN directories. The two
 cannot share an output directory: applications/abm_system_fit_qvarma.c fits
 every subdirectory it finds whatever wrote it, so two datasets sitting
 there at once would be fitted together with nothing in the results to say
@@ -19,8 +19,8 @@ into already holds cop_* directories, which is the same refusal
 applications/abm_system_simulate_all.sh makes in the other direction.
 
 ABM_SYSTEM_RDATA_DIR overrides where the archives go. It defaults to
-dataset/abm_system_rdata, which is where this route's output was moved when
-the design runs took dataset/abm_system over, so a plain run now rebuilds
+out/dataset/abm_system_rdata, which is where this route's output was moved when
+the design runs took out/dataset/abm_system over, so a plain run now rebuilds
 that copy in place rather than landing on top of the design experiment.
 
 Naming, so there is no doubt which simulation a given archive came from:
@@ -31,10 +31,10 @@ matching the array position abm_system_slice reads them at) goes into
 batch_<B>.npz inside it, ABM_SYSTEM_BATCH replicates to an archive, B
 zero-padded to 3 digits:
 
-    dataset/abm_system_rdata/EstimationSeriesSample1_1/batch_000.npz
-    dataset/abm_system_rdata/EstimationSeriesSample1_1/batch_001.npz
+    out/dataset/abm_system_rdata/EstimationSeriesSample1_1/batch_000.npz
+    out/dataset/abm_system_rdata/EstimationSeriesSample1_1/batch_001.npz
     ...
-    dataset/abm_system_rdata/EstimationSeriesSample1_100/batch_010.npz
+    out/dataset/abm_system_rdata/EstimationSeriesSample1_100/batch_010.npz
 
 Each archive carries the five named series (GDP_growth, EN_growth,
 Employment_change, Inflation, InterestRate), one row per period, plus the
@@ -72,7 +72,7 @@ Nothing printed.
 #include <assert.h>
 
 #define SIMULATED_DIR "dataset/simulated"
-#define OUTPUT_DIR_DEFAULT "dataset/abm_system_rdata"
+#define OUTPUT_DIR_DEFAULT "out/dataset/abm_system_rdata"
 
 static const char *OUTPUT_DIR;
 
@@ -101,7 +101,7 @@ static int output_dir_is_free(const char *dir) {
                 "applications/abm_system_fit_qvarma.c fits every subdirectory it finds and\n"
                 "cannot tell two datasets apart, so this script will not add to that one.\n\n"
                 "Write somewhere else instead:\n\n"
-                "  ABM_SYSTEM_RDATA_DIR=dataset/abm_system_rdata ./bin/abm_system_convert_rdata\n",
+                "  ABM_SYSTEM_RDATA_DIR=out/dataset/abm_system_rdata ./bin/abm_system_convert_rdata\n",
                 dir);
     }
     return !occupied;

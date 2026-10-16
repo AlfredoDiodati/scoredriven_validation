@@ -53,14 +53,14 @@ should be 0.05 and the share below 0.01 should be 0.01.
 
     ./bin/abm_system_gaussian_convergence [CONFIGURATIONS]
 
-Reads dataset/abm_system only. Writes, none of it printed:
+Reads out/dataset/abm_system only. Writes, none of it printed:
     out/abm_system_gaussian_convergence_report.txt
     out/abm_system_gaussian_convergence_by_sample_size.csv
 */
 
 #include "applications/abm_system.h"
 #include <et_al./stats.h>
-#include <et_al./special.h>
+#include <et_al./dist/gauss.h>
 #include <et_al./random/random.h>
 #include <dirent.h>
 #include <string.h>
@@ -69,7 +69,7 @@ Reads dataset/abm_system only. Writes, none of it printed:
 #include <omp.h>
 
 #define K ABM_SYSTEM_K
-#define INPUT_DIR "dataset/abm_system"
+#define INPUT_DIR "out/dataset/abm_system"
 #define REPORT_PATH "out/abm_system_gaussian_convergence_report.txt"
 #define BY_SAMPLE_SIZE_PATH "out/abm_system_gaussian_convergence_by_sample_size.csv"
 
@@ -141,8 +141,8 @@ static int departure_of(const double *x, int n, double *buffer, Departure *out) 
 
     double sum = 0;
     for (int i = 0; i < n; i++) {
-        double lower = special_norm_cdf((buffer[i] - mean) / sd);
-        double upper = special_norm_cdf((buffer[n - 1 - i] - mean) / sd);
+        double lower = gauss_standard_cdf((buffer[i] - mean) / sd);
+        double upper = gauss_standard_cdf((buffer[n - 1 - i] - mean) / sd);
         if (lower < 1e-300) lower = 1e-300;
         if (upper > 1.0 - 1e-16) upper = 1.0 - 1e-16;
         sum += (double)(2 * i + 1) * (log(lower) + log1p(-upper));
@@ -254,7 +254,7 @@ static void cell_merge(Cell *into, const Cell *from) {
 
 static int *list_configurations(int *count) {
     DIR *handle = opendir(INPUT_DIR);
-    assert(handle && "abm_system_gaussian_convergence: cannot open dataset/abm_system");
+    assert(handle && "abm_system_gaussian_convergence: cannot open out/dataset/abm_system");
 
     int *cop = NULL, n = 0, cap = 0;
     struct dirent *entry;

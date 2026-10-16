@@ -14,8 +14,8 @@
 #   block length, about 5 minutes each
 #   bin/fit_metric_report      the tables
 #
-# Reads old/naive_mae_loss/montecarlo/out/sweep_grid.csv.gz, out/sweep_grid_response_cache/,
-# dataset/abm_system/ and out/abm_system_fit_qvarma/, and rebuilds none of them.
+# Reads out/old/naive_mae_loss/montecarlo/sweep_grid.csv.gz, out/sweep_grid_response_cache/,
+# out/dataset/abm_system/ and out/abm_system_fit_qvarma/, and rebuilds none of them.
 
 set -euo pipefail
 
@@ -23,7 +23,7 @@ cd "$(dirname "$0")/../../.."
 make bin/fit_metric_oracle bin/fit_metric_bootstrap bin/fit_metric_report
 
 echo "oracle $(date)"
-[ -f old/naive_mae_loss/montecarlo/out/fit_metric_oracle.csv.gz ] || ./bin/fit_metric_oracle
+[ -f out/old/naive_mae_loss/montecarlo/fit_metric_oracle.csv.gz ] || ./bin/fit_metric_oracle
 
 echo "bootstrap, run 0 of every configuration $(date)"
 ./bin/fit_metric_bootstrap

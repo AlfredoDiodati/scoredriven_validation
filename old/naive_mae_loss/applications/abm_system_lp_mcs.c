@@ -16,9 +16,9 @@ the empirical side has not caught up with that yet
 (docs/MCS_VALIDATION_PROCEDURE.md, "Status: the empirical validation is behind
 the Monte Carlo").
 
-Requires old/naive_mae_loss/out/abm_system_lp_irf_loss_<model>.csv. Writes
-old/naive_mae_loss/out/abm_system_lp_mcs_<model>.txt, the readable report with both elimination
-tables, and old/naive_mae_loss/out/abm_system_lp_mcs_<model>.csv, one row per configuration.
+Requires out/old/naive_mae_loss/abm_system_lp_irf_loss_<model>.csv. Writes
+out/old/naive_mae_loss/abm_system_lp_mcs_<model>.txt, the readable report with both elimination
+tables, and out/old/naive_mae_loss/abm_system_lp_mcs_<model>.csv, one row per configuration.
 Takes no arguments. Nothing printed.
 */
 
@@ -227,9 +227,9 @@ int main(int argc, char **argv) {
     };
     for (int loss = 0; loss < LP_N_LOSSES; loss++) {
         char loss_path[128], report_path[128], table_path[128];
-        snprintf(loss_path, sizeof loss_path, "old/naive_mae_loss/out/abm_system_lp_irf_loss_%s.csv", lp_loss_name(loss));
-        snprintf(report_path, sizeof report_path, "old/naive_mae_loss/out/abm_system_lp_mcs_%s.txt", lp_loss_name(loss));
-        snprintf(table_path, sizeof table_path, "old/naive_mae_loss/out/abm_system_lp_mcs_%s.csv", lp_loss_name(loss));
+        snprintf(loss_path, sizeof loss_path, "out/old/naive_mae_loss/abm_system_lp_irf_loss_%s.csv", lp_loss_name(loss));
+        snprintf(report_path, sizeof report_path, "out/old/naive_mae_loss/abm_system_lp_mcs_%s.txt", lp_loss_name(loss));
+        snprintf(table_path, sizeof table_path, "out/old/naive_mae_loss/abm_system_lp_mcs_%s.csv", lp_loss_name(loss));
         char title[256];
         snprintf(title, sizeof title, "%s, series %s", description[loss], LP_SYSTEM_SERIES_DESCRIPTION);
         compare_statistics(loss_path, report_path, table_path, title);

@@ -48,7 +48,7 @@ out/dsk_memory_safety.txt.
 #define SANITIZED "bin/dsk_SFC_sanitized"
 #define ORDINARY "model/dsk_sfc/dsk_SFC"
 #define INPUTS "model/dsk_sfc/dsk_sfc_inputs.json"
-#define DESIGN "dataset/abm_system_design.csv"
+#define DESIGN "out/dataset/abm_system_design.csv"
 #define REPORT "out/dsk_memory_safety.txt"
 #define RUN_NAME "safety"
 #define DEFAULT_SEEDS 3
@@ -242,7 +242,7 @@ int main(int argc, char **argv) {
     }
 
     if (!have_design)
-        fprintf(report, "dataset/abm_system_design.csv is missing, so only the baseline was used\n");
+        fprintf(report, "out/dataset/abm_system_design.csv is missing, so only the baseline was used\n");
     fprintf(report, "%d runs under the sanitizers\n%s\n", runs, failures == 0 ? "PASSED" : "FAILED");
     fclose(report);
 

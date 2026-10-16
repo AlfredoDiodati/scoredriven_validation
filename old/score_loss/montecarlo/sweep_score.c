@@ -32,8 +32,8 @@ benchmark whose information matrix is not positive definite has no weighted
 loss and is recorded as skipped there while still being scored under q'q.
 
 Requires out/abm_system_fit_qvarma/ for every benchmark's estimate and
-dataset/abm_system/ for every series, and rebuilds neither. Writes
-montecarlo/out/sweep_score.csv and montecarlo/out/sweep_score_weighted.csv.
+out/dataset/abm_system/ for every series, and rebuilds neither. Writes
+out/montecarlo/sweep_score.csv and out/montecarlo/sweep_score_weighted.csv.
 Progress goes to stderr so the summaries are the result.
 */
 
@@ -65,9 +65,9 @@ Progress goes to stderr so the summaries are the result.
 #define COLUMN_LABEL "qvarma_" SPEC_LABEL
 
 #define FIT_DIR "out/abm_system_fit_qvarma"
-#define INPUT_DIR "dataset/abm_system"
-#define PLAIN_SUMMARY "montecarlo/out/sweep_score.csv"
-#define WEIGHTED_SUMMARY "montecarlo/out/sweep_score_weighted.csv"
+#define INPUT_DIR "out/dataset/abm_system"
+#define PLAIN_SUMMARY "out/montecarlo/sweep_score.csv"
+#define WEIGHTED_SUMMARY "out/montecarlo/sweep_score_weighted.csv"
 #define BENCHMARK_SAMPLE "cop_0191"
 #define BENCHMARK_BLOCK 25
 
@@ -94,7 +94,7 @@ static int compare_sample_entries(const void *a, const void *b) {
 
 static SampleEntry *list_samples(const char *dir, int *count) {
     DIR *handle = opendir(dir);
-    assert(handle && "old/score_loss/montecarlo/sweep_score: cannot open dataset/abm_system/");
+    assert(handle && "old/score_loss/montecarlo/sweep_score: cannot open out/dataset/abm_system/");
 
     SampleEntry *entries = NULL;
     int n = 0, cap = 0;

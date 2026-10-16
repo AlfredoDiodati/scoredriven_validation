@@ -5,7 +5,7 @@ acts on.
 GDP_r is Q1.Sum() * dim_mach + Q2.Sum(), a sum over 20 K-firms and 200
 C-firms. applications/abm_system_micro_simulate.c writes those per-firm
 quantities for 5 configurations of the design at seeds 1 to 5, which are
-replicates 0 to 4 of the same configurations in dataset/abm_system. The two
+replicates 0 to 4 of the same configurations in out/dataset/abm_system. The two
 firm types are kept apart throughout: they differ in number and in the weight
 they carry into GDP.
 
@@ -56,7 +56,7 @@ date, and dividing by it should leave something Gaussian. So GDP growth is
 measured three ways:
 
     as it stands             excess kurtosis of the growth series itself,
-                             which is the number dataset/abm_system reports
+                             which is the number out/dataset/abm_system reports
     standardised             the same after dividing each quarter's growth by
                              the cross-sectional standard deviation of that
                              quarter, which is what a central limit theorem
@@ -76,7 +76,7 @@ dim_mach is not read from the model's parameter file. It is recovered as
 required to be the same number throughout, which also checks that the per-firm
 files and the aggregate file are the same run.
 
-Periods 201 to 600 of each run, the window dataset/abm_system keeps.
+Periods 201 to 600 of each run, the window out/dataset/abm_system keeps.
 
 Output, none of it printed:
     out/abm_system_micro_clt_report.txt
@@ -86,7 +86,7 @@ Output, none of it printed:
 
 #include "applications/abm_system.h"
 #include <et_al./stats.h>
-#include <et_al./special.h>
+#include <et_al./dist/gauss.h>
 #include <et_al./random/random.h>
 #include <dirent.h>
 #include <string.h>
@@ -94,7 +94,7 @@ Output, none of it printed:
 #include <math.h>
 #include <omp.h>
 
-#define INPUT_DIR "dataset/abm_system_micro"
+#define INPUT_DIR "out/dataset/abm_system_micro"
 #define REPORT_PATH "out/abm_system_micro_clt_report.txt"
 #define BY_RUN_PATH "out/abm_system_micro_clt_by_run.csv"
 #define GROWTH_PATH "out/abm_system_micro_clt_growth.csv"
@@ -147,8 +147,8 @@ static int shape_of(const double *x, int n, double *buffer,
 
     double sum = 0;
     for (int i = 0; i < n; i++) {
-        double lower = special_norm_cdf((buffer[i] - mean) / sd);
-        double upper = special_norm_cdf((buffer[n - 1 - i] - mean) / sd);
+        double lower = gauss_standard_cdf((buffer[i] - mean) / sd);
+        double upper = gauss_standard_cdf((buffer[n - 1 - i] - mean) / sd);
         if (lower < 1e-300) lower = 1e-300;
         if (upper > 1.0 - 1e-16) upper = 1.0 - 1e-16;
         sum += (double)(2 * i + 1) * (log(lower) + log1p(-upper));
@@ -295,7 +295,7 @@ typedef struct {
     int seed;
     int periods;
     double dim_mach;
-    double growth_excess_kurtosis;        /* the series as dataset/abm_system reports it */
+    double growth_excess_kurtosis;        /* the series as out/dataset/abm_system reports it */
     double standardised_excess_kurtosis;  /* after dividing by each quarter's own dispersion */
     double dispersion_excess_kurtosis;    /* what the moving variance gives on its own */
     double growth_skewness;
@@ -350,7 +350,7 @@ static double cross_sd(const double *x, int n) {
 static int *list_configurations(int *count) {
     DIR *handle = opendir(INPUT_DIR);
     assert(handle &&
-           "abm_system_micro_clt: cannot open dataset/abm_system_micro - run make app-abm_system_micro_simulate");
+           "abm_system_micro_clt: cannot open out/dataset/abm_system_micro - run make app-abm_system_micro_simulate");
 
     int *cop = NULL, n = 0, cap = 0;
     struct dirent *entry;
@@ -686,7 +686,7 @@ int main(void) {
     }
 
     fprintf(report, "\nGDP growth three ways, over the %d quarters of each run, averaged over the\n"
-                    "runs. 'as it stands' is the series dataset/abm_system reports.\n"
+                    "runs. 'as it stands' is the series out/dataset/abm_system reports.\n"
                     "'standardised' divides each quarter by sqrt(N) times that quarter's own\n"
                     "cross-sectional spread, which is what a central limit theorem acting at\n"
                     "each date separately would leave. 'dispersion alone' is the excess\n"

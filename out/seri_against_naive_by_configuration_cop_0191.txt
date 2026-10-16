@@ -1,0 +1,28 @@
+montecarlo/out/seri_true_configuration_recovery.csv.gz against old/naive_mae_loss/montecarlo/out/sweep_grid.csv.gz.
+Seri: 0 rows that did not parse, 0 benchmarks found twice, 0 rows whose member list disagrees with their set size.
+naive: 0 rows that did not parse, 0 benchmarks found twice, 0 rows whose member list disagrees with their set size.
+
+cop_0191 is the true configuration: share of its own 1,000 benchmarks
+order: in the set, alone in the set, smallest mean loss, median configurations in the set; Seri grid, then naive grid
+qvarma: Seri 49.30%, 35.20%, 41.40%, 1; naive 87.60%, 78.10%, 82.90%, 1
+linear: Seri 64.50%, 51.30%, 58.20%, 1; naive 91.30%, 86.40%, 88.60%, 1
+state 1: Seri 26.90%, 1.50%, 6.80%, 9; naive 85.70%, 64.60%, 75.80%, 1
+state 2: Seri 29.50%, 2.20%, 9.00%, 7; naive 78.00%, 39.90%, 59.20%, 2
+both states: Seri 63.10%, 10.30%, 31.00%, 7; naive 91.60%, 66.80%, 80.50%, 1
+
+cop_0191 is not the true configuration: share of the other 999,000 benchmarks where cop_0191 is
+order: in the set, alone in the set, smallest mean loss, median configurations in the set; Seri grid, then naive grid
+qvarma: Seri 0.27%, 0.08%, 0.15%, 2; naive 2.42%, 1.50%, 1.89%, 2
+linear: Seri 0.86%, 0.36%, 0.56%, 2; naive 2.83%, 1.56%, 2.08%, 2
+state 1: Seri 1.77%, 0.02%, 0.18%, 8; naive 16.62%, 5.78%, 9.63%, 2
+state 2: Seri 0.97%, 0.01%, 0.09%, 7; naive 12.04%, 2.11%, 4.84%, 4
+both states: Seri 2.25%, 0.02%, 0.17%, 10; naive 12.71%, 3.22%, 6.07%, 3
+
+every true configuration: share of all 1,000,000 benchmarks where the true configuration is
+order: in the set, alone in the set, smallest mean loss, median configurations in the set; Seri grid, then naive grid
+qvarma: Seri 10.47%, 3.62%, 6.24%, 2; naive 9.52%, 3.16%, 5.39%, 2
+linear: Seri 14.74%, 5.16%, 8.54%, 2; naive 10.70%, 3.90%, 6.34%, 2
+state 1: Seri 11.69%, 0.90%, 2.51%, 8; naive 1.53%, 0.47%, 0.79%, 2
+state 2: Seri 10.15%, 0.81%, 2.29%, 7; naive 1.61%, 0.36%, 0.73%, 4
+both states: Seri 24.26%, 1.21%, 4.43%, 10; naive 1.17%, 0.43%, 0.67%, 3
+

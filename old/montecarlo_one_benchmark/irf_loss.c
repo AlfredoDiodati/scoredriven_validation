@@ -37,8 +37,8 @@ variance the confidence set estimates from.
 nu <= 2 fits are skipped rather than fed through impulse_responses, whose own
 assert would abort on them, and counted as missing.
 
-Requires out/abm_system_fit_qvarma/ and dataset/abm_system/, and rebuilds
-neither. Writes montecarlo/out/irf_loss.csv and its manifest. Nothing printed.
+Requires out/abm_system_fit_qvarma/ and out/dataset/abm_system/, and rebuilds
+neither. Writes out/montecarlo/irf_loss.csv and its manifest. Nothing printed.
 */
 
 #include "applications/abm_system.h"
@@ -70,8 +70,8 @@ static int n_replicates = 0;
 #define IRF_DIM (K * K * (HORIZON + 1))
 
 #define FIT_DIR_DEFAULT "out/abm_system_fit_qvarma"
-#define INPUT_DIR_DEFAULT "dataset/abm_system"
-#define OUTPUT_PATH_DEFAULT "montecarlo/out/irf_loss.csv"
+#define INPUT_DIR_DEFAULT "out/dataset/abm_system"
+#define OUTPUT_PATH_DEFAULT "out/montecarlo/irf_loss.csv"
 
 /* Overridable so the whole pass can be run over a couple of configurations,
    which is how the parallel loop was checked against the serial one. */
@@ -172,7 +172,7 @@ static int count_replicates(const char *sample, const char *label) {
 
 typedef struct { char *name; int index; } SampleEntry;
 
-/* dataset/abm_system/EstimationSeriesSample1_<N>'s own <N>, so column order
+/* out/dataset/abm_system/EstimationSeriesSample1_<N>'s own <N>, so column order
    is 1, 2, ..., 100 rather than readdir's arbitrary order or a string
    sort's "_10" before "_2". */
 static int trailing_index(const char *name) {

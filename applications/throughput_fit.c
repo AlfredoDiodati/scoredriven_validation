@@ -6,7 +6,7 @@ the wall time of the whole battery, not the cost of one fit. This script
 runs the battery and writes the two timestamps that answer the question.
 
 Fits every series applications/throughput_dataset.c wrote under
-dataset/throughput/ - 500 folders of 1000 - with the single spec the
+out/dataset/throughput/ - 500 folders of 1000 - with the single spec the
 pipeline settled on: t-QVARMA(1,1,2), K_star 3, R 1, shared beta, the same
 K_dagger 2 partition and the same build_start convention
 applications/abm_system_fit_qvarma.c and
@@ -78,7 +78,7 @@ or reused, one line per fit. Written once at the end, a summary of what
 the individual JSONs already hold rather than a substitute for them, and
 about 45 MB at this size.
 
-Requires dataset/throughput/ to already exist. Deliberately not made
+Requires out/dataset/throughput/ to already exist. Deliberately not made
 to depend on app-throughput_dataset in the Makefile: that step writes
 21 GB and rerunning the fits must not rewrite it. Nothing printed.
 */
@@ -123,7 +123,7 @@ to depend on app-throughput_dataset in the Makefile: that step writes
 #define STRINGIFY(x) STRINGIFY_(x)
 #define BUDGET_SUFFIX "_i" STRINGIFY(MAX_ITERATIONS)
 
-#define INPUT_DIR "dataset/throughput"
+#define INPUT_DIR "out/dataset/throughput"
 #define OUTPUT_DIR "out/throughput_fit" BUDGET_SUFFIX
 #define TIMING_PATH "out/throughput_fit" BUDGET_SUFFIX "_timing.txt"
 #define MANIFEST_PATH "out/throughput_fit" BUDGET_SUFFIX "_manifest.txt"
@@ -138,7 +138,7 @@ static int compare_names(const void *a, const void *b) {
 
 static char **list_subdirs(const char *dir, int *count) {
     DIR *handle = opendir(dir);
-    assert(handle && "throughput_fit: cannot open dataset/throughput/ - run throughput_dataset first");
+    assert(handle && "throughput_fit: cannot open out/dataset/throughput/ - run throughput_dataset first");
 
     char **names = NULL;
     int n = 0, cap = 0;
@@ -165,7 +165,7 @@ static int count_series(const char *folder) {
     char path[600];
     snprintf(path, sizeof path, "%s/%s", INPUT_DIR, folder);
     DIR *handle = opendir(path);
-    assert(handle && "throughput_fit: cannot open a folder under dataset/throughput/");
+    assert(handle && "throughput_fit: cannot open a folder under out/dataset/throughput/");
     int n = 0;
     struct dirent *entry;
     while ((entry = readdir(handle)) != NULL)
@@ -249,7 +249,7 @@ int main(void) {
 
     int n_folders;
     char **folders = list_subdirs(INPUT_DIR, &n_folders);
-    assert(n_folders > 0 && "throughput_fit: no folders under dataset/throughput/");
+    assert(n_folders > 0 && "throughput_fit: no folders under out/dataset/throughput/");
 
     int *n_series = malloc((size_t)n_folders * sizeof(int));
     long total_tasks = 0;

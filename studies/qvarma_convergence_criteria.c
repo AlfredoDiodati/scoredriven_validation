@@ -531,9 +531,9 @@ int main(void) {
         fprintf(report, "  No reference point exists for real data, so these are counts, "
                         "not accuracy.\n\n");
 
-        DIR *handle = opendir("dataset/abm_system");
+        DIR *handle = opendir("out/dataset/abm_system");
         if (!handle) {
-            fprintf(report, "  dataset/abm_system not present; skipped.\n");
+            fprintf(report, "  out/dataset/abm_system not present; skipped.\n");
         } else {
             char **name = NULL;
             int n_sample = 0, cap = 0;
@@ -555,7 +555,7 @@ int main(void) {
                 for (int rep = 0; rep < 200; rep++) {
                     char csv_path[560], cache_path[560];
                     snprintf(csv_path, sizeof csv_path,
-                             "dataset/abm_system/%s/replicate_%03d.csv", name[s_at], rep);
+                             "out/dataset/abm_system/%s/replicate_%03d.csv", name[s_at], rep);
                     FILE *probe = fopen(csv_path, "r");
                     if (!probe) break;
                     fclose(probe);

@@ -23,7 +23,7 @@ the same loss matrices, and whether the benchmark's own configuration is in
 the set differs in 1 of the 5000 benchmarks across the five auxiliary models
 (`docs/OLD_MONTECARLO_NAIVE_MAE_GRID.md`, "2000 against 10000 resamples"). The
 benchmarks of the other two experiments are rows of the grid as well, and were
-compared on 2026-10-11 by counting, in `old/naive_mae_loss/montecarlo/out/sweep_grid.csv.gz`
+compared on 2026-10-11 by counting, in `out/old/naive_mae_loss/montecarlo/sweep_grid.csv.gz`
 against the old outputs, the benchmarks whose set holds `cop_0191`:
 
 | model | grid, 2000 resamples | every run of `cop_0191`, 10000 resamples |
@@ -52,7 +52,7 @@ against the average of the rest (`docs/MCS_VALIDATION_PROCEDURE.md`,
 `old/montecarlo_one_benchmark/studies/` diagnosed this experiment's results and
 moved with it. `docs/OLD_EXPERIMENTS.md` lists every discarded experiment.
 
-The outputs stay where they were, under `montecarlo/out/`. Every program builds
+The outputs stay where they were, under `out/montecarlo/`. Every program builds
 and runs with `make old-<stem>`, the stem being its file name, and the three
 drivers with `make old-montecarlo_one_benchmark`, `make
 old-montecarlo_one_benchmark_lp` and `make
@@ -63,11 +63,11 @@ old-montecarlo_every_run_of_cop_0191`.
 Choosing the benchmark on grounds connected to the answer would rig the
 experiment, so the grounds are fixed in advance and applied by
 `old/montecarlo_one_benchmark/benchmark_choice.c`, which writes its reasoning to
-`montecarlo/out/benchmark_choice.txt`. Three requirements, in order.
+`out/montecarlo/benchmark_choice.txt`. Three requirements, in order.
 
 **It must come from a configuration the real-data confidence set kept.** The
 configurations surviving the impulse-response procedure under MCS_TR (the
-`tr_in_set` column of `old/naive_mae_loss/out/abm_system_mcs_statistic_comparison.csv`; the
+`tr_in_set` column of `out/old/naive_mae_loss/abm_system_mcs_statistic_comparison.csv`; the
 MCS_TMAX set is not read) are the candidate pool, which is `cop_0191` alone.
 Promoting a configuration the procedure did not keep would ask whether a poor
 benchmark is recovered, which is a different question.
@@ -262,9 +262,9 @@ readable.
 
 | file | what it holds |
 | --- | --- |
-| `montecarlo/out/sweep_irf.csv` | one row per benchmark, impulse-response protocol |
-| `montecarlo/out/sweep_score.csv` | the same under `q'q` |
-| `montecarlo/out/sweep_score_weighted.csv` | the same under `LM` |
+| `out/montecarlo/sweep_irf.csv` | one row per benchmark, impulse-response protocol |
+| `out/montecarlo/sweep_score.csv` | the same under `q'q` |
+| `out/montecarlo/sweep_score_weighted.csv` | the same under `LM` |
 
 Each row records whether `cop_0191` ended up in the confidence set, where it
 ranked by mean loss, its MCS p-value, the size of the set, whether the
@@ -330,13 +330,13 @@ with 10000 resamples, block length 1, bootstrap variance, seed 123 stream 0.
 The row for `cop_0191` therefore reproduces row 0 of `sweep_irf.csv` and of
 `lp_sweep_<model>.csv`.
 
-The whole result is one file, `montecarlo/out/sweep_cops.csv.gz`, one row per
+The whole result is one file, `out/montecarlo/sweep_cops.csv.gz`, one row per
 model and benchmark configuration: whether the configuration is in the set,
 its rank by mean loss, its MCS p-value, the set size, whether the set was
 decided by an accepted test, the final p-value, replicates dropped, the
 configuration with the smallest mean loss, the seconds spent in the confidence
 set, and the configurations in the set. While it runs, rows go to
-`montecarlo/out/sweep_cops_progress.csv`, which a rerun resumes from and which
+`out/montecarlo/sweep_cops_progress.csv`, which a rerun resumes from and which
 is compressed and removed when all five models are done. A model added to
 the program later is run on a rerun: the finished file is unpacked back into
 the progress file, the new model's rows are appended, and the old rows are kept

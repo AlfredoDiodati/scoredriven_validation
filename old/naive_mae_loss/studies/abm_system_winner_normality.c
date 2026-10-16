@@ -3,7 +3,7 @@ Whether the t-QVARMA(1,1,2) estimates of the configuration the Model Confidence
 Set keeps are jointly normal across its replicates, on the unconstrained scale
 theta the optimizer steps.
 
-Reads old/naive_mae_loss/out/abm_system_winner_diagnostics_winner_theta.csv, written by
+Reads out/old/naive_mae_loss/abm_system_winner_diagnostics_winner_theta.csv, written by
 old/naive_mae_loss/studies/abm_system_winner_diagnostics.c: one row per replicate, the d = 42
 coordinates of theta and whether the fit converged. Nothing is fitted and no
 fit cache is read. The test is run twice, on every replicate and on the
@@ -45,14 +45,15 @@ inference/ directory later; the functions take a plain n x d sample for that
 reason.
 
 Output, none of it printed:
-    old/naive_mae_loss/out/abm_system_winner_normality.txt
+    out/old/naive_mae_loss/abm_system_winner_normality.txt
 */
 
 #include <et_al./dist/mv/gauss.h>
 #include <et_al./linalg/solver.h>
 #include <et_al./random/random.h>
 #include <et_al./stats.h>
-#include <et_al./special.h>
+#include <et_al./dist/gauss.h>
+#include <et_al./dist/chi_squared.h>
 #include <et_al./frame/csv.h>
 #include <et_al./frame/frame.h>
 #include <string.h>
@@ -60,9 +61,9 @@ Output, none of it printed:
 #include <math.h>
 #include <float.h>
 
-#define THETA_PATH "old/naive_mae_loss/out/abm_system_winner_diagnostics_winner_theta.csv"
-#define CONFIDENCE_SET_PATH "old/naive_mae_loss/out/abm_system_mcs.csv"
-#define REPORT_PATH "old/naive_mae_loss/out/abm_system_winner_normality.txt"
+#define THETA_PATH "out/old/naive_mae_loss/abm_system_winner_diagnostics_winner_theta.csv"
+#define CONFIDENCE_SET_PATH "out/old/naive_mae_loss/abm_system_mcs.csv"
+#define REPORT_PATH "out/old/naive_mae_loss/abm_system_winner_normality.txt"
 
 #define SIGNIFICANCE_LEVEL 0.05
 #define CALIBRATION_REPLICATIONS 1000
@@ -124,19 +125,19 @@ static MardiaResult mardia_test(Mat x) {
     double dd = (double)d, nn = (double)n;
     result.skewness_df = dd * (dd + 1) * (dd + 2) / 6;
     result.skewness_statistic = nn * result.b1 / 6;
-    result.skewness_p = special_chi_squared_sf(result.skewness_statistic, result.skewness_df);
+    result.skewness_p = chi_squared_sf(result.skewness_statistic, result.skewness_df);
     double correction = (dd + 1) * (nn + 1) * (nn + 3) / (nn * ((nn + 1) * (dd + 1) - 6));
     result.skewness_corrected_statistic = correction * result.skewness_statistic;
-    result.skewness_corrected_p = special_chi_squared_sf(result.skewness_corrected_statistic, result.skewness_df);
+    result.skewness_corrected_p = chi_squared_sf(result.skewness_corrected_statistic, result.skewness_df);
 
     double kurtosis_mean = dd * (dd + 2);
     result.kurtosis_z = (result.b2 - kurtosis_mean) / sqrt(8 * dd * (dd + 2) / nn);
-    result.kurtosis_p = 2 * special_norm_cdf(-fabs(result.kurtosis_z));
+    result.kurtosis_p = 2 * gauss_standard_cdf(-fabs(result.kurtosis_z));
     double exact_mean = dd * (dd + 2) * (nn - 1) / (nn + 1);
     double exact_variance = 8 * dd * (dd + 2) * (nn - 3) * (nn - dd - 1) * (nn - dd + 1)
                           / ((nn + 1) * (nn + 1) * (nn + 3) * (nn + 5));
     result.kurtosis_exact_z = (result.b2 - exact_mean) / sqrt(exact_variance);
-    result.kurtosis_exact_p = 2 * special_norm_cdf(-fabs(result.kurtosis_exact_z));
+    result.kurtosis_exact_p = 2 * gauss_standard_cdf(-fabs(result.kurtosis_exact_z));
 
     /* logpdf_i = -g_ii/2 - log det(S)/2 - (d/2) log(2 pi), with log det(S)
        from the factor already in hand. */

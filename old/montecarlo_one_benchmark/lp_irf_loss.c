@@ -39,9 +39,9 @@ column is dropped from that model's matrix and counted in the manifest.
 Dropping the row rather than the configuration keeps every configuration in
 the comparison.
 
-Requires out/abm_system_fit_lp/, dataset/abm_system/ and
-montecarlo/out/benchmark.env. Writes montecarlo/out/lp_irf_loss_<model>.csv,
-one per model, and montecarlo/out/lp_irf_loss_manifest.txt. Nothing printed.
+Requires out/abm_system_fit_lp/, out/dataset/abm_system/ and
+out/montecarlo/benchmark.env. Writes out/montecarlo/lp_irf_loss_<model>.csv,
+one per model, and out/montecarlo/lp_irf_loss_manifest.txt. Nothing printed.
 */
 
 #include "montecarlo/response_cache.h"
@@ -52,7 +52,7 @@ one per model, and montecarlo/out/lp_irf_loss_manifest.txt. Nothing printed.
 #include <cblas.h>
 #include <math.h>
 
-#define OUTPUT_STEM "montecarlo/out/lp_irf_loss"
+#define OUTPUT_STEM "out/montecarlo/lp_irf_loss"
 
 static const char *FIT_DIR;
 static const char *INPUT_DIR;

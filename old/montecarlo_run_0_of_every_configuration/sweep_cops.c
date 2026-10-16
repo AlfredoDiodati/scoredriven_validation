@@ -45,7 +45,7 @@ hole, the configuration with the smallest mean loss, seconds spent in the
 confidence set alone, and the configurations in the set, space separated.
 
 Requires out/abm_system_fit_qvarma/, out/abm_system_fit_lp/ and
-dataset/abm_system/, and rebuilds none of them. Progress goes to stderr.
+out/dataset/abm_system/, and rebuilds none of them. Progress goes to stderr.
 */
 
 #include "montecarlo/response_cache.h"
@@ -56,8 +56,8 @@ dataset/abm_system/, and rebuilds none of them. Progress goes to stderr.
 #include <cblas.h>
 
 #define BENCHMARK_REPLICATE 0
-#define PROGRESS_PATH "montecarlo/out/sweep_cops_progress.csv"
-#define RESULT_PATH "montecarlo/out/sweep_cops.csv.gz"
+#define PROGRESS_PATH "out/montecarlo/sweep_cops_progress.csv"
+#define RESULT_PATH "out/montecarlo/sweep_cops.csv.gz"
 #define HEADER "model,benchmark_cop,in_set,rank,pvalue,set_size,decided_by_accepted_test," \
                "final_pvalue,n_dropped_replicates,lowest_loss_cop,mcs_seconds,set_members\n"
 

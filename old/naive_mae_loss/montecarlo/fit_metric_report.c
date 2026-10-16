@@ -16,13 +16,13 @@ Tables, one row per model:
   block length      the median ratio sigma2_star / sigma2 under each block
                     length run on the first configurations, one row per file
                     fit_metric_bootstrap_run0_B<B>_block<L>_iterations<I>_first<n>.csv
-The bootstrap tables are left out while old/naive_mae_loss/montecarlo/out/fit_metric_bootstrap.csv
+The bootstrap tables are left out while out/old/naive_mae_loss/montecarlo/fit_metric_bootstrap.csv
 does not exist.
 
 Quantiles, medians and rank correlations are et_al's stats_quantile,
-stats_median and stats_spearman. Reads old/naive_mae_loss/montecarlo/out/fit_metric_oracle.csv.gz
-and the bootstrap files beside it. Writes old/naive_mae_loss/montecarlo/out/fit_metric_report.txt
-and the same tables as LaTeX in old/naive_mae_loss/montecarlo/out/fit_metric_report.tex. Nothing
+stats_median and stats_spearman. Reads out/old/naive_mae_loss/montecarlo/fit_metric_oracle.csv.gz
+and the bootstrap files beside it. Writes out/old/naive_mae_loss/montecarlo/fit_metric_report.txt
+and the same tables as LaTeX in out/old/naive_mae_loss/montecarlo/fit_metric_report.tex. Nothing
 printed.
 */
 
@@ -31,7 +31,7 @@ printed.
 #include <et_al./frame/gzip.h>
 #include <dirent.h>
 
-#define OUT_DIR "old/naive_mae_loss/montecarlo/out"
+#define OUT_DIR "out/old/naive_mae_loss/montecarlo"
 #define ORACLE_PATH OUT_DIR "/fit_metric_oracle.csv.gz"
 #define BOOTSTRAP_PATH OUT_DIR "/fit_metric_bootstrap.csv"
 #define REPORT_PATH OUT_DIR "/fit_metric_report.txt"
@@ -85,7 +85,7 @@ typedef struct { Column d, sigma2, s, v, v_own, v_other; } OracleColumns;
 
 static void read_oracle(OracleColumns *oracle) {
     FILE *f = fopen(ORACLE_PATH, "rb");
-    assert(f && "fit_metric_report: old/naive_mae_loss/montecarlo/out/fit_metric_oracle.csv.gz is missing");
+    assert(f && "fit_metric_report: out/old/naive_mae_loss/montecarlo/fit_metric_oracle.csv.gz is missing");
     fseek(f, 0, SEEK_END);
     size_t length = (size_t)ftell(f);
     fseek(f, 0, SEEK_SET);
@@ -266,7 +266,7 @@ static int block_length_table(Table *t) {
     t->n_rows = 0;
     int block[MAX_ROWS];
     DIR *dir = opendir(OUT_DIR);
-    assert(dir && "fit_metric_report: cannot open montecarlo/out");
+    assert(dir && "fit_metric_report: cannot open out/montecarlo");
     struct dirent *entry;
     while ((entry = readdir(dir)) != NULL && t->n_rows < MAX_ROWS) {
         int run, n_bootstrap, length, iterations, first, consumed = 0;

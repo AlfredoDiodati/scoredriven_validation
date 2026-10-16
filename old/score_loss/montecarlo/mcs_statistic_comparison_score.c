@@ -10,8 +10,8 @@ distance. docs/OLD_SCORE_LOSS.md and docs/MONTECARLO_VALIDATION.md
 record the results. The impulse-response matrix goes through the same
 procedure in old/montecarlo_one_benchmark/mcs_statistic_comparison.c.
 
-  montecarlo/out/score_loss.csv, q'q
-  montecarlo/out/score_loss_weighted.csv, the score statistic
+  out/montecarlo/score_loss.csv, q'q
+  out/montecarlo/score_loss_weighted.csv, the score statistic
 
 Each matrix gets its own pair of output files rather than four reports in one,
 since a single report already carries two elimination tables of a thousand
@@ -34,13 +34,13 @@ printed.
 #include <stdlib.h>
 #include <time.h>
 
-#define SCORE_LOSS_PATH "montecarlo/out/score_loss.csv"
-#define SCORE_REPORT_PATH "montecarlo/out/mcs_statistic_comparison_score.txt"
-#define SCORE_TABLE_PATH "montecarlo/out/mcs_statistic_comparison_score.csv"
+#define SCORE_LOSS_PATH "out/montecarlo/score_loss.csv"
+#define SCORE_REPORT_PATH "out/montecarlo/mcs_statistic_comparison_score.txt"
+#define SCORE_TABLE_PATH "out/montecarlo/mcs_statistic_comparison_score.csv"
 
-#define WEIGHTED_LOSS_PATH "montecarlo/out/score_loss_weighted.csv"
-#define WEIGHTED_REPORT_PATH "montecarlo/out/mcs_statistic_comparison_score_weighted.txt"
-#define WEIGHTED_TABLE_PATH "montecarlo/out/mcs_statistic_comparison_score_weighted.csv"
+#define WEIGHTED_LOSS_PATH "out/montecarlo/score_loss_weighted.csv"
+#define WEIGHTED_REPORT_PATH "out/montecarlo/mcs_statistic_comparison_score_weighted.txt"
+#define WEIGHTED_TABLE_PATH "out/montecarlo/mcs_statistic_comparison_score_weighted.csv"
 
 #define N_LAST_STANDING 10
 

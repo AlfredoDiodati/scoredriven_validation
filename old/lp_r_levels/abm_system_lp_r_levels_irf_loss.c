@@ -31,7 +31,7 @@ with a missing or non-finite response is a hole, and et_al's mcs refuses a
 table with one, so a replicate with a hole in any column is dropped from that
 model's table and counted in the manifest.
 
-Requires out/us_lp_fit.npz, out/abm_system_fit_lp/ and dataset/abm_system/.
+Requires out/us_lp_fit.npz, out/abm_system_fit_lp/ and out/dataset/abm_system/.
 This is that table on the cumulated levels lp_system_r_levels.h builds: reads
 out/us_lp_fit_r_levels.npz and out/abm_system_fit_lp_r_levels/, writes
 out/abm_system_lp_r_levels_irf_loss_<model>.csv and its manifest. Takes no

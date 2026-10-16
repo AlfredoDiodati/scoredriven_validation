@@ -89,7 +89,7 @@ static QvarmaParams build_start(Mat y, int rlag) {
 static Mat load_series(int replicate) {
     char path[256];
     snprintf(path, sizeof path,
-             "dataset/abm_system/EstimationSeriesSample1_1/replicate_%03d.csv", replicate);
+             "out/dataset/abm_system/EstimationSeriesSample1_1/replicate_%03d.csv", replicate);
     DataFrame df = df_read_csv(path, csv_read_options_default());
     Mat y = mat_new(K, df.r);
     static const char *row_name[K] = {

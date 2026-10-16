@@ -1,5 +1,5 @@
 /*
-Whether every value stored in dataset/abm_system is a finite number, and
+Whether every value stored in out/dataset/abm_system is a finite number, and
 whether the archives hold the runs the experiment claims to have stored.
 
 The 1000 x 1000 experiment writes 5 x 400 numbers per (configuration,
@@ -39,7 +39,7 @@ Defaults are the whole design and 1000 replications per configuration.
 Configurations are independent, so the sweep is divided over the threads
 OpenMP gives it; the work is reading and decompressing 15 GB of archives.
 
-Writes out/abm_system_dataset_finiteness_report.txt. Needs dataset/abm_system.
+Writes out/abm_system_dataset_finiteness_report.txt. Needs out/dataset/abm_system.
 */
 
 #include "applications/abm_system.h"
@@ -57,8 +57,8 @@ Writes out/abm_system_dataset_finiteness_report.txt. Needs dataset/abm_system.
 #include <assert.h>
 #include <omp.h>
 
-#define DATASET "dataset/abm_system"
-#define DESIGN "dataset/abm_system_design.csv"
+#define DATASET "out/dataset/abm_system"
+#define DESIGN "out/dataset/abm_system_design.csv"
 #define REPORT "out/abm_system_dataset_finiteness_report.txt"
 #define DEFAULT_N_MC 1000
 

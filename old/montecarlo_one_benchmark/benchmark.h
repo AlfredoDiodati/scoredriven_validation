@@ -16,10 +16,10 @@ The simulated run promoted to the role the US data plays in the main pipeline,
 as old/montecarlo_one_benchmark/benchmark_choice.c chose it.
 
 The choice is made once, by that script, and written to
-montecarlo/out/benchmark.env. Every other step of one experiment reads it back
+out/montecarlo/benchmark.env. Every other step of one experiment reads it back
 from there rather than being told which run to use, so the loss matrices and
 the confidence sets cannot end up describing different benchmarks, and the
-grounds for the choice stay in one place - montecarlo/out/benchmark_choice.txt,
+grounds for the choice stay in one place - out/montecarlo/benchmark_choice.txt,
 which the same script writes beside it.
 
 replicate is also the index held out of every configuration's column.
@@ -29,7 +29,7 @@ configuration), so holding out the row drops every simulation sharing the
 benchmark's seed, not only the benchmark itself.
 */
 
-#define BENCHMARK_ENV_PATH "montecarlo/out/benchmark.env"
+#define BENCHMARK_ENV_PATH "out/montecarlo/benchmark.env"
 
 typedef struct {
     char sample[64];

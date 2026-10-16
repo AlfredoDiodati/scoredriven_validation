@@ -13,7 +13,7 @@ perturbed copies of themselves.
 
 Layout, so which source a given series came from is never in question.
 Each of the 100 source files gets five folders under
-dataset/throughput/:
+out/dataset/throughput/:
 
     EstimationSeriesSample1_7/          series_000..107 original
                                         series_108..999 perturbed
@@ -80,7 +80,7 @@ fits does not rewrite 21 GB. Run it explicitly, once. Nothing printed.
 #include <errno.h>
 
 #define SIMULATED_DIR "dataset/simulated"
-#define OUTPUT_DIR "dataset/throughput"
+#define OUTPUT_DIR "out/dataset/throughput"
 
 #define FOLDERS_PER_SAMPLE 5
 #define SERIES_PER_FOLDER 1000
@@ -201,7 +201,7 @@ int main(void) {
 
     FILE *manifest = fopen("out/throughput_dataset_manifest.txt", "w");
     assert(manifest && "cannot open the manifest path for writing");
-    fprintf(manifest, "source file -> dataset/throughput/<source>[_noise1..%d]/series_<000..%d>.csv\n",
+    fprintf(manifest, "source file -> out/dataset/throughput/<source>[_noise1..%d]/series_<000..%d>.csv\n",
             FOLDERS_PER_SAMPLE - 1, SERIES_PER_FOLDER - 1);
     fprintf(manifest, "%d source files found under %s\n\n", n_files, SIMULATED_DIR);
     fprintf(manifest, "series_i is an original replicate when it is in the source's own first\n"

@@ -1,0 +1,25 @@
+Corrected: montecarlo/out/seri_true_configuration_recovery.csv.gz. Uncorrected: out/seri_uncorrected_true_configuration_recovery_trial/progress.csv.
+corrected: 0 rows that did not parse, 0 benchmarks found twice.
+uncorrected: 0 rows that did not parse, 0 benchmarks found twice.
+
+1. Per model and grid. Percentages are of the benchmarks both grids hold.
+
+model, grid, benchmarks, own configuration in the set, alone in the set, first by mean loss, mean rank, mean set size, median set size, largest set
+qvarma, corrected, 2000, 9.9%, 4.1%, 6.2%, 187.3, 2.56, 2, 22
+qvarma, uncorrected, 2000, 4.1%, 0.9%, 1.8%, 305.9, 2.79, 2, 16
+
+2. Per model: whether the benchmark's configuration is in each set, and whether both losses give the same configuration the smallest mean loss.
+
+model, benchmarks in both, in both sets, corrected set only, uncorrected set only, neither, same smallest-loss configuration
+qvarma, 2000, 2.5%, 7.4%, 1.6%, 88.5%, 11.7%
+
+3. Per model and configuration: the share of its own benchmarks whose set holds it, with the Pearson correlation of the two grids' shares across configurations.
+
+model, configurations, corrected at least half, corrected at least 90%, corrected none, uncorrected at least half, uncorrected at least 90%, uncorrected none, correlation
+qvarma, 1000, 178, 20, 822, 68, 14, 932, 0.403
+
+4. Per model and grid, against each configuration's noise (out/response_variance_by_configuration.csv). Correlations are Spearman, across the configurations with paired benchmarks and a noise value. Noise ranks run from 1, the least noisy.
+
+model, grid, configurations, noise against own rate, noise against off-target rate, mean noise rank of the smallest-loss configuration, mean noise rank of the set members, middle rank
+qvarma, corrected, 1000, -0.250, -0.367, 387.9, 426.0, 500.5
+qvarma, uncorrected, 1000, -0.268, -0.431, 164.1, 190.2, 500.5

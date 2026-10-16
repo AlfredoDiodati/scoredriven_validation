@@ -23,15 +23,15 @@ Whether old/naive_mae_loss/montecarlo/fit_metric.h computes the fit metric it de
    every time, so sigma2_star is exactly 0 under every method; and two bootstraps
    with the same seed give the same sigma2_star.
 
-Reads dataset/abm_system/, out/abm_system_fit_qvarma/ and the response caches.
-Writes old/naive_mae_loss/out/fit_metric_correctness_report.txt. Exits 1 on any failure.
+Reads out/dataset/abm_system/, out/abm_system_fit_qvarma/ and the response caches.
+Writes out/old/naive_mae_loss/fit_metric_correctness_report.txt. Exits 1 on any failure.
 */
 
 #include "old/naive_mae_loss/montecarlo/fit_metric.h"
 #include <stdio.h>
 #include <math.h>
 
-#define REPORT "old/naive_mae_loss/out/fit_metric_correctness_report.txt"
+#define REPORT "out/old/naive_mae_loss/fit_metric_correctness_report.txt"
 #define REAL_COP 191
 #define REAL_RUN 706
 

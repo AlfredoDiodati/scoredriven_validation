@@ -1,0 +1,28 @@
+montecarlo/own_deviation_loss.h against its definition, 16 hardware threads
+
+1. against a reference from the definition
+      1 thread(s): largest relative error against the reference 8.337e-16
+pass  loss matches the reference to 1e-9 relative at 1 thread(s)
+      16 thread(s): largest relative error against the reference 8.337e-16
+pass  loss matches the reference to 1e-9 relative at 16 thread(s)
+pass  one thread and every thread give the same losses
+
+2. two kept runs, and a configuration with equal runs
+pass  two kept runs, the smallest legal case, match the reference
+pass  a configuration with equal runs has no deviation, its loss is the squared error
+
+3. the same column means as montecarlo/recovery_loss.h
+      largest relative difference from recovery_loss_mean_variance 3.307e-16
+pass  the own deviations average to the mean response variance, to 1e-9 relative
+
+4. the bias, and the spread across rows
+      average over 200 benchmarks, true A and wrong B:
+      corrected mean loss  A 1.0132  B 1.3778   (expected 1.00 and 1.36)
+      largest miss of the corrected mean loss from its target 0.0489
+      variance across rows in A's column: own deviation 0.0810, common variance 0.1235
+      (expected about 0.08 and 0.12), ratio 0.6560 (expected 2/3)
+pass  the corrected loss prefers the true configuration
+pass  every corrected mean loss is within 0.1 of its squared distance
+pass  subtracting the own deviation cuts the spread across rows to 2/3 of the common variance's, within 0.05
+
+passed, 0 failure(s)

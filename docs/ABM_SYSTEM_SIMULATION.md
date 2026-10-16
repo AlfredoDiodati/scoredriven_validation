@@ -87,7 +87,7 @@ has only ever been run with the flags at zero.
 
 ## The design
 
-The design is a file, `dataset/abm_system_design.csv`, drawn by
+The design is a file, `out/dataset/abm_system_design.csv`, drawn by
 `applications/abm_system_design.c` and read by everything else. Splitting the
 two is what lets a thousand simulation processes share one design without any
 of them being able to redraw it. The sampler is et_al's `lhs_random`; the
@@ -180,14 +180,14 @@ configuration's path distribution - only the variance reduction is lost.
 ### It was measured, and the gain is nothing
 
 `old/naive_mae_loss/studies/abm_system_seed_correlation.c` reads
-`old/naive_mae_loss/out/abm_system_irf_loss.csv`, the loss table of the naive
+`out/old/naive_mae_loss/abm_system_irf_loss.csv`, the loss table of the naive
 loss (`docs/OLD_EXPERIMENTS.md`), 1000 replicates by 1000 configurations, and
 computes the Pearson correlation of the per-replicate losses for every one
 of the 499,500 configuration pairs. The reference for no shared randomness is
 the same correlation with the second configuration's rows shifted down by one,
 pairing seed $n$ with seed $n+1$ and wrapping at the end. Under independence
 both have mean zero and standard deviation about $1/\sqrt{1000} = 0.032$.
-Output: `old/naive_mae_loss/out/abm_system_seed_correlation_report.txt`.
+Output: `out/old/naive_mae_loss/abm_system_seed_correlation_report.txt`.
 
 | over all 499,500 pairs | mean | p05 | p50 | p95 |
 |---|---:|---:|---:|---:|
@@ -321,7 +321,7 @@ the auxiliary model's fit is anything but C, the standard library and et_al.
 
 Replications are written ten at a time into one `.npz` archive:
 
-    dataset/abm_system/cop_0001/batch_000.npz
+    out/dataset/abm_system/cop_0001/batch_000.npz
 
 holding six members: the five series, `GDP_growth`, `EN_growth`,
 `Employment_change`, `Inflation` and `InterestRate`, stacked one replication
@@ -487,15 +487,15 @@ Two things the script refuses, both because
 cannot tell one dataset from another.
 
 It refuses an output directory holding subdirectories this experiment did not
-write. `dataset/abm_system` now holds the thousand `cop_NNNN` directories of
+write. `out/dataset/abm_system` now holds the thousand `cop_NNNN` directories of
 the design run; the hundred the older `.Rdata` route produced were moved to
-`dataset/abm_system_rdata`, which is where
+`out/dataset/abm_system_rdata`, which is where
 `applications/abm_system_convert_rdata.c` writes by default now and which it
 refuses to leave. Either move an old dataset aside or set
 `ABM_SYSTEM_OUTPUT_DIR` to somewhere else.
 
 It also refuses an output directory filled under a different parameter design.
-A configuration number is a row index into `dataset/abm_system_design.csv` and
+A configuration number is a row index into `out/dataset/abm_system_design.csv` and
 means nothing without it, so a design redrawn with `abm_system_design --force`
 renumbers every stored replication, every fit and every confidence set entry at
 once. The launcher writes the design's md5 to `<output>/.design_md5` the first

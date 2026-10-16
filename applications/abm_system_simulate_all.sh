@@ -28,7 +28,7 @@ export LC_ALL=C
 # A pilot is the same script over a few configurations with a few replications.
 #
 # ABM_SYSTEM_OUTPUT_DIR chooses where the archives go and defaults to
-# dataset/abm_system. The script refuses to start if that directory already
+# out/dataset/abm_system. The script refuses to start if that directory already
 # holds subdirectories some other writer produced, because the fitting stage
 # reads every subdirectory it finds and cannot tell two datasets apart.
 #
@@ -37,7 +37,7 @@ export LC_ALL=C
 set -u
 
 BIN=./bin/abm_system_simulate
-DESIGN=dataset/abm_system_design.csv
+DESIGN=out/dataset/abm_system_design.csv
 
 # The design decides how many configurations there are, so that number is read
 # from it rather than repeated here.
@@ -48,7 +48,7 @@ SHARDS="${1:-8}"
 FIRST="${2:-1}"
 LAST="${3:-$n_design}"
 N_MC="${4:-1000}"
-OUTPUT_DIR="${ABM_SYSTEM_OUTPUT_DIR:-dataset/abm_system}"
+OUTPUT_DIR="${ABM_SYSTEM_OUTPUT_DIR:-out/dataset/abm_system}"
 REPORT_DIR=out/abm_system_simulate
 STAMP=out/abm_system_simulate_all_provenance.txt
 
@@ -73,8 +73,8 @@ if [ -d "$OUTPUT_DIR" ]; then
     echo "The fitting stage reads every subdirectory it finds and cannot tell the" >&2
     echo "two datasets apart. Move the old one aside, or point this run elsewhere:" >&2
     echo >&2
-    echo "  mkdir -p dataset/abm_system_rdata && mv $OUTPUT_DIR/EstimationSeries* dataset/abm_system_rdata/" >&2
-    echo "  ABM_SYSTEM_OUTPUT_DIR=dataset/abm_system_design_runs $0 $*" >&2
+    echo "  mkdir -p out/dataset/abm_system_rdata && mv $OUTPUT_DIR/EstimationSeries* out/dataset/abm_system_rdata/" >&2
+    echo "  ABM_SYSTEM_OUTPUT_DIR=out/dataset/abm_system_design_runs $0 $*" >&2
     exit 1
   fi
 fi

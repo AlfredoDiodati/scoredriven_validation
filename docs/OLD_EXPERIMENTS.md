@@ -3,8 +3,8 @@
 Experiments that are no longer part of the main pipeline or the Monte Carlo
 pipeline. Their code is under `old/`, one folder per experiment; their
 write-ups stay in `docs/`. Their outputs stay where they were written, under
-`out/` and `montecarlo/out/`, except those of the naive loss, which moved with
-their code to `old/naive_mae_loss/out/` and `old/naive_mae_loss/montecarlo/out/`. Every program still builds and runs with
+`out/` and `out/montecarlo/`, except those of the naive loss, which moved with
+their code to `out/old/naive_mae_loss/` and `out/old/naive_mae_loss/montecarlo/`. Every program still builds and runs with
 `make old-<stem>`, the stem being its file name, and the Makefile's
 `OLD_SOURCES` lists them all.
 
@@ -155,7 +155,7 @@ under the corrected loss reads them.
 Checked after the move: the moved programs build without warnings, and
 `bin/abm_system_mcs`, `bin/fit_metric_report` and
 `old/naive_mae_loss/montecarlo/sweep_grid_presence.py`, rerun from their new
-location, rewrote `old/naive_mae_loss/out/abm_system_mcs.csv` and `.txt`,
-`old/naive_mae_loss/montecarlo/out/fit_metric_report.txt` and `.tex` and
-`old/naive_mae_loss/montecarlo/out/sweep_grid_presence.txt` byte for byte. The
+location, rewrote `out/old/naive_mae_loss/abm_system_mcs.csv` and `.txt`,
+`out/old/naive_mae_loss/montecarlo/fit_metric_report.txt` and `.tex` and
+`out/old/naive_mae_loss/montecarlo/sweep_grid_presence.txt` byte for byte. The
 other programs were not rerun.

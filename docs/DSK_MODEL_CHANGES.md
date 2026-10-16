@@ -924,7 +924,7 @@ firms enter and leave, how many machines a firm holds, and therefore which
 branches the code takes. Several of the changes turn on precisely that.
 
 `tests/dsk_design_equivalence.c` runs both programs at four points of
-`dataset/abm_system_design.csv`: the smallest and the largest value the design
+`out/dataset/abm_system_design.csv`: the smallest and the largest value the design
 reached in each of the nine parameters, which are the corners of the box, and
 two rows the experiment will really simulate. Each point is compared on the exit
 status, the results file and the error log.
@@ -1071,7 +1071,7 @@ number plus one, the same in every configuration, as the experiment was run -
 and requires the 83-column results file and the error log to match byte for
 byte. It then rebuilds the five series from this build's results file exactly as
 `applications/abm_system_simulate.c` does and requires every one of the 5 x 400
-numbers to equal the one stored in `dataset/abm_system`, which was written by
+numbers to equal the one stored in `out/dataset/abm_system`, which was written by
 the simulator as it stood when the 1000 x 1000 experiment was run. Equality, not
 a tolerance: the stored values came through the same arithmetic from the same
 printed file.

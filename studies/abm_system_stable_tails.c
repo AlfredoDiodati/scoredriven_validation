@@ -49,12 +49,12 @@ its tails are. And Hill's estimator assumes the tail is already power-law over
 the range of order statistics used, which at n = 400 and k = 40 it need not be.
 
 Part 5 runs Hill on the cross-section of firm output changes from
-dataset/abm_system_micro, which is the sum GDP's change is, rather than on the
+out/dataset/abm_system_micro, which is the sum GDP's change is, rather than on the
 aggregate.
 
     ./bin/abm_system_stable_tails [CONFIGURATIONS]
 
-Reads dataset/abm_system and dataset/abm_system_micro. Writes, none of it
+Reads out/dataset/abm_system and out/dataset/abm_system_micro. Writes, none of it
 printed:
     out/abm_system_stable_tails_report.txt
     out/abm_system_stable_tails_by_series.csv
@@ -70,8 +70,8 @@ printed:
 #include <omp.h>
 
 #define K ABM_SYSTEM_K
-#define INPUT_DIR "dataset/abm_system"
-#define MICRO_DIR "dataset/abm_system_micro"
+#define INPUT_DIR "out/dataset/abm_system"
+#define MICRO_DIR "out/dataset/abm_system_micro"
 #define REPORT_PATH "out/abm_system_stable_tails_report.txt"
 #define BY_SERIES_PATH "out/abm_system_stable_tails_by_series.csv"
 
@@ -482,7 +482,7 @@ int main(int argc, char **argv) {
         }
 
         fprintf(report, "\nPART 5. Hill on the cross-section of firm output changes at each date,\n"
-                        "%ld cross-sections from dataset/abm_system_micro. The 10, 5 and 2.5 per\n"
+                        "%ld cross-sections from out/dataset/abm_system_micro. The 10, 5 and 2.5 per\n"
                         "cent of a cross-section this small is a handful of firms, so these are\n"
                         "the noisiest numbers here.\n\n", cross_sections);
         fprintf(report, "  cross-section              firms  Hill 10%%  Hill 5%%  Hill2.5%%\n");

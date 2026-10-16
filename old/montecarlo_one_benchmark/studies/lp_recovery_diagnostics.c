@@ -14,7 +14,7 @@ the things in the local-projection protocol that could be wrong.
 
 1. Is the stored result what the code computes? Every run is fitted again from
    the dataset and its loss against cop_0191 run 706 recomputed, and compared
-   with montecarlo/out/lp_irf_loss_<model>.csv.
+   with out/montecarlo/lp_irf_loss_<model>.csv.
 2. The shock size. The local projections answer a one-unit shock, as R's
    pipeline asks lpirfs to (shock_type 1); the t-QVARMA answers a shock of one
    standard deviation. A unit shock divides every response to shock j by that
@@ -44,8 +44,8 @@ each take the stand-in's place in turn, with the same settings, and the count
 of sets holding cop_0191 is reported.
 
 Nothing here is stored beyond the report: every fit is recomputed from
-dataset/abm_system/. Requires montecarlo/out/benchmark.env and, for item 1,
-montecarlo/out/lp_irf_loss_<model>.csv. Writes
+out/dataset/abm_system/. Requires out/montecarlo/benchmark.env and, for item 1,
+out/montecarlo/lp_irf_loss_<model>.csv. Writes
 out/lp_recovery_diagnostics_report.txt. Progress to stderr.
 */
 
@@ -239,10 +239,10 @@ static void report_set(FILE *f, const char *what, SetOutcome o) {
 
 /* Section 1: the protocol as run must reproduce the stored loss tables. */
 static void compare_with_stored(FILE *f, Mat values[LP_N_LOSSES]) {
-    fprintf(f, "\n1. Recomputed losses against montecarlo/out/lp_irf_loss_<model>.csv\n");
+    fprintf(f, "\n1. Recomputed losses against out/montecarlo/lp_irf_loss_<model>.csv\n");
     for (int loss = 0; loss < LP_N_LOSSES; loss++) {
         char path[256];
-        snprintf(path, sizeof path, "montecarlo/out/lp_irf_loss_%s.csv", lp_loss_name(loss));
+        snprintf(path, sizeof path, "out/montecarlo/lp_irf_loss_%s.csv", lp_loss_name(loss));
         DataFrame stored = df_read_csv(path, csv_read_options_default());
         Mat replicate = df_col_numeric(&stored, "replicate");
         double worst = 0;
@@ -377,7 +377,7 @@ int main(int argc, char **argv) {
     FILE *f = fopen(report_path, "w");
     assert(f && "lp_recovery_diagnostics: cannot open the report");
     fprintf(f, "Why the local projections do not recover the stand-in's configuration\n\n");
-    fprintf(f, "Data: dataset/abm_system, %d configurations x %d runs, 397 periods each after R's transform.\n",
+    fprintf(f, "Data: out/dataset/abm_system, %d configurations x %d runs, 397 periods each after R's transform.\n",
             n_samples, n_replicates);
     fprintf(f, "Stand-in for the real data: %s run %d; run %d of every configuration left out.\n",
             stand_in.sample, stand_in_replicate, stand_in_replicate);

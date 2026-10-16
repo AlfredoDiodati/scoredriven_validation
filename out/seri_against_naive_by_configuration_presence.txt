@@ -1,0 +1,166 @@
+montecarlo/out/seri_true_configuration_recovery.csv.gz against old/naive_mae_loss/montecarlo/out/sweep_grid.csv.gz.
+Seri: 0 rows that did not parse, 0 benchmarks found twice, 0 rows whose member list disagrees with their set size.
+naive: 0 rows that did not parse, 0 benchmarks found twice, 0 rows whose member list disagrees with their set size.
+
+Own rate: the share of a configuration's own benchmarks whose set holds it. Off-target rate: the share of the other configurations' benchmarks whose set holds it.
+
+qvarma, Seri grid: mean own-CoP rate 0.1047; mean off-target presence per CoP 0.0025; median configurations in the set 2
+  CoPs whose off-target presence rate exceeds their own recovery rate: 111 of 1000
+  CoPs whose off-target presence exceeds the mean own rate 0.1047: 0
+  top 10 by off-target presence (cop, off rate, own rate):
+    cop_0454 0.0299 0.4180
+    cop_0199 0.0293 0.6490
+    cop_0202 0.0205 0.3650
+    cop_0572 0.0192 0.2760
+    cop_0018 0.0180 0.3220
+    cop_0178 0.0169 0.1800
+    cop_0315 0.0169 0.6720
+    cop_0082 0.0154 0.6690
+    cop_0357 0.0140 0.2950
+    cop_0038 0.0137 0.2200
+  share of all off-target set slots taken by the top 10: 0.078
+
+qvarma, naive grid: mean own-CoP rate 0.0952; mean off-target presence per CoP 0.0028; median configurations in the set 2
+  CoPs whose off-target presence rate exceeds their own recovery rate: 245 of 1000
+  CoPs whose off-target presence exceeds the mean own rate 0.0952: 0
+  top 10 by off-target presence (cop, off rate, own rate):
+    cop_0799 0.0685 0.9240
+    cop_0505 0.0684 0.7720
+    cop_0603 0.0529 0.8370
+    cop_0946 0.0394 0.3960
+    cop_0565 0.0382 0.6410
+    cop_0934 0.0371 0.5930
+    cop_0620 0.0363 0.6520
+    cop_0098 0.0361 0.5740
+    cop_0666 0.0353 0.6290
+    cop_0320 0.0352 0.8290
+  share of all off-target set slots taken by the top 10: 0.157
+
+lp_lin, Seri grid: mean own-CoP rate 0.1474; mean off-target presence per CoP 0.0027; median configurations in the set 2
+  CoPs whose off-target presence rate exceeds their own recovery rate: 0 of 1000
+  CoPs whose off-target presence exceeds the mean own rate 0.1474: 0
+  top 10 by off-target presence (cop, off rate, own rate):
+    cop_0652 0.0125 0.5110
+    cop_0968 0.0107 0.1360
+    cop_0757 0.0107 0.1430
+    cop_0937 0.0088 0.1950
+    cop_0002 0.0086 0.1460
+    cop_0518 0.0086 0.1310
+    cop_0191 0.0086 0.6450
+    cop_0857 0.0081 0.0920
+    cop_0463 0.0080 0.1000
+    cop_0972 0.0078 0.1420
+  share of all off-target set slots taken by the top 10: 0.035
+
+lp_lin, naive grid: mean own-CoP rate 0.1070; mean off-target presence per CoP 0.0030; median configurations in the set 2
+  CoPs whose off-target presence rate exceeds their own recovery rate: 162 of 1000
+  CoPs whose off-target presence exceeds the mean own rate 0.1070: 0
+  top 10 by off-target presence (cop, off rate, own rate):
+    cop_0410 0.0460 0.7750
+    cop_0914 0.0451 0.5930
+    cop_0437 0.0369 0.7990
+    cop_0226 0.0332 0.3420
+    cop_0717 0.0312 0.7760
+    cop_0620 0.0311 0.5900
+    cop_0191 0.0283 0.9130
+    cop_0231 0.0267 0.3410
+    cop_0948 0.0250 0.3190
+    cop_0320 0.0248 0.6130
+  share of all off-target set slots taken by the top 10: 0.110
+
+lp_s1, Seri grid: mean own-CoP rate 0.1169; mean off-target presence per CoP 0.0122; median configurations in the set 8
+  CoPs whose off-target presence rate exceeds their own recovery rate: 1 of 1000
+  CoPs whose off-target presence exceeds the mean own rate 0.1169: 0
+  top 10 by off-target presence (cop, off rate, own rate):
+    cop_0793 0.0554 0.2360
+    cop_0373 0.0524 0.1750
+    cop_0986 0.0485 0.2600
+    cop_0003 0.0470 0.1780
+    cop_0937 0.0468 0.2440
+    cop_0316 0.0467 0.2030
+    cop_0067 0.0456 0.1580
+    cop_0596 0.0445 0.2320
+    cop_0604 0.0432 0.2080
+    cop_0707 0.0397 0.1930
+  share of all off-target set slots taken by the top 10: 0.038
+
+lp_s1, naive grid: mean own-CoP rate 0.0153; mean off-target presence per CoP 0.0053; median configurations in the set 2
+  CoPs whose off-target presence rate exceeds their own recovery rate: 770 of 1000
+  CoPs whose off-target presence exceeds the mean own rate 0.0153: 86
+  top 10 by off-target presence (cop, off rate, own rate):
+    cop_0437 0.2580 0.7850
+    cop_0410 0.1906 0.4380
+    cop_0717 0.1744 0.6270
+    cop_0191 0.1662 0.8570
+    cop_0832 0.1129 0.2360
+    cop_0031 0.0827 0.0650
+    cop_0032 0.0781 0.1920
+    cop_0772 0.0748 0.0250
+    cop_0692 0.0719 0.4490
+    cop_0554 0.0704 0.0130
+  share of all off-target set slots taken by the top 10: 0.243
+
+lp_s2, Seri grid: mean own-CoP rate 0.1015; mean off-target presence per CoP 0.0106; median configurations in the set 7
+  CoPs whose off-target presence rate exceeds their own recovery rate: 0 of 1000
+  CoPs whose off-target presence exceeds the mean own rate 0.1015: 0
+  top 10 by off-target presence (cop, off rate, own rate):
+    cop_0972 0.0415 0.1760
+    cop_0798 0.0368 0.1250
+    cop_0775 0.0367 0.1990
+    cop_0463 0.0357 0.1200
+    cop_0937 0.0351 0.1750
+    cop_0705 0.0347 0.0940
+    cop_0518 0.0342 0.1500
+    cop_0149 0.0340 0.2920
+    cop_0881 0.0336 0.1350
+    cop_0879 0.0334 0.1620
+  share of all off-target set slots taken by the top 10: 0.033
+
+lp_s2, naive grid: mean own-CoP rate 0.0161; mean off-target presence per CoP 0.0069; median configurations in the set 4
+  CoPs whose off-target presence rate exceeds their own recovery rate: 768 of 1000
+  CoPs whose off-target presence exceeds the mean own rate 0.0161: 99
+  top 10 by off-target presence (cop, off rate, own rate):
+    cop_0717 0.2546 0.7420
+    cop_0410 0.2363 0.5690
+    cop_0437 0.1793 0.7790
+    cop_0832 0.1729 0.4700
+    cop_0356 0.1358 0.7090
+    cop_0931 0.1278 0.2380
+    cop_0148 0.1215 0.3320
+    cop_0191 0.1204 0.7800
+    cop_0142 0.1072 0.1580
+    cop_0664 0.0952 0.0920
+  share of all off-target set slots taken by the top 10: 0.226
+
+lp_nl, Seri grid: mean own-CoP rate 0.2426; mean off-target presence per CoP 0.0173; median configurations in the set 10
+  CoPs whose off-target presence rate exceeds their own recovery rate: 0 of 1000
+  CoPs whose off-target presence exceeds the mean own rate 0.2426: 0
+  top 10 by off-target presence (cop, off rate, own rate):
+    cop_0463 0.0458 0.2200
+    cop_0274 0.0443 0.1880
+    cop_0972 0.0418 0.2320
+    cop_0149 0.0416 0.4160
+    cop_0631 0.0409 0.2470
+    cop_0531 0.0405 0.2600
+    cop_0019 0.0404 0.1860
+    cop_0514 0.0395 0.2220
+    cop_0162 0.0387 0.2100
+    cop_0959 0.0383 0.1850
+  share of all off-target set slots taken by the top 10: 0.024
+
+lp_nl, naive grid: mean own-CoP rate 0.0117; mean off-target presence per CoP 0.0070; median configurations in the set 3
+  CoPs whose off-target presence rate exceeds their own recovery rate: 870 of 1000
+  CoPs whose off-target presence exceeds the mean own rate 0.0117: 133
+  top 10 by off-target presence (cop, off rate, own rate):
+    cop_0717 0.2824 0.7890
+    cop_0437 0.2694 0.8470
+    cop_0410 0.2686 0.5680
+    cop_0832 0.1633 0.2560
+    cop_0191 0.1271 0.9160
+    cop_0142 0.1181 0.0830
+    cop_0931 0.1055 0.0950
+    cop_0538 0.0976 0.0090
+    cop_0148 0.0971 0.0980
+    cop_0948 0.0840 0.0000
+  share of all off-target set slots taken by the top 10: 0.232
+

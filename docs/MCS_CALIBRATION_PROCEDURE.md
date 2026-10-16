@@ -3,7 +3,7 @@
 How this project decides which ABM configurations cannot be told apart from
 the one closest to a benchmark series. A configuration, a "CoP" (Configuration
 of Parameters), is one row of the parameter design in
-`dataset/abm_system_design.csv`, simulated for 1000 replicates under the seeds
+`out/dataset/abm_system_design.csv`, simulated for 1000 replicates under the seeds
 1 to 1000 and named `cop_0001` to `cop_1000`; `docs/ABM_SYSTEM_SIMULATION.md`
 describes the design. The same procedure runs in two places, and only the
 benchmark differs between them:

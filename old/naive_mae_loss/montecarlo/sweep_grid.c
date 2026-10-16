@@ -39,7 +39,7 @@ smallest mean loss, and the configurations in the set, space separated.
 
 SWEEP_GRID_WORKERS sets how many confidence sets run side by side (default one
 per hardware thread). Requires out/abm_system_fit_qvarma/,
-out/abm_system_fit_lp/ and dataset/abm_system/, and rebuilds none of them.
+out/abm_system_fit_lp/ and out/dataset/abm_system/, and rebuilds none of them.
 Progress goes to stderr. Each model's response cache is kept in
 out/sweep_grid_response_cache/ (1.6 to 3.2 GB each, ignored by git) so a
 restart reads it in seconds.
@@ -59,10 +59,10 @@ restart reads it in seconds.
 #define BOOTSTRAP 2000
 #endif
 #ifndef PROGRESS_PATH
-#define PROGRESS_PATH "old/naive_mae_loss/montecarlo/out/sweep_grid_progress.csv"
+#define PROGRESS_PATH "out/old/naive_mae_loss/montecarlo/sweep_grid_progress.csv"
 #endif
 #ifndef RESULT_PATH
-#define RESULT_PATH "old/naive_mae_loss/montecarlo/out/sweep_grid.csv.gz"
+#define RESULT_PATH "out/old/naive_mae_loss/montecarlo/sweep_grid.csv.gz"
 #endif
 #ifndef RESPONSE_CACHE_DIR
 #define RESPONSE_CACHE_DIR RESPONSE_CACHE_DIR_DEFAULT

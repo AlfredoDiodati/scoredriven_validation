@@ -54,7 +54,7 @@ more tightly. How often each auxiliary model recovers the true CoP is the
 
 The Monte Carlo also has a third index, the run $k = 1, \dots, S$ with
 $S = 1000$: $v_{ijk}$ is the oracle value when run $k$ of CoP $j$ is the
-benchmark, read from `old/naive_mae_loss/montecarlo/out/fit_metric_oracle.csv.gz`. It is left out
+benchmark, read from `out/old/naive_mae_loss/montecarlo/fit_metric_oracle.csv.gz`. It is left out
 of the notation: the replicates $k$ are used to construct the p-values. The
 $v_{ijk}$ of different runs of the same CoP are dependent, because the
 denominator $\sigma$ of each is computed from the CoP's other runs.

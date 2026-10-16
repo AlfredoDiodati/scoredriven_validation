@@ -44,9 +44,9 @@ All measurements in this section are on the response caches
 `old/naive_mae_loss/montecarlo/sweep_grid.c` keeps, `out/sweep_grid_response_cache/qvarma.f32`
 and `lp_lin.f32`, and on its result rows for those two models, one row per
 benchmark, 1,000,000 benchmarks per model. They were read from
-`old/naive_mae_loss/montecarlo/out/sweep_grid_qvarma.csv.gz` and `sweep_grid_lp_lin.csv.gz`, which
+`out/old/naive_mae_loss/montecarlo/sweep_grid_qvarma.csv.gz` and `sweep_grid_lp_lin.csv.gz`, which
 an earlier version of `sweep_grid.c` wrote and which are byte for byte the
-t-QVARMA and linear rows of `old/naive_mae_loss/montecarlo/out/sweep_grid.csv.gz`; the setup and
+t-QVARMA and linear rows of `out/old/naive_mae_loss/montecarlo/sweep_grid.csv.gz`; the setup and
 the full results of that experiment are in `docs/OLD_MONTECARLO_NAIVE_MAE_GRID.md`,
 "Every run of every configuration as the benchmark".
 
@@ -64,7 +64,7 @@ linear combinations of the entries (generalised eigenvalues of the
 between-configuration covariance against the pooled within-configuration
 covariance) is above one in only 8 directions for the t-QVARMA, 11 for the
 local projection and 14 for the two stacked
-(`old/naive_mae_loss/montecarlo/out/compressed_response/learn_*.txt`). The leading ratios are
+(`out/old/naive_mae_loss/montecarlo/compressed_response/learn_*.txt`). The leading ratios are
 large: 87, 41, 20 for the t-QVARMA, 74, 30, 24 for the local projection. A mean
 absolute error over all entries gives those few directions the same weight as
 the hundreds of noise directions.
@@ -106,10 +106,10 @@ side by side, 925 entries, before the map is learned. This is the ensemble of
 the auxiliary models: one output that uses both.
 
 `old/naive_mae_loss/montecarlo/compressed_response_learn.py` learns the maps and writes the mapped
-vectors of all 1,000,000 runs to `old/naive_mae_loss/out/compressed_response_cache/`, in the
+vectors of all 1,000,000 runs to `out/old/naive_mae_loss/compressed_response_cache/`, in the
 layout of the response cache. `old/naive_mae_loss/montecarlo/compressed_response_recovery.c` runs
 the confidence set on any such file. `old/naive_mae_loss/montecarlo/compressed_response_report.py`
-writes `old/naive_mae_loss/montecarlo/out/compressed_response/report.txt`.
+writes `out/old/naive_mae_loss/montecarlo/compressed_response/report.txt`.
 
 ## How it was measured
 
@@ -121,7 +121,7 @@ absolute difference between the row's vector and the benchmark's. Confidence
 set: the range statistic `MCS_TR`, which compares every pair of
 configurations, alpha 0.05, 2000 bootstrap resamples, block length 1, bootstrap
 variance, seed 123 stream 0, as in `old/naive_mae_loss/montecarlo/sweep_grid.c`. Files:
-`old/naive_mae_loss/montecarlo/out/compressed_response/recovery_<vector>_rows200.csv`, and
+`out/old/naive_mae_loss/montecarlo/compressed_response/recovery_<vector>_rows200.csv`, and
 `rank_<vector>_rows200.csv` where only the rank by mean loss was computed.
 
 **Full-scale setup.** Benchmarks runs 0 and 1 of every configuration, 2000
@@ -129,7 +129,7 @@ benchmarks; rows all 1000 runs minus the benchmark's, as in the 1000 by 1000
 experiment. Here the rows include runs 500 to 999 the maps were learned on; the
 benchmark itself never is. Files `recovery_<vector>_rows1000.csv`; the raw
 baselines `grid_<model>_raw_rows1000.csv` are the rows of
-`old/naive_mae_loss/montecarlo/out/sweep_grid.csv.gz` whose benchmark is run 0 or 1, copied by
+`out/old/naive_mae_loss/montecarlo/sweep_grid.csv.gz` whose benchmark is run 0 or 1, copied by
 `old/naive_mae_loss/montecarlo/compressed_response_grid_baseline.py`, not a rerun.
 
 Measured: whether the benchmark's own configuration is in the confidence set
@@ -183,7 +183,7 @@ right one in parameter space 5% of the time for the raw t-QVARMA, 20% for
 discriminant_8, 28% for the stacked discriminant_12 and 39% for the local
 projection's parameters, and more often still when distance is measured over
 the seven parameters the responses identify (below). Full table in
-`old/naive_mae_loss/montecarlo/out/compressed_response/report.txt`.
+`out/old/naive_mae_loss/montecarlo/compressed_response/report.txt`.
 
 **The local projection carries more information than the t-QVARMA.**
 Held-out R2 of the parameter regression, per design parameter, in the order
@@ -213,7 +213,7 @@ regression used 20 training runs per configuration for the two states and 10
 for all four, for memory.
 
 On the raw responses they are the worst of the four. Over all 1,000,000
-benchmarks of `old/naive_mae_loss/montecarlo/out/sweep_grid.csv.gz` the true configuration is in
+benchmarks of `out/old/naive_mae_loss/montecarlo/sweep_grid.csv.gz` the true configuration is in
 the set 1.5% of the time in state 1 and 1.6% in state 2, against 9.5% for the
 t-QVARMA and 10.7% for the linear projection, and 1.2% with the two states
 stacked into one vector of 800 raw entries (`lp_nl` in the code). The cause is
@@ -251,7 +251,7 @@ recover what the linear projection recovers by itself (93.4%
 in both cases at full scale). Adding both states to the t-QVARMA and linear
 stack moves it from 94.0% to 94.9%: the nonlinear projections carry little that
 the linear one does not. The rank-only results for every number of directions
-are in `old/naive_mae_loss/montecarlo/out/compressed_response/rank_lp_s*_rows200.csv` and
+are in `out/old/naive_mae_loss/montecarlo/compressed_response/rank_lp_s*_rows200.csv` and
 `report.txt`.
 
 ## What this does not show
@@ -282,18 +282,18 @@ from, but no routine for it), and ridge regression.
 
 ## How to rerun
 
-Reads `out/sweep_grid_response_cache/`, `old/naive_mae_loss/montecarlo/out/sweep_grid.csv.gz` and
-`dataset/abm_system_design.csv`. The learning and report scripts need numpy,
+Reads `out/sweep_grid_response_cache/`, `out/old/naive_mae_loss/montecarlo/sweep_grid.csv.gz` and
+`out/dataset/abm_system_design.csv`. The learning and report scripts need numpy,
 scipy and pandas; the baseline copy needs only the Python standard library.
 The response cache is 2.1 GB for the t-QVARMA; the learning step streams it
 one configuration at a time and peaks at about 650 MB.
 
 Learn the maps. Each call writes every `discriminant_<k>` for the k in
 DIRECTIONS (default 3, 5, 8, 12, 20, 40) and the `parameters` map to
-`old/naive_mae_loss/out/compressed_response_cache/<label>_<map>.f32`, `<label>` being the model
+`out/old/naive_mae_loss/compressed_response_cache/<label>_<map>.f32`, `<label>` being the model
 names joined by underscores; a single model also gets `<model>_raw.f32`, the
 raw responses of runs 0 to 199. What was learned goes to
-`old/naive_mae_loss/montecarlo/out/compressed_response/learn_<label>.txt`. DIRECTIONS changes
+`out/old/naive_mae_loss/montecarlo/compressed_response/learn_<label>.txt`. DIRECTIONS changes
 which files are written, not their contents, since each map keeps the leading
 k directions of the same decomposition. RIDGE_RUNS changes the `parameters` map.
 
@@ -320,8 +320,8 @@ the confidence set. The main setup is `0 4 0 200`, the full-scale setup
 `0 1 0 1000`.
 
     make bin/compressed_response_recovery
-    run() { ./bin/compressed_response_recovery old/naive_mae_loss/out/compressed_response_cache/$1.f32 "${@:2}"; }
-    dir=old/naive_mae_loss/montecarlo/out/compressed_response
+    run() { ./bin/compressed_response_recovery out/old/naive_mae_loss/compressed_response_cache/$1.f32 "${@:2}"; }
+    dir=out/old/naive_mae_loss/montecarlo/compressed_response
 
     # main setup, confidence sets
     for v in qvarma_raw qvarma_discriminant_8 lp_lin_raw lp_lin_discriminant_20 lp_lin_parameters \
@@ -332,7 +332,7 @@ the confidence set. The main setup is `0 4 0 200`, the full-scale setup
 
     # main setup, rank only, for every other vector; a recovery file already
     # holds the rank
-    for f in old/naive_mae_loss/out/compressed_response_cache/*.f32; do
+    for f in out/old/naive_mae_loss/compressed_response_cache/*.f32; do
         v=$(basename $f .f32)
         [ -f $dir/recovery_${v}_rows200.csv ] || run $v 0 4 0 200 $dir/rank_${v}_rows200.csv rank_only
     done
@@ -348,7 +348,7 @@ the confidence set. The main setup is `0 4 0 200`, the full-scale setup
 
     python old/naive_mae_loss/montecarlo/compressed_response_report.py
 
-These lists match the files in `old/naive_mae_loss/montecarlo/out/compressed_response/`, with two
+These lists match the files in `out/old/naive_mae_loss/montecarlo/compressed_response/`, with two
 differences, and were written from the file names and the program's usage
 rather than from a log of the commands run:
 `qvarma_lp_lin_discriminant_40` has no rank file (never scored, "not run" in the

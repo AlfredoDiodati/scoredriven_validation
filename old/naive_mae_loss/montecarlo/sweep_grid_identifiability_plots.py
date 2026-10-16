@@ -21,10 +21,10 @@ A dashed line marks the mean over CoPs in each figure. The CoP numbers the bars
 are keyed by are the numbers in the CoP names, so cop_0191 is at x = 191.
 
 The numbers behind the figures are written once to
-old/naive_mae_loss/montecarlo/out/sweep_grid_identifiability.csv, one row per model and CoP: the two shares
+out/old/naive_mae_loss/montecarlo/sweep_grid_identifiability.csv, one row per model and CoP: the two shares
 and the other CoP's number. A model is drawn when its rows are on disk, as
-old/naive_mae_loss/montecarlo/out/sweep_grid_<model>.csv.gz or inside the combined
-old/naive_mae_loss/montecarlo/out/sweep_grid.csv.gz that bin/sweep_grid writes when every model is
+out/old/naive_mae_loss/montecarlo/sweep_grid_<model>.csv.gz or inside the combined
+out/old/naive_mae_loss/montecarlo/sweep_grid.csv.gz that bin/sweep_grid writes when every model is
 done. Nothing is printed.
 """
 
@@ -33,7 +33,7 @@ from pathlib import Path
 import polars as pl
 import plotly.graph_objects as go
 
-OUT_DIR = Path("old/naive_mae_loss/montecarlo/out")
+OUT_DIR = Path("out/old/naive_mae_loss/montecarlo")
 FIGURE_DIR = OUT_DIR / "sweep_grid_identifiability_plots"
 TABLE_PATH = OUT_DIR / "sweep_grid_identifiability.csv"
 COMBINED_PATH = OUT_DIR / "sweep_grid.csv.gz"

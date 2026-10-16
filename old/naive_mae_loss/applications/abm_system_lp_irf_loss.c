@@ -26,9 +26,9 @@ with a missing or non-finite response is a hole, and et_al's mcs refuses a
 table with one, so a replicate with a hole in any column is dropped from that
 model's table and counted in the manifest.
 
-Requires out/us_lp_fit.npz, out/abm_system_fit_lp/ and dataset/abm_system/.
-Writes old/naive_mae_loss/out/abm_system_lp_irf_loss_<model>.csv and
-old/naive_mae_loss/out/abm_system_lp_irf_loss_manifest.txt. Takes no arguments. Nothing printed.
+Requires out/us_lp_fit.npz, out/abm_system_fit_lp/ and out/dataset/abm_system/.
+Writes out/old/naive_mae_loss/abm_system_lp_irf_loss_<model>.csv and
+out/old/naive_mae_loss/abm_system_lp_irf_loss_manifest.txt. Takes no arguments. Nothing printed.
 */
 
 #include "applications/us_data.h"
@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
     assert(argc == 1 && "abm_system_lp_irf_loss: takes no arguments");
     openblas_set_num_threads(1);
     const char *us_fit_path = "out/us_lp_fit.npz";
-    const char *output_stem = "old/naive_mae_loss/out/abm_system_lp_irf_loss";
+    const char *output_stem = "out/old/naive_mae_loss/abm_system_lp_irf_loss";
     const char *fit_dir = LP_FIT_DIR_DEFAULT;
 
     /* The US responses, refused unless fitted on exactly the US series. */

@@ -1,7 +1,7 @@
 /*
 The parameter design every simulation run is indexed by: 1000 configurations
 of the nine DSK parameters this project varies, drawn as a Latin hypercube
-over the box below and written to dataset/abm_system_design.csv, one row per
+over the box below and written to out/dataset/abm_system_design.csv, one row per
 configuration and one column per parameter.
 
 Latin hypercube rather than independent uniform sampling because every
@@ -34,7 +34,7 @@ of them against results already on disk. Pass --force to overwrite anyway.
 #include <unistd.h>
 #include <assert.h>
 
-#define DESIGN_PATH "dataset/abm_system_design.csv"
+#define DESIGN_PATH "out/dataset/abm_system_design.csv"
 #define N_COP 1000
 #define DESIGN_SEED 1
 

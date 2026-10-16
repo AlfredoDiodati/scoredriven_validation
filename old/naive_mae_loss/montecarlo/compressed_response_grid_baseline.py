@@ -1,20 +1,20 @@
 # The raw-response baselines of docs/OLD_MONTECARLO_COMPRESSED_RESPONSE.md at full
-# scale: the rows of old/naive_mae_loss/montecarlo/out/sweep_grid.csv.gz whose benchmark is run 0 or
+# scale: the rows of out/old/naive_mae_loss/montecarlo/sweep_grid.csv.gz whose benchmark is run 0 or
 # run 1 of a configuration, in the columns old/naive_mae_loss/montecarlo/compressed_response_recovery.c
 # writes, so old/naive_mae_loss/montecarlo/compressed_response_report.py reads them like any other
 # recovery file. Nothing is recomputed; sweep_grid.c's own confidence sets are the
 # baseline.
 #
-# Reads old/naive_mae_loss/montecarlo/out/sweep_grid.csv.gz, streamed. Writes
-# old/naive_mae_loss/montecarlo/out/compressed_response/grid_<model>_raw_rows1000.csv, one per model
+# Reads out/old/naive_mae_loss/montecarlo/sweep_grid.csv.gz, streamed. Writes
+# out/old/naive_mae_loss/montecarlo/compressed_response/grid_<model>_raw_rows1000.csv, one per model
 # in the file, rows in the order the file holds them. Nothing printed.
 #
 # usage: python old/naive_mae_loss/montecarlo/compressed_response_grid_baseline.py
 import csv
 import gzip
 
-ROWS_PATH = 'old/naive_mae_loss/montecarlo/out/sweep_grid.csv.gz'
-OUT_DIR = 'old/naive_mae_loss/montecarlo/out/compressed_response'
+ROWS_PATH = 'out/old/naive_mae_loss/montecarlo/sweep_grid.csv.gz'
+OUT_DIR = 'out/old/naive_mae_loss/montecarlo/compressed_response'
 BENCHMARK_RUNS = {'0', '1'}
 COLUMNS = ['cop', 'run', 'in_set', 'rank', 'set_size', 'lowest_loss_cop', 'final_pvalue']
 

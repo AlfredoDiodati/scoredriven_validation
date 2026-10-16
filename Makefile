@@ -19,7 +19,7 @@
 #   make study                    the robustness studies on the pipeline's own
 #   make study-robustness         result, the same target under the name that
 #                                 says what they are. Every one of them reads
-#                                 what the pipeline wrote to out/ and dataset/ -
+#                                 what the pipeline wrote to out/ -
 #                                 15 GB of simulation and a million cached fits -
 #                                 and none rebuilds it, so none runs on a fresh
 #                                 clone.
@@ -28,7 +28,7 @@
 #   make bench-performance ETAL_DEV=1
 #                                 the same, built against the development et_al.
 #   make applications             prepare the US data and draw the parameter
-#                                 design, results to out/ and dataset/. Always
+#                                 design, results to out/. Always
 #                                 built in float64. One app-<stem> target per
 #                                 stem in APPLICATION_STEMS.
 #   make app-<stem>                one application on its own, EXPERIMENT_STEMS
@@ -40,6 +40,10 @@
 #   make asan                     under AddressSanitizer and UndefinedBehaviorSanitizer
 #   make mc-true_configuration_recovery: the Monte Carlo experiment, every
 #   run of every configuration as the benchmark, built at -O3 by its own rule.
+#   make mc-seri_true_configuration_recovery: the same grid under the
+#   procedure of docs/MCS_ALTERNATIVE_CALIBRATION.md, also at -O3.
+#   make mc-seri_uncorrected_true_configuration_recovery: that grid with the
+#   loss left uncorrected, the plain squared error, also at -O3.
 #   make mc-<stem>: one other montecarlo/ program on its own, built and run.
 #   docs/MONTECARLO_VALIDATION.md describes them.
 #   make old-<stem>: one program of an experiment discarded from either
@@ -97,7 +101,8 @@ MARGINAL_LAWS_HEADER := studies/marginal_laws.h
 # installed et_al. and its correctness suite lives there with it.
 # marginal_laws_correctness checks the densities of studies/marginal_laws.h,
 # lp_system_transform the series applications/lp_system.h builds, and
-# recovery_loss_correctness the loss of montecarlo/recovery_loss.h.
+# recovery_loss_correctness the loss of montecarlo/recovery_loss.h, and
+# own_deviation_loss_correctness the loss of montecarlo/own_deviation_loss.h.
 # abm_system_layout is this
 # project's own and tests the one header both dataset
 # writers and every reader agree about the stored layout through;
@@ -113,7 +118,8 @@ TEST_STEMS := abm_system_layout abm_system_dataset_finiteness dsk_long_path \
                dsk_memory_safety dsk_ulp_sensitivity dsk_redenomination_invariance \
                dsk_machine_lot_rebase dsk_good_unit_invariance \
                dsk_dataset_reproduction dsk_tail_replicate_reproduction \
-               marginal_laws_correctness lp_system_transform recovery_loss_correctness
+               marginal_laws_correctness lp_system_transform recovery_loss_correctness \
+               own_deviation_loss_correctness
 # Where the wall time of a t-QVARMA fit goes, and what each way of speeding it
 # up is worth. Measured 2026-08-29 against a 500,000-fit run of
 # abm_system_fit_qvarma; out/fit_speedup_options.txt collects the numbers and
@@ -124,7 +130,7 @@ BENCH_STEMS := qvarma_fit_cost qvarma_fit_io qvarma_iteration_budget \
                 qvarma_taped_vs_fused qvarma_thread_scaling qvarma_process_scaling \
                 fit_contention_source
 # Robustness checks on the result of the main pipeline, not steps of it. Every
-# one of them reads what the pipeline already wrote to out/ and dataset/ and
+# one of them reads what the pipeline already wrote to out/ and
 # never rebuilds it, so none can run on a fresh clone: `study` checks for the
 # dataset and the fit cache first and says so rather than letting the first
 # binary fail on an assert.
@@ -162,11 +168,13 @@ EXPERIMENT_STEMS := us_qvarma_spec_choice \
 # is; what it reuses is applications/'s output, above all the million cached
 # fits, since it estimates nothing. true_configuration_recovery has its own
 # rule below. docs/MONTECARLO_VALIDATION.md.
-MONTECARLO_STEMS :=
+MONTECARLO_STEMS := seri_true_configuration_recovery_report seri_against_naive_grid \
+                    seri_against_naive_by_configuration response_variance_by_configuration \
+                    seri_corrected_against_uncorrected_grid
 # Experiments discarded from both pipelines, one folder of old/ per experiment,
 # kept buildable with the flags of the pipeline they came from and run one at a
 # time via make old-<stem>, the stem being the file name. They write to out/
-# and montecarlo/out/ like the pipeline they came from.
+# and out/montecarlo/ like the pipeline they came from.
 # docs/OLD_EXPERIMENTS.md says why each one was discarded.
 OLD_SOURCES := old/score_loss/applications/abm_system_score_loss.c \
                old/score_loss/applications/abm_system_mcs_statistic_comparison_score.c \
@@ -251,6 +259,8 @@ $(BIN) $(OUT):
 $(BIN)/marginal_laws_correctness: $(MARGINAL_LAWS_HEADER)
 $(BIN)/lp_system_transform: applications/lp_system.h
 $(BIN)/recovery_loss_correctness: montecarlo/recovery_loss.h montecarlo/response_cache.h $(APPLICATION_HEADERS)
+$(BIN)/own_deviation_loss_correctness: montecarlo/own_deviation_loss.h montecarlo/recovery_loss.h \
+    montecarlo/response_cache.h $(APPLICATION_HEADERS)
 $(BIN)/abm_system_marginal_fit: $(MARGINAL_LAWS_HEADER)
 
 $(BIN)/%: tests/%.c $(HEADERS) $(TEST_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
@@ -297,8 +307,8 @@ $(foreach stem,$(STUDY_STEMS),$(eval $(call study_target_for_stem,$(stem))))
 # What every study reads and no study rebuilds. Checked once here because the
 # alternative is the first binary aborting on an assert several minutes in.
 study-inputs:
-	@test -d dataset/abm_system || { \
-	  echo "dataset/abm_system/ is missing. The studies read the simulated dataset"; \
+	@test -d out/dataset/abm_system || { \
+	  echo "out/dataset/abm_system/ is missing. The studies read the simulated dataset"; \
 	  echo "and never rebuild it; applications/abm_system_simulate_all.sh produces it."; \
 	  exit 1; }
 	@test -d out/abm_system_fit_qvarma || { \
@@ -328,26 +338,26 @@ endef
 $(foreach stem,$(APPLICATION_STEMS),$(eval $(call application_target_for_stem,$(stem))))
 $(foreach stem,$(EXPERIMENT_STEMS),$(eval $(call application_target_for_stem,$(stem))))
 
-# montecarlo/ builds the same way applications/ does and writes into its own
-# out/, which is created here rather than by the script, so a fresh clone can
-# run the experiment without a mkdir of its own.
+# montecarlo/ builds the same way applications/ does and writes into
+# out/montecarlo/, which is created here rather than by the script, so a fresh
+# clone can run the experiment without a mkdir of its own.
 define montecarlo_target_for_stem
 .PHONY: mc-$(1)
 $(BIN)/$(1): montecarlo/$(1).c $(HEADERS) $(APPLICATION_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
 	$(CC) $(CFLAGS) -DMAT_DOUBLE -fopenmp $(ETAL_CFLAGS) $(INCLUDES) $$< -o $$@ $(ETAL_LIBS)
-mc-$(1): $(BIN)/$(1) | montecarlo/out
+mc-$(1): $(BIN)/$(1) | out/montecarlo
 	./$(BIN)/$(1)
 endef
 $(foreach stem,$(MONTECARLO_STEMS),$(eval $(call montecarlo_target_for_stem,$(stem))))
 
-montecarlo/out:
-	@mkdir -p montecarlo/out
+out/montecarlo:
+	@mkdir -p out/montecarlo
 
 define old_target_for_source
 .PHONY: old-$(1)
 $(BIN)/$(1): $(2) $(HEADERS) $(APPLICATION_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
 	$(CC) $(CFLAGS) -DMAT_DOUBLE -fopenmp $(ETAL_CFLAGS) $(INCLUDES) $$< -o $$@ $(ETAL_LIBS)
-old-$(1): $(BIN)/$(1) | $(OUT) montecarlo/out
+old-$(1): $(BIN)/$(1) | $(OUT) out/montecarlo
 	./$(BIN)/$(1)
 endef
 $(foreach source,$(OLD_SOURCES),$(eval $(call old_target_for_source,$(notdir $(basename $(source))),$(source))))
@@ -355,6 +365,10 @@ $(foreach source,$(OLD_SOURCES),$(eval $(call old_target_for_source,$(notdir $(b
 # The headers the rules above do not know about.
 OLD_BENCHMARK_HEADER := old/montecarlo_one_benchmark/benchmark.h
 $(addprefix $(BIN)/,lp_irf_loss lp_mcs lp_sweep sweep_cops sweep_grid): applications/abm_system_lp.h montecarlo/response_cache.h
+$(BIN)/seri_true_configuration_recovery_report $(BIN)/seri_against_naive_grid \
+    $(BIN)/seri_against_naive_by_configuration $(BIN)/seri_corrected_against_uncorrected_grid: \
+    montecarlo/response_cache.h
+$(BIN)/response_variance_by_configuration: montecarlo/recovery_loss.h montecarlo/response_cache.h
 $(addprefix $(BIN)/,abm_system_lp_irf_loss abm_system_lp_mcs): applications/abm_system_lp.h
 $(addprefix $(BIN)/,irf_loss lp_irf_loss lp_sweep score_loss qvarma_recovery_diagnostics lp_recovery_diagnostics): \
     $(OLD_BENCHMARK_HEADER)
@@ -375,8 +389,30 @@ $(addprefix $(BIN)/,$(FIT_METRIC_BINARIES)): montecarlo/response_cache.h old/nai
 $(BIN)/true_configuration_recovery: montecarlo/true_configuration_recovery.c montecarlo/recovery_loss.h \
     montecarlo/response_cache.h $(HEADERS) $(APPLICATION_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
 	$(CC) $(subst -O2,-O3,$(CFLAGS)) -DMAT_DOUBLE -fopenmp $(ETAL_CFLAGS) $(INCLUDES) $< -o $@ $(ETAL_LIBS)
-mc-true_configuration_recovery: $(BIN)/true_configuration_recovery | montecarlo/out
+mc-true_configuration_recovery: $(BIN)/true_configuration_recovery | out/montecarlo
 	./$(BIN)/true_configuration_recovery
+
+# The same grid under the procedure of docs/MCS_ALTERNATIVE_CALIBRATION.md, the
+# loss corrected by each run's own deviation and et_al's seri_mcs, at -O3 for
+# the loss pass. Its own rule for the same reason.
+.PHONY: mc-seri_true_configuration_recovery
+$(BIN)/seri_true_configuration_recovery: montecarlo/seri_true_configuration_recovery.c \
+    montecarlo/own_deviation_loss.h montecarlo/recovery_loss.h montecarlo/response_cache.h $(HEADERS) \
+    $(APPLICATION_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
+	$(CC) $(subst -O2,-O3,$(CFLAGS)) -DMAT_DOUBLE -fopenmp $(ETAL_CFLAGS) $(INCLUDES) $< -o $@ $(ETAL_LIBS)
+mc-seri_true_configuration_recovery: $(BIN)/seri_true_configuration_recovery | out/montecarlo
+	./$(BIN)/seri_true_configuration_recovery
+
+# The same grid with the loss left uncorrected, the plain squared error and
+# et_al's seri_mcs, so the two differ only in the correction. -O3 and its own
+# rule for the same reasons.
+.PHONY: mc-seri_uncorrected_true_configuration_recovery
+$(BIN)/seri_uncorrected_true_configuration_recovery: montecarlo/seri_uncorrected_true_configuration_recovery.c \
+    montecarlo/recovery_loss.h montecarlo/response_cache.h $(HEADERS) $(APPLICATION_HEADERS) \
+    $(ETAL_INSTALLED_HEADERS) | $(BIN)
+	$(CC) $(subst -O2,-O3,$(CFLAGS)) -DMAT_DOUBLE -fopenmp $(ETAL_CFLAGS) $(INCLUDES) $< -o $@ $(ETAL_LIBS)
+mc-seri_uncorrected_true_configuration_recovery: $(BIN)/seri_uncorrected_true_configuration_recovery | out/montecarlo
+	./$(BIN)/seri_uncorrected_true_configuration_recovery
 
 # The naive-loss grid's five million confidence sets are built at -O3, where GCC
 # vectorises mcs()'s pair spreads; without -ffast-math that changes no
@@ -387,21 +423,21 @@ mc-true_configuration_recovery: $(BIN)/true_configuration_recovery | montecarlo/
 .PHONY: old-sweep_grid
 $(BIN)/sweep_grid: old/naive_mae_loss/montecarlo/sweep_grid.c $(HEADERS) $(APPLICATION_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
 	$(CC) $(subst -O2,-O3,$(CFLAGS)) -DMAT_DOUBLE -fopenmp $(ETAL_CFLAGS) $(INCLUDES) $< -o $@ $(ETAL_LIBS)
-old-sweep_grid: $(BIN)/sweep_grid | old/naive_mae_loss/montecarlo/out
+old-sweep_grid: $(BIN)/sweep_grid | out/old/naive_mae_loss/montecarlo
 	./$(BIN)/sweep_grid
 
-old/naive_mae_loss/out old/naive_mae_loss/montecarlo/out:
+out/old/naive_mae_loss out/old/naive_mae_loss/montecarlo:
 	@mkdir -p $@
 
 # The discarded drivers, each building what it runs first: the one-benchmark
 # experiment under the t-QVARMA and under the local projections, and every run
 # of cop_0191 as the benchmark.
 .PHONY: old-montecarlo_one_benchmark old-montecarlo_one_benchmark_lp old-montecarlo_every_run_of_cop_0191
-old-montecarlo_one_benchmark: $(addprefix $(BIN)/,benchmark_choice irf_loss mcs mcs_statistic_comparison) | montecarlo/out
+old-montecarlo_one_benchmark: $(addprefix $(BIN)/,benchmark_choice irf_loss mcs mcs_statistic_comparison) | out/montecarlo
 	./old/montecarlo_one_benchmark/run.sh
-old-montecarlo_one_benchmark_lp: $(addprefix $(BIN)/,lp_irf_loss lp_mcs) | montecarlo/out
+old-montecarlo_one_benchmark_lp: $(addprefix $(BIN)/,lp_irf_loss lp_mcs) | out/montecarlo
 	./old/montecarlo_one_benchmark/lp_run.sh
-old-montecarlo_every_run_of_cop_0191: $(BIN)/sweep_irf | montecarlo/out
+old-montecarlo_every_run_of_cop_0191: $(BIN)/sweep_irf | out/montecarlo
 	./old/montecarlo_every_run_of_cop_0191/sweep.sh
 
 # abm_system_simulate is built but never run by a target of its own: with no
@@ -418,7 +454,7 @@ $(BIN)/abm_system_simulate: applications/abm_system_simulate.c $(HEADERS) $(APPL
 app-us_qvarma_spec_choice: app-us_prepare_data
 
 # app-abm_system_fit_qvarma has no prerequisite that builds its dataset. It fits
-# every subdirectory of dataset/abm_system whatever wrote it, and the two writers
+# every subdirectory of out/dataset/abm_system whatever wrote it, and the two writers
 # cannot share that directory: applications/abm_system_convert_rdata.c produces
 # EstimationSeries* from the .Rdata files under dataset/simulated, and
 # applications/abm_system_simulate.c produces cop_* from the parameter design.

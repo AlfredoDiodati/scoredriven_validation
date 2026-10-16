@@ -11,7 +11,7 @@
 # confidence set settings, with the local projections in place of
 # the t-QVARMA as the auxiliary model.
 #
-# The benchmark is the one montecarlo/out/benchmark.env already names, so both
+# The benchmark is the one out/montecarlo/benchmark.env already names, so both
 # auxiliary models are asked to recover the same known answer from the same
 # series. bin/benchmark_choice is not rerun here: it chooses on grounds that
 # belong to the t-QVARMA fits, and rerunning it could move the benchmark under
@@ -23,17 +23,17 @@
 #                                 state, and both states as one vector
 #
 # Reads out/abm_system_fit_lp/ (make app-abm_system_fit_lp writes it) and
-# dataset/abm_system/, and rebuilds neither. docs/OLD_MONTECARLO_LP_VALIDATION.md is
+# out/dataset/abm_system/, and rebuilds neither. docs/OLD_MONTECARLO_LP_VALIDATION.md is
 # the write-up.
 
 set -euo pipefail
 
 cd "$(dirname "$0")/../.."
-test -f montecarlo/out/benchmark.env || {
-    echo "montecarlo/out/benchmark.env is missing; ./old/montecarlo_one_benchmark/run.sh chooses the benchmark"
+test -f out/montecarlo/benchmark.env || {
+    echo "out/montecarlo/benchmark.env is missing; ./old/montecarlo_one_benchmark/run.sh chooses the benchmark"
     exit 1
 }
-sed 's/^/  /' montecarlo/out/benchmark.env
+sed 's/^/  /' out/montecarlo/benchmark.env
 
 echo "local-projection losses, linear, each state and both states"
 ./bin/lp_irf_loss
@@ -41,4 +41,4 @@ echo "local-projection losses, linear, each state and both states"
 echo "confidence sets, both statistics over the four losses"
 ./bin/lp_mcs
 
-echo "done, results in montecarlo/out/lp_*"
+echo "done, results in out/montecarlo/lp_*"

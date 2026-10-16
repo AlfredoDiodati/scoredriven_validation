@@ -23,30 +23,30 @@ K_star 3, K_dagger 2, R 1:
                 configuration's nu, starting from the benchmark, which is the
                 effect once the loadings are allowed to respond
 
-The winning configuration's nu is read from old/naive_mae_loss/out/abm_system_winner_irf_theta.json,
+The winning configuration's nu is read from out/old/naive_mae_loss/abm_system_winner_irf_theta.json,
 the parameter set old/naive_mae_loss/applications/abm_system_winner_irf.c averages over that
 configuration's replicates.
 
 The distance of swapped and refitted from benchmark is reported in the loss's
 own units, over all 525 elements and split into horizon 0 and horizons 1 to 20,
 beside the spread of mean losses across the configurations in
-old/naive_mae_loss/out/abm_system_mcs.csv, which is the scale the confidence set separates
+out/old/naive_mae_loss/abm_system_mcs.csv, which is the scale the confidence set separates
 configurations on.
 
-The refitted fit is cached to old/naive_mae_loss/out/us_qvarma_nu_sensitivity_nu<nu>_fit.json. The
+The refitted fit is cached to out/old/naive_mae_loss/us_qvarma_nu_sensitivity_nu<nu>_fit.json. The
 data fingerprint and the parameter shape stored in it invalidate it when the
 data or the specification change, and the held nu, to four decimals, is in the
 file name. Pass --refit to estimate it again regardless.
 
 Requires out/us_qvarma_spec_choice_p1q1r2_fit.json (make
-app-us_qvarma_spec_choice), old/naive_mae_loss/out/abm_system_mcs.csv (make
-old-abm_system_mcs) and old/naive_mae_loss/out/abm_system_winner_irf_theta.json (make
+app-us_qvarma_spec_choice), out/old/naive_mae_loss/abm_system_mcs.csv (make
+old-abm_system_mcs) and out/old/naive_mae_loss/abm_system_winner_irf_theta.json (make
 old-abm_system_winner_irf). None is a Makefile prerequisite of this study,
 which only reads what the main pipeline already wrote.
 
 Output, none of it printed:
-    old/naive_mae_loss/out/us_qvarma_nu_sensitivity.txt
-    old/naive_mae_loss/out/us_qvarma_nu_sensitivity_nu<nu>_fit.json
+    out/old/naive_mae_loss/us_qvarma_nu_sensitivity.txt
+    out/old/naive_mae_loss/us_qvarma_nu_sensitivity_nu<nu>_fit.json
 */
 
 #include "applications/us_data.h"
@@ -71,9 +71,9 @@ Output, none of it printed:
 #define MAX_ITERATIONS 8000
 
 #define BENCHMARK_FIT_PATH "out/us_qvarma_spec_choice_p1q1r2_fit.json"
-#define CONFIDENCE_SET_PATH "old/naive_mae_loss/out/abm_system_mcs.csv"
-#define WINNER_PARAMS_PATH "old/naive_mae_loss/out/abm_system_winner_irf_theta.json"
-#define REPORT_PATH "old/naive_mae_loss/out/us_qvarma_nu_sensitivity.txt"
+#define CONFIDENCE_SET_PATH "out/old/naive_mae_loss/abm_system_mcs.csv"
+#define WINNER_PARAMS_PATH "out/old/naive_mae_loss/abm_system_winner_irf_theta.json"
+#define REPORT_PATH "out/old/naive_mae_loss/us_qvarma_nu_sensitivity.txt"
 
 enum { ROW_GDP_GROWTH, ROW_EN_GROWTH, ROW_EMPLOYMENT_CHANGE, ROW_INFLATION, ROW_INTEREST_RATE };
 
@@ -180,7 +180,7 @@ typedef struct {
    configurations the confidence set separated last. */
 static LossScale read_loss_scale(void) {
     FILE *probe = fopen(CONFIDENCE_SET_PATH, "r");
-    assert(probe && "us_qvarma_nu_sensitivity: old/naive_mae_loss/out/abm_system_mcs.csv is missing; run make old-abm_system_mcs");
+    assert(probe && "us_qvarma_nu_sensitivity: out/old/naive_mae_loss/abm_system_mcs.csv is missing; run make old-abm_system_mcs");
     fclose(probe);
 
     DataFrame table = df_read_csv(CONFIDENCE_SET_PATH, csv_read_options_default());
@@ -210,7 +210,7 @@ static LossScale read_loss_scale(void) {
 static mreal read_winner_nu(void) {
     QvarmaParams winner = spec_shape();
     int loaded = qvarma_load_params(&winner, WINNER_PARAMS_PATH);
-    assert(loaded && "us_qvarma_nu_sensitivity: old/naive_mae_loss/out/abm_system_winner_irf_theta.json is missing or has "
+    assert(loaded && "us_qvarma_nu_sensitivity: out/old/naive_mae_loss/abm_system_winner_irf_theta.json is missing or has "
                      "another shape; run make old-abm_system_winner_irf");
     mreal nu = winner.nu;
     qvarma_params_free(&winner);
@@ -259,7 +259,7 @@ int main(int argc, char **argv) {
 
     mreal winner_nu = read_winner_nu();
     char cache_path[128];
-    snprintf(cache_path, sizeof cache_path, "old/naive_mae_loss/out/us_qvarma_nu_sensitivity_nu%.4f_fit.json",
+    snprintf(cache_path, sizeof cache_path, "out/old/naive_mae_loss/us_qvarma_nu_sensitivity_nu%.4f_fit.json",
              (double)winner_nu);
     QvarmaFitResult refitted = fit_with_nu_held(y, &benchmark.params, winner_nu, force_refit, cache_path);
     QvarmaParams swapped = with_nu(&benchmark.params, winner_nu);

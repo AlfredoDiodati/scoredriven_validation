@@ -6,7 +6,7 @@ docs/OLD_EXPERIMENTS.md.
 
 Fits the linear and the state-dependent local projections, at the settings of
 the R code (package lpirfs) they were first run with, to every
-replicate under dataset/abm_system/, and stores the fits the way the t-QVARMA
+replicate under out/dataset/abm_system/, and stores the fits the way the t-QVARMA
 fits are stored: once, beside the dataset, for every later comparison to read
 rather than refit, the real data's included.
 
@@ -61,7 +61,7 @@ series was constant, and whether it has responses. Nothing printed.
 #include <errno.h>
 #include <assert.h>
 
-#define INPUT_DIR_DEFAULT "dataset/abm_system"
+#define INPUT_DIR_DEFAULT "out/dataset/abm_system"
 #define OUTPUT_DIR_DEFAULT "out/abm_system_fit_lp_r_levels"
 
 static const char *INPUT_DIR;

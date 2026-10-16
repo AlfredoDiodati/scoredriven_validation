@@ -173,7 +173,7 @@ factorization `L L'`, `LM = ||L^-1 q||^2`.
 
 Inputs:
 
-- `dataset/abm_system/`, the simulated replicates.
+- `out/dataset/abm_system/`, the simulated replicates.
 - `out/us_qvarma_spec_choice_p1q1r2_fit.json`, the real-data estimate.
 - `out/us_system.csv`, the real data itself, needed for the information matrix.
 

@@ -4,7 +4,7 @@ build away from the baseline calibration.
 
 tests/dsk_build_equivalence.c runs the model at one parameter vector, the one
 model/dsk_sfc/dsk_sfc_inputs.json ships with. The experiment runs it at a
-thousand others: dataset/abm_system_design.csv is a Latin hypercube over nine
+thousand others: out/dataset/abm_system_design.csv is a Latin hypercube over nine
 parameters, and every one of the million runs uses a point of that design. A
 change can be exact at the baseline and wrong elsewhere, because the parameters
 decide how many firms enter and exit, how many machines a firm holds, and
@@ -49,7 +49,7 @@ is given as the first argument.
 #define MODIFIED "model/dsk_sfc/dsk_SFC"
 #define UPSTREAM "bin/dsk_SFC_upstream"
 #define INPUTS "model/dsk_sfc/dsk_sfc_inputs.json"
-#define DESIGN "dataset/abm_system_design.csv"
+#define DESIGN "out/dataset/abm_system_design.csv"
 #define REPORT "out/dsk_design_equivalence.txt"
 #define RUN_NAME "design"
 #define N_POINTS 4

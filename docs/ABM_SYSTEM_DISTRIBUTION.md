@@ -13,7 +13,7 @@ This file asks where that shape comes from and what distribution describes
 it: whether aggregation over firms makes the series Gaussian, whether they are
 stable laws with infinite variance, and which named laws fit them. Nothing
 here feeds the confidence set. Every study in it reads the stored dataset
-(`dataset/abm_system/`) or the per-firm side run (`dataset/abm_system_micro/`,
+(`out/dataset/abm_system/`) or the per-firm side run (`out/dataset/abm_system_micro/`,
 README, "A side run with the per-firm output") and fits nothing of the
 auxiliary model.
 
@@ -110,7 +110,7 @@ firms' output. The archives hold no per-firm data.
 `applications/abm_system_micro_simulate.c` reruns 5 configurations of the
 design at seeds 1 to 5 with the `-m 1` switch `docs/DSK_MODEL_CHANGES.md`
 records, which writes each firm's output. Those 25 runs are replicates 0 to 4
-of the same configurations in `dataset/abm_system`, and the five macro series
+of the same configurations in `out/dataset/abm_system`, and the five macro series
 rebuilt from one of them matched the stored replicate on all 2000 values, so
 they are the same runs. `studies/abm_system_micro_clt.c` is the study.
 
@@ -245,7 +245,7 @@ about the tails. The interest rate, a persistent level, is the one series above
 0.5 at 0.625.
 
 Hill on the cross-section of firm output changes at each date, 10,000
-cross-sections from `dataset/abm_system_micro`:
+cross-sections from `out/dataset/abm_system_micro`:
 
 | cross-section | firms | Hill 10% | Hill 5% | Hill 2.5% |
 |---|---:|---:|---:|---:|

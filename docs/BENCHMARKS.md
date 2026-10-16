@@ -45,7 +45,7 @@ over the ABM would need, and what a larger iteration cap buys.
 
 - `applications/throughput_dataset.c` builds the data, `make
   app-throughput_dataset`: 500 folders of 1000 series under
-  `dataset/throughput/`, about 21 GB, not tracked. Each of the older dataset's
+  `out/dataset/throughput/`, about 21 GB, not tracked. Each of the older dataset's
   100 files fills five folders: its 108 replications once, then perturbed
   copies of them, each with a level shift per series and noise per period, both
   normal with standard deviation 0.01, seed 20260830. The perturbation only

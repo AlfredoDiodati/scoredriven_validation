@@ -37,9 +37,9 @@ norm.
 Fits taken from another replicate's parameters are excluded: the manifest marks
 them inherited, and a benchmark should be the estimate its own data produced.
 
-Reads old/naive_mae_loss/out/abm_system_mcs_statistic_comparison.csv and the fit manifest. Writes
-montecarlo/out/benchmark_choice.txt, the report, and
-montecarlo/out/benchmark.env, two shell assignments the driver reads so the
+Reads out/old/naive_mae_loss/abm_system_mcs_statistic_comparison.csv and the fit manifest. Writes
+out/montecarlo/benchmark_choice.txt, the report, and
+out/montecarlo/benchmark.env, two shell assignments the driver reads so the
 choice is made once and every downstream step runs against the same run.
 Nothing printed.
 */
@@ -51,11 +51,11 @@ Nothing printed.
 #include <assert.h>
 
 #define MANIFEST_PATH "out/abm_system_fit_qvarma_manifest.txt"
-#define REPORT_PATH "montecarlo/out/benchmark_choice.txt"
-#define ENV_PATH "montecarlo/out/benchmark.env"
+#define REPORT_PATH "out/montecarlo/benchmark_choice.txt"
+#define ENV_PATH "out/montecarlo/benchmark.env"
 
 static const char *const winner_table[] = {
-    "old/naive_mae_loss/out/abm_system_mcs_statistic_comparison.csv"
+    "out/old/naive_mae_loss/abm_system_mcs_statistic_comparison.csv"
 };
 #define N_WINNER_TABLES ((int)(sizeof winner_table / sizeof winner_table[0]))
 
@@ -169,7 +169,7 @@ static int by_gradient(const void *a, const void *b) {
 
 int main(void) {
     FILE *report = fopen(REPORT_PATH, "w");
-    assert(report && "benchmark_choice: cannot open montecarlo/out/benchmark_choice.txt - "
+    assert(report && "benchmark_choice: cannot open out/montecarlo/benchmark_choice.txt - "
                       "the directory has to exist");
 
     fprintf(report, "Which simulated run stands in for the real data in montecarlo/\n\n");
@@ -221,7 +221,7 @@ int main(void) {
             chosen->row[picked].replicate);
 
     FILE *env = fopen(ENV_PATH, "w");
-    assert(env && "benchmark_choice: cannot open montecarlo/out/benchmark.env for writing");
+    assert(env && "benchmark_choice: cannot open out/montecarlo/benchmark.env for writing");
     fprintf(env, "ABM_SYSTEM_BENCHMARK_SAMPLE=%s\n", chosen->name);
     fprintf(env, "ABM_SYSTEM_BENCHMARK_REPLICATE=%d\n", chosen->row[picked].replicate);
     fclose(env);

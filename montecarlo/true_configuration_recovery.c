@@ -39,7 +39,7 @@ final p-value, runs dropped for a missing response, the configuration with the
 smallest mean loss, and the configurations in the set, space separated.
 
 Requires out/abm_system_fit_qvarma/, out/abm_system_fit_lp/ and
-dataset/abm_system/, and rebuilds none of them. Progress goes to stderr. Each
+out/dataset/abm_system/, and rebuilds none of them. Progress goes to stderr. Each
 model's response cache is read from out/sweep_grid_response_cache/, and built
 there when missing.
 */
@@ -58,10 +58,10 @@ there when missing.
 #define BOOTSTRAP 2000
 #endif
 #ifndef PROGRESS_PATH
-#define PROGRESS_PATH "montecarlo/out/true_configuration_recovery_progress.csv"
+#define PROGRESS_PATH "out/montecarlo/true_configuration_recovery_progress.csv"
 #endif
 #ifndef RESULT_PATH
-#define RESULT_PATH "montecarlo/out/true_configuration_recovery.csv.gz"
+#define RESULT_PATH "out/montecarlo/true_configuration_recovery.csv.gz"
 #endif
 #ifndef RESPONSE_CACHE_DIR
 #define RESPONSE_CACHE_DIR RESPONSE_CACHE_DIR_DEFAULT
@@ -417,7 +417,7 @@ int main(void) {
         lp_free_samples(samples, n_samples);
         return 0;
     }
-    mkdir("montecarlo/out", 0755);
+    mkdir("out/montecarlo", 0755);
     FILE *progress = fopen(PROGRESS_PATH, "a");
     assert(progress && "true_configuration_recovery: cannot open the progress file");
     if (!progress_exists && !restored) {

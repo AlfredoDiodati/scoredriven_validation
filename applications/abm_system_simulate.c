@@ -1,9 +1,9 @@
 /*
 Runs the DSK stock-flow-consistent model over the parameter design in
-dataset/abm_system_design.csv and writes, for every (configuration,
+out/dataset/abm_system_design.csv and writes, for every (configuration,
 replication) pair, the five series the auxiliary model is fitted on:
 
-    dataset/abm_system/cop_0001/batch_000.npz
+    out/dataset/abm_system/cop_0001/batch_000.npz
 
 That is the layout and the five series applications/abm_system_convert_rdata.c
 produces from the older .Rdata dataset, so applications/abm_system_fit_qvarma.c
@@ -69,10 +69,10 @@ Writes dataset/, not out/, apart from the failure logs and the manifest.
 #include <errno.h>
 #include <assert.h>
 
-#define DESIGN_PATH "dataset/abm_system_design.csv"
+#define DESIGN_PATH "out/dataset/abm_system_design.csv"
 #define MODEL_PATH "model/dsk_sfc/dsk_SFC"
 #define MODEL_INPUTS "model/dsk_sfc/dsk_sfc_inputs.json"
-#define OUTPUT_DIR "dataset/abm_system"
+#define OUTPUT_DIR "out/dataset/abm_system"
 #define REPORT_DIR "out/abm_system_simulate"
 #define MANIFEST_PATH "out/abm_system_simulate_manifest.txt"
 

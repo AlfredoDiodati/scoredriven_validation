@@ -135,7 +135,7 @@ int main(void) {
     keep_the_arena_resident();
     openblas_set_num_threads(1);
 
-    Mat y = abm_system_read_replicate("dataset/abm_system/EstimationSeriesSample1_1", 0);
+    Mat y = abm_system_read_replicate("out/dataset/abm_system/EstimationSeriesSample1_1", 0);
     int T = y.c;
 
     QvarmaParams shape = build_start(y, SPEC_R);

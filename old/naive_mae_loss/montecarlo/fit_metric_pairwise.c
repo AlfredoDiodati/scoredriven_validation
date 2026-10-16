@@ -19,17 +19,18 @@ columns are the auxiliary models' v rather than losses: the mean difference
 divided by its standard error, against N(0,1). Run k of a CoP is the same
 simulated series for every auxiliary model, so both comparisons are paired.
 
-Reads old/naive_mae_loss/montecarlo/out/fit_metric_oracle.csv.gz. Writes
-old/naive_mae_loss/montecarlo/out/fit_metric_pairwise.txt, the same tables as LaTeX in
-old/naive_mae_loss/montecarlo/out/fit_metric_pairwise.tex, and one row per pair and CoP in
-old/naive_mae_loss/montecarlo/out/fit_metric_pairwise_per_cop.csv. Nothing printed.
+Reads out/old/naive_mae_loss/montecarlo/fit_metric_oracle.csv.gz. Writes
+out/old/naive_mae_loss/montecarlo/fit_metric_pairwise.txt, the same tables as LaTeX in
+out/old/naive_mae_loss/montecarlo/fit_metric_pairwise.tex, and one row per pair and CoP in
+out/old/naive_mae_loss/montecarlo/fit_metric_pairwise_per_cop.csv. Nothing printed.
 */
 
 #include "old/naive_mae_loss/montecarlo/fit_metric.h"
 #include "old/naive_mae_loss/montecarlo/fit_metric_table.h"
 #include <et_al./frame/gzip.h>
+#include <et_al./dist/gauss.h>
 
-#define OUT_DIR "old/naive_mae_loss/montecarlo/out"
+#define OUT_DIR "out/old/naive_mae_loss/montecarlo"
 #define ORACLE_PATH OUT_DIR "/fit_metric_oracle.csv.gz"
 #define REPORT_PATH OUT_DIR "/fit_metric_pairwise.txt"
 #define LATEX_PATH OUT_DIR "/fit_metric_pairwise.tex"
@@ -51,7 +52,7 @@ static size_t cell_of(int model, int cop, int run) { return ((size_t)model * N_C
 /* v[cell_of(model, cop, run)], CoPs counted from 0. */
 static double *read_oracle_v(void) {
     FILE *f = fopen(ORACLE_PATH, "rb");
-    assert(f && "fit_metric_pairwise: old/naive_mae_loss/montecarlo/out/fit_metric_oracle.csv.gz is missing");
+    assert(f && "fit_metric_pairwise: out/old/naive_mae_loss/montecarlo/fit_metric_oracle.csv.gz is missing");
     fseek(f, 0, SEEK_END);
     size_t length = (size_t)ftell(f);
     fseek(f, 0, SEEK_SET);
@@ -92,8 +93,8 @@ static double *read_oracle_v(void) {
 
 /* The two one-sided p-values of a dm_test on columns i, i' of v: for the null
    that i is not higher, and for the null that i' is not higher. */
-static double p_not_higher(const DieboldMariano *dm) { return special_norm_cdf(-dm->stat); }
-static double p_other_not_higher(const DieboldMariano *dm) { return special_norm_cdf(dm->stat); }
+static double p_not_higher(const DieboldMariano *dm) { return gauss_standard_cdf(-dm->stat); }
+static double p_other_not_higher(const DieboldMariano *dm) { return gauss_standard_cdf(dm->stat); }
 
 static void across_cops_table(Table *t, const double *v) {
     static const char *const names[] = { "model i", "model i'", "mean v_i - v_i'", "std error", "z",

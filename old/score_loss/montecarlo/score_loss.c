@@ -21,8 +21,8 @@ estimate,
 evaluated on that replicate's simulated series. Two losses come out of one pass
 over the data:
 
-  montecarlo/out/score_loss.csv           q_in' q_in
-  montecarlo/out/score_loss_weighted.csv  q_in' [T_sim I_1(theta)]^-1 q_in
+  out/montecarlo/score_loss.csv           q_in' q_in
+  out/montecarlo/score_loss_weighted.csv  q_in' [T_sim I_1(theta)]^-1 q_in
 
 The second is Rao's score statistic, which unlike the first does not depend on
 how the model is parameterized, and which has a chi-square reference under the
@@ -41,7 +41,7 @@ infinity with a zeroed gradient, which would read as a perfect loss of zero.
 That is counted as a missing cell, not as a zero.
 
 Requires out/abm_system_fit_qvarma/ for the benchmark's fit and
-dataset/abm_system/ for every series, and rebuilds neither. Nothing printed.
+out/dataset/abm_system/ for every series, and rebuilds neither. Nothing printed.
 */
 
 #include "applications/abm_system.h"
@@ -70,8 +70,8 @@ dataset/abm_system/ for every series, and rebuilds neither. Nothing printed.
 #define SPEC_LABEL "p1q1r2"
 #define COLUMN_LABEL "qvarma_" SPEC_LABEL
 
-#define INPUT_DIR_DEFAULT "dataset/abm_system"
-#define OUTPUT_PATH_DEFAULT "montecarlo/out/score_loss.csv"
+#define INPUT_DIR_DEFAULT "out/dataset/abm_system"
+#define OUTPUT_PATH_DEFAULT "out/montecarlo/score_loss.csv"
 
 /* Overridable so the pass can be run over a couple of configurations before it
    is turned loose on the whole design. */
@@ -113,7 +113,7 @@ static QvarmaParams spec_shape(void) {
 
 typedef struct { char *name; int index; } SampleEntry;
 
-/* dataset/abm_system/cop_<N>'s own <N>, so column order is 1, 2, ..., 1000
+/* out/dataset/abm_system/cop_<N>'s own <N>, so column order is 1, 2, ..., 1000
    rather than readdir's arbitrary order or a string sort's "_10" before
    "_2". */
 static int trailing_index(const char *name) {
@@ -128,7 +128,7 @@ static int compare_sample_entries(const void *a, const void *b) {
 
 static SampleEntry *list_samples(const char *dir, int *count) {
     DIR *handle = opendir(dir);
-    assert(handle && "old/score_loss/montecarlo/score_loss: cannot open dataset/abm_system/ - "
+    assert(handle && "old/score_loss/montecarlo/score_loss: cannot open out/dataset/abm_system/ - "
                       "run applications/abm_system_simulate_all.sh first");
 
     SampleEntry *entries = NULL;
@@ -177,7 +177,7 @@ static int count_replicates(const char *sample) {
 /* One replicate, to size the information matrix's rescaling and to have
    something concrete to report the weighting's own behaviour on. The periods
    are read from the data rather than assumed, since the two routes that wrote
-   dataset/abm_system/ do not agree about them. Caller must mat_free. */
+   out/dataset/abm_system/ do not agree about them. Caller must mat_free. */
 static Mat first_replicate(const char *sample) {
     char dir[560];
     snprintf(dir, sizeof dir, "%s/%s", INPUT_DIR, sample);
@@ -484,7 +484,7 @@ int main(void) {
 
     int n_samples;
     SampleEntry *samples = list_samples(INPUT_DIR, &n_samples);
-    assert(n_samples > 0 && "old/score_loss/montecarlo/score_loss: no configuration directories under dataset/abm_system/");
+    assert(n_samples > 0 && "old/score_loss/montecarlo/score_loss: no configuration directories under out/dataset/abm_system/");
     n_replicates = count_replicates(samples[0].name);
     Mat probe_y = first_replicate(samples[0].name);
     int sim_periods = probe_y.c;

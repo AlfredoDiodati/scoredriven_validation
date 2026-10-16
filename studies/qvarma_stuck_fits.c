@@ -42,7 +42,7 @@ Writes out/qvarma_stuck_fits.txt.
 #define P 1
 #define Q 1
 
-#define INPUT_DIR "dataset/abm_system"
+#define INPUT_DIR "out/dataset/abm_system"
 #define CACHE_DIR "out/abm_system_fit_qvarma"
 
 #define N_STEPS 26
@@ -68,7 +68,7 @@ typedef struct {
 
 static char **list_subdirs(const char *dir, int *count) {
     DIR *handle = opendir(dir);
-    assert(handle && "qvarma_stuck_fits: cannot open dataset/abm_system/");
+    assert(handle && "qvarma_stuck_fits: cannot open out/dataset/abm_system/");
     char **names = NULL;
     int n = 0, cap = 0;
     struct dirent *entry;

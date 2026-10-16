@@ -48,7 +48,7 @@ called a few thousand times per fit by a line search that has no analytic
 gradient to shorten it. Measured at 4.4 minutes for 96 series on 16 threads, so
 the whole million replicates would be years.
 
-Reads dataset/abm_system and out/us_system.csv. Writes, none of it printed:
+Reads out/dataset/abm_system and out/us_system.csv. Writes, none of it printed:
     out/abm_system_marginal_fit_report.txt
     out/abm_system_marginal_fit_by_law.csv
     out/abm_system_marginal_fit_us.csv
@@ -64,7 +64,7 @@ Reads dataset/abm_system and out/us_system.csv. Writes, none of it printed:
 #include <omp.h>
 
 #define K ABM_SYSTEM_K
-#define INPUT_DIR "dataset/abm_system"
+#define INPUT_DIR "out/dataset/abm_system"
 #define REPORT_PATH "out/abm_system_marginal_fit_report.txt"
 #define BY_LAW_PATH "out/abm_system_marginal_fit_by_law.csv"
 #define US_PATH "out/abm_system_marginal_fit_us.csv"
@@ -149,7 +149,7 @@ static void fit_all(const double *x, int n, Tally *tally, int stride) {
 
 static int *list_configurations(int *count) {
     DIR *handle = opendir(INPUT_DIR);
-    assert(handle && "abm_system_marginal_fit: cannot open dataset/abm_system");
+    assert(handle && "abm_system_marginal_fit: cannot open out/dataset/abm_system");
 
     int *cop = NULL, n = 0, cap = 0;
     struct dirent *entry;
@@ -174,7 +174,7 @@ static int *list_configurations(int *count) {
 }
 
 /* The five US series, built the way applications/us_qvarma_spec_choice.c's own
-   block does, which is the route dataset/abm_system's own series mirror. */
+   block does, which is the route out/dataset/abm_system's own series mirror. */
 static Mat build_us_block(void) {
     Mat original = load_us_system();
     Mat y = mat_new(K, US_PERIODS);

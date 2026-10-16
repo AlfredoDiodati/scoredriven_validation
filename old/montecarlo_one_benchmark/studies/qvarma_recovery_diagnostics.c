@@ -21,13 +21,13 @@ The responses are the ones old/montecarlo_one_benchmark/irf_loss.c and old/monte
 compare: the total response, horizons 0 to 20, 5 x 5 x 21 = 525 values, from
 each run's stored p1q1r2 fit in out/abm_system_fit_qvarma/ and its own series.
 A fit with nu <= 2 or a non-finite response counts as missing. The stand-in is
-montecarlo/out/benchmark.env's run, cop_0191 run 706, left out of every
+out/montecarlo/benchmark.env's run, cop_0191 run 706, left out of every
 configuration. As a check that these are the protocol's own numbers, every
 run's mean absolute difference from the stand-in is compared with
-montecarlo/out/irf_loss.csv.
+out/montecarlo/irf_loss.csv.
 
-Requires out/abm_system_fit_qvarma/, dataset/abm_system/,
-montecarlo/out/benchmark.env and montecarlo/out/irf_loss.csv, and rebuilds
+Requires out/abm_system_fit_qvarma/, out/dataset/abm_system/,
+out/montecarlo/benchmark.env and out/montecarlo/irf_loss.csv, and rebuilds
 none of them. Writes out/qvarma_recovery_diagnostics_report.txt. Progress to
 stderr.
 */
@@ -59,8 +59,8 @@ stderr.
 #define DIM (K * K * (HORIZON + 1))
 
 #define FIT_DIR "out/abm_system_fit_qvarma"
-#define INPUT_DIR "dataset/abm_system"
-#define LOSS_TABLE "montecarlo/out/irf_loss.csv"
+#define INPUT_DIR "out/dataset/abm_system"
+#define LOSS_TABLE "out/montecarlo/irf_loss.csv"
 #define REPORT_PATH "out/qvarma_recovery_diagnostics_report.txt"
 
 static QvarmaParams spec_shape(void) {
@@ -188,7 +188,7 @@ int main(void) {
     FILE *f = fopen(REPORT_PATH, "w");
     assert(f && "qvarma_recovery_diagnostics: cannot open the report");
     fprintf(f, "How precise the t-QVARMA's impulse responses are for the Monte Carlo protocol\n\n");
-    fprintf(f, "Data: dataset/abm_system, %d configurations x %d runs; each run's stored p1q1r2 fit in %s.\n",
+    fprintf(f, "Data: out/dataset/abm_system, %d configurations x %d runs; each run's stored p1q1r2 fit in %s.\n",
             n_samples, n_replicates, FIT_DIR);
     fprintf(f, "Responses: total response, horizons 0 to %d, %d values per run, as old/montecarlo_one_benchmark/irf_loss.c builds them.\n",
             HORIZON, DIM);

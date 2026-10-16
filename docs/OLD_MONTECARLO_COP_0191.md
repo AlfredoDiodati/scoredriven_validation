@@ -20,7 +20,7 @@ every configuration.
 
 ## Setup
 
-Every number comes from `old/naive_mae_loss/montecarlo/out/sweep_grid.csv.gz`, the result of
+Every number comes from `out/old/naive_mae_loss/montecarlo/sweep_grid.csv.gz`, the result of
 `old/naive_mae_loss/montecarlo/sweep_grid.c`; `docs/OLD_MONTECARLO_NAIVE_MAE_GRID.md`, "Every run of every
 configuration as the benchmark", has the full description. In short:
 
@@ -47,8 +47,8 @@ configuration in the set, and whether it has the smallest mean loss of all
 1000.
 
 The tables are written by `old/naive_mae_loss/montecarlo/sweep_grid_cop_0191.py`, in percent as
-below, to `old/naive_mae_loss/montecarlo/out/sweep_grid_cop_0191.txt` and as LaTeX tables to
-`old/naive_mae_loss/montecarlo/out/sweep_grid_cop_0191.tex`.
+below, to `out/old/naive_mae_loss/montecarlo/sweep_grid_cop_0191.txt` and as LaTeX tables to
+`out/old/naive_mae_loss/montecarlo/sweep_grid_cop_0191.tex`.
 
     python old/naive_mae_loss/montecarlo/sweep_grid_cop_0191.py
 

@@ -57,9 +57,9 @@ responses or its confidence sets for a different question.
 
 | experiment | benchmarks | losses and auxiliary models | resamples | program | output | written up in |
 | --- | --- | --- | --- | --- | --- | --- |
-| every run of every configuration | 1,000,000 per model | impulse response, five models | 2000 | `bin/sweep_grid` | `old/naive_mae_loss/montecarlo/out/sweep_grid.csv.gz` | this file, "Every run of every configuration" |
-| compressed responses | 5000 or 2000 per vector | the same responses mapped to a few coordinates first | 2000 | `old/naive_mae_loss/montecarlo/compressed_response_*` | `old/naive_mae_loss/montecarlo/out/compressed_response/` | `docs/OLD_MONTECARLO_COMPRESSED_RESPONSE.md` |
-| fit metric | 1,000,000 per model (oracle), 1000 per model (bootstrap) | the best configuration's mean loss against the responses' sampling standard deviation, five models | none | `old/naive_mae_loss/montecarlo/fit_metric_run.sh` | `old/naive_mae_loss/montecarlo/out/fit_metric_*` | `docs/OLD_MONTECARLO_FIT_METRIC.md` |
+| every run of every configuration | 1,000,000 per model | impulse response, five models | 2000 | `bin/sweep_grid` | `out/old/naive_mae_loss/montecarlo/sweep_grid.csv.gz` | this file, "Every run of every configuration" |
+| compressed responses | 5000 or 2000 per vector | the same responses mapped to a few coordinates first | 2000 | `old/naive_mae_loss/montecarlo/compressed_response_*` | `out/old/naive_mae_loss/montecarlo/compressed_response/` | `docs/OLD_MONTECARLO_COMPRESSED_RESPONSE.md` |
+| fit metric | 1,000,000 per model (oracle), 1000 per model (bootstrap) | the best configuration's mean loss against the responses' sampling standard deviation, five models | none | `old/naive_mae_loss/montecarlo/fit_metric_run.sh` | `out/old/naive_mae_loss/montecarlo/fit_metric_*` | `docs/OLD_MONTECARLO_FIT_METRIC.md` |
 
 The five models are the t-QVARMA (p1q1r2, total responses to horizon 20, 525
 entries per run) and the four local projections of "The local projections"
@@ -70,7 +70,7 @@ that one confidence set compares the configurations on both states at once.
 ## The local projections
 
 Every one of the 1,000,000 simulated runs (1000 configurations, 1000 runs each,
-`dataset/abm_system/`) goes through two steps.
+`out/dataset/abm_system/`) goes through two steps.
 
 The series are the five the t-QVARMA is fitted on, as stored: GDP growth,
 energy growth, employment change, inflation and the interest rate, in that
@@ -193,14 +193,14 @@ Settings read from the environment:
   first).
 - `ABM_SYSTEM_LP_FIT_DIR`, `ABM_SYSTEM_INPUT_DIR`: where the local-projection
   fits and the dataset are read from, default `out/abm_system_fit_lp` and
-  `dataset/abm_system`.
+  `out/dataset/abm_system`.
 
 Compile-time overrides for a test build over part of the grid: `BOOTSTRAP`,
 `FIRST_MODEL`, `RUN_LIMIT`, `BENCHMARK_LIMIT`, `PROGRESS_PATH`, `RESULT_PATH`,
 `RESPONSE_CACHE_DIR`.
 
 It reads `out/abm_system_fit_qvarma/`, `out/abm_system_fit_lp/` and
-`dataset/abm_system/` and rebuilds none of them. Each model's responses are kept
+`out/dataset/abm_system/` and rebuilds none of them. Each model's responses are kept
 in `out/sweep_grid_response_cache/<model>.f32` (2.1 GB for the t-QVARMA, 1.6 GB
 per local projection, 3.2 GB for both states, ignored by git), built on the
 first run in about 10 minutes for the t-QVARMA and 20 per local projection, then
@@ -218,9 +218,9 @@ local-projection refit (2026-09-27) and the last t-QVARMA fit (2026-09-10); both
 states' on 2026-10-05.
 
 Resumable at benchmark granularity. Rows go to
-`old/naive_mae_loss/montecarlo/out/sweep_grid_progress.csv` as each batch of 64 finishes; a rerun
+`out/old/naive_mae_loss/montecarlo/sweep_grid_progress.csv` as each batch of 64 finishes; a rerun
 skips what that file holds. When every model is done the rows are compressed to
-`old/naive_mae_loss/montecarlo/out/sweep_grid.csv.gz` and the progress file is removed. If
+`out/old/naive_mae_loss/montecarlo/sweep_grid.csv.gz` and the progress file is removed. If
 `sweep_grid.csv.gz` exists and no progress file does, the finished rows are
 unpacked back into the progress file and only the models missing from them are
 run; if none is missing, the program does nothing. A crash can leave the
@@ -246,11 +246,11 @@ no separate copy to compare with.
 
 | file | what it holds |
 | --- | --- |
-| `old/naive_mae_loss/montecarlo/out/sweep_grid.csv.gz` | one row per model and benchmark: model, benchmark configuration and run, whether the configuration is in the set, its rank by mean loss, its MCS p-value, the set size, whether the set was decided by an accepted test, the final p-value, runs dropped, the configuration with the smallest mean loss, the configurations in the set |
-| `old/naive_mae_loss/montecarlo/out/sweep_grid_qvarma.csv.gz`, `sweep_grid_lp_lin.csv.gz` | written by an earlier version of `sweep_grid.c` that split the rows per model; byte for byte the t-QVARMA and linear rows of `sweep_grid.csv.gz`, header included. The current program does not write them |
-| `old/naive_mae_loss/montecarlo/out/sweep_grid_cop_0191.txt`, `.tex` | `old/naive_mae_loss/montecarlo/sweep_grid_cop_0191.py`, in plain text and as LaTeX tables: per model, in percent, how often `cop_0191` is in the set, alone and first by mean loss over its own 1000 benchmarks and over the other 999,000, and how often the true configuration is over all 1,000,000; `docs/OLD_MONTECARLO_COP_0191.md` |
-| `old/naive_mae_loss/montecarlo/out/sweep_grid_presence.txt` | `old/naive_mae_loss/montecarlo/sweep_grid_presence.py`: per model, how often each configuration is in the sets of benchmarks that are not its own |
-| `old/naive_mae_loss/montecarlo/out/sweep_grid_identifiability.csv`, `sweep_grid_identifiability_plots/` | `old/naive_mae_loss/montecarlo/sweep_grid_identifiability_plots.py`: per model and configuration, the share of its own 1000 sets that hold it, and the share holding the other configuration found in them most often, with two bar charts per model. The files on disk cover the t-QVARMA and the linear local projection only; see below |
+| `out/old/naive_mae_loss/montecarlo/sweep_grid.csv.gz` | one row per model and benchmark: model, benchmark configuration and run, whether the configuration is in the set, its rank by mean loss, its MCS p-value, the set size, whether the set was decided by an accepted test, the final p-value, runs dropped, the configuration with the smallest mean loss, the configurations in the set |
+| `out/old/naive_mae_loss/montecarlo/sweep_grid_qvarma.csv.gz`, `sweep_grid_lp_lin.csv.gz` | written by an earlier version of `sweep_grid.c` that split the rows per model; byte for byte the t-QVARMA and linear rows of `sweep_grid.csv.gz`, header included. The current program does not write them |
+| `out/old/naive_mae_loss/montecarlo/sweep_grid_cop_0191.txt`, `.tex` | `old/naive_mae_loss/montecarlo/sweep_grid_cop_0191.py`, in plain text and as LaTeX tables: per model, in percent, how often `cop_0191` is in the set, alone and first by mean loss over its own 1000 benchmarks and over the other 999,000, and how often the true configuration is over all 1,000,000; `docs/OLD_MONTECARLO_COP_0191.md` |
+| `out/old/naive_mae_loss/montecarlo/sweep_grid_presence.txt` | `old/naive_mae_loss/montecarlo/sweep_grid_presence.py`: per model, how often each configuration is in the sets of benchmarks that are not its own |
+| `out/old/naive_mae_loss/montecarlo/sweep_grid_identifiability.csv`, `sweep_grid_identifiability_plots/` | `old/naive_mae_loss/montecarlo/sweep_grid_identifiability_plots.py`: per model and configuration, the share of its own 1000 sets that hold it, and the share holding the other configuration found in them most often, with two bar charts per model. The files on disk cover the t-QVARMA and the linear local projection only; see below |
 
     python old/naive_mae_loss/montecarlo/sweep_grid_presence.py
     python old/naive_mae_loss/montecarlo/sweep_grid_identifiability_plots.py

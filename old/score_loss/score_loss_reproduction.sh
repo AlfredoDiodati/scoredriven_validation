@@ -8,8 +8,8 @@
 # loss tables are compared byte for byte; the manifests name their own output
 # paths, so for them the differing lines are printed instead.
 #
-# Reads dataset/abm_system/, out/us_qvarma_spec_choice_p1q1r2_fit.json,
-# out/us_system.csv, out/abm_system_fit_qvarma/ and montecarlo/out/benchmark.env.
+# Reads out/dataset/abm_system/, out/us_qvarma_spec_choice_p1q1r2_fit.json,
+# out/us_system.csv, out/abm_system_fit_qvarma/ and out/montecarlo/benchmark.env.
 # Writes out/old/score_loss_reproduction/.
 
 set -u
@@ -43,8 +43,8 @@ compare_manifest out/abm_system_score_loss_manifest.txt "$check_dir/abm_system_s
 echo "Monte Carlo score losses"
 ABM_SYSTEM_SCORE_LOSS_PATH="$check_dir/score_loss.csv" ./bin/score_loss \
     || echo "FAILED score_loss"
-compare montecarlo/out/score_loss.csv "$check_dir/score_loss.csv"
-compare montecarlo/out/score_loss_weighted.csv "$check_dir/score_loss_weighted.csv"
-compare_manifest montecarlo/out/score_loss_manifest.txt "$check_dir/score_loss_manifest.txt"
+compare out/montecarlo/score_loss.csv "$check_dir/score_loss.csv"
+compare out/montecarlo/score_loss_weighted.csv "$check_dir/score_loss_weighted.csv"
+compare_manifest out/montecarlo/score_loss_manifest.txt "$check_dir/score_loss_manifest.txt"
 
 echo "done"

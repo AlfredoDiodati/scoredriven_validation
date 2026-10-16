@@ -1,6 +1,6 @@
 /*
 Model Confidence Set (Hansen, Lunde and Nason 2011), over
-old/naive_mae_loss/out/abm_system_irf_loss.csv: the mean absolute error between the
+out/old/naive_mae_loss/abm_system_irf_loss.csv: the mean absolute error between the
 driftless t-QVARMA real-data fit's own impulse response function (p1q1r2)
 and every simulated replicate's own IRF. Every numeric column except
 "replicate" is a "model", one per configuration of the design, and every row
@@ -71,7 +71,7 @@ HAC adjustment" to be expressed as a zero-lag HAC estimate, functionally
 the plain sample variance, rather than what independent replicates actually
 call for.
 
-One joint run over both specs, not one per spec: old/naive_mae_loss/out/abm_system_irf_loss.csv
+One joint run over both specs, not one per spec: out/old/naive_mae_loss/abm_system_irf_loss.csv
 already carries one column per configuration, each labeled with the spec it
 was fitted under (old/naive_mae_loss/applications/abm_system_irf_loss.c builds it that way), so
 every column of it except "replicate" is a model this file's own mcs() call
@@ -79,11 +79,11 @@ treats uniformly. It reads however many columns the file holds, so restoring a
 second spec upstream needs no change here: the columns simply double and the
 MCS runs jointly across both.
 
-Requires old/naive_mae_loss/out/abm_system_irf_loss.csv to exist
+Requires out/old/naive_mae_loss/abm_system_irf_loss.csv to exist
 (old/naive_mae_loss/applications/abm_system_irf_loss.c). Output:
-old/naive_mae_loss/out/abm_system_mcs.txt
+out/old/naive_mae_loss/abm_system_mcs.txt
 (mcs_fwrite_report's own table: every model's mean loss, MCS p-value, and
-whether it survived) and old/naive_mae_loss/out/abm_system_mcs.csv (the same as data,
+whether it survived) and out/old/naive_mae_loss/abm_system_mcs.csv (the same as data,
 via mcs_pvalue_frame). In EXPERIMENT_STEMS. Nothing printed.
 */
 
@@ -92,7 +92,7 @@ via mcs_pvalue_frame). In EXPERIMENT_STEMS. Nothing printed.
 #include <string.h>
 #include <assert.h>
 
-#define LOSS_PATH "old/naive_mae_loss/out/abm_system_irf_loss.csv"
+#define LOSS_PATH "out/old/naive_mae_loss/abm_system_irf_loss.csv"
 
 int main(void) {
     /* Every numeric column except "replicate" (the row index, not a
@@ -126,7 +126,7 @@ int main(void) {
     opt.stat = MCS_TR;
     MCSResult res = mcs(&losses, opt);
 
-    FILE *report = fopen("old/naive_mae_loss/out/abm_system_mcs.txt", "w");
+    FILE *report = fopen("out/old/naive_mae_loss/abm_system_mcs.txt", "w");
     assert(report && "abm_system_mcs: cannot open the report path for writing");
     mcs_fwrite_options(report, &losses, opt);
     fprintf(report, "\n");
@@ -137,7 +137,7 @@ int main(void) {
     fclose(report);
 
     DataFrame pvalues = mcs_pvalue_frame(&losses, &res);
-    df_write_csv(&pvalues, "old/naive_mae_loss/out/abm_system_mcs.csv", csv_write_options_default());
+    df_write_csv(&pvalues, "out/old/naive_mae_loss/abm_system_mcs.csv", csv_write_options_default());
     df_free(&pvalues);
 
     mcs_free(&res);

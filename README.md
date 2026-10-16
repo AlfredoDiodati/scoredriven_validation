@@ -190,7 +190,7 @@ it changed no number.
 The whole experiment goes through the driver rather than through that command;
 these are steps 1 and 3 of "The main pipeline" below:
 
-    make app-abm_system_design            draws dataset/abm_system_design.csv
+    make app-abm_system_design            draws out/dataset/abm_system_design.csv
     make bin/abm_system_simulate          builds the driver, does not run it
 
     ./applications/abm_system_simulate_all.sh          the whole design, 8 at a time
@@ -204,7 +204,7 @@ machine. That is not something a make target should start.
 (`./bin/abm_system_simulate 1 10 100` is configurations 1 to 10, 100
 replications each), so one invocation is the whole design on one machine and one
 configuration per job on a cluster. It writes
-`dataset/abm_system/cop_NNNN/batch_NNN.npz`, ten replications to a compressed
+`out/dataset/abm_system/cop_NNNN/batch_NNN.npz`, ten replications to a compressed
 archive, and skips any archive already on disk, which is what makes an
 interrupted run resumable and a re-submitted job harmless. `DSK_EXECUTABLE`,
 `DSK_BASE_JSON` and `ABM_SYSTEM_OUTPUT_DIR` override which binary, which
@@ -224,24 +224,30 @@ minute. `docs/ABM_SYSTEM_SIMULATION.md` has the setup behind those numbers.
                       abm_system.h, which describe this project's own data
     model/dsk_sfc/    the DSK simulator itself, a copy of upstream's source
                       with the speed work of docs/DSK_MODEL_CHANGES.md applied
-    montecarlo/       the Monte Carlo pipeline, with its own out/
+    montecarlo/       the Monte Carlo pipeline
     tests/            pass or fail. A failure stops make test and the build
     benchmarks/       how long something takes. Never part of make test: a
                       function that returns the wrong answer quickly is not fast
     studies/          a question about behaviour, answered into out/. No verdict,
                       so nothing here gates anything
-    dataset/          us_real.csv, the raw US series, and the parameter design.
-                      The simulated output goes here too but is not tracked:
-                      abm_system/ is what the fitting stage reads,
-                      abm_system_rdata/ is the older .Rdata-derived copy kept out
-                      of the way so only one of the two is ever fitted, and
-                      throughput/ is the separate dataset the throughput study
-                      times fits on
+    dataset/          the inputs nothing here produces: us_real.csv, the raw
+                      US series, and simulated/, the .Rdata files of the
+                      original experiment
     old/              experiments discarded from the main pipeline or the
                       Monte Carlo, one folder per experiment. Still buildable
                       with make old-<stem>; docs/OLD_EXPERIMENTS.md says why
                       each was discarded, and their write-ups stay in docs/
-    out/              every result, written here rather than printed
+    out/              everything a script writes, and nothing else. A file
+                      written by a script under some folder of the repository
+                      sits under the same folder here, so out/montecarlo/ is
+                      the Monte Carlo's output and out/old/naive_mae_loss/ the
+                      naive-loss experiment's. out/dataset/ holds the generated
+                      data: the parameter design, abm_system/ which the fitting
+                      stage reads, abm_system_rdata/ the older .Rdata-derived
+                      copy kept out of the way so only one of the two is ever
+                      fitted, abm_system_micro/ the per-firm runs, and
+                      throughput/ the separate dataset the throughput study
+                      times fits on. Only the large parts are untracked
     bin/              the compiled programs, rebuilt by make, not tracked
     docs/             the write-up and the reference documentation
 
@@ -475,9 +481,9 @@ never printed.
 
 | file | step | what it holds |
 |---|---|---|
-| `dataset/abm_system_design.csv` | 1 | the 1000 configurations, one row each, nine parameters |
+| `out/dataset/abm_system_design.csv` | 1 | the 1000 configurations, one row each, nine parameters |
 | `out/abm_system_design.txt` | 1 | what the last run of step 1 did |
-| `dataset/abm_system/cop_NNNN/batch_NNN.npz` | 3 | the five simulated series, ten replicates per compressed archive; 15 GB, not tracked by git |
+| `out/dataset/abm_system/cop_NNNN/batch_NNN.npz` | 3 | the five simulated series, ten replicates per compressed archive; 15 GB, not tracked by git |
 | `out/abm_system_simulate_all_provenance.txt` | 3 | checksums of the model and the design, shard ranges, wall time, stored size |
 | `out/abm_system_simulate_manifest.txt` | 3 | replicates completed and rejected, per configuration |
 | `out/abm_system_simulate/` | 3 | one log per shard, and the reason for any rejected replicate |
@@ -565,8 +571,8 @@ Scripts in `applications/` that the six steps do not use:
   the simulator. Use one or the other, never both: step 6 fits every
   subdirectory of the dataset directory regardless of what wrote it, so two
   datasets sitting there at once would be fitted together with nothing in the
-  results to say so. It writes `dataset/abm_system_rdata/`, which is where its
-  output was moved when the design runs took `dataset/abm_system/` over, and it
+  results to say so. It writes `out/dataset/abm_system_rdata/`, which is where its
+  output was moved when the design runs took `out/dataset/abm_system/` over, and it
   refuses to start if the directory it is about to write into already holds
   `cop_*` directories. `ABM_SYSTEM_RDATA_DIR` overrides where it writes.
 - `throughput_dataset.c`, `throughput_fit.c` and
@@ -591,7 +597,7 @@ Files in `out/` the six steps do not write:
   (`docs/BENCHMARKS.md`) and the studies (`docs/QVARMA_FIT_STUDIES.md`), and
   `out/abm_system_*` files not listed above, from the studies.
 - `out/refactor_equality_check/` and
-  `old/naive_mae_loss/out/winner_normality_rerun/`: checks that moving code to
+  `out/old/naive_mae_loss/winner_normality_rerun/`: checks that moving code to
   `old/` changed no result. The first reruns the four statistic-comparison
   programs and diffs their outputs against git: the CSVs are identical and the
   text reports differ only in the time column. The second reruns
@@ -616,7 +622,7 @@ twelve of the simulator. The five:
                                             form, agreement with the route the
                                             US data takes, the burn-in, and an
                                             archive round trip
-    make test-abm_system_dataset_finiteness every value in dataset/abm_system is a
+    make test-abm_system_dataset_finiteness every value in out/dataset/abm_system is a
                                             finite number, every block has the
                                             shape the layout promises, and every
                                             configuration holds each replication
@@ -669,7 +675,7 @@ explains what each mechanism is for.
     make study-robustness   the same target, under the name that says what it is
     make study-<stem>       one of them
 
-Every study reads what the pipeline wrote to `out/` and `dataset/` and none
+Every study reads what the pipeline wrote to `out/` and none
 rebuilds it, so none runs on a fresh clone. `make study` checks for the dataset
 and the fit cache first and says which is missing.
 `docs/QVARMA_FIT_STUDIES.md` lists every study and where it is written up.

@@ -2,7 +2,7 @@
 Fits the auxiliary model t-QVARMA(1,1,2) (the driftless base model, not the
 drift-carrying variant), the same K_star 3, K_dagger 2, R 1 partition
 applications/us_qvarma_spec_choice.c's own grid fits to the real
-data - to every replicate under dataset/abm_system/, and caches every fitted
+data - to every replicate under out/dataset/abm_system/, and caches every fitted
 parameter set the moment it is estimated, not once at the end: each replicate
 writes its own JSON the instant its fit finishes - the same caching discipline
 every other application in this project already uses, applied per (sample,
@@ -67,9 +67,9 @@ Naming: this file fits the driftless t-QVARMA, which is what
 <et_al./sd/qvarma.h> provides. The drift-carrying variant belongs to an earlier
 stage of the project whose code is not part of this repository, and
 docs/MCS_VALIDATION_PROCEDURE.md records why it is not used here. Output
-mirrors dataset/abm_system/'s own structure exactly, so which sample and which
+mirrors out/dataset/abm_system/'s own structure exactly, so which sample and which
 replicate a cached fit belongs to is never in question - a replicate read out of
-dataset/abm_system/<sample>/batch_<NNN>.npz becomes
+out/dataset/abm_system/<sample>/batch_<NNN>.npz becomes
 out/abm_system_fit_qvarma/<sample>/replicate_<NNN>_p1q1r2_fit.json. Rerunning
 this script after an interruption resumes rather than redoes: a cache file with
 the same data fingerprint is loaded rather than refitted, and refitted from its
@@ -131,7 +131,7 @@ whoever consumes out/abm_system_fit_qvarma_manifest.txt next.
 
 Not part of `make applications` or EXPERIMENT_STEMS - meant to be run
 explicitly, once (or resumed after an interruption), not on every routine
-build. Requires dataset/abm_system/ to already exist
+build. Requires out/dataset/abm_system/ to already exist
 (`make bin/abm_system_convert_rdata && ./bin/abm_system_convert_rdata` first). Nothing
 printed.
 */
@@ -161,7 +161,7 @@ printed.
 #define P 1
 #define Q 1
 
-#define INPUT_DIR_DEFAULT "dataset/abm_system"
+#define INPUT_DIR_DEFAULT "out/dataset/abm_system"
 #define OUTPUT_DIR_DEFAULT "out/abm_system_fit_qvarma"
 
 /* Both directories are overridable so the whole procedure can be exercised on a
@@ -180,7 +180,7 @@ static void make_directory(const char *path) {
 
 static char **list_subdirs(const char *dir, int *count) {
     DIR *handle = opendir(dir);
-    assert(handle && "abm_system_fit_qvarma: cannot open dataset/abm_system/ - run abm_system_convert_rdata first");
+    assert(handle && "abm_system_fit_qvarma: cannot open out/dataset/abm_system/ - run abm_system_convert_rdata first");
 
     char **names = NULL;
     int n = 0, cap = 0;
@@ -359,7 +359,7 @@ int main(void) {
 
     int n_samples;
     char **samples = list_subdirs(INPUT_DIR, &n_samples);
-    assert(n_samples > 0 && "abm_system_fit_qvarma: no sample subdirectories under dataset/abm_system/");
+    assert(n_samples > 0 && "abm_system_fit_qvarma: no sample subdirectories under out/dataset/abm_system/");
 
     int *n_replicates = malloc((size_t)n_samples * sizeof(int));
     int **replicates = malloc((size_t)n_samples * sizeof(int*));

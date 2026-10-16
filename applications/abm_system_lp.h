@@ -37,7 +37,7 @@ static inline const char *lp_loss_name(int loss) {
 #define LP_RESPONSE_DIM LP_SYSTEM_RESPONSE_DIM
 
 #define LP_FIT_DIR_DEFAULT "out/abm_system_fit_lp"
-#define LP_INPUT_DIR_DEFAULT "dataset/abm_system"
+#define LP_INPUT_DIR_DEFAULT "out/dataset/abm_system"
 
 /* One configuration, indexed by replicate. row[replicate] is the stored row, or
    NULL when the archive has none for it or the one it has was fitted on other

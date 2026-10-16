@@ -2,19 +2,19 @@
 The per-firm output quantities behind GDP, for a few of the runs the experiment
 already holds.
 
-dataset/abm_system stores five macro series per replicate and nothing below
+out/dataset/abm_system stores five macro series per replicate and nothing below
 them. GDP is Q1.Sum() * dim_mach + Q2.Sum() over the K-firms and the C-firms,
 so the cross-section those sums run over is what a central limit theorem would
 act on, and it is not in the archives. The simulator writes it when given -m 1,
 a switch this project added; docs/DSK_MODEL_CHANGES.md records it and
 tests/dsk_build_equivalence.c is what says the switch changed no number.
 
-Configurations are spread evenly over dataset/abm_system_design.csv, first and
+Configurations are spread evenly over out/dataset/abm_system_design.csv, first and
 last included. Seeds are 1 to SEEDS, which are replicates 0 to SEEDS-1 of those
-same configurations in dataset/abm_system, so a run here is a run the archives
+same configurations in out/dataset/abm_system, so a run here is a run the archives
 already hold and its macro series can be checked against the stored one.
 
-Each run writes three files into dataset/abm_system_micro/cop_XXXX/:
+Each run writes three files into out/dataset/abm_system_micro/cop_XXXX/:
 
     Q1all_<seed>.txt    600 rows, one per period, N1 columns of K-firm output
     Q2all_<seed>.txt    600 rows, one per period, N2 columns of C-firm output
@@ -49,8 +49,8 @@ and deleting a configuration's directory is how to redo it.
 
 #define MODEL "model/dsk_sfc/dsk_SFC"
 #define INPUTS "model/dsk_sfc/dsk_sfc_inputs.json"
-#define DESIGN "dataset/abm_system_design.csv"
-#define OUTPUT_DIR "dataset/abm_system_micro"
+#define DESIGN "out/dataset/abm_system_design.csv"
+#define OUTPUT_DIR "out/dataset/abm_system_micro"
 #define RUN_NAME "m"
 #define N_STEPS 600
 #define CONFIGURATIONS 5

@@ -47,14 +47,14 @@ redone once the Monte Carlo is finished.
   `out/us_lp_fit_irf.csv`. Every regression was solved at full rank.
 - **Loss.** For each model, the mean absolute difference between the US
   responses and each simulated run's (`old/naive_mae_loss/applications/abm_system_lp_irf_loss.c`,
-  `old/naive_mae_loss/out/abm_system_lp_irf_loss_<model>.csv`): 1000 runs by 1000
+  `out/old/naive_mae_loss/abm_system_lp_irf_loss_<model>.csv`): 1000 runs by 1000
   configurations, no cell missing.
 - **Confidence set.** `old/naive_mae_loss/applications/abm_system_lp_mcs.c`: level 0.05, 10000
   bootstrap resamples of single runs, the bootstrap variance, et_al's seed 123,
   the range statistic `MCS_TR` (every pair of configurations compared) as the
   headline and `MCS_TMAX` (each configuration against the average of those
   left) beside it, the t-QVARMA pipeline's settings
-  (`old/naive_mae_loss/out/abm_system_lp_mcs_<model>.txt` and `.csv`).
+  (`out/old/naive_mae_loss/abm_system_lp_mcs_<model>.txt` and `.csv`).
 
     make old-abm_system_lp_mcs      the US fit, the loss tables, the sets
 
@@ -75,7 +75,7 @@ against its own series; the six confidence sets about 40 seconds.
 MCS_TMAX keeps the same sets under all three models.
 
 The t-QVARMA pipeline on the same data keeps `cop_0191` alone
-(`old/naive_mae_loss/out/abm_system_mcs_statistic_comparison.csv`). The two auxiliary models
+(`out/old/naive_mae_loss/abm_system_mcs_statistic_comparison.csv`). The two auxiliary models
 agree.
 
 `cop_0191` is also the configuration the discarded single-benchmark Monte Carlo

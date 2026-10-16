@@ -1,5 +1,5 @@
 # Summarises the files old/naive_mae_loss/montecarlo/compressed_response_recovery.c wrote into
-# old/naive_mae_loss/montecarlo/out/compressed_response/report.txt: per output vector, how often
+# out/old/naive_mae_loss/montecarlo/compressed_response/report.txt: per output vector, how often
 # the benchmark's own configuration is in the confidence set and has the
 # smallest mean loss, and, when it does not, how far in parameter space the
 # configuration that took its place lies.
@@ -8,7 +8,7 @@
 # confidence sets, rank_<vector>_rows<n>.csv only ranks; <n> is how many runs
 # of each configuration were rows of the loss matrix before the benchmark's
 # own run was dropped. grid_<vector>_rows1000.csv holds the rows for benchmark
-# runs 0 and 1 of old/naive_mae_loss/montecarlo/out/sweep_grid.csv.gz, the raw responses at full
+# runs 0 and 1 of out/old/naive_mae_loss/montecarlo/sweep_grid.csv.gz, the raw responses at full
 # scale, in the same columns; old/naive_mae_loss/montecarlo/compressed_response_grid_baseline.py
 # copies them.
 import glob
@@ -18,10 +18,10 @@ import re
 import numpy as np
 import pandas as pd
 
-DIR = 'old/naive_mae_loss/montecarlo/out/compressed_response'
+DIR = 'out/old/naive_mae_loss/montecarlo/compressed_response'
 
 # The parameters the stacked responses predict with held-out R2 above one
-# half (old/naive_mae_loss/montecarlo/out/compressed_response/learn_qvarma_lp_lin.txt).
+# half (out/old/naive_mae_loss/montecarlo/compressed_response/learn_qvarma_lp_lin.txt).
 IDENTIFIED = ['psi1', 'psi3', 'alfa', 'taylor1', 'taylor2', 'taylor', 'kappa']
 
 
@@ -34,7 +34,7 @@ def neighbour_rank(design, columns):
 
 
 def main():
-    design = pd.read_csv('dataset/abm_system_design.csv')
+    design = pd.read_csv('out/dataset/abm_system_design.csv')
     neighbour_all = neighbour_rank(design, list(design.columns))
     neighbour_identified = neighbour_rank(design, IDENTIFIED)
 

@@ -4,7 +4,7 @@ The programs under `studies/` answer a question about the pipeline's own
 result and write the answer to `out/`. They pass or fail nothing and gate
 nothing. `make study` runs them all in the order of `STUDY_STEMS` in the
 Makefile, and `make study-<stem>` runs one. Every one reads what the pipeline
-already wrote to `out/` and `dataset/` and none rebuilds it, so none runs on a
+already wrote to `out/` and none rebuilds it, so none runs on a
 fresh clone.
 
 Seven of the studies below read the confidence set or the loss table of the
@@ -12,7 +12,7 @@ naive loss (`docs/OLD_EXPERIMENTS.md`, "The naive loss"):
 `abm_system_winner_diagnostics`, `abm_system_seed_correlation`,
 `us_qvarma_nu_sensitivity` and the four other studies of the winner's `nu`.
 They moved with it to `old/naive_mae_loss/studies/`, their outputs to
-`old/naive_mae_loss/out/`, and they run with `make old-<stem>` instead of
+`out/old/naive_mae_loss/`, and they run with `make old-<stem>` instead of
 `make study-<stem>`; `make study` no longer runs them. Their write-ups stay
 here and in the documents the table names.
 
@@ -114,10 +114,10 @@ and where it comes from. All ran on the design dataset; the reports of the
 last four were committed on 17 September 2026. The report of
 `us_qvarma_nu_sensitivity` names the confidence set's output by its earlier
 file name, `out/abm_system_mcs_joint.csv`, so it predates the rename to
-`old/naive_mae_loss/out/abm_system_mcs.csv`; the numbers it reads from it match the current
+`out/old/naive_mae_loss/abm_system_mcs.csv`; the numbers it reads from it match the current
 file.
 
-**`old/naive_mae_loss/studies/us_qvarma_nu_sensitivity.c`**, `old/naive_mae_loss/out/us_qvarma_nu_sensitivity.txt`.
+**`old/naive_mae_loss/studies/us_qvarma_nu_sensitivity.c`**, `out/old/naive_mae_loss/us_qvarma_nu_sensitivity.txt`.
 The US fit (`nu` free, log-likelihood -882.14) against two variants: the same
 parameters with `nu` set to the winner's 2853.4 ("swapped"), and every other
 parameter refitted with `nu` held there ("refitted", log-likelihood -943.95,
@@ -135,7 +135,7 @@ smallest differ by 0.0005. Changing `nu` on the US side alone moves the
 benchmark response by about the whole spread of the configurations.
 
 **`old/naive_mae_loss/studies/abm_system_winner_nu_profile.c`**,
-`old/naive_mae_loss/out/abm_system_winner_nu_profile.txt`. A pilot on 8 of `cop_0191`'s
+`out/old/naive_mae_loss/abm_system_winner_nu_profile.txt`. A pilot on 8 of `cop_0191`'s
 replicates: each refitted with `nu` held at 7.2 (the US value), 10, 30, 100,
 1000, 10^4, 10^5 and 10^6, every other parameter free, at most 20,000
 iterations, starting from its own cached fit. Gain is the refit's
@@ -155,7 +155,7 @@ times the gap between the two best configurations. Only 2 of the 8 refits at
 `nu = 7.2` converged.
 
 **`old/naive_mae_loss/studies/abm_system_winner_nu_likelihood_scan.c`**,
-`old/naive_mae_loss/out/abm_system_winner_nu_likelihood_scan.txt`. All 1000 fits of `cop_0191`,
+`out/old/naive_mae_loss/abm_system_winner_nu_likelihood_scan.txt`. All 1000 fits of `cop_0191`,
 nothing refitted: the log-likelihood at the fitted parameters with only `nu`
 moved. A fit is "smooth" when moving `nu` by 1% either way changes the
 log-likelihood by less than 1, "knife-edge" when either move changes it by
@@ -167,7 +167,7 @@ more than 100.
   0.1183, 0.1181).
 
 **`old/naive_mae_loss/studies/abm_system_winner_tail_comparison.c`**,
-`old/naive_mae_loss/out/abm_system_winner_tail_comparison.txt`. The per-period quadratic form of
+`out/old/naive_mae_loss/abm_system_winner_tail_comparison.txt`. The per-period quadratic form of
 the residuals over the number of series, `q_t / K` with `K = 5`, which has mean
 1 and variance 0.4 under Gaussian innovations.
 
@@ -181,7 +181,7 @@ The US values far out come from 1974 to 1981 and from 2008Q4 to 2009Q1, and
 the interest rate carries the largest share of the US sum of `q_t`, 27.8%.
 
 **`old/naive_mae_loss/studies/abm_system_winner_normality.c`**,
-`old/naive_mae_loss/out/abm_system_winner_normality.txt`. Mardia's tests of whether `cop_0191`'s
+`out/old/naive_mae_loss/abm_system_winner_normality.txt`. Mardia's tests of whether `cop_0191`'s
 fitted parameter vectors, 42 coordinates on the optimizer's unconstrained
 scale, are jointly normal across replicates. Joint normality is rejected for
 all 1000 fits and for the 449 converged ones, with p-values below what a double
@@ -193,7 +193,7 @@ skewness tests 2.4% to 7.2%.
 
 **`old/naive_mae_loss/studies/abm_system_winner_diagnostics_plots.py`** draws the tables of
 `old/naive_mae_loss/studies/abm_system_winner_diagnostics.c` into
-`old/naive_mae_loss/out/abm_system_winner_diagnostics_plots/`: one histogram per fitted
+`out/old/naive_mae_loss/abm_system_winner_diagnostics_plots/`: one histogram per fitted
 parameter over `cop_0191`'s fits, on the model's scale and on the optimizer's
 unconstrained scale, each bar coloured by the share of its fits that
 converged, with the US value, the median and the averaged parameter set
