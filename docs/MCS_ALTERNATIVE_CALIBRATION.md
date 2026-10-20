@@ -26,15 +26,12 @@ squared error minus the replicate's own squared deviation from its
 configuration's mean, scaled by $n/(n-1)$:
 
 $$
-L^*_{ish} = \left( \widehat{IR}_{ish} - \widehat{IR}_{dh} \right)^2
-- \frac{n}{n-1} \left( \widehat{IR}_{ish} - \overline{IR}_{ih} \right)^2 .
+L^*_{ish} = \left( \widehat{IR}_{ish} - \widehat{IR}_{dh} \right)^2 - \frac{n}{n-1} \left( \widehat{IR}_{ish} - \overline{IR}_{ih} \right)^2
 $$
 
 The loss of the replicate is its average over the entries:
 
-$$
-L^*_{is} = \frac{1}{K} \sum_{h=1}^{K} L^*_{ish}.
-$$
+$$L^*_{is} = \frac{1}{K} \sum_{h=1}^{K} L^*_{ish}$$
 
 **Step 3.** Run the Model Confidence Set over the configurations on the
 per-replicate losses $L^*_{is}$, as described in the section on the Model
@@ -59,16 +56,12 @@ replicate $s$ of configuration $i$ at entry $h$. The simulated response is an
 estimate: across replicates it is a random variable with mean $IR_{ih}$ and
 variance $\sigma^2_{ih}$. With the benchmark fixed,
 $$
-E\left[ L_{ish} \mid \widehat{IR}_d \right]
-= \left( IR_{ih} - \widehat{IR}_{dh} \right)^2 + \sigma^2_{ih}.
+E\left[ L_{ish} \mid \widehat{IR}_d \right] = \left( IR_{ih} - \widehat{IR}_{dh} \right)^2 + \sigma^2_{ih}.
 $$
 The Model Confidence Set compares two configurations $i$ and $j$ through the
 difference of their losses, whose expectation is
 $$
-E\left[ L_{ish} - L_{jsh} \mid \widehat{IR}_d \right]
-= \left( IR_{ih} - \widehat{IR}_{dh} \right)^2
-- \left( IR_{jh} - \widehat{IR}_{dh} \right)^2
-+ \sigma^2_{ih} - \sigma^2_{jh}.
+E\left[ L_{ish} - L_{jsh} \mid \widehat{IR}_d \right] = \left( IR_{ih} - \widehat{IR}_{dh} \right)^2 - \left( IR_{jh} - \widehat{IR}_{dh} \right)^2 + \sigma^2_{ih} - \sigma^2_{jh}.
 $$
 The last terms, $\sigma^2_{ih} - \sigma^2_{jh}$, relate only to the
 estimation noise of the simulations, not to their distance from the
