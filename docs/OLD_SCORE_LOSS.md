@@ -29,13 +29,13 @@ A second and a third loss matrix for the same Model Confidence Set the project
 already runs over impulse-response distance, built without fitting anything to
 the simulated data.
 
-`docs/MCS_VALIDATION_PROCEDURE.md` describes the procedure this sits beside:
-fit the driftless t-QVARMA(1,1,2) to the real US data and to every one of the
+`docs/MCS_VALIDATION_PROCEDURE.md` describes the procedure this sits beside: fit
+the driftless t-QVARMA(1,1,2) to the real US data and to every one of the
 million simulated replicates, compute each fit's impulse response function, and
 let the confidence set decide which of the 1000 ABM configurations cannot be
 told apart from the closest one. That route needs a million fits, which is what
-`out/abm_system_fit_qvarma/` holds and what took the bulk of the project's
-compute.
+`out/applications/abm_system_fit_qvarma/` holds and what took the bulk of the
+project's compute.
 
 The route documented here needs none of them. The real data's fitted parameter
 vector is held fixed and each simulated series is asked a different question:
@@ -46,12 +46,12 @@ real data's estimate on simulated data.
 Everything here is produced by
 `old/score_loss/applications/abm_system_score_loss.c` and scored by
 `old/score_loss/applications/abm_system_mcs_statistic_comparison_score.c`.
-Neither reads `out/abm_system_fit_qvarma/`.
+Neither reads `out/applications/abm_system_fit_qvarma/`.
 
 ## The quantity
 
 Write `theta_US` for the t-QVARMA parameter vector fitted to the US data,
-stored in `out/us_qvarma_spec_choice_p1q1r2_fit.json` by
+stored in `out/applications/us_qvarma_spec_choice_p1q1r2_fit.json` by
 `applications/us_qvarma_spec_choice.c`. For configuration `i` and Monte Carlo
 replicate `n`, with `y_in` that replicate's simulated five-variable series,
 
@@ -76,7 +76,7 @@ differenced, so it is exact to machine precision.
 
 ### The plain sum of squares
 
-    out/abm_system_score_loss.csv      loss = q_in' q_in
+    out/old/score_loss/applications/abm_system_score_loss.csv      loss = q_in' q_in
 
 This is the object as first specified. It is not a distance in any metric the
 model supplies. The coordinates of `theta` carry different units and differ in
@@ -106,7 +106,7 @@ It is reported beside the weighted version as the unweighted reference.
 
 ### The score statistic
 
-    out/abm_system_score_loss_weighted.csv
+    out/old/score_loss/applications/abm_system_score_loss_weighted.csv
     loss = LM_in = q_in' [T_sim * I_1(theta_US)]^-1 q_in
 
 with `I_1` the information matrix per observation and `T_sim` the length of a
@@ -174,16 +174,18 @@ factorization `L L'`, `LM = ||L^-1 q||^2`.
 Inputs:
 
 - `out/dataset/abm_system/`, the simulated replicates.
-- `out/us_qvarma_spec_choice_p1q1r2_fit.json`, the real-data estimate.
-- `out/us_system.csv`, the real data itself, needed for the information matrix.
+- `out/applications/us_qvarma_spec_choice_p1q1r2_fit.json`, the real-data
+  estimate.
+- `out/applications/us_system.csv`, the real data itself, needed for the
+  information matrix.
 
 Outputs:
 
 | file | what it holds |
 | --- | --- |
-| `out/abm_system_score_loss.csv` | `q'q`, 1000 replicates by 1000 configurations |
-| `out/abm_system_score_loss_weighted.csv` | `LM`, same shape |
-| `out/abm_system_score_loss_manifest.txt` | the weighting's diagnostics and every missing cell |
+| `out/old/score_loss/applications/abm_system_score_loss.csv` | `q'q`, 1000 replicates by 1000 configurations |
+| `out/old/score_loss/applications/abm_system_score_loss_weighted.csv` | `LM`, same shape |
+| `out/old/score_loss/applications/abm_system_score_loss_manifest.txt` | the weighting's diagnostics and every missing cell |
 
 Both matrices carry the column names `old/naive_mae_loss/applications/abm_system_irf_loss.c` uses
 for the same configurations, so the three can be read side by side. A replicate
@@ -205,10 +207,10 @@ route would decompress the dataset's 15 GB ten times over.
 replicate, 400 periods per replicate after the 200-period burn-in. Auxiliary
 specification p1q1r2: `K = 5`, `K_star = 3`, `R = 1`, shared beta,
 stationary-only `mu_star`, 42 unconstrained coordinates. `theta_US` read from
-`out/us_qvarma_spec_choice_p1q1r2_fit.json`, which converged with gradient norm
-0.00471282 over 1023 iterations. Information matrix differenced with step
-1e-4 over the 187 real-data quarters. Every number below is float64. One
-million cells per matrix, none missing in either.
+`out/applications/us_qvarma_spec_choice_p1q1r2_fit.json`, which converged with
+gradient norm 0.00471282 over 1023 iterations. Information matrix differenced
+with step 1e-4 over the 187 real-data quarters. Every number below is float64.
+One million cells per matrix, none missing in either.
 
 Model Confidence Set settings, identical across all three matrices: alpha =
 0.05, 10000 bootstrap resamples, block length 1 (the iid case, since replicates

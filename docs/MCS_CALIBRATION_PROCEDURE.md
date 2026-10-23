@@ -215,7 +215,7 @@ this partition.
 older dataset above, as 200 models: the three the data could not separate were
 all (1,1,2), and no (1,1,4) configuration survived.
 `applications/us_qvarma_spec_choice.c` fits both to the US data and records
-their residual checks in `out/us_qvarma_spec_choice.txt`.
+their residual checks in `out/applications/us_qvarma_spec_choice.txt`.
 
 Putting (1,1,4) back starts with one entry in `spec_list` in
 `applications/abm_system_fit_qvarma.c`, which fits it to every simulation.
@@ -256,7 +256,7 @@ The losses use every one of the 1,000,000 fits, whether or not the solver
 reported convergence. The fitting stage was run eight times with the iteration
 cap raised from 2,000 to 1,000,000; `applications/abm_system_fit_qvarma.c`
 records what each raise bought. Where it ended, per
-`out/abm_system_fit_qvarma_manifest.txt` of 2026-09-10:
+`out/applications/abm_system_fit_qvarma_manifest.txt` of 2026-09-10:
 
 | why the solver last stopped | fits |
 |---|---|

@@ -73,8 +73,8 @@ Writes dataset/, not out/, apart from the failure logs and the manifest.
 #define MODEL_PATH "model/dsk_sfc/dsk_SFC"
 #define MODEL_INPUTS "model/dsk_sfc/dsk_sfc_inputs.json"
 #define OUTPUT_DIR "out/dataset/abm_system"
-#define REPORT_DIR "out/abm_system_simulate"
-#define MANIFEST_PATH "out/abm_system_simulate_manifest.txt"
+#define REPORT_DIR "out/applications/abm_system_simulate"
+#define MANIFEST_PATH "out/applications/abm_system_simulate_manifest.txt"
 
 #define N_STEPS 600
 #define N_MODEL_COLUMNS 83

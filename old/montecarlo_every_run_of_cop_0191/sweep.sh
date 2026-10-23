@@ -23,16 +23,17 @@
 # 10^6 cached fits and impulse responses takes 574 s, and one MCS_TR over 1000
 # models and 999 observations at 10000 resamples takes 10.9 s.
 #
-# Reads out/abm_system_fit_qvarma/ and out/dataset/abm_system/ and rebuilds
-# neither. Writes out/montecarlo/sweep_irf.csv. Progress goes to stderr; the
-# summary is the result.
+# Reads out/applications/abm_system_fit_qvarma/ and out/dataset/abm_system/ and
+# rebuilds neither. Writes
+# out/old/montecarlo_every_run_of_cop_0191/sweep_irf.csv. Progress goes to
+# stderr; the summary is the result.
 
 set -euo pipefail
 
 cd "$(dirname "$0")/../.."
-mkdir -p out/montecarlo
+mkdir -p out/old/montecarlo_every_run_of_cop_0191
 
 echo "impulse-response protocol, every benchmark"
 ./bin/sweep_irf
 
-echo "done, summary in out/montecarlo/sweep_irf.csv"
+echo "done, summary in out/old/montecarlo_every_run_of_cop_0191/sweep_irf.csv"

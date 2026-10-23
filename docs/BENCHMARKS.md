@@ -22,11 +22,11 @@ cost of a fit.
                                  the same, built against the development copy
                                  of et_al instead of the installed one
 
-Each writes `out/<stem>.txt`. `out/fit_speedup_options.txt` collects the
-measurements of 2026-08-29 and the setup behind them; it states that they were
-taken on an Intel i5-7400 (4 cores, no hyperthreading, 3.0 GHz base), not on
-the machine the README describes. The reports themselves do not record the
-machine.
+Each writes `out/benchmarks/<stem>.txt`.
+`out/benchmarks/fit_speedup_options.txt` collects the measurements of 2026-08-29
+and the setup behind them; it states that they were taken on an Intel i5-7400 (4
+cores, no hyperthreading, 3.0 GHz base), not on the machine the README
+describes. The reports themselves do not record the machine.
 
 | benchmark | what it measures | result in its report |
 |---|---|---|
@@ -52,12 +52,13 @@ over the ABM would need, and what a larger iteration cap buys.
   makes the 500,000 fits start from different data.
 - `applications/throughput_fit.c` fits all 500,000 at a fixed iteration cap,
   `make app-throughput_fit-i2000`, `-i4000`, `-i8000`. The cap is in the
-  binary's name and in every file it writes, `out/throughput_fit_i<cap>/`
-  (not tracked) and `out/throughput_fit_i<cap>_timing.txt`,
-  `_provenance.txt` and `_manifest.txt`.
+  binary's name and in every file it writes,
+  `out/applications/throughput_fit_i<cap>/` (not tracked) and
+  `out/applications/throughput_fit_i<cap>_timing.txt`, `_provenance.txt` and
+  `_manifest.txt`.
 - `applications/throughput_iteration_budget.c` compares two caps over the same
-  series, `make app-throughput_iteration_budget-i2000_4000` and
-  `-i4000_8000`, writing `out/throughput_iteration_budget_i<a>_i<b>.txt` and
+  series, `make app-throughput_iteration_budget-i2000_4000` and `-i4000_8000`,
+  writing `out/applications/throughput_iteration_budget_i<a>_i<b>.txt` and
   `.csv`.
 
 The specification is the pipeline's t-QVARMA(1,1,2), 16 threads. The

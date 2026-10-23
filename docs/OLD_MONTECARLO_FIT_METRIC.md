@@ -127,14 +127,14 @@ into one vector ($K = 800$).
 
 **$d_{j,m}$** is the mean loss, over the benchmark's 999 rows, of the
 configuration with the smallest mean loss. The loss is the one of the
-experiment, the mean absolute difference between the two response vectors
-over their $K$ entries, with the benchmark's run index held out of every
+experiment, the mean absolute difference between the two response vectors over
+their $K$ entries, with the benchmark's run index held out of every
 configuration. The configuration with the smallest mean loss is the one
-`out/old/naive_mae_loss/montecarlo/sweep_grid.csv.gz` records for each benchmark, and it is in the
-final confidence set in all 5,000,000 rows, so it is the best configuration in
-the set. $d$ is recomputed from the same response caches
-(`out/sweep_grid_response_cache/`), over the same runs, with the same sums the
-grid formed its loss matrices with.
+`out/old/naive_mae_loss/montecarlo/sweep_grid.csv.gz` records for each
+benchmark, and it is in the final confidence set in all 5,000,000 rows, so it is
+the best configuration in the set. $d$ is recomputed from the same response
+caches (`out/montecarlo/sweep_grid_response_cache/`), over the same runs, with
+the same sums the grid formed its loss matrices with.
 
 **$\sigma^2_{j,m}$, the oracle**, is computed for every one of the 5,000,000
 benchmarks. For each configuration the mean and the sum of squared deviations
@@ -159,12 +159,12 @@ it in t-QVARMA fits.
   the 393 possible ones, through et_al's `mcs_block_indices`.
 - Every method is re-estimated on the same resamples. The local projections go
   through `applications/lp_system.h` and et_al's `lp_lin_and_nl` exactly as
-  `applications/abm_system_fit_lp.c` fitted every simulated run, so the
-  linear, state 1, state 2 and both-states vectors of one resample come from
-  one fit. The t-QVARMA is fitted from the benchmark's own cached estimate
-  (`out/abm_system_fit_qvarma/`) as its starting point, with et_al's default
-  budget of 4000 iterations, and its responses are computed as the cache
-  computes them.
+  `applications/abm_system_fit_lp.c` fitted every simulated run, so the linear,
+  state 1, state 2 and both-states vectors of one resample come from one fit.
+  The t-QVARMA is fitted from the benchmark's own cached estimate
+  (`out/applications/abm_system_fit_qvarma/`) as its starting point, with
+  et_al's default budget of 4000 iterations, and its responses are computed as
+  the cache computes them.
 - A resample whose response under a method is missing or not finite is left
   out of that method's $\sigma^{2*}$ and of nothing else.
 - The resamples of a benchmark come from et_al's generator at seed 123 and a

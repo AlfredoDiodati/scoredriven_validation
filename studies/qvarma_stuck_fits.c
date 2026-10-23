@@ -3,12 +3,12 @@ Why resuming an unconverged fit from its own cached parameters leaves half of
 them exactly where they were. A study of the points themselves, not a speed
 measurement and not a pass-or-fail check.
 
-out/abm_system_fit_qvarma_manifest.txt reports that of 20,497 fits carried on
-for a second budget of 2000 iterations, 8,902 came back with the same
+out/applications/abm_system_fit_qvarma_manifest.txt reports that of 20,497 fits
+carried on for a second budget of 2000 iterations, 8,902 came back with the same
 log-likelihood and, for 99 percent of those, a bit-identical gradient norm:
-L-BFGS took no step at all. A gradient of 1e5 with no step taken means the
-line search found nothing downhill, so this walks the steepest-descent ray out
-of every cached point and asks whether anything downhill is there to find.
+L-BFGS took no step at all. A gradient of 1e5 with no step taken means the line
+search found nothing downhill, so this walks the steepest-descent ray out of
+every cached point and asks whether anything downhill is there to find.
 
 Per cached fit: the objective and its gradient at the stored theta, then
 f(theta - s g / ||g||) over a geometric ladder of step lengths, recording the
@@ -21,7 +21,7 @@ gradient the function does not respond to.
 Fits are classified by what the ladder finds, not by what the manifest said,
 so the two are independent readings of the same question.
 
-Writes out/qvarma_stuck_fits.txt.
+Writes out/studies/qvarma_stuck_fits.txt.
 */
 #include "applications/abm_system.h"
 #include <et_al./sd/qvarma.h>
@@ -43,7 +43,7 @@ Writes out/qvarma_stuck_fits.txt.
 #define Q 1
 
 #define INPUT_DIR "out/dataset/abm_system"
-#define CACHE_DIR "out/abm_system_fit_qvarma"
+#define CACHE_DIR "out/applications/abm_system_fit_qvarma"
 
 #define N_STEPS 26
 #define N_DETAIL 6
@@ -257,7 +257,7 @@ int main(void) {
         mat_free(y);
     }
 
-    FILE *report = fopen("out/qvarma_stuck_fits.txt", "w");
+    FILE *report = fopen("out/studies/qvarma_stuck_fits.txt", "w");
     assert(report);
     fprintf(report, "Every cached fit under %s, probed at its own stored theta.\n", CACHE_DIR);
     fprintf(report, "The ladder is f(theta - s g/||g||) for s from 1e-14 to 1e11, "

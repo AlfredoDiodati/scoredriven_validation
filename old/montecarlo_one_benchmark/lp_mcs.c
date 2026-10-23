@@ -22,9 +22,10 @@ The benchmark is a replicate of a known configuration, so each set can be
 marked right or wrong: it should hold the configuration the benchmark was drawn
 from.
 
-Requires out/montecarlo/lp_irf_loss_<model>.csv. Writes
-out/montecarlo/lp_mcs_<model>.txt, the readable report with both elimination
-tables, and out/montecarlo/lp_mcs_<model>.csv, one row per configuration.
+Requires out/old/montecarlo_one_benchmark/lp_irf_loss_<model>.csv. Writes
+out/old/montecarlo_one_benchmark/lp_mcs_<model>.txt, the readable report with
+both elimination tables, and
+out/old/montecarlo_one_benchmark/lp_mcs_<model>.csv, one row per configuration.
 Nothing printed.
 */
 
@@ -232,9 +233,9 @@ int main(void) {
     };
     for (int model = MODEL_LP_LIN; model < N_MODELS; model++) {
         char loss_path[128], report_path[128], table_path[128];
-        snprintf(loss_path, sizeof loss_path, "out/montecarlo/lp_irf_loss_%s.csv", lp_model_name(model));
-        snprintf(report_path, sizeof report_path, "out/montecarlo/lp_mcs_%s.txt", lp_model_name(model));
-        snprintf(table_path, sizeof table_path, "out/montecarlo/lp_mcs_%s.csv", lp_model_name(model));
+        snprintf(loss_path, sizeof loss_path, "out/old/montecarlo_one_benchmark/lp_irf_loss_%s.csv", lp_model_name(model));
+        snprintf(report_path, sizeof report_path, "out/old/montecarlo_one_benchmark/lp_mcs_%s.txt", lp_model_name(model));
+        snprintf(table_path, sizeof table_path, "out/old/montecarlo_one_benchmark/lp_mcs_%s.csv", lp_model_name(model));
         compare_statistics(loss_path, report_path, table_path, description[model]);
     }
     return 0;

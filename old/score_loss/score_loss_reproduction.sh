@@ -3,19 +3,21 @@
 # Whether the two score loss programs, after their move to old/ and the
 # mat_chol status argument, still write the matrices already on disk.
 #
-# Each program writes into out/old/score_loss_reproduction/ through
+# Each program writes into out/old/score_loss/score_loss_reproduction/ through
 # ABM_SYSTEM_SCORE_LOSS_PATH, so the existing matrices are only read. The two
 # loss tables are compared byte for byte; the manifests name their own output
 # paths, so for them the differing lines are printed instead.
 #
-# Reads out/dataset/abm_system/, out/us_qvarma_spec_choice_p1q1r2_fit.json,
-# out/us_system.csv, out/abm_system_fit_qvarma/ and out/montecarlo/benchmark.env.
-# Writes out/old/score_loss_reproduction/.
+# Reads out/dataset/abm_system/,
+# out/applications/us_qvarma_spec_choice_p1q1r2_fit.json,
+# out/applications/us_system.csv, out/applications/abm_system_fit_qvarma/ and
+# out/old/montecarlo_one_benchmark/benchmark.env. Writes
+# out/old/score_loss/score_loss_reproduction/.
 
 set -u
 
 cd "$(dirname "$0")/../.."
-check_dir=out/old/score_loss_reproduction
+check_dir=out/old/score_loss/score_loss_reproduction
 mkdir -p "$check_dir"
 
 compare() {
@@ -36,15 +38,15 @@ compare_manifest() {
 echo "real-data score losses"
 ABM_SYSTEM_SCORE_LOSS_PATH="$check_dir/abm_system_score_loss.csv" ./bin/abm_system_score_loss \
     || echo "FAILED abm_system_score_loss"
-compare out/abm_system_score_loss.csv "$check_dir/abm_system_score_loss.csv"
-compare out/abm_system_score_loss_weighted.csv "$check_dir/abm_system_score_loss_weighted.csv"
-compare_manifest out/abm_system_score_loss_manifest.txt "$check_dir/abm_system_score_loss_manifest.txt"
+compare out/old/score_loss/applications/abm_system_score_loss.csv "$check_dir/abm_system_score_loss.csv"
+compare out/old/score_loss/applications/abm_system_score_loss_weighted.csv "$check_dir/abm_system_score_loss_weighted.csv"
+compare_manifest out/old/score_loss/applications/abm_system_score_loss_manifest.txt "$check_dir/abm_system_score_loss_manifest.txt"
 
 echo "Monte Carlo score losses"
 ABM_SYSTEM_SCORE_LOSS_PATH="$check_dir/score_loss.csv" ./bin/score_loss \
     || echo "FAILED score_loss"
-compare out/montecarlo/score_loss.csv "$check_dir/score_loss.csv"
-compare out/montecarlo/score_loss_weighted.csv "$check_dir/score_loss_weighted.csv"
-compare_manifest out/montecarlo/score_loss_manifest.txt "$check_dir/score_loss_manifest.txt"
+compare out/old/score_loss/montecarlo/score_loss.csv "$check_dir/score_loss.csv"
+compare out/old/score_loss/montecarlo/score_loss_weighted.csv "$check_dir/score_loss_weighted.csv"
+compare_manifest out/old/score_loss/montecarlo/score_loss_manifest.txt "$check_dir/score_loss_manifest.txt"
 
 echo "done"

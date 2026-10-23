@@ -52,7 +52,8 @@ against the average of the rest (`docs/MCS_VALIDATION_PROCEDURE.md`,
 `old/montecarlo_one_benchmark/studies/` diagnosed this experiment's results and
 moved with it. `docs/OLD_EXPERIMENTS.md` lists every discarded experiment.
 
-The outputs stay where they were, under `out/montecarlo/`. Every program builds
+The outputs are under `out/old/montecarlo_one_benchmark/`, its studies' under
+`out/old/montecarlo_one_benchmark/studies/`. Every program builds
 and runs with `make old-<stem>`, the stem being its file name, and the three
 drivers with `make old-montecarlo_one_benchmark`, `make
 old-montecarlo_one_benchmark_lp` and `make
@@ -63,12 +64,14 @@ old-montecarlo_every_run_of_cop_0191`.
 Choosing the benchmark on grounds connected to the answer would rig the
 experiment, so the grounds are fixed in advance and applied by
 `old/montecarlo_one_benchmark/benchmark_choice.c`, which writes its reasoning to
-`out/montecarlo/benchmark_choice.txt`. Three requirements, in order.
+`out/old/montecarlo_one_benchmark/benchmark_choice.txt`. Three requirements, in
+order.
 
 **It must come from a configuration the real-data confidence set kept.** The
 configurations surviving the impulse-response procedure under MCS_TR (the
-`tr_in_set` column of `out/old/naive_mae_loss/abm_system_mcs_statistic_comparison.csv`; the
-MCS_TMAX set is not read) are the candidate pool, which is `cop_0191` alone.
+`tr_in_set` column of
+`out/old/naive_mae_loss/applications/abm_system_mcs_statistic_comparison.csv`;
+the MCS_TMAX set is not read) are the candidate pool, which is `cop_0191` alone.
 Promoting a configuration the procedure did not keep would ask whether a poor
 benchmark is recovered, which is a different question.
 
@@ -78,11 +81,11 @@ the property in shortest supply. A benchmark whose own fit did not converge is
 a point the optimizer stopped at, not an estimate, and the whole experiment
 rests on the benchmark being a real estimate.
 
-**Within it, the converged replicate with the smallest gradient norm.** Fits
-the manifest marks as inherited from another replicate are excluded; the current
-manifest (`out/abm_system_fit_qvarma_manifest.txt`, 2026-09-10) has none, its
-p1q1r2 rows being 352,470 converged and reused, 621,485 unconverged and held,
-26,045 unconverged and resumed.
+**Within it, the converged replicate with the smallest gradient norm.** Fits the
+manifest marks as inherited from another replicate are excluded; the current
+manifest (`out/applications/abm_system_fit_qvarma_manifest.txt`, 2026-09-10) has
+none, its p1q1r2 rows being 352,470 converged and reused, 621,485 unconverged
+and held, 26,045 unconverged and resumed.
 
 These three requirements apply to this one benchmark only. The later
 experiments use every run of a configuration as a benchmark with no filter, so
@@ -129,7 +132,7 @@ column, no missing cells in any of the three matrices. Confidence set settings
 identical to the main pipeline's and to each other: alpha = 0.05, 10000
 bootstrap resamples, block length 1, bootstrap variance of the resampled mean,
 seed 123, stream 0, both statistics scored on the same resamples. Every fit
-read from `out/abm_system_fit_qvarma/`; nothing estimated.
+read from `out/applications/abm_system_fit_qvarma/`; nothing estimated.
 
 ### The impulse-response protocol recovers the benchmark exactly
 
@@ -262,9 +265,9 @@ readable.
 
 | file | what it holds |
 | --- | --- |
-| `out/montecarlo/sweep_irf.csv` | one row per benchmark, impulse-response protocol |
-| `out/montecarlo/sweep_score.csv` | the same under `q'q` |
-| `out/montecarlo/sweep_score_weighted.csv` | the same under `LM` |
+| `out/old/montecarlo_every_run_of_cop_0191/sweep_irf.csv` | one row per benchmark, impulse-response protocol |
+| `out/old/score_loss/montecarlo/sweep_score.csv` | the same under `q'q` |
+| `out/old/score_loss/montecarlo/sweep_score_weighted.csv` | the same under `LM` |
 
 Each row records whether `cop_0191` ended up in the confidence set, where it
 ranked by mean loss, its MCS p-value, the size of the set, whether the
@@ -301,7 +304,7 @@ keeps `cop_0191` about half the time, but through large sets in which it ranks
 near the bottom, not by ranking it first.
 
 The impulse-response result split by the benchmark's own fit, with convergence
-read from `out/abm_system_fit_qvarma_manifest.txt` (unchanged since
+read from `out/applications/abm_system_fit_qvarma_manifest.txt` (unchanged since
 2026-09-10, before the sweep):
 
 | benchmark's fit | benchmarks | `cop_0191` in set | smallest mean loss |
@@ -330,17 +333,18 @@ with 10000 resamples, block length 1, bootstrap variance, seed 123 stream 0.
 The row for `cop_0191` therefore reproduces row 0 of `sweep_irf.csv` and of
 `lp_sweep_<model>.csv`.
 
-The whole result is one file, `out/montecarlo/sweep_cops.csv.gz`, one row per
-model and benchmark configuration: whether the configuration is in the set,
-its rank by mean loss, its MCS p-value, the set size, whether the set was
-decided by an accepted test, the final p-value, replicates dropped, the
-configuration with the smallest mean loss, the seconds spent in the confidence
-set, and the configurations in the set. While it runs, rows go to
-`out/montecarlo/sweep_cops_progress.csv`, which a rerun resumes from and which
-is compressed and removed when all five models are done. A model added to
-the program later is run on a rerun: the finished file is unpacked back into
-the progress file, the new model's rows are appended, and the old rows are kept
-as they were.
+The whole result is one file,
+`out/old/montecarlo_run_0_of_every_configuration/sweep_cops.csv.gz`, one row per
+model and benchmark configuration: whether the configuration is in the set, its
+rank by mean loss, its MCS p-value, the set size, whether the set was decided by
+an accepted test, the final p-value, replicates dropped, the configuration with
+the smallest mean loss, the seconds spent in the confidence set, and the
+configurations in the set. While it runs, rows go to
+`out/old/montecarlo_run_0_of_every_configuration/sweep_cops_progress.csv`, which
+a rerun resumes from and which is compressed and removed when all five models
+are done. A model added to the program later is run on a rerun: the finished
+file is unpacked back into the progress file, the new model's rows are appended,
+and the old rows are kept as they were.
 
 ### Results
 
@@ -384,9 +388,10 @@ own configuration is in the set for 26 of those 337 and 71 of the other 663.
 ## Recovery by whether the benchmark's fit converged
 
 Only the t-QVARMA has a convergence status; the local projections are least
-squares. Convergence read from `out/abm_system_fit_qvarma_manifest.txt`, whose
-fits are unchanged since 2026-09-10, before every experiment here. The last row
-is the grid's, from `docs/OLD_MONTECARLO_NAIVE_MAE_GRID.md`, for comparison.
+squares. Convergence read from
+`out/applications/abm_system_fit_qvarma_manifest.txt`, whose fits are unchanged
+since 2026-09-10, before every experiment here. The last row is the grid's, from
+`docs/OLD_MONTECARLO_NAIVE_MAE_GRID.md`, for comparison.
 
 | experiment | converged benchmarks: own configuration in set | unconverged benchmarks: own configuration in set |
 | --- | --- | --- |

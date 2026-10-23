@@ -9,21 +9,21 @@ real-data benchmark the simulated fits of applications/abm_system_fit_lp.c are
 compared against.
 
 The series are the ones the t-QVARMA is fitted on: applications/us_data.h's
-us_system_growth_block turns out/us_system.csv into GDP growth, energy growth,
-employment change, inflation and the interest rate, 187 quarters from 1973Q2
-to 2019Q4. applications/lp_system.h's lp_system_from_stored then drops the
-first three, where R's 4-period moving average of log GDP, the series that
-decides the state, does not exist: 184 quarters from 1974Q1. The settings are
-lp_system_spec()'s, the same as for every simulated run: 4 lags, 15 horizons,
-unit shocks in the order above, the state weight from the HP cycle (lambda
-1600) of that moving average through a logistic of slope 2, lagged one period.
-The simulated fits went through exactly this route, so the two sides differ
-only in their data.
+us_system_growth_block turns out/applications/us_system.csv into GDP growth,
+energy growth, employment change, inflation and the interest rate, 187 quarters
+from 1973Q2 to 2019Q4. applications/lp_system.h's lp_system_from_stored then
+drops the first three, where R's 4-period moving average of log GDP, the series
+that decides the state, does not exist: 184 quarters from 1974Q1. The settings
+are lp_system_spec()'s, the same as for every simulated run: 4 lags, 15
+horizons, unit shocks in the order above, the state weight from the HP cycle
+(lambda 1600) of that moving average through a logistic of slope 2, lagged one
+period. The simulated fits went through exactly this route, so the two sides
+differ only in their data.
 
 The fit is stored as a one-row archive in lp_system.h's layout,
-out/us_lp_fit.npz, the layout every configuration's fits are stored in. A rerun
-keeps it when it was fitted under this specification on exactly these series,
-and fits again otherwise.
+out/applications/us_lp_fit.npz, the layout every configuration's fits are stored
+in. A rerun keeps it when it was fitted under this specification on exactly
+these series, and fits again otherwise.
 
 This is that fit on the cumulated levels lp_system_r_levels.h builds, applied
 to the US growth rates exactly as to the simulated ones.
@@ -35,9 +35,9 @@ Every file below carries _r_levels after us_lp_fit. The same transformation
 is applied to the US growth rates as to every simulated run; how the R code
 prepared the US data is not in this repository.
 
-Writes out/us_lp_fit.npz, out/us_lp_fit.txt (the data, the settings and the fit
-notes) and out/us_lp_fit_irf.csv (every response: model, response, horizon,
-shock, value). Nothing printed.
+Writes out/applications/us_lp_fit.npz, out/applications/us_lp_fit.txt (the data,
+the settings and the fit notes) and out/applications/us_lp_fit_irf.csv (every
+response: model, response, horizon, shock, value). Nothing printed.
 */
 
 #include "applications/us_data.h"
@@ -52,9 +52,9 @@ int main(int argc, char **argv) {
     int force_refit = lp_parse_refit(argc, argv);
     openblas_set_num_threads(1);
     const char *const *series_name = r_level_name;
-    const char *archive_path = "out/us_lp_fit_r_levels.npz";
-    const char *report_path = "out/us_lp_fit_r_levels.txt";
-    const char *irf_path = "out/us_lp_fit_r_levels_irf.csv";
+    const char *archive_path = "out/old/lp_r_levels/us_lp_fit_r_levels.npz";
+    const char *report_path = "out/old/lp_r_levels/us_lp_fit_r_levels.txt";
+    const char *irf_path = "out/old/lp_r_levels/us_lp_fit_r_levels_irf.csv";
 
     Mat original = load_us_system();
     Mat stored = us_system_growth_block(original);
@@ -79,7 +79,7 @@ int main(int argc, char **argv) {
     FILE *report = fopen(report_path, "w");
     assert(report && "us_lp_fit: cannot open the report");
     fprintf(report, "Local projections on the US data\n\n");
-    fprintf(report, "data: out/us_system.csv through us_system_growth_block, then %s; %d quarters from "
+    fprintf(report, "data: out/applications/us_system.csv through us_system_growth_block, then %s; %d quarters from "
                     "1974Q1 to 2019Q4, in the order of the recursive identification\n",
             LP_R_LEVELS_SERIES_DESCRIPTION, y.c);
     fprintf(report, "state series: R's 4-period moving average of 100 log(100 + cumsum(GDP_growth))\n");

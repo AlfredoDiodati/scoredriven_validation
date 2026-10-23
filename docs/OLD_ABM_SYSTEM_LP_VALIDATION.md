@@ -25,15 +25,14 @@ redone once the Monte Carlo is finished.
 
 ## What is run
 
-- **Data.** The US series (`out/us_system.csv`) turned into the five series the
-  t-QVARMA is fitted on: GDP growth, energy growth, employment change,
-  inflation, interest rate (`us_system_growth_block` in
+- **Data.** The US series (`out/applications/us_system.csv`) turned into the
+  five series the t-QVARMA is fitted on: GDP growth, energy growth, employment
+  change, inflation, interest rate (`us_system_growth_block` in
   `applications/us_data.h`; `docs/DATA_DOCUMENTATION.md`). The first three
   quarters are dropped, where the 4-quarter moving average of log GDP, the
-  series that decides the state, does not exist: 184 quarters, 1974Q1 to
-  2019Q4. The simulated runs, 1000 per configuration, 397 periods each, go
-  through the same route (`lp_system_from_stored` in
-  `applications/lp_system.h`).
+  series that decides the state, does not exist: 184 quarters, 1974Q1 to 2019Q4.
+  The simulated runs, 1000 per configuration, 397 periods each, go through the
+  same route (`lp_system_from_stored` in `applications/lp_system.h`).
 - **Models.** Fitted by et_al's `lp_lin_and_nl`: 4 lags, horizons 0 to 15,
   unit shocks identified recursively in the order above. The state-dependent
   model weights each period by a logistic function, slope 2, of the
@@ -42,23 +41,27 @@ redone once the Monte Carlo is finished.
   state 1 (mostly periods with GDP above trend) and state 2 (mostly below).
   `docs/MONTECARLO_VALIDATION.md`, "The local projections", has the full
   description.
-- **US fit.** `applications/us_lp_fit.c`, stored in `out/us_lp_fit.npz`, with
-  the fit notes in `out/us_lp_fit.txt` and every response in
-  `out/us_lp_fit_irf.csv`. Every regression was solved at full rank.
+- **US fit.** `applications/us_lp_fit.c`, stored in
+  `out/applications/us_lp_fit.npz`, with the fit notes in
+  `out/applications/us_lp_fit.txt` and every response in
+  `out/applications/us_lp_fit_irf.csv`. Every regression was solved at full
+  rank.
 - **Loss.** For each model, the mean absolute difference between the US
-  responses and each simulated run's (`old/naive_mae_loss/applications/abm_system_lp_irf_loss.c`,
-  `out/old/naive_mae_loss/abm_system_lp_irf_loss_<model>.csv`): 1000 runs by 1000
-  configurations, no cell missing.
-- **Confidence set.** `old/naive_mae_loss/applications/abm_system_lp_mcs.c`: level 0.05, 10000
-  bootstrap resamples of single runs, the bootstrap variance, et_al's seed 123,
-  the range statistic `MCS_TR` (every pair of configurations compared) as the
-  headline and `MCS_TMAX` (each configuration against the average of those
-  left) beside it, the t-QVARMA pipeline's settings
-  (`out/old/naive_mae_loss/abm_system_lp_mcs_<model>.txt` and `.csv`).
+  responses and each simulated run's
+  (`old/naive_mae_loss/applications/abm_system_lp_irf_loss.c`,
+  `out/old/naive_mae_loss/applications/abm_system_lp_irf_loss_<model>.csv`):
+  1000 runs by 1000 configurations, no cell missing.
+- **Confidence set.** `old/naive_mae_loss/applications/abm_system_lp_mcs.c`:
+  level 0.05, 10000 bootstrap resamples of single runs, the bootstrap variance,
+  et_al's seed 123, the range statistic `MCS_TR` (every pair of configurations
+  compared) as the headline and `MCS_TMAX` (each configuration against the
+  average of those left) beside it, the t-QVARMA pipeline's settings
+  (`out/old/naive_mae_loss/applications/abm_system_lp_mcs_<model>.txt` and
+  `.csv`).
 
     make old-abm_system_lp_mcs      the US fit, the loss tables, the sets
 
-It reads the simulated fits in `out/abm_system_fit_lp/`
+It reads the simulated fits in `out/applications/abm_system_fit_lp/`
 (`make app-abm_system_fit_lp`) and does not rebuild them. The loss tables take
 about 25 minutes, most of it reading the simulated fits and checking each
 against its own series; the six confidence sets about 40 seconds.
@@ -75,8 +78,8 @@ against its own series; the six confidence sets about 40 seconds.
 MCS_TMAX keeps the same sets under all three models.
 
 The t-QVARMA pipeline on the same data keeps `cop_0191` alone
-(`out/old/naive_mae_loss/abm_system_mcs_statistic_comparison.csv`). The two auxiliary models
-agree.
+(`out/old/naive_mae_loss/applications/abm_system_mcs_statistic_comparison.csv`).
+The two auxiliary models agree.
 
 `cop_0191` is also the configuration the discarded single-benchmark Monte Carlo
 experiments used as their known answer

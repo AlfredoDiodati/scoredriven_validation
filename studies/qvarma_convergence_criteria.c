@@ -39,7 +39,7 @@ an exact reparameterization of the same model, so every cell is the same
 statistical problem seen in different units, and any criterion whose reading
 changes across a row is measuring the units.
 
-Writes out/qvarma_convergence_criteria.txt.
+Writes out/studies/qvarma_convergence_criteria.txt.
 */
 #include "applications/abm_system.h"
 #include <et_al./sd/qvarma.h>
@@ -374,7 +374,7 @@ int main(void) {
         cell[index] = out;
     }
 
-    FILE *report = fopen("out/qvarma_convergence_criteria.txt", "w");
+    FILE *report = fopen("out/studies/qvarma_convergence_criteria.txt", "w");
     assert(report);
     fprintf(report, "t-QVARMA(1,1,2), K = %d, K_star = %d, R = %d, simulated from a fixed truth "
                     "with nu = 8.\n", K, K_STAR, R);
@@ -527,7 +527,7 @@ int main(void) {
     */
     {
         fprintf(report, "\n\nthe proposed test applied to the pipeline's own cached fits\n");
-        fprintf(report, "  out/abm_system_fit_qvarma, spec p1q1r2, every replicate.\n");
+        fprintf(report, "  out/applications/abm_system_fit_qvarma, spec p1q1r2, every replicate.\n");
         fprintf(report, "  No reference point exists for real data, so these are counts, "
                         "not accuracy.\n\n");
 
@@ -560,7 +560,7 @@ int main(void) {
                     if (!probe) break;
                     fclose(probe);
                     snprintf(cache_path, sizeof cache_path,
-                             "out/abm_system_fit_qvarma/%s/replicate_%03d_p1q1r2_fit.json",
+                             "out/applications/abm_system_fit_qvarma/%s/replicate_%03d_p1q1r2_fit.json",
                              name[s_at], rep);
 
                     DataFrame df = df_read_csv(csv_path, csv_read_options_default());

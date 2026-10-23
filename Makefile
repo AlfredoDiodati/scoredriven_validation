@@ -28,7 +28,7 @@
 #   make bench-performance ETAL_DEV=1
 #                                 the same, built against the development et_al.
 #   make applications             prepare the US data and draw the parameter
-#                                 design, results to out/. Always
+#                                 design, results to out/applications/. Always
 #                                 built in float64. One app-<stem> target per
 #                                 stem in APPLICATION_STEMS.
 #   make app-<stem>                one application on its own, EXPERIMENT_STEMS
@@ -44,6 +44,8 @@
 #   procedure of docs/MCS_ALTERNATIVE_CALIBRATION.md, also at -O3.
 #   make mc-seri_uncorrected_true_configuration_recovery: that grid with the
 #   loss left uncorrected, the plain squared error, also at -O3.
+#   make mc-uncorrected_true_configuration_recovery: the first grid with the
+#   loss left uncorrected, also at -O3.
 #   make mc-<stem>: one other montecarlo/ program on its own, built and run.
 #   docs/MONTECARLO_VALIDATION.md describes them.
 #   make old-<stem>: one program of an experiment discarded from either
@@ -57,8 +59,8 @@
 #   tests/       pass or fail. A failure stops `make test` and the build.
 #   benchmarks/  how long something takes. Never part of `make test`: a function
 #                that returns the wrong answer quickly is not fast.
-#   studies/     a question about behaviour, answered into out/. No verdict, so
-#                nothing here can gate anything.
+#   studies/     a question about behaviour, answered into out/studies/. No
+#                verdict, so nothing here can gate anything.
 #
 # The directory is what says which of the three a script is, so adding one means
 # putting it in the right tree and adding its stem to the matching list.
@@ -122,10 +124,11 @@ TEST_STEMS := abm_system_layout abm_system_dataset_finiteness dsk_long_path \
                own_deviation_loss_correctness
 # Where the wall time of a t-QVARMA fit goes, and what each way of speeding it
 # up is worth. Measured 2026-08-29 against a 500,000-fit run of
-# abm_system_fit_qvarma; out/fit_speedup_options.txt collects the numbers and
-# the setup behind them. fit_contention_source is the only one that touches
-# neither et_al. nor this project: it times cblas and malloc on their own,
-# because that is what isolates which of the two the taped filter contends on.
+# abm_system_fit_qvarma; out/benchmarks/fit_speedup_options.txt collects the
+# numbers and the setup behind them. fit_contention_source is the only one that
+# touches neither et_al. nor this project: it times cblas and malloc on their
+# own, because that is what isolates which of the two the taped filter contends
+# on.
 BENCH_STEMS := qvarma_fit_cost qvarma_fit_io qvarma_iteration_budget \
                 qvarma_taped_vs_fused qvarma_thread_scaling qvarma_process_scaling \
                 fit_contention_source
@@ -141,10 +144,10 @@ STUDY_STEMS := qvarma_stuck_fits qvarma_conditioning qvarma_convergence_criteria
                abm_system_garch_effect
 # us_prepare_data has to come first: it is the only script that reads
 # us_real.csv's Unemployment and Des_Energy_demand columns, and it writes
-# out/us_system.csv, which us_data.h reads back. The order here is what makes
-# `applications`' shell loop run it first; the app-<name> targets that need it
-# also depend on it directly below, for a standalone `make app-<name>` to
-# regenerate the CSV rather than read a stale one.
+# out/applications/us_system.csv, which us_data.h reads back. The order here is
+# what makes `applications`' shell loop run it first; the app-<name> targets
+# that need it also depend on it directly below, for a standalone `make
+# app-<name>` to regenerate the CSV rather than read a stale one.
 #
 # Only data preparation is routine. A model fit already takes real time and
 # does not change on a routine basis, so the fitting scripts and the whole
@@ -171,11 +174,11 @@ EXPERIMENT_STEMS := us_qvarma_spec_choice \
 # rule below. docs/MONTECARLO_VALIDATION.md.
 MONTECARLO_STEMS := seri_true_configuration_recovery_report seri_against_naive_grid \
                     seri_against_naive_by_configuration response_variance_by_configuration \
-                    seri_corrected_against_uncorrected_grid
+                    seri_corrected_against_uncorrected_grid identification_table
 # Experiments discarded from both pipelines, one folder of old/ per experiment,
 # kept buildable with the flags of the pipeline they came from and run one at a
-# time via make old-<stem>, the stem being the file name. They write to out/
-# and out/montecarlo/ like the pipeline they came from.
+# time via make old-<stem>, the stem being the file name. Each writes to the
+# folder of out/old/ that mirrors its own source folder.
 # docs/OLD_EXPERIMENTS.md says why each one was discarded.
 OLD_SOURCES := old/score_loss/applications/abm_system_score_loss.c \
                old/score_loss/applications/abm_system_mcs_statistic_comparison_score.c \
@@ -272,9 +275,9 @@ $(BIN)/%: tests/%.c $(HEADERS) $(TEST_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN
 # `test-%:` pattern would silently report nothing to be done.
 define test_targets_for_stem
 .PHONY: test-$(1) test-$(1)-stress
-test-$(1): $(BIN)/$(1) | $(OUT)
+test-$(1): $(BIN)/$(1) | out/tests
 	./$(BIN)/$(1)
-test-$(1)-stress: $(BIN)/$(1) | $(OUT)
+test-$(1)-stress: $(BIN)/$(1) | out/tests
 	STRESS=1 ./$(BIN)/$(1)
 endef
 $(foreach stem,$(TEST_STEMS),$(eval $(call test_targets_for_stem,$(stem))))
@@ -285,22 +288,22 @@ define bench_target_for_stem
 .PHONY: bench-$(1)
 $(BIN)/$(1): benchmarks/$(1).c $(HEADERS) $(BENCH_ETAL_HEADERS) | $(BIN)
 	$(CC) $(BENCH_CFLAGS) $(BENCH_ETAL_CFLAGS) $(INCLUDES) $$< -o $$@ $(ETAL_LIBS)
-bench-$(1): $(BIN)/$(1) | $(OUT)
+bench-$(1): $(BIN)/$(1) | out/benchmarks
 	./$(BIN)/$(1)
 endef
 $(foreach stem,$(BENCH_STEMS),$(eval $(call bench_target_for_stem,$(stem))))
 
-bench-performance: $(BENCH_BINARIES) | $(OUT)
+bench-performance: $(BENCH_BINARIES) | out/benchmarks
 	@for binary in $(BENCH_BINARIES); do ./$$binary || exit 1; done
 
 # Studies are neither correctness gates nor speed measurements: they answer a
-# question about the model's behaviour and write their answer to out/. Kept out
-# of `test` because they take minutes and have no pass or fail.
+# question about the model's behaviour and write their answer to out/studies/.
+# Kept out of `test` because they take minutes and have no pass or fail.
 define study_target_for_stem
 .PHONY: study-$(1)
 $(BIN)/$(1): studies/$(1).c $(HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
 	$(CC) $(CFLAGS) -fopenmp $(ETAL_CFLAGS) $(INCLUDES) $$< -o $$@ $(ETAL_LIBS)
-study-$(1): $(BIN)/$(1) | $(OUT)
+study-$(1): $(BIN)/$(1) | out/studies
 	./$(BIN)/$(1)
 endef
 $(foreach stem,$(STUDY_STEMS),$(eval $(call study_target_for_stem,$(stem))))
@@ -312,8 +315,8 @@ study-inputs:
 	  echo "out/dataset/abm_system/ is missing. The studies read the simulated dataset"; \
 	  echo "and never rebuild it; applications/abm_system_simulate_all.sh produces it."; \
 	  exit 1; }
-	@test -d out/abm_system_fit_qvarma || { \
-	  echo "out/abm_system_fit_qvarma/ is missing. The studies read the fit cache and"; \
+	@test -d out/applications/abm_system_fit_qvarma || { \
+	  echo "out/applications/abm_system_fit_qvarma/ is missing. The studies read the fit cache and"; \
 	  echo "never rebuild it; make app-abm_system_fit_qvarma produces it."; \
 	  exit 1; }
 
@@ -321,10 +324,11 @@ study-inputs:
 # One name per thing: study-robustness says what these are, study is the name
 # the README and the habit already use.
 study-robustness: study
-study: study-inputs $(STUDY_BINARIES) | $(OUT)
+study: study-inputs $(STUDY_BINARIES) | out/studies
 	@for binary in $(STUDY_BINARIES); do ./$$binary || exit 1; done
 
-# Applications fit the model to a real dataset and write their results to out/.
+# Applications fit the model to a real dataset and write their results to
+# out/applications/.
 # Neither a test nor a study on simulated data, so they are their own category
 # and are never swept into `test`. -DMAT_DOUBLE is unconditional here rather
 # than a switch: the float32 filter aborts once mu_dag's random walk leaves
@@ -333,7 +337,7 @@ define application_target_for_stem
 .PHONY: app-$(1)
 $(BIN)/$(1): applications/$(1).c $(HEADERS) $(APPLICATION_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
 	$(CC) $(CFLAGS) -DMAT_DOUBLE -fopenmp $(ETAL_CFLAGS) $(INCLUDES) $$< -o $$@ $(ETAL_LIBS)
-app-$(1): $(BIN)/$(1) | $(OUT)
+app-$(1): $(BIN)/$(1) | out/applications
 	./$(BIN)/$(1)
 endef
 $(foreach stem,$(APPLICATION_STEMS),$(eval $(call application_target_for_stem,$(stem))))
@@ -351,14 +355,19 @@ mc-$(1): $(BIN)/$(1) | out/montecarlo
 endef
 $(foreach stem,$(MONTECARLO_STEMS),$(eval $(call montecarlo_target_for_stem,$(stem))))
 
-out/montecarlo:
-	@mkdir -p out/montecarlo
+# Every script writes under out/ in the folder that mirrors its own, so
+# old/naive_mae_loss/studies/x.c writes to out/old/naive_mae_loss/studies/. The
+# folders are made here, so a fresh clone can run any target without a mkdir.
+OUTPUT_DIRS := $(sort out/applications out/tests out/benchmarks out/studies out/montecarlo \
+                       $(patsubst %/,out/%,$(dir $(OLD_SOURCES))))
+$(OUTPUT_DIRS):
+	@mkdir -p $@
 
 define old_target_for_source
 .PHONY: old-$(1)
 $(BIN)/$(1): $(2) $(HEADERS) $(APPLICATION_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
 	$(CC) $(CFLAGS) -DMAT_DOUBLE -fopenmp $(ETAL_CFLAGS) $(INCLUDES) $$< -o $$@ $(ETAL_LIBS)
-old-$(1): $(BIN)/$(1) | $(OUT) out/montecarlo
+old-$(1): $(BIN)/$(1) | $(patsubst %/,out/%,$(dir $(2)))
 	./$(BIN)/$(1)
 endef
 $(foreach source,$(OLD_SOURCES),$(eval $(call old_target_for_source,$(notdir $(basename $(source))),$(source))))
@@ -367,7 +376,8 @@ $(foreach source,$(OLD_SOURCES),$(eval $(call old_target_for_source,$(notdir $(b
 OLD_BENCHMARK_HEADER := old/montecarlo_one_benchmark/benchmark.h
 $(addprefix $(BIN)/,lp_irf_loss lp_mcs lp_sweep sweep_cops sweep_grid): applications/abm_system_lp.h montecarlo/response_cache.h
 $(BIN)/seri_true_configuration_recovery_report $(BIN)/seri_against_naive_grid \
-    $(BIN)/seri_against_naive_by_configuration $(BIN)/seri_corrected_against_uncorrected_grid: \
+    $(BIN)/seri_against_naive_by_configuration $(BIN)/seri_corrected_against_uncorrected_grid \
+    $(BIN)/identification_table: \
     montecarlo/response_cache.h
 $(BIN)/response_variance_by_configuration: montecarlo/recovery_loss.h montecarlo/response_cache.h
 $(addprefix $(BIN)/,abm_system_lp_irf_loss abm_system_lp_mcs): applications/abm_system_lp.h
@@ -415,6 +425,45 @@ $(BIN)/seri_uncorrected_true_configuration_recovery: montecarlo/seri_uncorrected
 mc-seri_uncorrected_true_configuration_recovery: $(BIN)/seri_uncorrected_true_configuration_recovery | out/montecarlo
 	./$(BIN)/seri_uncorrected_true_configuration_recovery
 
+# The bootstrap grid with the loss left uncorrected, the plain squared error
+# and MCS_TR at 2000 resamples, so it differs from true_configuration_recovery
+# only in the correction. -O3 and its own rule for the same reasons.
+.PHONY: mc-uncorrected_true_configuration_recovery
+$(BIN)/uncorrected_true_configuration_recovery: montecarlo/uncorrected_true_configuration_recovery.c \
+    montecarlo/recovery_loss.h montecarlo/response_cache.h $(HEADERS) $(APPLICATION_HEADERS) \
+    $(ETAL_INSTALLED_HEADERS) | $(BIN)
+	$(CC) $(subst -O2,-O3,$(CFLAGS)) -DMAT_DOUBLE -fopenmp $(ETAL_CFLAGS) $(INCLUDES) $< -o $@ $(ETAL_LIBS)
+mc-uncorrected_true_configuration_recovery: $(BIN)/uncorrected_true_configuration_recovery | out/montecarlo
+	./$(BIN)/uncorrected_true_configuration_recovery
+
+# The comparison of the two bootstrap grids is the Seri comparison's program
+# pointed at their files.
+.PHONY: mc-corrected_against_uncorrected_grid
+$(BIN)/corrected_against_uncorrected_grid: montecarlo/seri_corrected_against_uncorrected_grid.c \
+    montecarlo/response_cache.h $(HEADERS) $(APPLICATION_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
+	$(CC) $(CFLAGS) -DMAT_DOUBLE -fopenmp $(ETAL_CFLAGS) $(INCLUDES) \
+	    -DCORRECTED_PATH='"out/montecarlo/true_configuration_recovery.csv.gz"' \
+	    -DUNCORRECTED_RESULT_PATH='"out/montecarlo/uncorrected_true_configuration_recovery.csv.gz"' \
+	    -DUNCORRECTED_PROGRESS_PATH='"out/montecarlo/uncorrected_true_configuration_recovery_progress.csv"' \
+	    -DREPORT_PATH='"out/montecarlo/corrected_against_uncorrected_grid_report.txt"' $< -o $@ $(ETAL_LIBS)
+mc-corrected_against_uncorrected_grid: $(BIN)/corrected_against_uncorrected_grid | out/montecarlo
+	./$(BIN)/corrected_against_uncorrected_grid
+
+# The same program comparing the two confidence sets on the corrected loss:
+# the Seri grid against the bootstrap grid, over the benchmarks both hold, so
+# it can run while the bootstrap grid is still going.
+.PHONY: mc-seri_against_bootstrap_grid
+$(BIN)/seri_against_bootstrap_grid: montecarlo/seri_corrected_against_uncorrected_grid.c \
+    montecarlo/response_cache.h $(HEADERS) $(APPLICATION_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
+	$(CC) $(CFLAGS) -DMAT_DOUBLE -fopenmp $(ETAL_CFLAGS) $(INCLUDES) \
+	    -DCORRECTED_PATH='"out/montecarlo/seri_true_configuration_recovery.csv.gz"' \
+	    -DUNCORRECTED_RESULT_PATH='"out/montecarlo/true_configuration_recovery.csv.gz"' \
+	    -DUNCORRECTED_PROGRESS_PATH='"out/montecarlo/true_configuration_recovery_progress.csv"' \
+	    -DCORRECTED_LABEL='"Seri"' -DUNCORRECTED_LABEL='"bootstrap"' \
+	    -DREPORT_PATH='"out/montecarlo/seri_against_bootstrap_grid_report.txt"' $< -o $@ $(ETAL_LIBS)
+mc-seri_against_bootstrap_grid: $(BIN)/seri_against_bootstrap_grid | out/montecarlo
+	./$(BIN)/seri_against_bootstrap_grid
+
 # The naive-loss grid's five million confidence sets are built at -O3, where GCC
 # vectorises mcs()'s pair spreads; without -ffast-math that changes no
 # addition's order, so the results are the -O2 build's bit for bit. Measured
@@ -427,18 +476,15 @@ $(BIN)/sweep_grid: old/naive_mae_loss/montecarlo/sweep_grid.c $(HEADERS) $(APPLI
 old-sweep_grid: $(BIN)/sweep_grid | out/old/naive_mae_loss/montecarlo
 	./$(BIN)/sweep_grid
 
-out/old/naive_mae_loss out/old/naive_mae_loss/montecarlo:
-	@mkdir -p $@
-
 # The discarded drivers, each building what it runs first: the one-benchmark
 # experiment under the t-QVARMA and under the local projections, and every run
 # of cop_0191 as the benchmark.
 .PHONY: old-montecarlo_one_benchmark old-montecarlo_one_benchmark_lp old-montecarlo_every_run_of_cop_0191
-old-montecarlo_one_benchmark: $(addprefix $(BIN)/,benchmark_choice irf_loss mcs mcs_statistic_comparison) | out/montecarlo
+old-montecarlo_one_benchmark: $(addprefix $(BIN)/,benchmark_choice irf_loss mcs mcs_statistic_comparison) | out/old/montecarlo_one_benchmark
 	./old/montecarlo_one_benchmark/run.sh
-old-montecarlo_one_benchmark_lp: $(addprefix $(BIN)/,lp_irf_loss lp_mcs) | out/montecarlo
+old-montecarlo_one_benchmark_lp: $(addprefix $(BIN)/,lp_irf_loss lp_mcs) | out/old/montecarlo_one_benchmark
 	./old/montecarlo_one_benchmark/lp_run.sh
-old-montecarlo_every_run_of_cop_0191: $(BIN)/sweep_irf | out/montecarlo
+old-montecarlo_every_run_of_cop_0191: $(BIN)/sweep_irf | out/old/montecarlo_every_run_of_cop_0191
 	./old/montecarlo_every_run_of_cop_0191/sweep.sh
 
 # abm_system_simulate is built but never run by a target of its own: with no
@@ -449,9 +495,9 @@ old-montecarlo_every_run_of_cop_0191: $(BIN)/sweep_irf | out/montecarlo
 $(BIN)/abm_system_simulate: applications/abm_system_simulate.c $(HEADERS) $(APPLICATION_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
 	$(CC) $(CFLAGS) -DMAT_DOUBLE -fopenmp $(ETAL_CFLAGS) $(INCLUDES) $< -o $@ $(ETAL_LIBS)
 
-# us_data.h reads out/us_system.csv rather than the raw file, so a standalone
-# run has to regenerate it first rather than trust whatever an earlier run
-# left behind.
+# us_data.h reads out/applications/us_system.csv rather than the raw file, so a
+# standalone run has to regenerate it first rather than trust whatever an
+# earlier run left behind.
 app-us_qvarma_spec_choice: app-us_prepare_data
 
 # app-abm_system_fit_qvarma has no prerequisite that builds its dataset. It fits
@@ -516,7 +562,7 @@ $(BIN)/throughput_iteration_budget_i$(1): applications/throughput_iteration_budg
 	$(CC) $(CFLAGS) -DMAT_DOUBLE -fopenmp \
 	      -DBASE_ITERATIONS=$(word 1,$(subst _, ,$(1))) -DHIGH_ITERATIONS=$(word 2,$(subst _, ,$(1))) \
 	      $(ETAL_CFLAGS) $(INCLUDES) $$< -o $$@ $(ETAL_LIBS)
-app-throughput_iteration_budget-i$(1): $(BIN)/throughput_iteration_budget_i$(1) | $(OUT)
+app-throughput_iteration_budget-i$(1): $(BIN)/throughput_iteration_budget_i$(1) | out/applications
 	./$(BIN)/throughput_iteration_budget_i$(1)
 endef
 $(foreach pair,$(THROUGHPUT_BUDGET_PAIRS),$(eval $(call scale_comparison_for_pair,$(pair))))
@@ -527,7 +573,7 @@ $(BIN)/throughput_fit_i$(1): applications/throughput_fit.c \
                                           $(APPLICATION_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
 	$(CC) $(CFLAGS) -DMAT_DOUBLE -DMAX_ITERATIONS=$(1) -fopenmp $(ETAL_CFLAGS) $(INCLUDES) \
 	      $$< -o $$@ $(ETAL_LIBS)
-app-throughput_fit-i$(1): $(BIN)/throughput_fit_i$(1) | $(OUT)
+app-throughput_fit-i$(1): $(BIN)/throughput_fit_i$(1) | out/applications
 	./$(BIN)/throughput_fit_i$(1)
 endef
 $(foreach cap,$(THROUGHPUT_ITERATION_CAPS),$(eval $(call scale_fit_target_for_cap,$(cap))))
@@ -560,7 +606,7 @@ $(BIN)/dsk_bulk_cancellation_distribution: tests/dsk_bulk_cancellation_distribut
                                            model/dsk_sfc/dsk_sfc_bulk_cancellation.h $(DSK_RANDOM_SOURCES) | $(BIN)
 	g++ -std=c++11 -O2 -I. $< $(DSK_RANDOM_SOURCES) -o $@
 .PHONY: test-dsk_bulk_cancellation_distribution
-test-dsk_bulk_cancellation_distribution: $(BIN)/dsk_bulk_cancellation_distribution | $(OUT)
+test-dsk_bulk_cancellation_distribution: $(BIN)/dsk_bulk_cancellation_distribution | out/tests
 	./$(BIN)/dsk_bulk_cancellation_distribution
 
 # abm_system_dataset_finiteness sweeps every archive of the experiment, one
@@ -597,10 +643,10 @@ test-dsk_good_unit_invariance: model
 test-dsk_dataset_reproduction: model model-upstream
 test-dsk_tail_replicate_reproduction: model model-upstream
 
-applications: $(APPLICATION_BINARIES) | $(OUT)
+applications: $(APPLICATION_BINARIES) | out/applications
 	@for binary in $(APPLICATION_BINARIES); do ./$$binary || exit 1; done
 
-bench: $(BENCH_BINARIES) | $(OUT)
+bench: $(BENCH_BINARIES) | out/benchmarks
 	@for binary in $(BENCH_BINARIES); do ./$$binary || exit 1; done
 
 # Eleven of the sixteen stems run the simulator, so every build they reach for has
@@ -610,10 +656,10 @@ bench: $(BENCH_BINARIES) | $(OUT)
 # clean one.
 TEST_PREREQUISITES := model model-upstream model-sanitized app-abm_system_design
 
-test: $(TEST_PREREQUISITES) $(TEST_BINARIES) | $(OUT)
+test: $(TEST_PREREQUISITES) $(TEST_BINARIES) | out/tests
 	@for binary in $(TEST_BINARIES); do ./$$binary || exit 1; done
 
-test-stress: $(TEST_PREREQUISITES) $(TEST_BINARIES) | $(OUT)
+test-stress: $(TEST_PREREQUISITES) $(TEST_BINARIES) | out/tests
 	@for binary in $(TEST_BINARIES); do STRESS=1 ./$$binary || exit 1; done
 
 # Sanitizers, per et_al.'s testing policy for allocation-heavy code. CFLAGS has
@@ -621,7 +667,7 @@ test-stress: $(TEST_PREREQUISITES) $(TEST_BINARIES) | $(OUT)
 # is unconditional and would override an inherited environment variable.
 # Most of the stems run the simulator, so every build they reach for has to
 # exist first, the same list `test` depends on.
-asan: $(TEST_PREREQUISITES) | $(BIN) $(OUT)
+asan: $(TEST_PREREQUISITES) | $(BIN) out/tests
 	@for stem in $(TEST_STEMS); do \
 	  $(CC) -fsanitize=address,undefined -g -O1 -std=c11 -DMAT_DOUBLE \
 	        $(ETAL_CFLAGS) $(INCLUDES) tests/$$stem.c \

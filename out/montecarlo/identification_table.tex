@@ -1,0 +1,31 @@
+\begin{table}[t]
+\centering
+\caption{Recovery Study for Simulated Validation Data}
+\label{tab:identification_table}
+
+\begin{tabular}{l rrr rrr}
+\toprule
+ & \multicolumn{3}{c}{Naive} & \multicolumn{3}{c}{Adjusted} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}
+\rule{0pt}{3ex} & $\params^*_1 \in \mathcal{M}\explab{1}$ & $\params^*_1=\params\udagg_1$ & $\text{Med}|\mathcal{M}\explab{1}|$ & $\params^*_1 \in \mathcal{M}\explab{1}$ & $\params^*_1=\params\udagg_1$ & $\text{Med}|\mathcal{M}\explab{1}|$ \\
+\cmidrule(lr){2-2}\cmidrule(lr){3-3}\cmidrule(lr){4-4}\cmidrule(lr){5-5}\cmidrule(lr){6-6}\cmidrule(lr){7-7}
+LP & - & - & - & 25.97\% & 8.54\% & 7 \\
+NLP & - & - & - & 58.36\% & 4.43\% & 74 \\
+NLP state 1 & - & - & - & 41.38\% & 2.51\% & 90 \\
+NLP state 2 & - & - & - & 36.93\% & 2.29\% & 93 \\
+QVARMA & - & - & - & 66.29\% & 6.24\% & 360 \\
+&&&&&&\\
+\rule{0pt}{3ex} & $\params^*_2 \in \mathcal{M}\explab{2}$ & $\params^*_2=\params\udagg_2$ & $\text{Med}|\mathcal{M}\explab{2}|$ & $\params^*_2 \in \mathcal{M}\explab{2}$ & $\params^*_2=\params\udagg_2$ & $\text{Med}|\mathcal{M}\explab{2}|$ \\
+\cmidrule(lr){2-2}\cmidrule(lr){3-3}\cmidrule(lr){4-4}\cmidrule(lr){5-5}\cmidrule(lr){6-6}\cmidrule(lr){7-7}
+LP & 7.30\% & 4.15\% & 2 & 14.74\% & 8.54\% & 2 \\
+NLP & 0.67\% & 0.38\% & 3 & 24.26\% & 4.43\% & 10 \\
+NLP state 1 & 0.83\% & 0.45\% & 2 & 11.69\% & 2.51\% & 8 \\
+NLP state 2 & 0.81\% & 0.38\% & 3 & 10.15\% & 2.29\% & 7 \\
+QVARMA & 4.41\% & 2.17\% & 2 & 10.47\% & 6.24\% & 2 \\
+\bottomrule
+\end{tabular}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{tablenotes}
+\item \footnotesize \textit{Note:} share of the 1,000,000 Monte Carlo runs whose \mcs holds the true configuration $\params^*_m \in \mathcal{M}\explab{m}$; share where the true configuration has the smallest mean loss $\params^*_m=\params\udagg_m$; and median size of the final MCS $\text{Med}|\mathcal{M}\explab{m}|$; at a 5\% confidence level for both procedures of \cite{Hansen-Lunde-Nason-Eco-2011} and \cite{Seri-et-al-ES-2021} and all auxiliary models. Naive column uses squared error as loss; adjusted column uses squared error minus the variance corrections of Equations \eqref{eq:hansen_mcs_loss} and \eqref{eq:seri_mcs_loss}.
+\end{tablenotes}
+\end{table}

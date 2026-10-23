@@ -68,7 +68,7 @@ comparisons are spread over the cores with OpenMP, as is the sweep.
 
 Needs `make model`, `make model-upstream` and out/dataset/abm_system. Nothing is
 written anywhere but a scratch directory of this process's own and
-out/dsk_tail_replicate_reproduction.txt; the archives are only read.
+out/tests/dsk_tail_replicate_reproduction.txt; the archives are only read.
 */
 
 #define _XOPEN_SOURCE 700
@@ -96,7 +96,7 @@ out/dsk_tail_replicate_reproduction.txt; the archives are only read.
 #define INPUTS "model/dsk_sfc/dsk_sfc_inputs.json"
 #define DESIGN "out/dataset/abm_system_design.csv"
 #define DATASET "out/dataset/abm_system"
-#define REPORT "out/dsk_tail_replicate_reproduction.txt"
+#define REPORT "out/tests/dsk_tail_replicate_reproduction.txt"
 #define RUN_NAME "r"
 #define N_STEPS 600
 #define N_MODEL_COLUMNS 83

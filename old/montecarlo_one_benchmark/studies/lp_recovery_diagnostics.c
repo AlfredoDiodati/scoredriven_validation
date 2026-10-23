@@ -14,7 +14,7 @@ the things in the local-projection protocol that could be wrong.
 
 1. Is the stored result what the code computes? Every run is fitted again from
    the dataset and its loss against cop_0191 run 706 recomputed, and compared
-   with out/montecarlo/lp_irf_loss_<model>.csv.
+   with out/old/montecarlo_one_benchmark/lp_irf_loss_<model>.csv.
 2. The shock size. The local projections answer a one-unit shock, as R's
    pipeline asks lpirfs to (shock_type 1); the t-QVARMA answers a shock of one
    standard deviation. A unit shock divides every response to shock j by that
@@ -44,9 +44,11 @@ each take the stand-in's place in turn, with the same settings, and the count
 of sets holding cop_0191 is reported.
 
 Nothing here is stored beyond the report: every fit is recomputed from
-out/dataset/abm_system/. Requires out/montecarlo/benchmark.env and, for item 1,
-out/montecarlo/lp_irf_loss_<model>.csv. Writes
-out/lp_recovery_diagnostics_report.txt. Progress to stderr.
+out/dataset/abm_system/. Requires out/old/montecarlo_one_benchmark/benchmark.env
+and, for item 1, out/old/montecarlo_one_benchmark/lp_irf_loss_<model>.csv.
+Writes
+out/old/montecarlo_one_benchmark/studies/lp_recovery_diagnostics_report.txt.
+Progress to stderr.
 */
 
 #include "applications/abm_system_lp.h"
@@ -60,7 +62,7 @@ out/lp_recovery_diagnostics_report.txt. Progress to stderr.
 #include <math.h>
 #include "old/montecarlo_one_benchmark/studies/recovery_noise.h"
 
-#define REPORT_PATH "out/lp_recovery_diagnostics_report.txt"
+#define REPORT_PATH "out/old/montecarlo_one_benchmark/studies/lp_recovery_diagnostics_report.txt"
 #define REPETITIONS 100
 #define K LP_SYSTEM_K
 #define DIM LP_RESPONSE_DIM
@@ -239,10 +241,10 @@ static void report_set(FILE *f, const char *what, SetOutcome o) {
 
 /* Section 1: the protocol as run must reproduce the stored loss tables. */
 static void compare_with_stored(FILE *f, Mat values[LP_N_LOSSES]) {
-    fprintf(f, "\n1. Recomputed losses against out/montecarlo/lp_irf_loss_<model>.csv\n");
+    fprintf(f, "\n1. Recomputed losses against out/old/montecarlo_one_benchmark/lp_irf_loss_<model>.csv\n");
     for (int loss = 0; loss < LP_N_LOSSES; loss++) {
         char path[256];
-        snprintf(path, sizeof path, "out/montecarlo/lp_irf_loss_%s.csv", lp_loss_name(loss));
+        snprintf(path, sizeof path, "out/old/montecarlo_one_benchmark/lp_irf_loss_%s.csv", lp_loss_name(loss));
         DataFrame stored = df_read_csv(path, csv_read_options_default());
         Mat replicate = df_col_numeric(&stored, "replicate");
         double worst = 0;
@@ -365,7 +367,7 @@ int main(int argc, char **argv) {
     }
     char report_path[256];
     if (only < 0) snprintf(report_path, sizeof report_path, "%s", REPORT_PATH);
-    else snprintf(report_path, sizeof report_path, "out/lp_recovery_diagnostics_%s_report.txt", variants[only].label);
+    else snprintf(report_path, sizeof report_path, "out/old/montecarlo_one_benchmark/studies/lp_recovery_diagnostics_%s_report.txt", variants[only].label);
     Benchmark stand_in = benchmark_read();
     samples = lp_list_samples(LP_FIT_DIR_DEFAULT, &n_samples);
     n_replicates = lp_count_replicates(INPUT_DIR, samples[0].name);

@@ -24,8 +24,8 @@ exit status, the results file byte for byte, and the error log byte for byte. A
 parameter vector the model refuses to simulate is a valid outcome and still a
 comparison, as long as both builds refuse it the same way at the same period.
 
-Writes out/dsk_design_equivalence.txt. One seed per point unless a seed count
-is given as the first argument.
+Writes out/tests/dsk_design_equivalence.txt. One seed per point unless a seed
+count is given as the first argument.
 */
 
 #define _XOPEN_SOURCE 700
@@ -50,7 +50,7 @@ is given as the first argument.
 #define UPSTREAM "bin/dsk_SFC_upstream"
 #define INPUTS "model/dsk_sfc/dsk_sfc_inputs.json"
 #define DESIGN "out/dataset/abm_system_design.csv"
-#define REPORT "out/dsk_design_equivalence.txt"
+#define REPORT "out/tests/dsk_design_equivalence.txt"
 #define RUN_NAME "design"
 #define N_POINTS 4
 #define DEFAULT_SEEDS 1

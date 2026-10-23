@@ -19,7 +19,7 @@ and applications/ is not touched by anything here.
 
 Nothing is estimated. Every fit this reads, the benchmark's included, is one of
 the million applications/abm_system_fit_qvarma.c already wrote to
-out/abm_system_fit_qvarma/.
+out/applications/abm_system_fit_qvarma/.
 
 The benchmark is whichever run old/montecarlo_one_benchmark/benchmark_choice.c picked, read back
 through old/montecarlo_one_benchmark/benchmark.h. Its replicate index is held out of every
@@ -37,8 +37,9 @@ variance the confidence set estimates from.
 nu <= 2 fits are skipped rather than fed through impulse_responses, whose own
 assert would abort on them, and counted as missing.
 
-Requires out/abm_system_fit_qvarma/ and out/dataset/abm_system/, and rebuilds
-neither. Writes out/montecarlo/irf_loss.csv and its manifest. Nothing printed.
+Requires out/applications/abm_system_fit_qvarma/ and out/dataset/abm_system/,
+and rebuilds neither. Writes out/old/montecarlo_one_benchmark/irf_loss.csv and
+its manifest. Nothing printed.
 */
 
 #include "applications/abm_system.h"
@@ -69,9 +70,9 @@ static int n_replicates = 0;
 #define HORIZON 20
 #define IRF_DIM (K * K * (HORIZON + 1))
 
-#define FIT_DIR_DEFAULT "out/abm_system_fit_qvarma"
+#define FIT_DIR_DEFAULT "out/applications/abm_system_fit_qvarma"
 #define INPUT_DIR_DEFAULT "out/dataset/abm_system"
-#define OUTPUT_PATH_DEFAULT "out/montecarlo/irf_loss.csv"
+#define OUTPUT_PATH_DEFAULT "out/old/montecarlo_one_benchmark/irf_loss.csv"
 
 /* Overridable so the whole pass can be run over a couple of configurations,
    which is how the parallel loop was checked against the serial one. */
@@ -105,7 +106,7 @@ static int BENCHMARK_REPLICATE = -1;
    name the spec a column was fitted under. */
 typedef struct { int r; const char *label; const char *column_label; const char *real_fit_path; } Spec;
 static const Spec spec_list[] = {
-    { 2, "p1q1r2", MODEL_LABEL "_p1q1r2", "out/us_qvarma_spec_choice_p1q1r2_fit.json" }
+    { 2, "p1q1r2", MODEL_LABEL "_p1q1r2", "out/applications/us_qvarma_spec_choice_p1q1r2_fit.json" }
 };
 #define N_SPECS ((int)(sizeof spec_list / sizeof spec_list[0]))
 
@@ -187,7 +188,7 @@ static int compare_sample_entries(const void *a, const void *b) {
 
 static SampleEntry *list_samples(const char *dir, int *count) {
     DIR *handle = opendir(dir);
-    assert(handle && "montecarlo/irf_loss: cannot open out/abm_system_fit_qvarma/ - run abm_system_fit_qvarma first");
+    assert(handle && "montecarlo/irf_loss: cannot open out/applications/abm_system_fit_qvarma/ - run abm_system_fit_qvarma first");
 
     SampleEntry *entries = NULL;
     int n = 0, cap = 0;
@@ -384,7 +385,7 @@ int main(void) {
 
     int n_samples;
     SampleEntry *samples = list_samples(FIT_DIR, &n_samples);
-    assert(n_samples > 0 && "montecarlo/irf_loss: no sample directories under out/abm_system_fit_qvarma/");
+    assert(n_samples > 0 && "montecarlo/irf_loss: no sample directories under out/applications/abm_system_fit_qvarma/");
 
     /* The benchmark's own series: the US block, or the simulated replicate that
        stands in for it. Both are K x T in the same row order, which is what

@@ -34,7 +34,7 @@ reaches, so it never redenominates. The other sets the ceiling at 2^4 and the
 step at 2^2, small enough that the wage grows back through the ceiling within
 the run, so the comparison covers several redenominations rather than one.
 
-Writes out/dsk_redenomination_invariance.txt.
+Writes out/tests/dsk_redenomination_invariance.txt.
 */
 
 #define _XOPEN_SOURCE 700
@@ -52,7 +52,7 @@ Writes out/dsk_redenomination_invariance.txt.
 
 #define MODEL "model/dsk_sfc/dsk_SFC"
 #define INPUTS "model/dsk_sfc/dsk_sfc_inputs.json"
-#define REPORT "out/dsk_redenomination_invariance.txt"
+#define REPORT "out/tests/dsk_redenomination_invariance.txt"
 #define RUN_NAME "reden"
 #define MODEL_COLUMNS 83
 #define PERIODS 600

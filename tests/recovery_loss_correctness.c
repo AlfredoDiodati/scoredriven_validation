@@ -24,7 +24,7 @@ document derives.
    by about its variance, 1, which is the negative control that the check can
    fail.
 
-Writes out/recovery_loss_correctness_report.txt. Exits 1 on any failure.
+Writes out/tests/recovery_loss_correctness_report.txt. Exits 1 on any failure.
 */
 
 #include "montecarlo/recovery_loss.h"
@@ -32,7 +32,7 @@ Writes out/recovery_loss_correctness_report.txt. Exits 1 on any failure.
 #include <stdio.h>
 #include <math.h>
 
-#define REPORT "out/recovery_loss_correctness_report.txt"
+#define REPORT "out/tests/recovery_loss_correctness_report.txt"
 
 static int failures = 0;
 

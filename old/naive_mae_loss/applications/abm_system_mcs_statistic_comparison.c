@@ -14,11 +14,14 @@ every elimination round under both statistics, and the two runs share a seed,
 so they are scored on the same resamples and a difference between them comes
 from the statistic.
 
-The loss matrix is out/old/naive_mae_loss/abm_system_irf_loss.csv, the distance between fitted
-impulse responses (old/naive_mae_loss/applications/abm_system_irf_loss.c).
+The loss matrix is out/old/naive_mae_loss/applications/abm_system_irf_loss.csv,
+the distance between fitted impulse responses
+(old/naive_mae_loss/applications/abm_system_irf_loss.c).
 
-Writes out/old/naive_mae_loss/abm_system_mcs_statistic_comparison.txt, a summary followed by the
-full report of each run, and out/old/naive_mae_loss/abm_system_mcs_statistic_comparison.csv, one
+Writes
+out/old/naive_mae_loss/applications/abm_system_mcs_statistic_comparison.txt, a
+summary followed by the full report of each run, and
+out/old/naive_mae_loss/applications/abm_system_mcs_statistic_comparison.csv, one
 row per configuration with each statistic's MCS p-value, membership of the set
 and elimination round. In EXPERIMENT_STEMS. Nothing printed.
 */
@@ -32,9 +35,9 @@ and elimination round. In EXPERIMENT_STEMS. Nothing printed.
 #include <stdlib.h>
 #include <time.h>
 
-#define IRF_LOSS_PATH "out/old/naive_mae_loss/abm_system_irf_loss.csv"
-#define IRF_REPORT_PATH "out/old/naive_mae_loss/abm_system_mcs_statistic_comparison.txt"
-#define IRF_TABLE_PATH "out/old/naive_mae_loss/abm_system_mcs_statistic_comparison.csv"
+#define IRF_LOSS_PATH "out/old/naive_mae_loss/applications/abm_system_irf_loss.csv"
+#define IRF_REPORT_PATH "out/old/naive_mae_loss/applications/abm_system_mcs_statistic_comparison.txt"
+#define IRF_TABLE_PATH "out/old/naive_mae_loss/applications/abm_system_mcs_statistic_comparison.csv"
 
 #define N_LAST_STANDING 10
 

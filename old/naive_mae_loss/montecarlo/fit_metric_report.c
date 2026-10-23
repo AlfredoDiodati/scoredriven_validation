@@ -266,7 +266,7 @@ static int block_length_table(Table *t) {
     t->n_rows = 0;
     int block[MAX_ROWS];
     DIR *dir = opendir(OUT_DIR);
-    assert(dir && "fit_metric_report: cannot open out/montecarlo");
+    assert(dir && "fit_metric_report: cannot open out/old/naive_mae_loss/montecarlo");
     struct dirent *entry;
     while ((entry = readdir(dir)) != NULL && t->n_rows < MAX_ROWS) {
         int run, n_bootstrap, length, iterations, first, consumed = 0;

@@ -27,8 +27,8 @@ time.
    specification and a missing file both read as a miss, and a row refused for
    series other than the ones it was fitted on.
 
-Writes out/lp_system_transform_report.txt, and a scratch archive under out/
-that it removes on the way out. Exits 1 on any failure.
+Writes out/tests/lp_system_transform_report.txt, and a scratch archive under
+out/tests/ that it removes on the way out. Exits 1 on any failure.
 */
 
 #include "applications/lp_system.h"
@@ -37,8 +37,8 @@ that it removes on the way out. Exits 1 on any failure.
 #include <math.h>
 #include <string.h>
 
-#define REPORT "out/lp_system_transform_report.txt"
-#define SCRATCH_ARCHIVE "out/lp_system_transform_scratch.npz"
+#define REPORT "out/tests/lp_system_transform_report.txt"
+#define SCRATCH_ARCHIVE "out/tests/lp_system_transform_scratch.npz"
 #define T_STORED 400
 
 static int failures = 0;

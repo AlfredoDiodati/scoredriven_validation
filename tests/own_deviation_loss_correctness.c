@@ -28,7 +28,8 @@ properties the document derives.
    while the corrected loss varies by about 4 D / K alone. The ratio of the
    two variances, averaged over benchmarks, must be within 0.05 of 2/3.
 
-Writes out/own_deviation_loss_correctness_report.txt. Exits 1 on any failure.
+Writes out/tests/own_deviation_loss_correctness_report.txt. Exits 1 on any
+failure.
 */
 
 #include "montecarlo/own_deviation_loss.h"
@@ -36,7 +37,7 @@ Writes out/own_deviation_loss_correctness_report.txt. Exits 1 on any failure.
 #include <stdio.h>
 #include <math.h>
 
-#define REPORT "out/own_deviation_loss_correctness_report.txt"
+#define REPORT "out/tests/own_deviation_loss_correctness_report.txt"
 
 static int failures = 0;
 

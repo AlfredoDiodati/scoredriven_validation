@@ -149,7 +149,7 @@ this partition.
 older dataset above, as 200 models: the three the data could not separate were
 all (1,1,2), and no (1,1,4) configuration survived.
 `applications/us_qvarma_spec_choice.c` fits both to the US data and records
-their residual checks in `out/us_qvarma_spec_choice.txt`.
+their residual checks in `out/applications/us_qvarma_spec_choice.txt`.
 
 Putting (1,1,4) back is one entry in `spec_list` in
 `applications/abm_system_fit_qvarma.c` and one in
@@ -164,9 +164,9 @@ has not been evaluated under this procedure.
 ## Grouping: one model per configuration
 
 Each configuration contributes one column to the loss table, for the t-QVARMA
-`out/old/naive_mae_loss/abm_system_irf_loss.csv` with columns named `cop_NNNN_qvarma_p1q1r2`, and
-each row is one replicate. One confidence set runs over all columns at once:
-1000 models against 1000 observations.
+`out/old/naive_mae_loss/applications/abm_system_irf_loss.csv` with columns named
+`cop_NNNN_qvarma_p1q1r2`, and each row is one replicate. One confidence set runs
+over all columns at once: 1000 models against 1000 observations.
 
 ## Confidence set settings
 
@@ -194,7 +194,7 @@ The losses use every one of the 1,000,000 fits, whether or not the solver
 reported convergence. The fitting stage was run eight times with the iteration
 cap raised from 2,000 to 1,000,000; `applications/abm_system_fit_qvarma.c`
 records what each raise bought. Where it ended, per
-`out/abm_system_fit_qvarma_manifest.txt` of 2026-09-10:
+`out/applications/abm_system_fit_qvarma_manifest.txt` of 2026-09-10:
 
 | why the solver last stopped | fits |
 |---|---|

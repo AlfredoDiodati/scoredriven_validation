@@ -38,11 +38,11 @@ a reason to be sorted by next time.
 That is why this does not call qvarma.h's own fit_cached: the load and the
 refit are spelled out here so the three cases can be told apart and counted.
 
-Resuming is per run, not to convergence. One run gives every unconverged
-fit one more budget; running it again gives them another. The consequence
-is that the estimates depend on how many times this has been run, which
-out/abm_system_fit_qvarma_manifest.txt records per fit in its origin and
-gain columns.
+Resuming is per run, not to convergence. One run gives every unconverged fit one
+more budget; running it again gives them another. The consequence is that the
+estimates depend on how many times this has been run, which
+out/applications/abm_system_fit_qvarma_manifest.txt records per fit in its
+origin and gain columns.
 
 Parallelized with OpenMP over the million (sample, replicate) pairs -
 schedule(dynamic) since some fits converge in a handful of iterations and
@@ -66,25 +66,26 @@ to the outer loop over independent fits.
 Naming: this file fits the driftless t-QVARMA, which is what
 <et_al./sd/qvarma.h> provides. The drift-carrying variant belongs to an earlier
 stage of the project whose code is not part of this repository, and
-docs/MCS_VALIDATION_PROCEDURE.md records why it is not used here. Output
-mirrors out/dataset/abm_system/'s own structure exactly, so which sample and which
+docs/MCS_VALIDATION_PROCEDURE.md records why it is not used here. Output mirrors
+out/dataset/abm_system/'s own structure exactly, so which sample and which
 replicate a cached fit belongs to is never in question - a replicate read out of
 out/dataset/abm_system/<sample>/batch_<NNN>.npz becomes
-out/abm_system_fit_qvarma/<sample>/replicate_<NNN>_p1q1r2_fit.json. Rerunning
-this script after an interruption resumes rather than redoes: a cache file with
-the same data fingerprint is loaded rather than refitted, and refitted from its
-own parameters rather than from build_start when it did not converge.
+out/applications/abm_system_fit_qvarma/<sample>/replicate_<NNN>_p1q1r2_fit.json.
+Rerunning this script after an interruption resumes rather than redoes: a cache
+file with the same data fingerprint is loaded rather than refitted, and refitted
+from its own parameters rather than from build_start when it did not converge.
 
 Starting-value convention identical to
 applications/us_qvarma_spec_choice.c's own build_start(), r fixed at 2 rather
 than grid-searched, for direct comparability against that file's own output
 rather than a fresh search on simulated data.
 
-out/abm_system_fit_qvarma_manifest.txt records, per (sample, replicate, spec):
-converged, log-likelihood, gradient norm and AIC, plus whether the fit was
-reused from the cache, carried on from it, or estimated from build_start,
-and what carrying it on was worth. Written once at the end - a summary of
-what the individual JSON caches already hold, not a substitute for them.
+out/applications/abm_system_fit_qvarma_manifest.txt records, per (sample,
+replicate, spec): converged, log-likelihood, gradient norm and AIC, plus whether
+the fit was reused from the cache, carried on from it, or estimated from
+build_start, and what carrying it on was worth. Written once at the end - a
+summary of what the individual JSON caches already hold, not a substitute for
+them.
 
 MAX_ITERATIONS is 1000000. It has been raised four times and every raise is
 recorded here, with what it bought, so the next person does not repeat the
@@ -127,7 +128,7 @@ Not a final implementation: no genuine-maximum curvature check per fit
 by hand elsewhere), no multi-start battery per replicate - one fixed
 starting point, matching the real-data grid's own convention, is what
 runs here. Whether any of the million fits need either is a question for
-whoever consumes out/abm_system_fit_qvarma_manifest.txt next.
+whoever consumes out/applications/abm_system_fit_qvarma_manifest.txt next.
 
 Not part of `make applications` or EXPERIMENT_STEMS - meant to be run
 explicitly, once (or resumed after an interruption), not on every routine
@@ -162,7 +163,7 @@ printed.
 #define Q 1
 
 #define INPUT_DIR_DEFAULT "out/dataset/abm_system"
-#define OUTPUT_DIR_DEFAULT "out/abm_system_fit_qvarma"
+#define OUTPUT_DIR_DEFAULT "out/applications/abm_system_fit_qvarma"
 
 /* Both directories are overridable so the whole procedure can be exercised on a
    copy of a configuration or two before it is turned loose on the real cache,

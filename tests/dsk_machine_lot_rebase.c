@@ -43,7 +43,7 @@ rebase period itself.
 
 The reference run stops at 11,000 periods because further on it hangs.
 
-Writes out/dsk_machine_lot_rebase.txt.
+Writes out/tests/dsk_machine_lot_rebase.txt.
 */
 
 #define _XOPEN_SOURCE 700
@@ -61,7 +61,7 @@ Writes out/dsk_machine_lot_rebase.txt.
 
 #define MODEL "model/dsk_sfc/dsk_SFC"
 #define INPUTS "model/dsk_sfc/dsk_sfc_inputs.json"
-#define REPORT "out/dsk_machine_lot_rebase.txt"
+#define REPORT "out/tests/dsk_machine_lot_rebase.txt"
 #define RUN_NAME "lots"
 #define MODEL_COLUMNS 83
 #define SEED 1

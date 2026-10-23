@@ -1,0 +1,24 @@
+Benchmarks per model and grid; a cell of out/montecarlo/identification_table.tex is filled only at 1000000.
+
+Hansen et al., naive: no result and no progress file
+Hansen et al., adjusted: out/montecarlo/true_configuration_recovery.csv.gz
+  rows that did not parse 0
+  qvarma: 1000000 benchmarks, 0 found twice
+  lp_lin: 1000000 benchmarks, 0 found twice
+  lp_s1: 1000000 benchmarks, 0 found twice
+  lp_s2: 1000000 benchmarks, 0 found twice
+  lp_nl: 1000000 benchmarks, 0 found twice
+Seri et al., naive: out/montecarlo/seri_uncorrected_true_configuration_recovery.csv.gz
+  rows that did not parse 0
+  qvarma: 1000000 benchmarks, 0 found twice
+  lp_lin: 1000000 benchmarks, 0 found twice
+  lp_s1: 1000000 benchmarks, 0 found twice
+  lp_s2: 1000000 benchmarks, 0 found twice
+  lp_nl: 1000000 benchmarks, 0 found twice
+Seri et al., adjusted: out/montecarlo/seri_true_configuration_recovery.csv.gz
+  rows that did not parse 0
+  qvarma: 1000000 benchmarks, 0 found twice
+  lp_lin: 1000000 benchmarks, 0 found twice
+  lp_s1: 1000000 benchmarks, 0 found twice
+  lp_s2: 1000000 benchmarks, 0 found twice
+  lp_nl: 1000000 benchmarks, 0 found twice

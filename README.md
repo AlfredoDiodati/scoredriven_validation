@@ -214,9 +214,10 @@ baseline parameter file and which output directory it uses.
 the design, because one process is serial and this machine finishes most runs
 per minute with eight at once. It holds the machine awake for the duration and
 writes what it used and what it produced to
-`out/abm_system_simulate_all_provenance.txt`. The full experiment has been run:
-1,000,000 replications, none rejected, 41.6 hours and 15 GB at 400 runs a
-minute. `docs/ABM_SYSTEM_SIMULATION.md` has the setup behind those numbers.
+`out/applications/abm_system_simulate_all_provenance.txt`. The full experiment
+has been run: 1,000,000 replications, none rejected, 41.6 hours and 15 GB at 400
+runs a minute. `docs/ABM_SYSTEM_SIMULATION.md` has the setup behind those
+numbers.
 
 ## Layout
 
@@ -228,8 +229,8 @@ minute. `docs/ABM_SYSTEM_SIMULATION.md` has the setup behind those numbers.
     tests/            pass or fail. A failure stops make test and the build
     benchmarks/       how long something takes. Never part of make test: a
                       function that returns the wrong answer quickly is not fast
-    studies/          a question about behaviour, answered into out/. No verdict,
-                      so nothing here gates anything
+    studies/          a question about behaviour, answered into out/studies/.
+                      No verdict, so nothing here gates anything
     dataset/          the inputs nothing here produces: us_real.csv, the raw
                       US series, and simulated/, the .Rdata files of the
                       original experiment
@@ -239,15 +240,20 @@ minute. `docs/ABM_SYSTEM_SIMULATION.md` has the setup behind those numbers.
                       each was discarded, and their write-ups stay in docs/
     out/              everything a script writes, and nothing else. A file
                       written by a script under some folder of the repository
-                      sits under the same folder here, so out/montecarlo/ is
-                      the Monte Carlo's output and out/old/naive_mae_loss/ the
-                      naive-loss experiment's. out/dataset/ holds the generated
-                      data: the parameter design, abm_system/ which the fitting
-                      stage reads, abm_system_rdata/ the older .Rdata-derived
-                      copy kept out of the way so only one of the two is ever
-                      fitted, abm_system_micro/ the per-firm runs, and
-                      throughput/ the separate dataset the throughput study
-                      times fits on. Only the large parts are untracked
+                      sits under the same folder here: out/applications/,
+                      out/tests/, out/benchmarks/, out/studies/,
+                      out/montecarlo/, and for a discarded experiment
+                      out/old/<experiment>/ followed by the script's own
+                      folder, so old/naive_mae_loss/studies/ writes to
+                      out/old/naive_mae_loss/studies/. The one exception is
+                      out/dataset/, the generated data that several folders
+                      write and read: the parameter design, abm_system/
+                      which the fitting stage reads, abm_system_rdata/ the
+                      older .Rdata-derived copy kept out of the way so only
+                      one of the two is ever fitted, abm_system_micro/ the
+                      per-firm runs, and throughput/ the separate dataset the
+                      throughput study times fits on. Only the large parts
+                      are untracked
     bin/              the compiled programs, rebuilt by make, not tracked
     docs/             the write-up and the reference documentation
 
@@ -482,17 +488,17 @@ never printed.
 | file | step | what it holds |
 |---|---|---|
 | `out/dataset/abm_system_design.csv` | 1 | the 1000 configurations, one row each, nine parameters |
-| `out/abm_system_design.txt` | 1 | what the last run of step 1 did |
+| `out/applications/abm_system_design.txt` | 1 | what the last run of step 1 did |
 | `out/dataset/abm_system/cop_NNNN/batch_NNN.npz` | 3 | the five simulated series, ten replicates per compressed archive; 15 GB, not tracked by git |
-| `out/abm_system_simulate_all_provenance.txt` | 3 | checksums of the model and the design, shard ranges, wall time, stored size |
-| `out/abm_system_simulate_manifest.txt` | 3 | replicates completed and rejected, per configuration |
-| `out/abm_system_simulate/` | 3 | one log per shard, and the reason for any rejected replicate |
-| `out/us_system.csv` | 4 | the US series |
-| `out/us_qvarma_spec_choice_p1q1r2_fit.json` | 5 | the US benchmark fit |
-| `out/us_qvarma_spec_choice.txt` | 5 | the (1,1,2) against (1,1,4) comparison, with residual checks |
-| `out/abm_system_fit_qvarma/cop_NNNN/replicate_NNN_p1q1r2_fit.json` | 6 | one fitted parameter set per replicate, which is also the cache; not tracked by git |
-| `out/abm_system_fit_qvarma/cop_NNNN/lineage.txt` | 6 | which replicates took another replicate's parameters |
-| `out/abm_system_fit_qvarma_manifest.txt` | 6 | per fit: log-likelihood, gradient, convergence, cumulative iterations, why the solver stopped |
+| `out/applications/abm_system_simulate_all_provenance.txt` | 3 | checksums of the model and the design, shard ranges, wall time, stored size |
+| `out/applications/abm_system_simulate_manifest.txt` | 3 | replicates completed and rejected, per configuration |
+| `out/applications/abm_system_simulate/` | 3 | one log per shard, and the reason for any rejected replicate |
+| `out/applications/us_system.csv` | 4 | the US series |
+| `out/applications/us_qvarma_spec_choice_p1q1r2_fit.json` | 5 | the US benchmark fit |
+| `out/applications/us_qvarma_spec_choice.txt` | 5 | the (1,1,2) against (1,1,4) comparison, with residual checks |
+| `out/applications/abm_system_fit_qvarma/cop_NNNN/replicate_NNN_p1q1r2_fit.json` | 6 | one fitted parameter set per replicate, which is also the cache; not tracked by git |
+| `out/applications/abm_system_fit_qvarma/cop_NNNN/lineage.txt` | 6 | which replicates took another replicate's parameters |
+| `out/applications/abm_system_fit_qvarma_manifest.txt` | 6 | per fit: log-likelihood, gradient, convergence, cumulative iterations, why the solver stopped |
 
 ### The score route, discarded
 
@@ -504,15 +510,15 @@ inverse-information-weighted score statistic. Neither recovered the known
 answer in the Monte Carlo check and neither has a theoretical justification as
 a validation distance, so both are out of the pipeline.
 `docs/OLD_SCORE_LOSS.md` keeps the setup and the results, and lists the `make
-old-<stem>` targets that still rebuild them. Their outputs stay where they
-were:
+old-<stem>` targets that still rebuild them. Their outputs are under
+`out/old/score_loss/`:
 
 | file | what it holds |
 |---|---|
-| `out/abm_system_score_loss.csv` | the unweighted loss table, one row per replicate and one column per configuration |
-| `out/abm_system_score_loss_weighted.csv` | the score statistic, same shape |
-| `out/abm_system_score_loss_manifest.txt` | the information matrix's spectrum and conditioning, how the statistic splits over eigen-directions, and every missing cell |
-| `out/abm_system_mcs_statistic_comparison_score*.*` | the confidence sets under both MCS statistics |
+| `out/old/score_loss/applications/abm_system_score_loss.csv` | the unweighted loss table, one row per replicate and one column per configuration |
+| `out/old/score_loss/applications/abm_system_score_loss_weighted.csv` | the score statistic, same shape |
+| `out/old/score_loss/applications/abm_system_score_loss_manifest.txt` | the information matrix's spectrum and conditioning, how the statistic splits over eigen-directions, and every missing cell |
+| `out/old/score_loss/applications/abm_system_mcs_statistic_comparison_score*.*` | the confidence sets under both MCS statistics |
 
 ### A side run with the per-firm output
 
@@ -553,14 +559,15 @@ earlier Monte Carlo experiments used subsets of the grid's benchmarks;
 `docs/OLD_MONTECARLO_BENCHMARK_SUBSETS.md` and
 `docs/OLD_MONTECARLO_LP_VALIDATION.md` record them.
 
-`applications/lp_system.h` builds the series the fits use, the stored series
-the t-QVARMA is fitted on plus a 4-quarter moving average of log GDP to set the
+`applications/lp_system.h` builds the series the fits use, the stored series the
+t-QVARMA is fitted on plus a 4-quarter moving average of log GDP to set the
 state, and defines the archive layout the fits are stored in, one compressed
-`out/abm_system_fit_lp/cop_NNNN.npz` per configuration. `applications/us_lp_fit.c`
-fits the same local projections to the US data, `out/us_lp_fit.npz`.
-`docs/MONTECARLO_VALIDATION.md`, "The local projections", describes the fits.
-The same local projections fitted on levels rebuilt by cumulating the stored
-series are discarded, `docs/OLD_LP_R_LEVELS.md`.
+`out/applications/abm_system_fit_lp/cop_NNNN.npz` per configuration.
+`applications/us_lp_fit.c` fits the same local projections to the US data,
+`out/applications/us_lp_fit.npz`. `docs/MONTECARLO_VALIDATION.md`, "The local
+projections", describes the fits. The same local projections fitted on levels
+rebuilt by cumulating the stored series are discarded,
+`docs/OLD_LP_R_LEVELS.md`.
 
 ### Not part of the main pipeline
 
@@ -579,30 +586,30 @@ Scripts in `applications/` that the six steps do not use:
   `throughput_iteration_budget.c` are a throughput study of the fitting step on
   a separate 500 by 1000 dataset, `docs/BENCHMARKS.md`.
 
-Files in `out/` the six steps do not write:
+Files under `out/` the six steps do not write:
 
-- `out/abm_system_score_loss*.csv`, `out/abm_system_score_loss_manifest.txt`
-  and `out/abm_system_mcs_statistic_comparison_score*.*`, from the discarded
-  score route above.
-- `out/abm_system_convert_rdata_manifest.txt`, from the older route above.
-- `out/throughput_*`, `out/fit_speedup_options.txt` and the shell scripts
-  `out/hold_awake.sh`, `out/record_run_walltime.sh` and
-  `out/run_throughput_fit_detached.sh`, from the throughput study
-  (`docs/BENCHMARKS.md`). The scripts are the tooling that study was run with.
-- `out/dsk_dual_layout_experiment.txt`, the run behind one of the rejected
-  changes in `docs/DSK_MODEL_CHANGES.md`. Nothing writes it; it is kept because
-  the document cites it.
-- `out/dsk_*` and the other `*_report.txt` files of the tests below.
-- `out/qvarma_*` and `out/fit_contention_source.txt`, from the benchmarks
-  (`docs/BENCHMARKS.md`) and the studies (`docs/QVARMA_FIT_STUDIES.md`), and
-  `out/abm_system_*` files not listed above, from the studies.
-- `out/refactor_equality_check/` and
-  `out/old/naive_mae_loss/winner_normality_rerun/`: checks that moving code to
-  `old/` changed no result. The first reruns the four statistic-comparison
-  programs and diffs their outputs against git: the CSVs are identical and the
-  text reports differ only in the time column. The second reruns
-  `old/naive_mae_loss/studies/abm_system_winner_normality.c`; its report is
-  identical apart from a title line added since.
+- `out/old/score_loss/applications/`, from the discarded score route above.
+- `out/applications/abm_system_convert_rdata_manifest.txt`, from the older
+  route above.
+- `out/applications/throughput_*` and the shell scripts
+  `out/applications/hold_awake.sh`, `out/applications/record_run_walltime.sh`
+  and `out/applications/run_throughput_fit_detached.sh`, from the throughput
+  study (`docs/BENCHMARKS.md`). The scripts are the tooling that study was run
+  with.
+- `out/tests/dsk_dual_layout_experiment.txt`, the run behind one of the
+  rejected changes in `docs/DSK_MODEL_CHANGES.md`. Nothing writes it; it is
+  kept because the document cites it.
+- `out/tests/`, `out/benchmarks/` and `out/studies/`, from the tests below,
+  the benchmarks (`docs/BENCHMARKS.md`, whose numbers
+  `out/benchmarks/fit_speedup_options.txt` collects) and the studies
+  (`docs/QVARMA_FIT_STUDIES.md`).
+- `out/old/score_loss/refactor_equality_check/` and
+  `out/old/naive_mae_loss/studies/winner_normality_rerun/`: checks that moving
+  code to `old/` changed no result. The first reruns the four
+  statistic-comparison programs and diffs their outputs against git: the CSVs
+  are identical and the text reports differ only in the time column. The second
+  reruns `old/naive_mae_loss/studies/abm_system_winner_normality.c`; its report
+  is identical apart from a title line added since.
 
 ## Tests
 

@@ -49,7 +49,7 @@ reaches, so it never changes the unit. The other sets the ceiling at 2^18 and
 the step at 2^1, small enough that real GDP grows back through the ceiling
 within the run, so the comparison covers several changes rather than one.
 
-Writes out/dsk_good_unit_invariance.txt.
+Writes out/tests/dsk_good_unit_invariance.txt.
 */
 
 #define _XOPEN_SOURCE 700
@@ -67,7 +67,7 @@ Writes out/dsk_good_unit_invariance.txt.
 
 #define MODEL "model/dsk_sfc/dsk_SFC"
 #define INPUTS "model/dsk_sfc/dsk_sfc_inputs.json"
-#define REPORT "out/dsk_good_unit_invariance.txt"
+#define REPORT "out/tests/dsk_good_unit_invariance.txt"
 #define RUN_NAME "goodunit"
 #define MODEL_COLUMNS 83
 #define PERIODS 2000

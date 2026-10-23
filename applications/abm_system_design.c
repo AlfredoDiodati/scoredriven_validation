@@ -53,7 +53,7 @@ int main(int argc, char **argv) {
     int force = argc > 1 && strcmp(argv[1], "--force") == 0;
 
     if (!force && access(DESIGN_PATH, F_OK) == 0) {
-        FILE *note = fopen("out/abm_system_design.txt", "w");
+        FILE *note = fopen("out/applications/abm_system_design.txt", "w");
         assert(note && "abm_system_design: cannot open the report path");
         fprintf(note, "%s already exists and was kept.\n", DESIGN_PATH);
         fprintf(note, "Run with --force to draw a new design, which renumbers every "
@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
 
     /* What the design is, recorded next to it rather than left to be
        recovered from the numbers. */
-    FILE *report = fopen("out/abm_system_design.txt", "w");
+    FILE *report = fopen("out/applications/abm_system_design.txt", "w");
     assert(report && "abm_system_design: cannot open the report path");
     fprintf(report, "%s: %d configurations, Latin hypercube, seed %d\n\n",
             DESIGN_PATH, N_COP, DESIGN_SEED);

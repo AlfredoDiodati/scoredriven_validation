@@ -11,13 +11,14 @@ the same 999 runs, with the same sums. sigma2 is the variance of each response
 entry across configuration j's 999 runs other than s, divisor 998, averaged
 over the entries. Then s = d / sqrt(sigma2) and v = 1 / (1 + s).
 
-Reads out/old/naive_mae_loss/montecarlo/sweep_grid.csv.gz and the response caches in
-out/sweep_grid_response_cache/, which bin/sweep_grid builds; a missing cache is
-built from out/abm_system_fit_qvarma/, out/abm_system_fit_lp/ and
-out/dataset/abm_system/ the same way. Writes out/old/naive_mae_loss/montecarlo/fit_metric_oracle.csv.gz,
-one row per model and benchmark: model, benchmark configuration and run, the
-configuration with the smallest mean loss, d, sigma2, s and v. Progress goes to
-stderr. About a minute per model on 16 threads.
+Reads out/old/naive_mae_loss/montecarlo/sweep_grid.csv.gz and the response
+caches in out/montecarlo/sweep_grid_response_cache/, which bin/sweep_grid
+builds; a missing cache is built from out/applications/abm_system_fit_qvarma/,
+out/applications/abm_system_fit_lp/ and out/dataset/abm_system/ the same way.
+Writes out/old/naive_mae_loss/montecarlo/fit_metric_oracle.csv.gz, one row per
+model and benchmark: model, benchmark configuration and run, the configuration
+with the smallest mean loss, d, sigma2, s and v. Progress goes to stderr. About
+a minute per model on 16 threads.
 */
 
 #include "old/naive_mae_loss/montecarlo/fit_metric.h"

@@ -679,11 +679,11 @@ file's history, that transposition was worth about 1.5x: it is worth -24%.
 
 *Keeping both layouts at once.* If one order suits `MACH()` and the other suits
 the per-firm sweeps, hold `g_c` twice: as it is, and again with the vintages
-adjacent, the second built inside the copy loop `MACH()` already runs over
-every element. Measured, and it is 10.3% slower on one run and worse again on
+adjacent, the second built inside the copy loop `MACH()` already runs over every
+element. Measured, and it is 10.3% slower on one run and worse again on
 throughput, 67.6 runs a minute against 80.1 at sixteen concurrent, with a run
-growing from 161 MB to 180 MB. `out/dsk_dual_layout_experiment.txt` has the
-whole run; the output was identical on all five seeds, so the copy was being
+growing from 161 MB to 180 MB. `out/tests/dsk_dual_layout_experiment.txt` has
+the whole run; the output was identical on all five seeds, so the copy was being
 kept in step correctly. It simply does not pay, and the reason is arithmetic
 rather than implementation: transposing 80,000 elements a period costs the same
 scattered memory traffic that the per-firm sweep costs, and each array is swept
@@ -1094,14 +1094,14 @@ That is 320 of the experiment's million pairs, and 640,000 stored numbers.
 ### Where the tails are
 
 The sample above is spread evenly across the design and takes the first few
-replications of each configuration. Tails are not spread evenly over
-replicates. `out/abm_system_tail_origin_report.txt` reports that the simulated
-series are thinner tailed than the US ones, and it reads the archives this
-build wrote, so a rewrite that thinned a tail would show up there as a property
-of the model. The rewrites that could act on a few extreme runs rather than on
-all of them are the long-horizon ones in `docs/DSK_LONG_HORIZON.md`, which
-change nothing until a threshold is crossed, so the extreme replicates are both
-where a difference would first appear and where an even sample does not look.
+replications of each configuration. Tails are not spread evenly over replicates.
+`out/studies/abm_system_tail_origin_report.txt` reports that the simulated
+series are thinner tailed than the US ones, and it reads the archives this build
+wrote, so a rewrite that thinned a tail would show up there as a property of the
+model. The rewrites that could act on a few extreme runs rather than on all of
+them are the long-horizon ones in `docs/DSK_LONG_HORIZON.md`, which change
+nothing until a threshold is crossed, so the extreme replicates are both where a
+difference would first appear and where an even sample does not look.
 
 `tests/dsk_tail_replicate_reproduction.c` chooses its sample by how heavy a
 replicate's tails are. It sweeps every replicate of every configuration, read
@@ -1118,7 +1118,7 @@ configurations and all 1,000,000 replicates swept in 0.6 minutes, the top
 twelve by each criterion taken, 16 distinct runs, 1.5 minutes on the runs.
 Every results file and every error log identical to the authors' build, every
 run reproducing its stored archive exactly, and no long-horizon log written.
-`out/dsk_tail_replicate_reproduction.txt` holds the run's own report.
+`out/tests/dsk_tail_replicate_reproduction.txt` holds the run's own report.
 
 Where the selection sits in the two distributions, over all 1,000,000
 replicates:

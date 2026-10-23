@@ -38,11 +38,11 @@ final p-value, runs dropped for a missing response, the configuration with the
 smallest mean loss, and the configurations in the set, space separated.
 
 SWEEP_GRID_WORKERS sets how many confidence sets run side by side (default one
-per hardware thread). Requires out/abm_system_fit_qvarma/,
-out/abm_system_fit_lp/ and out/dataset/abm_system/, and rebuilds none of them.
-Progress goes to stderr. Each model's response cache is kept in
-out/sweep_grid_response_cache/ (1.6 to 3.2 GB each, ignored by git) so a
-restart reads it in seconds.
+per hardware thread). Requires out/applications/abm_system_fit_qvarma/,
+out/applications/abm_system_fit_lp/ and out/dataset/abm_system/, and rebuilds
+none of them. Progress goes to stderr. Each model's response cache is kept in
+out/montecarlo/sweep_grid_response_cache/ (1.6 to 3.2 GB each, ignored by git)
+so a restart reads it in seconds.
 */
 
 #include "montecarlo/response_cache.h"

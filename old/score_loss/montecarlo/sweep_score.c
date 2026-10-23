@@ -31,10 +31,11 @@ appended to the two summaries as they finish and skipped on a rerun. A
 benchmark whose information matrix is not positive definite has no weighted
 loss and is recorded as skipped there while still being scored under q'q.
 
-Requires out/abm_system_fit_qvarma/ for every benchmark's estimate and
-out/dataset/abm_system/ for every series, and rebuilds neither. Writes
-out/montecarlo/sweep_score.csv and out/montecarlo/sweep_score_weighted.csv.
-Progress goes to stderr so the summaries are the result.
+Requires out/applications/abm_system_fit_qvarma/ for every benchmark's estimate
+and out/dataset/abm_system/ for every series, and rebuilds neither. Writes
+out/old/score_loss/montecarlo/sweep_score.csv and
+out/old/score_loss/montecarlo/sweep_score_weighted.csv. Progress goes to stderr
+so the summaries are the result.
 */
 
 #include "applications/abm_system.h"
@@ -64,10 +65,10 @@ Progress goes to stderr so the summaries are the result.
 #define SPEC_LABEL "p1q1r2"
 #define COLUMN_LABEL "qvarma_" SPEC_LABEL
 
-#define FIT_DIR "out/abm_system_fit_qvarma"
+#define FIT_DIR "out/applications/abm_system_fit_qvarma"
 #define INPUT_DIR "out/dataset/abm_system"
-#define PLAIN_SUMMARY "out/montecarlo/sweep_score.csv"
-#define WEIGHTED_SUMMARY "out/montecarlo/sweep_score_weighted.csv"
+#define PLAIN_SUMMARY "out/old/score_loss/montecarlo/sweep_score.csv"
+#define WEIGHTED_SUMMARY "out/old/score_loss/montecarlo/sweep_score_weighted.csv"
 #define BENCHMARK_SAMPLE "cop_0191"
 #define BENCHMARK_BLOCK 25
 

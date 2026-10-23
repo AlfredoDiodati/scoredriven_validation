@@ -13,12 +13,12 @@ energy demand, over 1973Q1 to 2019Q4. GDP, CPI and energy demand are
 100 ln(level); employment and the interest rate are in their own units.
 
 This header does not read us_real.csv itself. applications/us_prepare_data.c
-does that once, following the transformation docs/DATA_DOCUMENTATION.md
-records, and writes out/us_system.csv; this header only loads that CSV back
-into the K x T matrix layout the rest of the project uses. Run
-`make app-us_prepare_data` before anything that includes this header, which
-`make applications` and the per-script `app-<name>` targets already do; see
-the Makefile's ordering on APPLICATION_STEMS.
+does that once, following the transformation docs/DATA_DOCUMENTATION.md records,
+and writes out/applications/us_system.csv; this header only loads that CSV back
+into the K x T matrix layout the rest of the project uses. Run `make
+app-us_prepare_data` before anything that includes this header, which `make
+applications` and the per-script `app-<name>` targets already do; see the
+Makefile's ordering on APPLICATION_STEMS.
 */
 
 #define ESTIMATION_PERIODS 188
@@ -31,16 +31,16 @@ static const char *variable_name[N_VARIABLES] = {
 
 /*
 The five variables as an N_VARIABLES x ESTIMATION_PERIODS matrix, one column per
-quarter, the layout the rest of the project uses, read from out/us_system.csv.
-Caller must mat_free.
+quarter, the layout the rest of the project uses, read from
+out/applications/us_system.csv. Caller must mat_free.
 */
 static inline Mat load_us_system(void) {
-    FILE *probe = fopen("out/us_system.csv", "r");
-    assert(probe && "out/us_system.csv is missing; run make app-us_prepare_data first");
+    FILE *probe = fopen("out/applications/us_system.csv", "r");
+    assert(probe && "out/applications/us_system.csv is missing; run make app-us_prepare_data first");
     fclose(probe);
-    DataFrame system = df_read_csv("out/us_system.csv", csv_read_options_default());
+    DataFrame system = df_read_csv("out/applications/us_system.csv", csv_read_options_default());
     assert(system.r == ESTIMATION_PERIODS
-           && "out/us_system.csv does not have ESTIMATION_PERIODS rows; rerun "
+           && "out/applications/us_system.csv does not have ESTIMATION_PERIODS rows; rerun "
               "make app-us_prepare_data");
 
     Mat y = mat_new(N_VARIABLES, ESTIMATION_PERIODS);

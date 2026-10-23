@@ -2,10 +2,10 @@
 # responses, for old/naive_mae_loss/montecarlo/compressed_response_recovery.c to score.
 #
 # Reads the response caches old/naive_mae_loss/montecarlo/sweep_grid.c keeps in
-# out/sweep_grid_response_cache/ (one float32 vector per run: 525 entries for
-# the t-QVARMA, 400 for the linear local projection). Everything is learned
-# from runs 500-999 of every configuration; runs 0-499 are never touched, so
-# a benchmark drawn from them is new data to the compression.
+# out/montecarlo/sweep_grid_response_cache/ (one float32 vector per run: 525
+# entries for the t-QVARMA, 400 for the linear local projection). Everything is
+# learned from runs 500-999 of every configuration; runs 0-499 are never
+# touched, so a benchmark drawn from them is new data to the compression.
 #
 # Two compressions per auxiliary model, and per stack of models:
 #   discriminant_<k>: the k directions along which the configurations' average
@@ -17,10 +17,11 @@
 #     on the response vector; the compression is the nine fitted values.
 #
 # Writes the compressed vectors of all runs, in the response-cache layout, to
-# out/old/naive_mae_loss/compressed_response_cache/<label>.f32 (ignored by git), the raw caches
-# restricted to runs 0-199 beside them, and what was learned to
-# out/old/naive_mae_loss/montecarlo/compressed_response/learn_<label>.txt, <label> being the model
-# names joined by underscores.
+# out/old/naive_mae_loss/montecarlo/compressed_response_cache/<label>.f32
+# (ignored by git), the raw caches restricted to runs 0-199 beside them, and
+# what was learned to
+# out/old/naive_mae_loss/montecarlo/compressed_response/learn_<label>.txt,
+# <label> being the model names joined by underscores.
 #
 # usage: python old/naive_mae_loss/montecarlo/compressed_response_learn.py qvarma
 #        python old/naive_mae_loss/montecarlo/compressed_response_learn.py qvarma+lp_lin
@@ -35,8 +36,8 @@ import numpy as np
 import pandas as pd
 import scipy.linalg as sl
 
-RESPONSE_CACHE = 'out/sweep_grid_response_cache'
-CACHE_DIR = 'out/old/naive_mae_loss/compressed_response_cache'
+RESPONSE_CACHE = 'out/montecarlo/sweep_grid_response_cache'
+CACHE_DIR = 'out/old/naive_mae_loss/montecarlo/compressed_response_cache'
 REPORT_DIR = 'out/old/naive_mae_loss/montecarlo/compressed_response'
 TRAINING_FROM = 500
 RAW_RUNS_KEPT = 200

@@ -49,7 +49,7 @@ Cases:
             deviations above that, so they do not bind and the uncapped
             multinomial is exact.
 
-Writes out/dsk_bulk_cancellation_distribution.txt.
+Writes out/tests/dsk_bulk_cancellation_distribution.txt.
 */
 
 #include <cstdio>
@@ -62,7 +62,7 @@ Writes out/dsk_bulk_cancellation_distribution.txt.
 #include "model/dsk_sfc/dsk_sfc_bulk_cancellation.h"
 #include "model/dsk_sfc/auxiliary/ran1.h"
 
-#define REPORT "out/dsk_bulk_cancellation_distribution.txt"
+#define REPORT "out/tests/dsk_bulk_cancellation_distribution.txt"
 #define N1 20
 #define N2 200
 #define Z_LIMIT 5.0

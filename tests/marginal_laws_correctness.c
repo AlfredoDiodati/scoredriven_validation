@@ -29,7 +29,7 @@ constant, a closed form, or data this test simulated itself.
                         the estimate should be close. This is what stands in
                         for the analytic gradient the fit does not have.
 
-Writes out/marginal_laws_correctness.txt.
+Writes out/tests/marginal_laws_correctness.txt.
 */
 
 #include "studies/marginal_laws.h"
@@ -41,7 +41,7 @@ Writes out/marginal_laws_correctness.txt.
 #include <stdlib.h>
 #include <math.h>
 
-#define REPORT "out/marginal_laws_correctness.txt"
+#define REPORT "out/tests/marginal_laws_correctness.txt"
 #define SEED 20260923
 #define SAMPLE 20000
 

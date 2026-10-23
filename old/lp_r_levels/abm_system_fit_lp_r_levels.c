@@ -19,7 +19,7 @@ the HP cycle of that moving average.
 
 A configuration's fits go into one compressed archive,
 
-    out/abm_system_fit_lp/<sample>.npz
+    out/applications/abm_system_fit_lp/<sample>.npz
 
 one row per replicate, in the layout lp_system.h describes: the three response
 tensors, d, the fit notes, the specification and the fingerprints of the data
@@ -36,7 +36,7 @@ or the data held a NaN) is stored as a row with has_responses 0 and counted, so
 it is not retried on every run only to fail the same way.
 
 This is that fit on the cumulated levels lp_system_r_levels.h builds, into
-out/abm_system_fit_lp_r_levels/.
+out/old/lp_r_levels/abm_system_fit_lp_r_levels/.
 
 - ./bin/abm_system_fit_lp_r_levels fits what is not stored.
 - ./bin/abm_system_fit_lp_r_levels --refit ignores what is stored and fits
@@ -45,8 +45,8 @@ out/abm_system_fit_lp_r_levels/.
 One task per configuration. openblas_set_num_threads(1) for the reason
 applications/abm_system_fit_qvarma.c gives: the parallelism is the outer loop.
 
-out/abm_system_fit_lp_manifest.txt records per replicate whether its
-configuration was loaded or fitted, the VAR's statuses, how many horizons of
+out/applications/abm_system_fit_lp_manifest.txt records per replicate whether
+its configuration was loaded or fitted, the VAR's statuses, how many horizons of
 each model went through the rank-deficient fallback, whether the switching
 series was constant, and whether it has responses. Nothing printed.
 */
@@ -62,7 +62,7 @@ series was constant, and whether it has responses. Nothing printed.
 #include <assert.h>
 
 #define INPUT_DIR_DEFAULT "out/dataset/abm_system"
-#define OUTPUT_DIR_DEFAULT "out/abm_system_fit_lp_r_levels"
+#define OUTPUT_DIR_DEFAULT "out/old/lp_r_levels/abm_system_fit_lp_r_levels"
 
 static const char *INPUT_DIR;
 static const char *OUTPUT_DIR;

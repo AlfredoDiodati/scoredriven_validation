@@ -34,24 +34,25 @@ both transformations.
 | `old/lp_r_levels/lp_system_r_levels_transform.c` | checks the header against a plain-loop transcription of the R arithmetic, and that the live state series equals the one the cumulated levels build |
 | `old/lp_r_levels/lp_r_levels_reproduction.sh` | checks that moving the variant out changed no result on either side |
 
-The outputs stay where they were: `out/abm_system_fit_lp_r_levels/`,
-`out/us_lp_fit_r_levels.*`, `out/abm_system_lp_r_levels_*` and, for the Monte
-Carlo, `out/montecarlo/lp_r_levels/`.
+The outputs are under `out/old/lp_r_levels/`:
+`abm_system_fit_lp_r_levels/`, `us_lp_fit_r_levels.*`,
+`abm_system_lp_r_levels_*` and, for the Monte Carlo, `montecarlo/`.
 
 ## Against the US data
 
 Every step of `docs/OLD_ABM_SYSTEM_LP_VALIDATION.md` run again on the cumulated
-levels: the simulated runs and the US series put through
-`lp_system_r_transform` in `old/lp_r_levels/lp_system_r_levels.h`, log GDP as
-`100 log(100 + cumsum(GDP_growth))`, employment as `0.90 +
-cumsum(Employment_change)`, inflation and the interest rate as they are, log
-energy like GDP, in the order GDP, employment, inflation, interest rate,
-energy; everything else unchanged. The US growth rates go through the same
-transformation as the simulated ones, with the same starting values. Outputs
-carry `_r_levels`: `out/abm_system_fit_lp_r_levels/`,
-`out/us_lp_fit_r_levels.*`, `out/abm_system_lp_r_levels_irf_loss_<model>.csv`,
-`out/abm_system_lp_r_levels_mcs_<model>.*`. No fit failed and every regression
-was at full rank, on the US data and on all 1,000,000 runs.
+levels: the simulated runs and the US series put through `lp_system_r_transform`
+in `old/lp_r_levels/lp_system_r_levels.h`, log GDP as `100 log(100 +
+cumsum(GDP_growth))`, employment as `0.90 + cumsum(Employment_change)`,
+inflation and the interest rate as they are, log energy like GDP, in the order
+GDP, employment, inflation, interest rate, energy; everything else unchanged.
+The US growth rates go through the same transformation as the simulated ones,
+with the same starting values. Outputs carry `_r_levels`:
+`out/old/lp_r_levels/abm_system_fit_lp_r_levels/`,
+`out/old/lp_r_levels/us_lp_fit_r_levels.*`,
+`out/old/lp_r_levels/abm_system_lp_r_levels_irf_loss_<model>.csv`,
+`out/old/lp_r_levels/abm_system_lp_r_levels_mcs_<model>.*`. No fit failed and
+every regression was at full rank, on the US data and on all 1,000,000 runs.
 
 - `make old-abm_system_fit_lp_r_levels` makes the simulated fits, about 7
   minutes.

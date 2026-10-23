@@ -8,13 +8,14 @@ Read by montecarlo/true_configuration_recovery.c through
 montecarlo/recovery_loss.h, and by the discarded naive-loss programs under
 old/naive_mae_loss/montecarlo/.
 
-Five models: the t-QVARMA (p1q1r2, horizon 20, the stacked total responses,
-525 entries per run, computed from the cached fits in
-out/abm_system_fit_qvarma/), the three local projections (linear, state 1,
-state 2, 400 entries per run, read from out/abm_system_fit_lp/), and lp_nl, the
-state-dependent local projection with its two states in one vector, state 1's
-400 entries followed by state 2's. A run with no usable response, under lp_nl a
-run missing either state, is marked by a NaN in its first entry.
+Five models: the t-QVARMA (p1q1r2, horizon 20, the stacked total responses, 525
+entries per run, computed from the cached fits in
+out/applications/abm_system_fit_qvarma/), the three local projections (linear,
+state 1, state 2, 400 entries per run, read from
+out/applications/abm_system_fit_lp/), and lp_nl, the state-dependent local
+projection with its two states in one vector, state 1's 400 entries followed by
+state 2's. A run with no usable response, under lp_nl a run missing either
+state, is marked by a NaN in its first entry.
 
 float32 for storage and double for the arithmetic, so the only precision lost
 is in the stored responses themselves: 2.1 GB for the t-QVARMA, 1.6 GB for each
@@ -42,8 +43,8 @@ larger than the memory left.
 #define RESPONSE_QVARMA_SPEC_LABEL "p1q1r2"
 #define RESPONSE_QVARMA_HORIZON 20
 #define RESPONSE_QVARMA_DIM (RESPONSE_QVARMA_K * RESPONSE_QVARMA_K * (RESPONSE_QVARMA_HORIZON + 1))
-#define RESPONSE_QVARMA_FIT_DIR "out/abm_system_fit_qvarma"
-#define RESPONSE_CACHE_DIR_DEFAULT "out/sweep_grid_response_cache"
+#define RESPONSE_QVARMA_FIT_DIR "out/applications/abm_system_fit_qvarma"
+#define RESPONSE_CACHE_DIR_DEFAULT "out/montecarlo/sweep_grid_response_cache"
 
 /* New models go at the end: a cache file's header records the model's index. */
 enum { MODEL_QVARMA, MODEL_LP_LIN, MODEL_LP_S1, MODEL_LP_S2, MODEL_LP_NL, N_MODELS };

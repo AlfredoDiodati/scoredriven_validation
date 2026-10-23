@@ -1,7 +1,7 @@
 /*
 Where the wall time of one qvarma fit goes, so that a plan for a 500-folder run
 can be ranked against measured numbers rather than guesses. Not part of the
-pipeline; run explicitly. Writes out/qvarma_fit_cost.txt.
+pipeline; run explicitly. Writes out/benchmarks/qvarma_fit_cost.txt.
 
 Measures, on one replicate of out/dataset/abm_system, for both specs the pipeline
 fits (r = 2 and r = 4):
@@ -99,7 +99,7 @@ int main(int argc, char **argv) {
     snprintf(csv_path, sizeof csv_path, "out/dataset/abm_system/%s", sample);
     Mat y = abm_system_read_replicate(csv_path, replicate);
 
-    FILE *report = fopen("out/qvarma_fit_cost.txt", "w");
+    FILE *report = fopen("out/benchmarks/qvarma_fit_cost.txt", "w");
     assert(report);
     fprintf(report, "series: %s replicate %d\n", sample, replicate);
     fprintf(report, "K = %d, T = %d, evaluation repeats = %d, single threaded\n\n", K, y.c, repeats);

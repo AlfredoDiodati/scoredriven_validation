@@ -8,8 +8,8 @@ the taped filter's cost those were rounding errors beside a four second fit.
 They are not any more, and a rerun that hits the cache does nothing else at
 all, so both directions are timed here.
 
-Writes out/qvarma_fit_io.txt and, while running, one scratch JSON under out/
-which it removes before returning.
+Writes out/benchmarks/qvarma_fit_io.txt and, while running, one scratch JSON
+under out/benchmarks/, which it removes before returning.
 */
 #include "applications/abm_system.h"
 #include <et_al./sd/qvarma.h>
@@ -33,7 +33,7 @@ which it removes before returning.
 #define Q 1
 #define SPEC_R 2
 #define REPEATS 200
-#define SCRATCH "out/qvarma_fit_io_scratch.json"
+#define SCRATCH "out/benchmarks/qvarma_fit_io_scratch.json"
 
 static double now_seconds(void) {
     struct timespec ts;
@@ -128,7 +128,7 @@ int main(void) {
     }
     double json_read = (now_seconds() - t0) / REPEATS;
 
-    FILE *report = fopen("out/qvarma_fit_io.txt", "w");
+    FILE *report = fopen("out/benchmarks/qvarma_fit_io.txt", "w");
     assert(report && "qvarma_fit_io: cannot open the report path");
     fprintf(report, "series: %s\nK = %d, T = %d, spec r = %d, %d repeats per file "
                     "operation, single threaded\n", csv_path, K, y.c, SPEC_R, REPEATS);

@@ -5,7 +5,8 @@ assumed. Not part of the pipeline; run explicitly.
 
 Fits the same eight (replicate, spec) pairs at one, two and four threads and
 reports wall time and the speedup over one thread. openblas_set_num_threads(1)
-is set exactly as the pipeline sets it. Writes out/qvarma_thread_scaling.txt.
+is set exactly as the pipeline sets it. Writes
+out/benchmarks/qvarma_thread_scaling.txt.
 */
 #include "applications/abm_system.h"
 #include <et_al./sd/qvarma.h>
@@ -115,7 +116,7 @@ int main(void) {
         r_of[i] = (i % 2) ? 4 : 2;
     }
 
-    FILE *report = fopen("out/qvarma_thread_scaling.txt", "w");
+    FILE *report = fopen("out/benchmarks/qvarma_thread_scaling.txt", "w");
     assert(report);
     fprintf(report, "%d fits (replicates 0 to 3, both specs), T = %d, max_iterations = %d\n\n",
             N_FITS, series[0].c, MAX_ITERATIONS);

@@ -40,19 +40,19 @@ that traced its failure to the levels are recorded below, after the result.
 ## One simulated run as the real data
 
 The run standing in for the US data is the same as in the t-QVARMA experiment,
-`cop_0191` run 706 (`out/montecarlo/benchmark.env`). Run 706 of every
-configuration is left out, because all configurations share the same random
-seeds. The loss of a run is the mean absolute difference between its 400
-response values and the stand-in's, separately for the linear model, state 1
-and state 2, and over 800 values for both states. Each loss table is 999 runs
-by 1000 configurations; no cell was missing.
+`cop_0191` run 706 (`out/old/montecarlo_one_benchmark/benchmark.env`). Run 706
+of every configuration is left out, because all configurations share the same
+random seeds. The loss of a run is the mean absolute difference between its 400
+response values and the stand-in's, separately for the linear model, state 1 and
+state 2, and over 800 values for both states. Each loss table is 999 runs by
+1000 configurations; no cell was missing.
 
 The confidence set is computed exactly as in the t-QVARMA experiment: level
 0.05, 10000 bootstrap resamples of single runs, the bootstrap variance of the
 resampled mean, et_al's seed 123, statistic MCS_TR (every pair of
 configurations compared).
 
-Result (`out/montecarlo/lp_mcs_<model>.txt` and `.csv`):
+Result (`out/old/montecarlo_one_benchmark/lp_mcs_<model>.txt` and `.csv`):
 
 - linear: the set holds `cop_0191` alone, which has the smallest mean loss
   (0.689).
@@ -88,10 +88,11 @@ The median rank of `cop_0191` by mean loss is 1 under all four models. No run
 was dropped for a missing value in any repetition.
 
 For comparison, the t-QVARMA version of the same 1000 repetitions
-(`out/montecarlo/sweep_irf.csv`) has `cop_0191` in the set in 876 of 1000
-(87.6%).
+(`out/old/montecarlo_every_run_of_cop_0191/sweep_irf.csv`) has `cop_0191` in the
+set in 876 of 1000 (87.6%).
 
-Per-repetition rows: `out/montecarlo/lp_sweep_lin.csv`, `lp_sweep_s1.csv`,
+Per-repetition rows:
+`out/old/montecarlo_every_run_of_cop_0191/lp_sweep_lin.csv`, `lp_sweep_s1.csv`,
 `lp_sweep_s2.csv`, `lp_sweep_nl.csv`, one row per stand-in run: whether
 `cop_0191` is in the set, its rank by mean loss, its p-value, the size of the
 set, whether the set was decided by an accepted test, and how many runs were
@@ -121,7 +122,7 @@ against the R function, run unmodified (with `zoo` and `dplyr` installed) on
 four stored runs (`cop_0191` run 706, `cop_0001` run 0, `cop_0532` run 123,
 `cop_1000` run 999): the largest difference, relative to the larger of 1 and
 the value, was 3.7e-15. Every other setting was as above. Its outputs are kept
-in `out/montecarlo/lp_r_levels/`.
+in `out/old/lp_r_levels/montecarlo/`.
 
 - Stand-in run 706: the linear and state-2 sets held `cop_0905` alone, with
   `cop_0191` 26th and 23rd by mean loss; the state-1 set held 7
@@ -139,12 +140,14 @@ seconds.
 ## Why the levels fail
 
 `old/montecarlo_one_benchmark/studies/lp_recovery_diagnostics.c` refits all
-1,000,000 runs under several variants and checks each candidate cause.
-Settings: stand-in `cop_0191` run 706, MCS_TR at 0.05 with 10000 resamples, and
-for the linear model runs 0 to 99 of `cop_0191` each taking the stand-in's
-place. Numbers in `out/lp_recovery_diagnostics_report.txt` (the cumulated
-levels and the variants of them) and
-`out/lp_recovery_diagnostics_growth_unit_report.txt` (the stored series).
+1,000,000 runs under several variants and checks each candidate cause. Settings:
+stand-in `cop_0191` run 706, MCS_TR at 0.05 with 10000 resamples, and for the
+linear model runs 0 to 99 of `cop_0191` each taking the stand-in's place.
+Numbers in
+`out/old/montecarlo_one_benchmark/studies/lp_recovery_diagnostics_report.txt`
+(the cumulated levels and the variants of them) and
+`out/old/montecarlo_one_benchmark/studies/lp_recovery_diagnostics_growth_unit_report.txt`
+(the stored series).
 
 What was ruled out, all on the cumulated levels:
 
@@ -169,7 +172,7 @@ average:
 
 - the median is nearly the same for every fit: 0.059 on the cumulated levels,
   0.048 on the stored series, 0.0575 for the t-QVARMA
-  (`out/qvarma_recovery_diagnostics_report.txt`);
+  (`out/old/montecarlo_one_benchmark/studies/qvarma_recovery_diagnostics_report.txt`);
 - the 90th percentile separates them: 0.69 on the cumulated levels, 4.2 on the
   stored series, 3.97 for the t-QVARMA.
 

@@ -10,11 +10,11 @@ entries per run. No run is held out, since this describes the configuration
 rather than scoring a benchmark.
 
 Reads the response caches of montecarlo/response_cache.h and
-out/seri_against_naive_by_configuration_identifiability.csv, which
+out/montecarlo/seri_against_naive_by_configuration_identifiability.csv, which
 bin/seri_against_naive_by_configuration writes. Writes
-out/response_variance_by_configuration.csv, one row per model and
-configuration, and out/response_variance_by_configuration_report.txt: per
-model, where cop_0191 ranks by noise, and per grid the Spearman correlation
+out/montecarlo/response_variance_by_configuration.csv, one row per model and
+configuration, and out/montecarlo/response_variance_by_configuration_report.txt:
+per model, where cop_0191 ranks by noise, and per grid the Spearman correlation
 across configurations between noise and the own rate (share of its own sets
 holding it) and the off-target rate (share of the other configurations' sets
 holding it).
@@ -27,9 +27,9 @@ holding it).
 #include <stdio.h>
 #include <string.h>
 
-#define IDENTIFIABILITY_PATH "out/seri_against_naive_by_configuration_identifiability.csv"
-#define VARIANCE_PATH "out/response_variance_by_configuration.csv"
-#define REPORT_PATH "out/response_variance_by_configuration_report.txt"
+#define IDENTIFIABILITY_PATH "out/montecarlo/seri_against_naive_by_configuration_identifiability.csv"
+#define VARIANCE_PATH "out/montecarlo/response_variance_by_configuration.csv"
+#define REPORT_PATH "out/montecarlo/response_variance_by_configuration_report.txt"
 #define MAX_COP 1001
 #define FOCUS_COP 191
 #define N_GRIDS 2

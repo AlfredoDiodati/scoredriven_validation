@@ -180,14 +180,15 @@ configuration's path distribution - only the variance reduction is lost.
 ### It was measured, and the gain is nothing
 
 `old/naive_mae_loss/studies/abm_system_seed_correlation.c` reads
-`out/old/naive_mae_loss/abm_system_irf_loss.csv`, the loss table of the naive
-loss (`docs/OLD_EXPERIMENTS.md`), 1000 replicates by 1000 configurations, and
-computes the Pearson correlation of the per-replicate losses for every one
-of the 499,500 configuration pairs. The reference for no shared randomness is
-the same correlation with the second configuration's rows shifted down by one,
-pairing seed $n$ with seed $n+1$ and wrapping at the end. Under independence
-both have mean zero and standard deviation about $1/\sqrt{1000} = 0.032$.
-Output: `out/old/naive_mae_loss/abm_system_seed_correlation_report.txt`.
+`out/old/naive_mae_loss/applications/abm_system_irf_loss.csv`, the loss table of
+the naive loss (`docs/OLD_EXPERIMENTS.md`), 1000 replicates by 1000
+configurations, and computes the Pearson correlation of the per-replicate losses
+for every one of the 499,500 configuration pairs. The reference for no shared
+randomness is the same correlation with the second configuration's rows shifted
+down by one, pairing seed $n$ with seed $n+1$ and wrapping at the end. Under
+independence both have mean zero and standard deviation about $1/\sqrt{1000} =
+0.032$. Output:
+`out/old/naive_mae_loss/studies/abm_system_seed_correlation_report.txt`.
 
 | over all 499,500 pairs | mean | p05 | p50 | p95 |
 |---|---:|---:|---:|---:|
@@ -473,10 +474,10 @@ concurrency the table above says this machine peaks at:
 The script splits the configuration range into contiguous shards, starts one
 process per shard, holds the machine awake for the duration with
 `systemd-inhibit`, waits, and writes
-`out/abm_system_simulate_all_provenance.txt`: which model binary and which
-design were used with their checksums, the shard boundaries, the wall time, the
-number of archives on disk and the size they take. One log per shard goes to
-`out/abm_system_simulate/`.
+`out/applications/abm_system_simulate_all_provenance.txt`: which model binary
+and which design were used with their checksums, the shard boundaries, the wall
+time, the number of archives on disk and the size they take. One log per shard
+goes to `out/applications/abm_system_simulate/`.
 
 Nothing about how results are stored is decided there. Every process writes
 through `abm_system_write_batch`, so the archives are the same compressed `.npz`
@@ -494,8 +495,8 @@ the design run; the hundred the older `.Rdata` route produced were moved to
 refuses to leave. Either move an old dataset aside or set
 `ABM_SYSTEM_OUTPUT_DIR` to somewhere else.
 
-It also refuses an output directory filled under a different parameter design.
-A configuration number is a row index into `out/dataset/abm_system_design.csv` and
+It also refuses an output directory filled under a different parameter design. A
+configuration number is a row index into `out/dataset/abm_system_design.csv` and
 means nothing without it, so a design redrawn with `abm_system_design --force`
 renumbers every stored replication, every fit and every confidence set entry at
 once. The launcher writes the design's md5 to `<output>/.design_md5` the first
@@ -503,9 +504,9 @@ time it fills a directory and compares it on every later run, so adding to a
 directory under a redrawn design stops rather than mixing two meanings of
 `cop_NNNN`. The dataset this experiment produced carries
 `c844833d45ae7e18df857527ffefbab3`, the same checksum
-`out/abm_system_simulate_all_provenance.txt` recorded at the time. Redrawing the
-design is refused by `abm_system_design` itself unless forced, so this is the
-second of two locks on the same door rather than the only one.
+`out/applications/abm_system_simulate_all_provenance.txt` recorded at the time.
+Redrawing the design is refused by `abm_system_design` itself unless forced, so
+this is the second of two locks on the same door rather than the only one.
 
 ### The pilot, and what it projects
 
@@ -584,8 +585,9 @@ The projections from the pilot were 42.5 hours and 14.1 GB against 41.6 and 15,
 so the rate carried and the size was 6% light. Not one replication was rejected:
 no configuration in the design produced a run that exited badly, wrote to the
 model's error log, came back the wrong shape, or contained a missing or infinite
-value. `out/abm_system_simulate_all_provenance.txt` holds the same numbers
-alongside the checksums of the design and the model binary that produced them.
+value. `out/applications/abm_system_simulate_all_provenance.txt` holds the same
+numbers alongside the checksums of the design and the model binary that produced
+them.
 
 What the pilot checked was the failure rate, the one quantity whose behaviour
 across the parameter space cannot be predicted from the design. Sixteen

@@ -56,8 +56,8 @@ aggregate.
 
 Reads out/dataset/abm_system and out/dataset/abm_system_micro. Writes, none of it
 printed:
-    out/abm_system_stable_tails_report.txt
-    out/abm_system_stable_tails_by_series.csv
+    out/studies/abm_system_stable_tails_report.txt
+    out/studies/abm_system_stable_tails_by_series.csv
 */
 
 #include "applications/abm_system.h"
@@ -72,8 +72,8 @@ printed:
 #define K ABM_SYSTEM_K
 #define INPUT_DIR "out/dataset/abm_system"
 #define MICRO_DIR "out/dataset/abm_system_micro"
-#define REPORT_PATH "out/abm_system_stable_tails_report.txt"
-#define BY_SERIES_PATH "out/abm_system_stable_tails_by_series.csv"
+#define REPORT_PATH "out/studies/abm_system_stable_tails_report.txt"
+#define BY_SERIES_PATH "out/studies/abm_system_stable_tails_by_series.csv"
 
 #define PERIODS 400
 #define REPLICATES 1000

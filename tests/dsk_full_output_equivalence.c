@@ -21,7 +21,7 @@ are required to have written the same set of names. The error logs are compared
 too, so a run that fails has to fail the same way in both builds.
 
 Seeds 1 to N, N = 2 unless given as the first argument. Writes
-out/dsk_full_output_equivalence.txt.
+out/tests/dsk_full_output_equivalence.txt.
 */
 
 #define _XOPEN_SOURCE 700
@@ -41,7 +41,7 @@ out/dsk_full_output_equivalence.txt.
 #define MODIFIED "model/dsk_sfc/dsk_SFC"
 #define UPSTREAM "bin/dsk_SFC_upstream"
 #define INPUTS "model/dsk_sfc/dsk_sfc_inputs.json"
-#define REPORT "out/dsk_full_output_equivalence.txt"
+#define REPORT "out/tests/dsk_full_output_equivalence.txt"
 #define RUN_NAME "full"
 #define DEFAULT_SEEDS 2
 #define MAX_FILES 64

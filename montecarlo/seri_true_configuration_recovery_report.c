@@ -1,7 +1,7 @@
 /*
 What the rows of montecarlo/seri_true_configuration_recovery.c say so far.
 Reads its progress file, or its compressed result when the progress file is
-gone, and writes out/seri_true_configuration_recovery_report.txt:
+gone, and writes out/montecarlo/seri_true_configuration_recovery_report.txt:
 
 1. Per model: benchmarks done, how many run indices that covers, how often the
    benchmark's configuration is in the set, alone in it, and first by mean
@@ -30,7 +30,7 @@ the report says how many duplicates it found.
 #define PROGRESS_PATH "out/montecarlo/seri_true_configuration_recovery_progress.csv"
 #define RESULT_PATH "out/montecarlo/seri_true_configuration_recovery.csv.gz"
 #define OLD_PROGRESS_PATH "out/montecarlo/true_configuration_recovery_progress.csv"
-#define REPORT_PATH "out/seri_true_configuration_recovery_report.txt"
+#define REPORT_PATH "out/montecarlo/seri_true_configuration_recovery_report.txt"
 #define MAX_COP 4096
 #define MAX_RUN 1000
 
@@ -224,6 +224,7 @@ int main(void) {
     }
 
     mkdir("out", 0755);
+    mkdir("out/montecarlo", 0755);
     FILE *out = fopen(REPORT_PATH, "w");
     assert(out && "seri_true_configuration_recovery_report: cannot open the report");
     fprintf(out, "Rows of montecarlo/seri_true_configuration_recovery.c read from %s.\n", source);

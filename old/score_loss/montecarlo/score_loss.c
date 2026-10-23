@@ -21,8 +21,8 @@ estimate,
 evaluated on that replicate's simulated series. Two losses come out of one pass
 over the data:
 
-  out/montecarlo/score_loss.csv           q_in' q_in
-  out/montecarlo/score_loss_weighted.csv  q_in' [T_sim I_1(theta)]^-1 q_in
+  out/old/score_loss/montecarlo/score_loss.csv           q_in' q_in
+  out/old/score_loss/montecarlo/score_loss_weighted.csv  q_in' [T_sim I_1(theta)]^-1 q_in
 
 The second is Rao's score statistic, which unlike the first does not depend on
 how the model is parameterized, and which has a chi-square reference under the
@@ -40,7 +40,7 @@ A replicate whose likelihood is not usable at theta comes back as minus
 infinity with a zeroed gradient, which would read as a perfect loss of zero.
 That is counted as a missing cell, not as a zero.
 
-Requires out/abm_system_fit_qvarma/ for the benchmark's fit and
+Requires out/applications/abm_system_fit_qvarma/ for the benchmark's fit and
 out/dataset/abm_system/ for every series, and rebuilds neither. Nothing printed.
 */
 
@@ -71,7 +71,7 @@ out/dataset/abm_system/ for every series, and rebuilds neither. Nothing printed.
 #define COLUMN_LABEL "qvarma_" SPEC_LABEL
 
 #define INPUT_DIR_DEFAULT "out/dataset/abm_system"
-#define OUTPUT_PATH_DEFAULT "out/montecarlo/score_loss.csv"
+#define OUTPUT_PATH_DEFAULT "out/old/score_loss/montecarlo/score_loss.csv"
 
 /* Overridable so the pass can be run over a couple of configurations before it
    is turned loose on the whole design. */
@@ -99,7 +99,7 @@ likelihood at the point the comparison is centred on, whatever that point is.
 static const char *BENCHMARK_SAMPLE;
 static int BENCHMARK_REPLICATE = -1;
 static const char *FIT_DIR;
-#define FIT_DIR_DEFAULT "out/abm_system_fit_qvarma"
+#define FIT_DIR_DEFAULT "out/applications/abm_system_fit_qvarma"
 
 /* Counted off the dataset rather than fixed here: the .Rdata route produced
    108 replicates per configuration and the design experiment produces 1000. */

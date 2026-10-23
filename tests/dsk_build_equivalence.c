@@ -35,7 +35,7 @@ model/dsk_sfc/upstream's copies of the changed files at upstream's own flags.
 Nothing here reaches the network.
 
 Seeds 1 to N, N = 3 unless given as the first argument. Writes
-out/dsk_build_equivalence.txt.
+out/tests/dsk_build_equivalence.txt.
 */
 
 #define _XOPEN_SOURCE 700
@@ -55,7 +55,7 @@ out/dsk_build_equivalence.txt.
 #define MODIFIED "model/dsk_sfc/dsk_SFC"
 #define UPSTREAM "bin/dsk_SFC_upstream"
 #define INPUTS "model/dsk_sfc/dsk_sfc_inputs.json"
-#define REPORT "out/dsk_build_equivalence.txt"
+#define REPORT "out/tests/dsk_build_equivalence.txt"
 #define RUN_NAME "equiv"
 #define MODEL_COLUMNS 83
 #define DEFAULT_SEEDS 3

@@ -77,8 +77,8 @@ Settings read from the environment:
   before the next model takes the same ones, default all 1000 (one model at a
   time, t-QVARMA first).
 - `ABM_SYSTEM_LP_FIT_DIR`, `ABM_SYSTEM_INPUT_DIR`: where the local-projection
-  fits and the dataset are read from, default `out/abm_system_fit_lp` and
-  `out/dataset/abm_system`.
+  fits and the dataset are read from, default
+  `out/applications/abm_system_fit_lp` and `out/dataset/abm_system`.
 
 Compile-time overrides for a test build over part of the grid: `BOOTSTRAP`,
 `FIRST_MODEL`, `LAST_MODEL`, `RUN_LIMIT`, `BENCHMARK_LIMIT`, `PROGRESS_PATH`,
@@ -102,10 +102,100 @@ two can be compared row by row.
 
 The full grid was started on 2026-10-12 as the user service
 `true-configuration-recovery` (`systemd-run --user`, memory capped at 6 GB, all
-16 hardware threads), log in `out/true_configuration_recovery.log`. It stopped
-when the machine rebooted at 16:32 that day, during t-QVARMA run 182, with
-182,704 benchmarks in its progress file, and was not restarted. A rerun
-resumes from there; at 0.125 s per benchmark it had about 168 hours left.
+16 hardware threads), log in `out/montecarlo/true_configuration_recovery.log`.
+It stopped when the machine rebooted at 16:32 that day, during t-QVARMA run 182,
+with 182,704 benchmarks in its progress file. A rerun resumes from there; at
+0.125 s per benchmark it had about 168 hours left.
+
+It was restarted on 2026-10-16 at 19:48 under the same unit name, memory capped
+at 5 GB, all 16 hardware threads, log appended to the same file. Before the
+restart, a test build of the current source and the et_al installed that day
+(`FIRST_MODEL=0 LAST_MODEL=0 RUN_LIMIT=1 BENCHMARK_LIMIT=64`, so run 0 of
+`cop_0001` to `cop_0064` under the t-QVARMA) wrote rows byte for byte equal to
+the first 64 rows of the progress file, so the resumed rows and the rows from
+2026-10-12 come from the same computation
+(`out/montecarlo/true_configuration_recovery_resume_check/`). Its first minutes
+ran at 0.093 s per benchmark, about 124 hours for what is left.
+
+`make mc-seri_against_bootstrap_grid` compares this grid with the Seri grid
+below, benchmark by benchmark, over the benchmarks both hold: the same loss
+(squared error minus the variance correction, so the same mean losses, ranks and
+smallest-loss configuration), different confidence sets (MCS_TR with 2000
+bootstrap resamples against `seri_mcs`, both at $\alpha = 0.05$). It is
+`montecarlo/seri_corrected_against_uncorrected_grid.c` built with the two grids'
+files and labels, into `out/montecarlo/seri_against_bootstrap_grid_report.txt`,
+and reads this grid's progress file while it runs. Measured 2026-10-19, with the
+t-QVARMA and LP linear finished (1,000,000 benchmarks each) and LP state 1 at
+295,384, Seri against bootstrap:
+
+- The configuration in the set: t-QVARMA 10.5% and 66.3%, LP linear 14.7%
+  and 26.0%, LP state 1 11.6% and 41.2%. Alone in the set: 3.6% and 0.0%, 5.2%
+  and 3.0%, 0.9% and 0.4%.
+- Mean set size: t-QVARMA 2.60 and 328.5 (largest 32 and 573), LP linear 2.80
+  and 9.64 (39 and 111), LP state 1 12.3 and 119.0 (281 and 698).
+- The Seri set never holds the configuration when the bootstrap set does not
+  (0.0% of benchmarks under all three models).
+- Configurations in their own set in at least half of their benchmarks:
+  t-QVARMA 20 and 712, LP linear 17 and 31, LP state 1 7 and 129. The
+  correlation across configurations of the two own rates: 0.22, 0.98, 0.65.
+- Mean noise rank of the set members (1 the least noisy, middle 500.5):
+  t-QVARMA 410 and 686, LP linear 464 and 466, LP state 1 457 and 534.
+
+## The bootstrap grid with the loss left uncorrected
+
+Designed, built, not run yet.
+`montecarlo/uncorrected_true_configuration_recovery.c` is to the grid above what
+the uncorrected Seri grid below is to the corrected Seri grid: the loss is the
+squared error between response vectors averaged over the entries with nothing
+subtracted, $L_{is} = \frac{1}{K} \sum_h (\widehat{IR}_{ish} -
+\widehat{IR}_{dh})^2$, computed by `montecarlo/recovery_loss.h`'s
+`recovery_loss_fill` with every configuration's subtracted variance set to zero.
+Everything else is the grid above's: the same 1,000,000 benchmarks per model
+under all five models, the benchmark's run index held out of every column,
+MCS_TR at $\alpha = 0.05$, block length 1, bootstrap variance, 2000 resamples,
+seed 123 stream 0. The source differs from
+`montecarlo/true_configuration_recovery.c` only in the zero correction, the file
+names and the environment variable.
+
+What it answers: whether subtracting each configuration's mean response
+variance changes which configurations the bootstrap confidence set keeps,
+with the loss and the confidence set held fixed. The naive-loss grid
+(`docs/OLD_MONTECARLO_NAIVE_MAE_GRID.md`) cannot answer this, since it also
+uses the absolute rather than the squared error.
+
+Since the confidence set reseeds at seed 123 stream 0 on every call, both
+grids draw the same bootstrap resamples for the same benchmark, so the paired
+comparison is not blurred by resampling noise. Unlike the Seri pair, the
+correction here is one constant per column, and MCS_TR is not unchanged by
+it: the mean loss differences between configurations move by the difference
+of their variances, while the bootstrap spread of those differences does not.
+
+- `make mc-uncorrected_true_configuration_recovery` builds at -O3 and runs.
+- `UNCORRECTED_TRUE_CONFIGURATION_RECOVERY_RUN_BLOCK` sets the run block; the
+  compile-time overrides are those of the grid above.
+- Progress goes to
+  `out/montecarlo/uncorrected_true_configuration_recovery_progress.csv`, the
+  result to `out/montecarlo/uncorrected_true_configuration_recovery.csv.gz`,
+  with the same columns.
+- `make mc-corrected_against_uncorrected_grid` builds
+  `montecarlo/seri_corrected_against_uncorrected_grid.c` pointed at the two
+  bootstrap grids and writes
+  `out/montecarlo/corrected_against_uncorrected_grid_report.txt`, the same
+  tables as the Seri comparison. It reads the corrected grid's finished result
+  only, so it can run once the grid above is done, while this one is still
+  going.
+
+Plan, none of it run:
+
+1. After the grid above finishes, a trial over runs 0 and 1 of the t-QVARMA
+   (`FIRST_MODEL=0 LAST_MODEL=0 RUN_LIMIT=2`, 2000 benchmarks, about 4 minutes)
+   into `out/montecarlo/uncorrected_true_configuration_recovery_trial/`, and the
+   comparison report on those 2000 benchmarks.
+2. Then the full grid as the user service
+   `uncorrected-true-configuration-recovery`, all 16 threads, memory capped at
+   5 GB. The confidence set is the cost, not the loss, so expect about what the
+   grid above takes: 0.09 to 0.125 s per benchmark, 125 to 175 hours.
+3. It cannot run beside the grid above: each takes every thread.
 
 ## The same grid under the Seri et al. procedure
 
@@ -138,20 +228,20 @@ except the loss and the confidence set:
 The full grid was started on 2026-10-13 at 19:03 as the user service
 `seri-true-configuration-recovery` (`systemd-run --user`, memory capped at
 6 GB, all 16 hardware threads), log in
-`out/seri_true_configuration_recovery.log`.
+`out/montecarlo/seri_true_configuration_recovery.log`.
 
-`make mc-seri_true_configuration_recovery_report` summarises the rows written
-so far, or the finished result, into
-`out/seri_true_configuration_recovery_report.txt`: per model, how often the
-benchmark's configuration is in the set, alone and first by mean loss, the set
-sizes, how many configurations are recovered in at least half and 90% of their
-own benchmarks, and, on the t-QVARMA benchmarks the bootstrap grid above also
-finished, how often each procedure's set holds the configuration. It can run
-while the grid does, and reads only.
+`make mc-seri_true_configuration_recovery_report` summarises the rows written so
+far, or the finished result, into
+`out/montecarlo/seri_true_configuration_recovery_report.txt`: per model, how
+often the benchmark's configuration is in the set, alone and first by mean loss,
+the set sizes, how many configurations are recovered in at least half and 90% of
+their own benchmarks, and, on the t-QVARMA benchmarks the bootstrap grid above
+also finished, how often each procedure's set holds the configuration. It can
+run while the grid does, and reads only.
 
 The grid finished on 2026-10-14 at 20:38, 5,000,000 benchmarks, with no error
 in its log. Over all 1,000,000 benchmarks per model, alpha 0.05, from
-`out/seri_true_configuration_recovery_report.txt`:
+`out/montecarlo/seri_true_configuration_recovery_report.txt`:
 
 - t-QVARMA: the benchmark's configuration in the set 10.5%, alone 3.6%,
   first by mean loss 6.2%, mean set size 2.60, largest 32.
@@ -172,7 +262,7 @@ in its log. Over all 1,000,000 benchmarks per model, alpha 0.05, from
 with the discarded naive-loss grid (`docs/OLD_MONTECARLO_NAIVE_MAE_GRID.md`:
 mean absolute error, no correction, MCS_TR, 2000 resamples), both over the
 same 1,000,000 benchmarks per model, into
-`out/seri_against_naive_grid_report.txt`. Measured 2026-10-15:
+`out/montecarlo/seri_against_naive_grid_report.txt`. Measured 2026-10-15:
 
 - The configuration in the set, Seri against naive: t-QVARMA 10.5% and 9.5%,
   LP linear 14.7% and 10.7%, state 1 11.7% and 1.5%, state 2 10.1% and 1.6%,
@@ -191,29 +281,30 @@ same 1,000,000 benchmarks per model, into
   of t-QVARMA benchmarks, 9.8% for LP linear and about 1% for the state
   models.
 
-`make mc-seri_against_naive_by_configuration` computes, for both grids from
-the same code, the per-configuration tables the naive grid's Python scripts
-wrote (`sweep_grid_cop_0191.py`, `sweep_grid_presence.py`,
+`make mc-seri_against_naive_by_configuration` computes, for both grids from the
+same code, the per-configuration tables the naive grid's Python scripts wrote
+(`sweep_grid_cop_0191.py`, `sweep_grid_presence.py`,
 `sweep_grid_identifiability_plots.py`): `cop_0191` as the truth, as a wrong
 answer and every configuration as the truth, into
-`out/seri_against_naive_by_configuration_cop_0191.txt` and `.tex`; each
-configuration's own and off-target rate into
-`out/seri_against_naive_by_configuration_presence.txt`; and per
-configuration the share of its own sets holding it and holding the most
-frequent other configuration into
-`out/seri_against_naive_by_configuration_identifiability.csv`, which
-`montecarlo/seri_against_naive_by_configuration_plots.py` draws. Its
-naive-grid presence and identifiability output equals the old scripts' files
-line for line, and its naive `cop_0191` tables equal theirs to the printed
-digit (checked 2026-10-15).
+`out/montecarlo/seri_against_naive_by_configuration_cop_0191.txt` and `.tex`;
+each configuration's own and off-target rate into
+`out/montecarlo/seri_against_naive_by_configuration_presence.txt`; and per
+configuration the share of its own sets holding it and holding the most frequent
+other configuration into
+`out/montecarlo/seri_against_naive_by_configuration_identifiability.csv`, which
+`montecarlo/seri_against_naive_by_configuration_plots.py` draws. Its naive-grid
+presence and identifiability output equals the old scripts' files line for line,
+and its naive `cop_0191` tables equal theirs to the printed digit (checked
+2026-10-15).
 
 `make mc-response_variance_by_configuration` measures each configuration's
-noise, its mean response variance over all 1000 runs averaged over the
-entries (the term the variance correction subtracts), into
-`out/response_variance_by_configuration.csv`, and writes
-`out/response_variance_by_configuration_report.txt`: where `cop_0191` ranks by
-noise, and the Spearman correlation across the 1000 configurations between
-noise and the own and off-target rates of each grid. Measured 2026-10-15:
+noise, its mean response variance over all 1000 runs averaged over the entries
+(the term the variance correction subtracts), into
+`out/montecarlo/response_variance_by_configuration.csv`, and writes
+`out/montecarlo/response_variance_by_configuration_report.txt`: where `cop_0191`
+ranks by noise, and the Spearman correlation across the 1000 configurations
+between noise and the own and off-target rates of each grid. Measured
+2026-10-15:
 
 - `cop_0191` is among the least noisy: rank 47 of 1000 under the t-QVARMA,
   3, 3, 6 and 4 under LP linear, state 1, state 2 and both states, with noise
@@ -261,18 +352,18 @@ variance, so the rank and the smallest-loss configuration change too.
 
 `make mc-seri_corrected_against_uncorrected_grid` compares the two grids over
 the benchmarks both hold, into
-`out/seri_corrected_against_uncorrected_grid_report.txt`. It reads the
-uncorrected grid's progress file while the result does not exist, so it can
+`out/montecarlo/seri_corrected_against_uncorrected_grid_report.txt`. It reads
+the uncorrected grid's progress file while the result does not exist, so it can
 run while the grid does. Per model and grid: the benchmark's configuration in
-the set, alone, first by mean loss, mean rank, set sizes; the two by two
-table of in-set and how often the smallest-loss configuration agrees; per
-configuration the own rate summaries and the correlation of the two grids'
-own rates; and, against each configuration's noise from
-`out/response_variance_by_configuration.csv`, the Spearman correlation of
-noise with the own and off-target rates and the mean noise rank (1 the least
-noisy) of the smallest-loss configuration and of the set members. The noise
-ranks are the direct measure of the bias the correction is meant to remove:
-with no dependence on noise they sit near the middle rank, 500.5.
+the set, alone, first by mean loss, mean rank, set sizes; the two by two table
+of in-set and how often the smallest-loss configuration agrees; per
+configuration the own rate summaries and the correlation of the two grids' own
+rates; and, against each configuration's noise from
+`out/montecarlo/response_variance_by_configuration.csv`, the Spearman
+correlation of noise with the own and off-target rates and the mean noise rank
+(1 the least noisy) of the smallest-loss configuration and of the set members.
+The noise ranks are the direct measure of the bias the correction is meant to
+remove: with no dependence on noise they sit near the middle rank, 500.5.
 
 ### Trial over runs 0 and 1 of the t-QVARMA
 
@@ -282,7 +373,7 @@ benchmarks, every other setting as in the full grid; the comparison run
 against the corrected grid's finished result on those 2000 benchmarks.
 Machine: AMD Ryzen 7 4800H, 16 hardware threads, nothing else heavy running,
 under a 4 GB memory cap. Rows, log and report in
-`out/seri_uncorrected_true_configuration_recovery_trial/`, measured
+`out/montecarlo/seri_uncorrected_true_configuration_recovery_trial/`, measured
 2026-10-15.
 
 - Time: 0.0152 s per benchmark, wall clock over the whole trial including
@@ -302,17 +393,18 @@ under a 4 GB memory cap. Rows, log and report in
 The full grid was started on 2026-10-15 at 12:01 as the user service
 `seri-uncorrected-true-configuration-recovery` (`systemd-run --user`, memory
 capped at 5 GB, all 16 hardware threads), log in
-`out/seri_uncorrected_true_configuration_recovery.log`, with about 26 hours
-estimated at its start.
+`out/montecarlo/seri_uncorrected_true_configuration_recovery.log`, with about 26
+hours estimated at its start.
 
 ### Trial over runs 0 and 1 of the t-QVARMA
 
-Setup: a test build with `FIRST_MODEL=0 LAST_MODEL=0 RUN_LIMIT=2`, so runs 0
-and 1 of all 1000 configurations as the benchmark under the t-QVARMA, 2000
-benchmarks, every other setting as in the full grid. Machine: AMD Ryzen 7
-4800H, 16 hardware threads, nothing else heavy running, under a 6 GB memory
-cap. Rows in `out/seri_true_configuration_recovery_trial/progress.csv`, log in
-`out/seri_true_configuration_recovery_trial/trial.log`, measured 2026-10-13.
+Setup: a test build with `FIRST_MODEL=0 LAST_MODEL=0 RUN_LIMIT=2`, so runs 0 and
+1 of all 1000 configurations as the benchmark under the t-QVARMA, 2000
+benchmarks, every other setting as in the full grid. Machine: AMD Ryzen 7 4800H,
+16 hardware threads, nothing else heavy running, under a 6 GB memory cap. Rows
+in `out/montecarlo/seri_true_configuration_recovery_trial/progress.csv`, log in
+`out/montecarlo/seri_true_configuration_recovery_trial/trial.log`, measured
+2026-10-13.
 
 - Time: 0.0215 s per benchmark, wall clock over the whole trial including
   reading the response cache, against 0.125 s per benchmark for the grid
@@ -325,6 +417,19 @@ cap. Rows in `out/seri_true_configuration_recovery_trial/progress.csv`, log in
 - Set size: mean 2.56, smallest 1, largest 22, against a mean of 319 under
   the grid above. The set was decided by an accepted test in 58.9% of
   benchmarks.
+
+## One table for the four grids
+
+`make mc-identification_table` writes
+`out/montecarlo/identification_table.tex`: the four grids above (Hansen et
+al.'s bootstrap set or `seri_mcs`, each with the naive or the adjusted loss)
+as one LaTeX table, rows LP linear, LP both states, LP state 1, LP state 2 and
+t-QVARMA, and per grid the share of benchmarks whose set holds the true
+configuration, the share where it has the smallest mean loss, and the median
+final set size. A cell is filled only when its grid holds all 1,000,000
+benchmarks of that model and is "-" otherwise, so it can be rerun as the
+bootstrap grids finish. `out/montecarlo/identification_table_counts.txt`
+lists the file each grid was read from and its benchmarks per model.
 
 ## The local projections
 
@@ -357,41 +462,43 @@ of the two states' losses, since the two halves have the same length; measured
 on the single-benchmark tables of `docs/OLD_MONTECARLO_LP_VALIDATION.md`, the
 largest relative difference between the two is 4.8e-15.
 
-`applications/abm_system_fit_lp.c` writes the fits to one compressed archive
-per configuration, `out/abm_system_fit_lp/cop_NNNN.npz`, one row per run, with
-the responses, the shock matrix, the fit diagnostics, the settings and a
-checksum of the data each row was fitted on; 8.6 GB in all. No run failed:
+`applications/abm_system_fit_lp.c` writes the fits to one compressed archive per
+configuration, `out/applications/abm_system_fit_lp/cop_NNNN.npz`, one row per
+run, with the responses, the shock matrix, the fit diagnostics, the settings and
+a checksum of the data each row was fitted on; 8.6 GB in all. No run failed:
 every fit has responses, every regression at every horizon and the VAR behind
 the shocks were solved by ordinary least squares at full rank (none used the
 minimum-norm solution et_al falls back on), and no state series was constant
-(`out/abm_system_fit_lp_manifest.txt`). Fitting all 1,000,000 runs from scratch
-takes 402 seconds on this machine (AMD Ryzen 7 4800H, 16 threads); the rerun
-that replaced the R-level fits took 1680 seconds, since it first read and
-refused every stored archive.
+(`out/applications/abm_system_fit_lp_manifest.txt`). Fitting all 1,000,000 runs
+from scratch takes 402 seconds on this machine (AMD Ryzen 7 4800H, 16 threads);
+the rerun that replaced the R-level fits took 1680 seconds, since it first read
+and refused every stored archive.
 
 ## A separate pipeline that refits nothing
 
-This is its own pipeline, in its own directory, writing to its own `out/`.
-Nothing under `applications/` is modified or read as source: the main pipeline
-stays exactly as it is, and a change here cannot affect a real-data result.
+This is its own pipeline, in its own directory, writing to its own
+`out/montecarlo/`. Nothing under `applications/` is modified or read as source:
+the main pipeline stays exactly as it is, and a change here cannot affect a
+real-data result.
 
-What is reused is that pipeline's **output**: `out/abm_system_fit_qvarma/`, the
-million cached t-QVARMA fits, and `out/abm_system_fit_lp/`, the million
-local-projection fits. No model is estimated anywhere in this experiment.
+What is reused is that pipeline's **output**:
+`out/applications/abm_system_fit_qvarma/`, the million cached t-QVARMA fits, and
+`out/applications/abm_system_fit_lp/`, the million local-projection fits. No
+model is estimated anywhere in this experiment.
 
-`montecarlo/response_cache.h` holds every run's response vector under one
-model as float32, in `out/sweep_grid_response_cache/<model>.f32` (2.1 GB for
-the t-QVARMA, 1.6 GB per local projection, 3.2 GB for both states, ignored by
-git). The files were built from the fits by the naive-loss grid between
+`montecarlo/response_cache.h` holds every run's response vector under one model
+as float32, in `out/montecarlo/sweep_grid_response_cache/<model>.f32` (2.1 GB
+for the t-QVARMA, 1.6 GB per local projection, 3.2 GB for both states, ignored
+by git). The files were built from the fits by the naive-loss grid between
 2026-09-29 and 2026-10-05, after the last local-projection refit (2026-09-27)
 and the last t-QVARMA fit (2026-09-10). Both states' file holds, for every run,
 its 400 state-1 entries followed by its 400 state-2 entries, bit for bit those
 of the two state files. A file is mapped into memory rather than read into it,
 so when memory is short the system drops parts of it and reads them back from
-disk. A cache file is rebuilt only when its header (model, configurations,
-runs, entries per run) disagrees with what the program expects; a change of
-the fits or the dataset with the same shape is not detected, so delete the
-file by hand after either changes.
+disk. A cache file is rebuilt only when its header (model, configurations, runs,
+entries per run) disagrees with what the program expects; a change of the fits
+or the dataset with the same shape is not detected, so delete the file by hand
+after either changes.
 
 ## What is held out, and why
 

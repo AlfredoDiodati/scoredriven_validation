@@ -6,13 +6,14 @@ The 1000 x 1000 experiment writes 5 x 400 numbers per (configuration,
 replication) pair, grouped ABM_SYSTEM_BATCH to an archive. The only finiteness
 check it makes is at write time: applications/abm_system_simulate.c's own
 all_finite refuses a replication whose model output or transformed series
-carries a NaN or an infinity, logs the seed in out/abm_system_simulate/ and
-stores nothing for it. Everything downstream reads the archives back and
-carries its own guards against a non-finite loss, which is a different
-quantity. Nothing reads the stored series themselves and asks whether they are
-numbers, so a value damaged after the check - by the transform, by the npz
-round trip, by a truncated file from an interrupted run - would first be seen
-as a fit that behaves strangely. This is that pass.
+carries a NaN or an infinity, logs the seed in
+out/applications/abm_system_simulate/ and stores nothing for it. Everything
+downstream reads the archives back and carries its own guards against a
+non-finite loss, which is a different quantity. Nothing reads the stored series
+themselves and asks whether they are numbers, so a value damaged after the check
+- by the transform, by the npz round trip, by a truncated file from an
+interrupted run - would first be seen as a fit that behaves strangely. This is
+that pass.
 
 Four questions, all answered from the archives alone. Nothing here runs the
 simulator or fits anything.
@@ -39,7 +40,8 @@ Defaults are the whole design and 1000 replications per configuration.
 Configurations are independent, so the sweep is divided over the threads
 OpenMP gives it; the work is reading and decompressing 15 GB of archives.
 
-Writes out/abm_system_dataset_finiteness_report.txt. Needs out/dataset/abm_system.
+Writes out/tests/abm_system_dataset_finiteness_report.txt. Needs
+out/dataset/abm_system.
 */
 
 #include "applications/abm_system.h"
@@ -59,7 +61,7 @@ Writes out/abm_system_dataset_finiteness_report.txt. Needs out/dataset/abm_syste
 
 #define DATASET "out/dataset/abm_system"
 #define DESIGN "out/dataset/abm_system_design.csv"
-#define REPORT "out/abm_system_dataset_finiteness_report.txt"
+#define REPORT "out/tests/abm_system_dataset_finiteness_report.txt"
 #define DEFAULT_N_MC 1000
 
 typedef struct {

@@ -38,12 +38,14 @@ appended to that model's summary as it finishes, and a rerun skips the
 benchmarks already there and does not build a cache for a model whose summary
 is complete.
 
-The benchmark configuration is the one out/montecarlo/benchmark.env names; the
-replicate that file names plays no part, since every replicate takes its turn.
+The benchmark configuration is the one
+out/old/montecarlo_one_benchmark/benchmark.env names; the replicate that file
+names plays no part, since every replicate takes its turn.
 
-Requires out/abm_system_fit_lp/, out/dataset/abm_system/ and
-out/montecarlo/benchmark.env. Writes out/montecarlo/lp_sweep_<model>.csv, one
-row per benchmark. Progress goes to stderr, so the summaries are the result.
+Requires out/applications/abm_system_fit_lp/, out/dataset/abm_system/ and
+out/old/montecarlo_one_benchmark/benchmark.env. Writes
+out/old/montecarlo_every_run_of_cop_0191/lp_sweep_<model>.csv, one row per
+benchmark. Progress goes to stderr, so the summaries are the result.
 */
 
 #include "montecarlo/response_cache.h"
@@ -55,7 +57,7 @@ row per benchmark. Progress goes to stderr, so the summaries are the result.
 #include <math.h>
 #include <omp.h>
 
-#define SUMMARY_STEM "out/montecarlo/lp_sweep"
+#define SUMMARY_STEM "out/old/montecarlo_every_run_of_cop_0191/lp_sweep"
 
 static const char *FIT_DIR;
 static const char *INPUT_DIR;

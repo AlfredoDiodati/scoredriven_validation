@@ -32,8 +32,8 @@ export LC_ALL=C
 # holds subdirectories some other writer produced, because the fitting stage
 # reads every subdirectory it finds and cannot tell two datasets apart.
 #
-# Writes out/abm_system_simulate_all_provenance.txt and one log per shard under
-# out/abm_system_simulate/.
+# Writes out/applications/abm_system_simulate_all_provenance.txt and one log per
+# shard under out/applications/abm_system_simulate/.
 set -u
 
 BIN=./bin/abm_system_simulate
@@ -49,8 +49,8 @@ FIRST="${2:-1}"
 LAST="${3:-$n_design}"
 N_MC="${4:-1000}"
 OUTPUT_DIR="${ABM_SYSTEM_OUTPUT_DIR:-out/dataset/abm_system}"
-REPORT_DIR=out/abm_system_simulate
-STAMP=out/abm_system_simulate_all_provenance.txt
+REPORT_DIR=out/applications/abm_system_simulate
+STAMP=out/applications/abm_system_simulate_all_provenance.txt
 
 [ -x "$BIN" ] || { echo "$BIN is not built: run make bin/abm_system_simulate" >&2; exit 1; }
 [ -f "$DESIGN" ] || { echo "$DESIGN is missing: run make app-abm_system_design" >&2; exit 1; }
@@ -183,14 +183,15 @@ written=$((archives - archives_before))
   echo "archives written $written by this launch, $archives_before already present"
   echo "stored size      $(du -sh "$OUTPUT_DIR" | cut -f1)"
   if [ "$ELAPSED" -gt 0 ] && [ "$written" -gt 0 ]; then
-    # An upper bound: every archive is assumed full at ten replications, which
-    # a batch with a failed run is not. out/abm_system_simulate_manifest.txt
-    # holds the completed and failed counts per configuration.
+    # An upper bound: every archive is assumed full at ten replications, which a
+    # batch with a failed run is not.
+    # out/applications/abm_system_simulate_manifest.txt holds the completed and
+    # failed counts per configuration.
     printf "throughput       %.1f runs per minute over this launch, at most\n" \
            "$(awk -v a=$written -v s=$ELAPSED 'BEGIN{print a*10*60/s}')"
   fi
   echo
-  echo "completion per configuration is in out/abm_system_simulate_manifest.txt,"
+  echo "completion per configuration is in out/applications/abm_system_simulate_manifest.txt,"
   echo "and the reason for every rejected replication in $REPORT_DIR."
 } >> "$STAMP"
 

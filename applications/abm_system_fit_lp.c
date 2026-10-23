@@ -14,7 +14,7 @@ the HP cycle of that moving average.
 
 A configuration's fits go into one compressed archive,
 
-    out/abm_system_fit_lp/<sample>.npz
+    out/applications/abm_system_fit_lp/<sample>.npz
 
 one row per replicate, in the layout lp_system.h describes: the three response
 tensors, d, the fit notes, the specification and the fingerprints of the data
@@ -36,8 +36,8 @@ it is not retried on every run only to fail the same way.
 One task per configuration. openblas_set_num_threads(1) for the reason
 applications/abm_system_fit_qvarma.c gives: the parallelism is the outer loop.
 
-out/abm_system_fit_lp_manifest.txt records per replicate whether its
-configuration was loaded or fitted, the VAR's statuses, how many horizons of
+out/applications/abm_system_fit_lp_manifest.txt records per replicate whether
+its configuration was loaded or fitted, the VAR's statuses, how many horizons of
 each model went through the rank-deficient fallback, whether the switching
 series was constant, and whether it has responses. Nothing printed.
 */
@@ -53,7 +53,7 @@ series was constant, and whether it has responses. Nothing printed.
 #include <assert.h>
 
 #define INPUT_DIR_DEFAULT "out/dataset/abm_system"
-#define OUTPUT_DIR_DEFAULT "out/abm_system_fit_lp"
+#define OUTPUT_DIR_DEFAULT "out/applications/abm_system_fit_lp"
 
 static const char *INPUT_DIR;
 static const char *OUTPUT_DIR;

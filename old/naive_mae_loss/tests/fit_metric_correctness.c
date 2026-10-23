@@ -16,22 +16,25 @@ Whether old/naive_mae_loss/montecarlo/fit_metric.h computes the fit metric it de
 4. The responses of one real series, cop_0191 run 706 (the single benchmark of
    docs/MONTECARLO_VALIDATION.md): the four local-projection vectors
    fit_metric_responses builds against the ones stored in
-   out/sweep_grid_response_cache/, and the t-QVARMA vector from the cached fit's
-   own parameters against the stored one. The t-QVARMA refitted from those
-   parameters is reported, not checked, since the solver may still move.
+   out/montecarlo/sweep_grid_response_cache/, and the t-QVARMA vector from the
+   cached fit's own parameters against the stored one. The t-QVARMA refitted
+   from those parameters is reported, not checked, since the solver may still
+   move.
 5. A bootstrap whose blocks are the whole series resamples the series itself
    every time, so sigma2_star is exactly 0 under every method; and two bootstraps
    with the same seed give the same sigma2_star.
 
-Reads out/dataset/abm_system/, out/abm_system_fit_qvarma/ and the response caches.
-Writes out/old/naive_mae_loss/fit_metric_correctness_report.txt. Exits 1 on any failure.
+Reads out/dataset/abm_system/, out/applications/abm_system_fit_qvarma/ and the
+response caches. Writes
+out/old/naive_mae_loss/tests/fit_metric_correctness_report.txt. Exits 1 on any
+failure.
 */
 
 #include "old/naive_mae_loss/montecarlo/fit_metric.h"
 #include <stdio.h>
 #include <math.h>
 
-#define REPORT "out/old/naive_mae_loss/fit_metric_correctness_report.txt"
+#define REPORT "out/old/naive_mae_loss/tests/fit_metric_correctness_report.txt"
 #define REAL_COP 191
 #define REAL_RUN 706
 

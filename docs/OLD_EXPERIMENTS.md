@@ -2,9 +2,9 @@
 
 Experiments that are no longer part of the main pipeline or the Monte Carlo
 pipeline. Their code is under `old/`, one folder per experiment; their
-write-ups stay in `docs/`. Their outputs stay where they were written, under
-`out/` and `out/montecarlo/`, except those of the naive loss, which moved with
-their code to `out/old/naive_mae_loss/` and `out/old/naive_mae_loss/montecarlo/`. Every program still builds and runs with
+write-ups stay in `docs/`. Their outputs are under `out/old/`, in the folder
+that mirrors the program's own, so `old/naive_mae_loss/montecarlo/` writes to
+`out/old/naive_mae_loss/montecarlo/`. Every program still builds and runs with
 `make old-<stem>`, the stem being its file name, and the Makefile's
 `OLD_SOURCES` lists them all.
 
@@ -148,14 +148,14 @@ prerequisites, so `make old-abm_system_winner_irf` reruns the US loss table and
 confidence set first. The Python scripts and the two shell drivers run from the
 repository root, for example `./old/naive_mae_loss/montecarlo/fit_metric_run.sh`.
 
-The response caches the grid built, `out/sweep_grid_response_cache/`, stay
-where they are: they hold the responses, not the loss, and the Monte Carlo
+The response caches the grid built, `out/montecarlo/sweep_grid_response_cache/`,
+stay where they are: they hold the responses, not the loss, and the Monte Carlo
 under the corrected loss reads them.
 
 Checked after the move: the moved programs build without warnings, and
 `bin/abm_system_mcs`, `bin/fit_metric_report` and
 `old/naive_mae_loss/montecarlo/sweep_grid_presence.py`, rerun from their new
-location, rewrote `out/old/naive_mae_loss/abm_system_mcs.csv` and `.txt`,
-`out/old/naive_mae_loss/montecarlo/fit_metric_report.txt` and `.tex` and
+location, rewrote `out/old/naive_mae_loss/applications/abm_system_mcs.csv` and
+`.txt`, `out/old/naive_mae_loss/montecarlo/fit_metric_report.txt` and `.tex` and
 `out/old/naive_mae_loss/montecarlo/sweep_grid_presence.txt` byte for byte. The
 other programs were not rerun.

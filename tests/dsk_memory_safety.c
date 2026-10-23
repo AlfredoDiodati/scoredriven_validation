@@ -25,7 +25,7 @@ silent because they are not actually enabled.
 
 Seeds 1 to N, N = 3 unless given as the first argument, at the baseline
 calibration and at the two corners of the parameter design. Writes
-out/dsk_memory_safety.txt.
+out/tests/dsk_memory_safety.txt.
 */
 
 #define _XOPEN_SOURCE 700
@@ -49,7 +49,7 @@ out/dsk_memory_safety.txt.
 #define ORDINARY "model/dsk_sfc/dsk_SFC"
 #define INPUTS "model/dsk_sfc/dsk_sfc_inputs.json"
 #define DESIGN "out/dataset/abm_system_design.csv"
-#define REPORT "out/dsk_memory_safety.txt"
+#define REPORT "out/tests/dsk_memory_safety.txt"
 #define RUN_NAME "safety"
 #define DEFAULT_SEEDS 3
 #define N_POINTS 3

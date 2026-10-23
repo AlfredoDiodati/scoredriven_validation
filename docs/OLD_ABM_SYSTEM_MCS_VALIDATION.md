@@ -20,7 +20,7 @@ configuration closest to the US data. Each configuration, a "CoP"
 
 This document reports the main pipeline, whose auxiliary model is the driftless
 t-QVARMA(1,1,2) (et_al's `sd/qvarma.h`). The benchmark is its fit to the US
-data, `out/us_qvarma_spec_choice_p1q1r2_fit.json`, written by
+data, `out/applications/us_qvarma_spec_choice_p1q1r2_fit.json`, written by
 `applications/us_qvarma_spec_choice.c`. The same comparison with the local
 projections as the auxiliary model is in `docs/OLD_ABM_SYSTEM_LP_VALIDATION.md`.
 
@@ -37,11 +37,12 @@ confidence set settings, and which fits the losses are built from.
 
 ## Result on the design experiment
 
-Setup: `out/old/naive_mae_loss/abm_system_irf_loss.csv` of 2026-09-10, 1000 configurations by 1000
-replicates, no missing cell; loss is the MAE between a fit's stacked impulse
-responses and the real-data fit's, horizon 20. MCS with the settings of
-`docs/MCS_VALIDATION_PROCEDURE.md`. Output: `out/old/naive_mae_loss/abm_system_mcs.txt` and
-`out/old/naive_mae_loss/abm_system_mcs.csv` of 2026-09-11.
+Setup: `out/old/naive_mae_loss/applications/abm_system_irf_loss.csv` of
+2026-09-10, 1000 configurations by 1000 replicates, no missing cell; loss is the
+MAE between a fit's stacked impulse responses and the real-data fit's, horizon
+20. MCS with the settings of `docs/MCS_VALIDATION_PROCEDURE.md`. Output:
+`out/old/naive_mae_loss/applications/abm_system_mcs.txt` and
+`out/old/naive_mae_loss/applications/abm_system_mcs.csv` of 2026-09-11.
 
 Mean loss per configuration runs from 0.11816 to 0.16329, average 0.13083.
 
@@ -114,11 +115,12 @@ configuration is the closest of the thousand" and not "this configuration
 matches the US data".
 
 The scale that answers the second question is already computed.
-`old/naive_mae_loss/studies/abm_system_winner_diagnostics.c` reports, in section 4 of
-`out/old/naive_mae_loss/abm_system_winner_diagnostics.txt`, the mean absolute US response over the
-525 stacked elements: 0.12228. That is the loss a model whose impulse responses
-were identically zero would score, since the loss is the mean absolute
-difference against the US vector and a zero vector leaves the US vector itself.
+`old/naive_mae_loss/studies/abm_system_winner_diagnostics.c` reports, in section
+4 of `out/old/naive_mae_loss/studies/abm_system_winner_diagnostics.txt`, the
+mean absolute US response over the 525 stacked elements: 0.12228. That is the
+loss a model whose impulse responses were identically zero would score, since
+the loss is the mean absolute difference against the US vector and a zero vector
+leaves the US vector itself.
 
 | | mean loss |
 |---|---:|
@@ -127,9 +129,9 @@ difference against the US vector and a zero vector leaves the US vector itself.
 | median over the 1000 configurations | 0.13000 |
 | largest over the 1000 configurations | 0.16329 |
 
-Counted from `out/old/naive_mae_loss/abm_system_mcs.csv`: 35 of the 1000 configurations
-score below 0.12228 and the other 965 score above it. The winner beats the zero
-response by 3.4 per cent.
+Counted from `out/old/naive_mae_loss/applications/abm_system_mcs.csv`: 35 of the
+1000 configurations score below 0.12228 and the other 965 score above it. The
+winner beats the zero response by 3.4 per cent.
 
 The same section gives the mechanism. The mean absolute response of a
 configuration's own fits has median 0.03173 over the 1000 configurations
@@ -142,10 +144,10 @@ loss is 0.0694, so the loss is not simply rewarding small responses either; the
 responses are small across the whole design.
 
 The raw series say the same thing without any model in the way.
-`out/abm_system_tail_origin_report.txt`, Part 1, compares unconditional moments
-over the 400 stored periods against the US series over 187 quarters. The last
-column counts configurations whose median over their 1000 replicates reaches
-the US value:
+`out/studies/abm_system_tail_origin_report.txt`, Part 1, compares unconditional
+moments over the 400 stored periods against the US series over 187 quarters. The
+last column counts configurations whose median over their 1000 replicates
+reaches the US value:
 
 | series | moment | US | simulated median | configurations reaching US |
 |---|---|---:|---:|---:|
@@ -162,14 +164,14 @@ US series is not reproduced anywhere in the design. No configuration of the nine
 parameters this experiment varies reproduces the second moments of the US
 series, let alone the third.
 
-These are moments of runs this project's build of the simulator produced, so
-the reading holds only if that build is the authors'. It is:
-`tests/dsk_tail_replicate_reproduction.c` takes the replicates with the
-heaviest tails in the whole experiment and reruns them in the authors'
-unchanged build at the same configuration and seed, and
-`out/dsk_tail_replicate_reproduction.txt` records sixteen such runs reproduced
-exactly, results file, error log and stored series alike. The thinness above is
-the model's.
+These are moments of runs this project's build of the simulator produced, so the
+reading holds only if that build is the authors'. It is:
+`tests/dsk_tail_replicate_reproduction.c` takes the replicates with the heaviest
+tails in the whole experiment and reruns them in the authors' unchanged build at
+the same configuration and seed, and
+`out/tests/dsk_tail_replicate_reproduction.txt` records sixteen such runs
+reproduced exactly, results file, error log and stored series alike. The
+thinness above is the model's.
 
 
 The confidence set is therefore an answer to a narrower question than the word
@@ -199,10 +201,12 @@ scores trade places when the resamples change.
 
 ### Does the statistic matter
 
-`old/naive_mae_loss/applications/abm_system_mcs_statistic_comparison.c` runs `MCS_TR` and
-`MCS_TMAX` on the same loss table with every other setting identical, including
-the seed, so both are scored on the same 10,000 resamples. Output:
-`out/old/naive_mae_loss/abm_system_mcs_statistic_comparison.txt` and `.csv` of 2026-09-11.
+`old/naive_mae_loss/applications/abm_system_mcs_statistic_comparison.c` runs
+`MCS_TR` and `MCS_TMAX` on the same loss table with every other setting
+identical, including the seed, so both are scored on the same 10,000 resamples.
+Output:
+`out/old/naive_mae_loss/applications/abm_system_mcs_statistic_comparison.txt`
+and `.csv` of 2026-09-11.
 
 | | `MCS_TR` | `MCS_TMAX` |
 |---|---|---|
@@ -281,13 +285,14 @@ outputs are of 2026-09-11.
   taken over 2,467 draws. The line is the median over the kept rotations and the
   band runs from the 10th to the 90th percentile.
 
-`out/old/naive_mae_loss/abm_system_winner_irf_manifest.txt` records all of the above for the run
-that wrote the figures.
+`out/old/naive_mae_loss/applications/abm_system_winner_irf_manifest.txt` records
+all of the above for the run that wrote the figures.
 
 ### The two sets of figures
 
 The same responses are drawn under two ways of naming the shocks, in two
-directories under `out/old/naive_mae_loss/abm_system_winner_irf_plots/`:
+directories under
+`out/old/naive_mae_loss/applications/abm_system_winner_irf_plots/`:
 
 - `sign_restricted/` names a shock by the sign pattern above. Shocks 4 and 5
   satisfy no restriction and have no name. These figures have bands.
@@ -313,7 +318,8 @@ all five.
 
 ### What the figures show at impact and after 20 periods
 
-The numbers below are read from `out/old/naive_mae_loss/abm_system_winner_irf.csv`, sign-restricted
+The numbers below are read from
+`out/old/naive_mae_loss/applications/abm_system_winner_irf.csv`, sign-restricted
 set, as the median with the 10th to 90th percentile in brackets.
 
 At horizon 0:

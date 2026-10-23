@@ -15,20 +15,20 @@ naive grid alone.
 
 Writes, per grid:
 
-1. out/seri_against_naive_by_configuration_cop_0191.txt and .tex: per model,
-   the share of benchmarks whose set holds the configuration, holds it alone,
-   and gives it the smallest mean loss, in three tables: cop_0191 as the
+1. out/montecarlo/seri_against_naive_by_configuration_cop_0191.txt and .tex: per
+   model, the share of benchmarks whose set holds the configuration, holds it
+   alone, and gives it the smallest mean loss, in three tables: cop_0191 as the
    truth (its own 1000 benchmarks), cop_0191 as a wrong answer (the other
    999,000), and every configuration as the truth (all 1,000,000, the
    configuration being the benchmark's own).
-2. out/seri_against_naive_by_configuration_presence.txt: per model and
-   configuration, the own rate (share of its own benchmarks whose set holds
-   it) and the off-target rate (share of the other configurations'
-   benchmarks whose set holds it), summarised as in the naive grid's
+2. out/montecarlo/seri_against_naive_by_configuration_presence.txt: per model
+   and configuration, the own rate (share of its own benchmarks whose set holds
+   it) and the off-target rate (share of the other configurations' benchmarks
+   whose set holds it), summarised as in the naive grid's
    sweep_grid_presence.txt.
-3. out/seri_against_naive_by_configuration_identifiability.csv: per grid,
-   model and configuration, the percentage of its own sets that hold it, and
-   the other configuration found in most of its sets with the percentage of
+3. out/montecarlo/seri_against_naive_by_configuration_identifiability.csv: per
+   grid, model and configuration, the percentage of its own sets that hold it,
+   and the other configuration found in most of its sets with the percentage of
    its sets that hold that one; a tie goes to the lower configuration number;
    and the percentage of the other configurations' sets that hold it.
    montecarlo/seri_against_naive_by_configuration_plots.py draws it.
@@ -51,10 +51,10 @@ and reported at the top of the text files.
 
 #define SERI_PATH "out/montecarlo/seri_true_configuration_recovery.csv.gz"
 #define NAIVE_PATH "out/old/naive_mae_loss/montecarlo/sweep_grid.csv.gz"
-#define COP_0191_TEXT_PATH "out/seri_against_naive_by_configuration_cop_0191.txt"
-#define COP_0191_LATEX_PATH "out/seri_against_naive_by_configuration_cop_0191.tex"
-#define PRESENCE_PATH "out/seri_against_naive_by_configuration_presence.txt"
-#define IDENTIFIABILITY_PATH "out/seri_against_naive_by_configuration_identifiability.csv"
+#define COP_0191_TEXT_PATH "out/montecarlo/seri_against_naive_by_configuration_cop_0191.txt"
+#define COP_0191_LATEX_PATH "out/montecarlo/seri_against_naive_by_configuration_cop_0191.tex"
+#define PRESENCE_PATH "out/montecarlo/seri_against_naive_by_configuration_presence.txt"
+#define IDENTIFIABILITY_PATH "out/montecarlo/seri_against_naive_by_configuration_identifiability.csv"
 #define MAX_COP 1001
 #define MAX_RUN 1000
 #define FOCUS_COP 191
@@ -390,6 +390,7 @@ int main(void) {
     read_grid(GRID_NAIVE, NAIVE_PATH);
 
     mkdir("out", 0755);
+    mkdir("out/montecarlo", 0755);
     write_cop_0191_text();
     write_cop_0191_latex();
     write_presence();

@@ -11,30 +11,31 @@
 #
 # This is a pipeline of its own. It shares no source with applications/, which
 # it does not touch, and it reuses that pipeline's output rather than its code:
-# above all out/abm_system_fit_qvarma/, the million cached fits, because
-# nothing here estimates anything. The benchmark's own parameters are one of
-# those cached fits, promoted.
+# above all out/applications/abm_system_fit_qvarma/, the million cached fits,
+# because nothing here estimates anything. The benchmark's own parameters are
+# one of those cached fits, promoted.
 #
-# bin/benchmark_choice picks the run and writes out/montecarlo/benchmark.env;
-# every later step reads it back, so one experiment cannot end up describing
-# two benchmarks. The replicate it picks is held out of every configuration's
-# column. docs/MONTECARLO_VALIDATION.md is the write-up.
+# bin/benchmark_choice picks the run and writes
+# out/old/montecarlo_one_benchmark/benchmark.env; every later step reads it
+# back, so one experiment cannot end up describing two benchmarks. The replicate
+# it picks is held out of every configuration's column.
+# docs/MONTECARLO_VALIDATION.md is the write-up.
 #
 #   ./old/montecarlo_one_benchmark/run.sh the whole experiment
 #   ./old/montecarlo_one_benchmark/run.sh --keep reuse the benchmark already chosen
 #
-# Reads out/abm_system_fit_qvarma/ and out/dataset/abm_system/ and rebuilds
-# neither, so it does not run on a fresh clone.
+# Reads out/applications/abm_system_fit_qvarma/ and out/dataset/abm_system/ and
+# rebuilds neither, so it does not run on a fresh clone.
 
 set -euo pipefail
 
 cd "$(dirname "$0")/../.."
-mkdir -p out/montecarlo
+mkdir -p out/old/montecarlo_one_benchmark
 
-if [ "${1:-}" != "--keep" ] || [ ! -f out/montecarlo/benchmark.env ]; then
+if [ "${1:-}" != "--keep" ] || [ ! -f out/old/montecarlo_one_benchmark/benchmark.env ]; then
     ./bin/benchmark_choice
 fi
-sed 's/^/  /' out/montecarlo/benchmark.env
+sed 's/^/  /' out/old/montecarlo_one_benchmark/benchmark.env
 
 # The impulse-response loss, from the fits already on disk. Every replicate's
 # IRF is compared against the benchmark replicate's own.
@@ -49,4 +50,4 @@ echo "confidence set, impulse-response loss"
 echo "confidence sets, both statistics over the impulse-response loss"
 ./bin/mcs_statistic_comparison
 
-echo "done, results in out/montecarlo"
+echo "done, results in out/old/montecarlo_one_benchmark"

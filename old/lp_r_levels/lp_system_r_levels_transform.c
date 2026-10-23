@@ -20,7 +20,8 @@ time.
 3. A cumulative GDP growth below -init: R's log gives NaN there, and so must
    the header.
 
-Writes out/old/lp_system_r_levels_transform_report.txt. Exits 1 on any failure.
+Writes out/old/lp_r_levels/lp_system_r_levels_transform_report.txt. Exits 1 on
+any failure.
 */
 
 #include "old/lp_r_levels/lp_system_r_levels.h"
@@ -29,7 +30,7 @@ Writes out/old/lp_system_r_levels_transform_report.txt. Exits 1 on any failure.
 #include <math.h>
 #include <string.h>
 
-#define REPORT "out/old/lp_system_r_levels_transform_report.txt"
+#define REPORT "out/old/lp_r_levels/lp_system_r_levels_transform_report.txt"
 #define T_STORED 400
 
 static int failures = 0;

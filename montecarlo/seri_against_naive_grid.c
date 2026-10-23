@@ -11,7 +11,7 @@ configuration.
   et_al's mcs, MCS_TR, alpha 0.05, block length 1, bootstrap variance, 2000
   resamples, seed 123 stream 0.
 
-Writes out/seri_against_naive_grid_report.txt:
+Writes out/montecarlo/seri_against_naive_grid_report.txt:
 
 1. Per model and grid: the benchmark's configuration in the set, alone in it,
    first by mean loss, its mean rank by mean loss, and the mean and largest
@@ -38,7 +38,7 @@ Writes out/seri_against_naive_grid_report.txt:
 
 #define SERI_PATH "out/montecarlo/seri_true_configuration_recovery.csv.gz"
 #define NAIVE_PATH "out/old/naive_mae_loss/montecarlo/sweep_grid.csv.gz"
-#define REPORT_PATH "out/seri_against_naive_grid_report.txt"
+#define REPORT_PATH "out/montecarlo/seri_against_naive_grid_report.txt"
 #define MAX_COP 1024
 #define MAX_RUN 1000
 #define N_GRIDS 2
@@ -227,6 +227,7 @@ int main(void) {
     read_grid(GRID_NAIVE, NAIVE_PATH);
 
     mkdir("out", 0755);
+    mkdir("out/montecarlo", 0755);
     FILE *out = fopen(REPORT_PATH, "w");
     assert(out && "seri_against_naive_grid: cannot open the report");
     fprintf(out, "%s against %s.\n", SERI_PATH, NAIVE_PATH);

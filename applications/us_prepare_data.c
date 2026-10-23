@@ -22,9 +22,9 @@ The sample is us_real.csv's rows 0 to 187, 1973Q1 to 2019Q4, 188 quarters.
 Post-2019 is excluded to avoid the COVID quarters. Differencing then leaves 187
 quarters, 1973Q2 to 2019Q4, the sample the t-QVARMA is estimated on.
 
-Writes out/us_system.csv, the five variables over that sample, with a Quarter
-column so a reader does not have to count rows against this comment. Nothing
-printed. docs/DATA_DOCUMENTATION.md describes both steps.
+Writes out/applications/us_system.csv, the five variables over that sample, with
+a Quarter column so a reader does not have to count rows against this comment.
+Nothing printed. docs/DATA_DOCUMENTATION.md describes both steps.
 */
 
 #include <et_al./linalg/mat.h>
@@ -42,7 +42,7 @@ printed. docs/DATA_DOCUMENTATION.md describes both steps.
 
 enum { LOG_GDP, EMPLOYMENT, LOG_CPI, INTEREST_RATE, LOG_ENERGY_DEMAND, N_VARIABLES };
 
-/* No spaces: these are column names in out/us_system.csv, and a name with a
+/* No spaces: these are column names in out/applications/us_system.csv, and a name with a
    space in it is one more thing a reader has to quote correctly. */
 static const char *variable_name[N_VARIABLES] = {
     "LogGDP", "Employment", "LogCPI", "InterestRate", "LogEnergyDemand"
@@ -102,7 +102,7 @@ int main(void) {
         df_add_numeric_col(&system, variable_name[k], column);
         mat_free(column);
     }
-    df_write_csv(&system, "out/us_system.csv", csv_write_options_default());
+    df_write_csv(&system, "out/applications/us_system.csv", csv_write_options_default());
 
     df_free(&system);
     df_free(&real);

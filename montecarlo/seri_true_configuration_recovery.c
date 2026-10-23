@@ -42,10 +42,10 @@ smallest mean loss, and the configurations in the set, space separated. They
 are the columns of montecarlo/true_configuration_recovery.c, so the two
 procedures can be compared benchmark by benchmark.
 
-Requires out/abm_system_fit_qvarma/, out/abm_system_fit_lp/ and
-out/dataset/abm_system/, and rebuilds none of them. Progress goes to stderr. Each
-model's response cache is read from out/sweep_grid_response_cache/, and built
-there when missing.
+Requires out/applications/abm_system_fit_qvarma/,
+out/applications/abm_system_fit_lp/ and out/dataset/abm_system/, and rebuilds
+none of them. Progress goes to stderr. Each model's response cache is read from
+out/montecarlo/sweep_grid_response_cache/, and built there when missing.
 */
 
 #include "montecarlo/own_deviation_loss.h"

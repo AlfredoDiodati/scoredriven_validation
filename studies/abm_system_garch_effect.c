@@ -53,10 +53,11 @@ US_FLOOR_THRESHOLD.
 
     ./bin/abm_system_garch_effect [CONFIGURATIONS]
 
-Reads out/dataset/abm_system and out/us_system.csv. Writes, none of it printed:
-    out/abm_system_garch_effect_report.txt
-    out/abm_system_garch_effect_by_configuration.csv
-    out/abm_system_garch_effect_us.csv
+Reads out/dataset/abm_system and out/applications/us_system.csv. Writes, none of
+it printed:
+    out/studies/abm_system_garch_effect_report.txt
+    out/studies/abm_system_garch_effect_by_configuration.csv
+    out/studies/abm_system_garch_effect_us.csv
 */
 
 #include "applications/abm_system.h"
@@ -71,9 +72,9 @@ Reads out/dataset/abm_system and out/us_system.csv. Writes, none of it printed:
 
 #define K ABM_SYSTEM_K
 #define INPUT_DIR "out/dataset/abm_system"
-#define REPORT_PATH "out/abm_system_garch_effect_report.txt"
-#define BY_CONFIGURATION_PATH "out/abm_system_garch_effect_by_configuration.csv"
-#define US_PATH "out/abm_system_garch_effect_us.csv"
+#define REPORT_PATH "out/studies/abm_system_garch_effect_report.txt"
+#define BY_CONFIGURATION_PATH "out/studies/abm_system_garch_effect_by_configuration.csv"
+#define US_PATH "out/studies/abm_system_garch_effect_us.csv"
 
 #define PERIODS 400
 #define REPLICATES 1000

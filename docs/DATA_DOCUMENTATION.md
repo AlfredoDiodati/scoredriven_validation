@@ -16,12 +16,12 @@ The US data reaches the auxiliary models in two steps, and the simulated data
 is stored in the form the second step produces.
 
 **Step 1, levels.** `applications/us_prepare_data.c` reads `us_real.csv` and
-writes `out/us_system.csv`: five columns plus `Quarter`, rows 0 to 187 of the
-source, 1973Q1 to 2019Q4, 188 quarters. Nothing else reads `us_real.csv`;
-every other script loads `out/us_system.csv` through `load_us_system` in
-`applications/us_data.h`.
+writes `out/applications/us_system.csv`: five columns plus `Quarter`, rows 0 to
+187 of the source, 1973Q1 to 2019Q4, 188 quarters. Nothing else reads
+`us_real.csv`; every other script loads `out/applications/us_system.csv` through
+`load_us_system` in `applications/us_data.h`.
 
-| column in `out/us_system.csv` | source column | transformation |
+| column in `out/applications/us_system.csv` | source column | transformation |
 |---|---|---|
 | `LogGDP` | `GDP` | `100 ln(GDP_t)` |
 | `Employment` | `Unemployment` | `100 - Unemployment_t`, the employment rate in per cent |
@@ -83,7 +83,7 @@ as it stands, unshifted. What that costs has not been measured.
 
     make app-us_prepare_data
 
-writes `out/us_system.csv`. The `make app-<name>` targets that read it depend
-on `app-us_prepare_data`, directly or through the US fit, so they regenerate it
-rather than read a stale copy. The studies under `studies/` do not, and read
-whatever is on disk.
+writes `out/applications/us_system.csv`. The `make app-<name>` targets that read
+it depend on `app-us_prepare_data`, directly or through the US fit, so they
+regenerate it rather than read a stale copy. The studies under `studies/` do
+not, and read whatever is on disk.

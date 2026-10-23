@@ -12,18 +12,19 @@
 # The confidence-set reports print their own timings, so for those the
 # differing lines are printed instead of a verdict.
 #
-# Reads out/us_system.csv, out/abm_system_fit_lp/, out/abm_system_fit_lp_r_levels/
-# and out/dataset/abm_system/. Writes out/old/lp_r_levels_reproduction/.
+# Reads out/applications/us_system.csv, out/applications/abm_system_fit_lp/,
+# out/old/lp_r_levels/abm_system_fit_lp_r_levels/ and out/dataset/abm_system/.
+# Writes out/old/lp_r_levels/lp_r_levels_reproduction/.
 
 set -u
 
 cd "$(dirname "$0")/../.."
-check_dir=out/old/lp_r_levels_reproduction
+check_dir=out/old/lp_r_levels/lp_r_levels_reproduction
 mkdir -p "$check_dir/before"
 
-untracked="out/old/naive_mae_loss/abm_system_lp_irf_loss_lin.csv out/old/naive_mae_loss/abm_system_lp_irf_loss_s1.csv out/old/naive_mae_loss/abm_system_lp_irf_loss_s2.csv
-out/abm_system_lp_r_levels_irf_loss_lin.csv out/abm_system_lp_r_levels_irf_loss_s1.csv
-out/abm_system_lp_r_levels_irf_loss_s2.csv"
+untracked="out/old/naive_mae_loss/applications/abm_system_lp_irf_loss_lin.csv out/old/naive_mae_loss/applications/abm_system_lp_irf_loss_s1.csv out/old/naive_mae_loss/applications/abm_system_lp_irf_loss_s2.csv
+out/old/lp_r_levels/abm_system_lp_r_levels_irf_loss_lin.csv out/old/lp_r_levels/abm_system_lp_r_levels_irf_loss_s1.csv
+out/old/lp_r_levels/abm_system_lp_r_levels_irf_loss_s2.csv"
 for f in $untracked; do cp "$f" "$check_dir/before/"; done
 
 for program in lp_system_transform lp_system_r_levels_transform us_lp_fit us_lp_fit_r_levels \
@@ -34,13 +35,13 @@ for program in lp_system_transform lp_system_r_levels_transform us_lp_fit us_lp_
 done
 
 echo "fit reports, loaded rather than refitted:"
-grep -H "loaded\|fitted in this run" out/us_lp_fit.txt out/us_lp_fit_r_levels.txt
+grep -H "loaded\|fitted in this run" out/applications/us_lp_fit.txt out/old/lp_r_levels/us_lp_fit_r_levels.txt
 
 for f in $untracked; do
     if cmp -s "$f" "$check_dir/before/$(basename "$f")"; then echo "identical $f"; else echo "differs $f"; fi
 done
 
-for f in $(git ls-files out/us_lp_fit* out/abm_system_lp_*); do
+for f in $(git ls-files out/applications/us_lp_fit* out/old/naive_mae_loss/applications/abm_system_lp_* out/old/lp_r_levels/abm_system_lp_r_levels_*); do
     if git diff --quiet -- "$f"; then
         echo "identical $f"
     else

@@ -38,10 +38,10 @@ p-value, the set size, whether the set was decided by an accepted test, the
 final p-value, runs dropped for a missing response, the configuration with the
 smallest mean loss, and the configurations in the set, space separated.
 
-Requires out/abm_system_fit_qvarma/, out/abm_system_fit_lp/ and
-out/dataset/abm_system/, and rebuilds none of them. Progress goes to stderr. Each
-model's response cache is read from out/sweep_grid_response_cache/, and built
-there when missing.
+Requires out/applications/abm_system_fit_qvarma/,
+out/applications/abm_system_fit_lp/ and out/dataset/abm_system/, and rebuilds
+none of them. Progress goes to stderr. Each model's response cache is read from
+out/montecarlo/sweep_grid_response_cache/, and built there when missing.
 */
 
 #include "montecarlo/recovery_loss.h"

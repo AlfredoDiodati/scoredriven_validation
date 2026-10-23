@@ -33,7 +33,7 @@ a run, so the work is divided over the threads OpenMP gives it.
     ./bin/dsk_dataset_reproduction [CONFIGURATIONS [REPLICATIONS]]
 
 Default 20 and 5, which is 100 pairs. Nothing is written anywhere but a scratch
-directory of this process's own and out/dsk_dataset_reproduction.txt; the
+directory of this process's own and out/tests/dsk_dataset_reproduction.txt; the
 archives are only read.
 
 Needs `make model`, `make model-upstream`, and out/dataset/abm_system.
@@ -64,7 +64,7 @@ Needs `make model`, `make model-upstream`, and out/dataset/abm_system.
 #define INPUTS "model/dsk_sfc/dsk_sfc_inputs.json"
 #define DESIGN "out/dataset/abm_system_design.csv"
 #define DATASET "out/dataset/abm_system"
-#define REPORT "out/dsk_dataset_reproduction.txt"
+#define REPORT "out/tests/dsk_dataset_reproduction.txt"
 #define RUN_NAME "r"
 #define N_STEPS 600
 #define N_MODEL_COLUMNS 83

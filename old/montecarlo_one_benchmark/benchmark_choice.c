@@ -25,11 +25,11 @@ procedure did not keep would make the experiment ask whether a poor benchmark
 is recovered, which is a different and less interesting question.
 
 Among those, the configuration whose auxiliary fits converged most often, read
-from out/abm_system_fit_qvarma_manifest.txt. Roughly a third of the million
-fits in this project converged, so this is the property in shortest supply and
-the one most likely to make a benchmark meaningless: a benchmark whose own fit
-did not converge is a parameter vector the optimizer stopped at, not an
-estimate.
+from out/applications/abm_system_fit_qvarma_manifest.txt. Roughly a third of the
+million fits in this project converged, so this is the property in shortest
+supply and the one most likely to make a benchmark meaningless: a benchmark
+whose own fit did not converge is a parameter vector the optimizer stopped at,
+not an estimate.
 
 Within that configuration, the converged replicate with the smallest gradient
 norm.
@@ -37,11 +37,12 @@ norm.
 Fits taken from another replicate's parameters are excluded: the manifest marks
 them inherited, and a benchmark should be the estimate its own data produced.
 
-Reads out/old/naive_mae_loss/abm_system_mcs_statistic_comparison.csv and the fit manifest. Writes
-out/montecarlo/benchmark_choice.txt, the report, and
-out/montecarlo/benchmark.env, two shell assignments the driver reads so the
-choice is made once and every downstream step runs against the same run.
-Nothing printed.
+Reads
+out/old/naive_mae_loss/applications/abm_system_mcs_statistic_comparison.csv and
+the fit manifest. Writes out/old/montecarlo_one_benchmark/benchmark_choice.txt,
+the report, and out/old/montecarlo_one_benchmark/benchmark.env, two shell
+assignments the driver reads so the choice is made once and every downstream
+step runs against the same run. Nothing printed.
 */
 
 #include <et_al./frame/csv.h>
@@ -50,12 +51,12 @@ Nothing printed.
 #include <stdlib.h>
 #include <assert.h>
 
-#define MANIFEST_PATH "out/abm_system_fit_qvarma_manifest.txt"
-#define REPORT_PATH "out/montecarlo/benchmark_choice.txt"
-#define ENV_PATH "out/montecarlo/benchmark.env"
+#define MANIFEST_PATH "out/applications/abm_system_fit_qvarma_manifest.txt"
+#define REPORT_PATH "out/old/montecarlo_one_benchmark/benchmark_choice.txt"
+#define ENV_PATH "out/old/montecarlo_one_benchmark/benchmark.env"
 
 static const char *const winner_table[] = {
-    "out/old/naive_mae_loss/abm_system_mcs_statistic_comparison.csv"
+    "out/old/naive_mae_loss/applications/abm_system_mcs_statistic_comparison.csv"
 };
 #define N_WINNER_TABLES ((int)(sizeof winner_table / sizeof winner_table[0]))
 
@@ -131,7 +132,7 @@ typedef struct {
    a million lines. */
 static void read_manifest(SampleFits *fits, int n_fits) {
     FILE *f = fopen(MANIFEST_PATH, "r");
-    assert(f && "benchmark_choice: out/abm_system_fit_qvarma_manifest.txt is missing - "
+    assert(f && "benchmark_choice: out/applications/abm_system_fit_qvarma_manifest.txt is missing - "
                  "make app-abm_system_fit_qvarma writes it");
 
     char line[512];
@@ -169,7 +170,7 @@ static int by_gradient(const void *a, const void *b) {
 
 int main(void) {
     FILE *report = fopen(REPORT_PATH, "w");
-    assert(report && "benchmark_choice: cannot open out/montecarlo/benchmark_choice.txt - "
+    assert(report && "benchmark_choice: cannot open out/old/montecarlo_one_benchmark/benchmark_choice.txt - "
                       "the directory has to exist");
 
     fprintf(report, "Which simulated run stands in for the real data in montecarlo/\n\n");
@@ -221,7 +222,7 @@ int main(void) {
             chosen->row[picked].replicate);
 
     FILE *env = fopen(ENV_PATH, "w");
-    assert(env && "benchmark_choice: cannot open out/montecarlo/benchmark.env for writing");
+    assert(env && "benchmark_choice: cannot open out/old/montecarlo_one_benchmark/benchmark.env for writing");
     fprintf(env, "ABM_SYSTEM_BENCHMARK_SAMPLE=%s\n", chosen->name);
     fprintf(env, "ABM_SYSTEM_BENCHMARK_REPLICATE=%d\n", chosen->row[picked].replicate);
     fclose(env);

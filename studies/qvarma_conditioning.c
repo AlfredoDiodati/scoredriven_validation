@@ -2,13 +2,13 @@
 Whether the fits that never converge are badly scaled or chasing a likelihood
 with no maximum. A study, not a speed measurement and not a pass-or-fail check.
 
-out/qvarma_stuck_fits.txt establishes that the resumed fits are not blocked:
-a downhill step exists, it just sits ten orders of magnitude closer than the
-line search looks, and reaching it gains 3e-4. That is what extreme curvature
-looks like from the optimizer's side. This asks where the curvature comes
-from, by running the same fit at growing iteration budgets from the same start
-and watching four things move: the log-likelihood, the smallest diagonal of
-Omega_inv, nu, and the gradient norm.
+out/studies/qvarma_stuck_fits.txt establishes that the resumed fits are not
+blocked: a downhill step exists, it just sits ten orders of magnitude closer
+than the line search looks, and reaching it gains 3e-4. That is what extreme
+curvature looks like from the optimizer's side. This asks where the curvature
+comes from, by running the same fit at growing iteration budgets from the same
+start and watching four things move: the log-likelihood, the smallest diagonal
+of Omega_inv, nu, and the gradient norm.
 
 A residual standard deviation walking toward zero while the log-likelihood
 keeps climbing is a likelihood with no interior maximum, and no amount of
@@ -22,7 +22,7 @@ condition number and for which parameter blocks carry the stiff and the flat
 directions.
 
 The spec is t-QVARMA(1,1,2), the one the ABM pipeline fits.
-Writes out/qvarma_conditioning.txt.
+Writes out/studies/qvarma_conditioning.txt.
 */
 #include "applications/abm_system.h"
 #include <et_al./sd/qvarma.h>
@@ -124,7 +124,7 @@ int main(void) {
     keep_the_arena_resident();
     openblas_set_num_threads(1);
 
-    FILE *report = fopen("out/qvarma_conditioning.txt", "w");
+    FILE *report = fopen("out/studies/qvarma_conditioning.txt", "w");
     assert(report);
     fprintf(report, "Each fit starts from build_start and runs to the budget in the first "
                     "column.\nBudgets are independent runs, not a continued one.\n");

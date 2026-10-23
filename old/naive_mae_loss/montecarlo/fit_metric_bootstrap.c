@@ -36,9 +36,9 @@ B, block length, usable resamples, converged t-QVARMA fits, their mean
 iterations, the configuration with the smallest mean loss, d, sigma2,
 sigma2_star, s, v, s_star and v_star.
 
-Reads out/dataset/abm_system/ and out/abm_system_fit_qvarma/ (the benchmark's own
-t-QVARMA estimate, where every resample's fit starts) and rebuilds neither.
-Progress goes to stderr.
+Reads out/dataset/abm_system/ and out/applications/abm_system_fit_qvarma/ (the
+benchmark's own t-QVARMA estimate, where every resample's fit starts) and
+rebuilds neither. Progress goes to stderr.
 */
 
 #include "old/naive_mae_loss/montecarlo/fit_metric.h"

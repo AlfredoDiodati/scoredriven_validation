@@ -16,13 +16,14 @@ model,
 the local-projection counterpart of old/naive_mae_loss/applications/abm_system_irf_loss.c.
 
 A cell's loss is the mean absolute difference between the US response vector
-(out/us_lp_fit.npz, applications/us_lp_fit.c) and the run's, over all
-K x (hor + 1) x K = 400 values of one model. The R code the local projections
-were first run with uses the mean squared difference; the absolute one is kept
-for the reason old/naive_mae_loss/applications/abm_system_irf_loss.c gives and for comparability
-with the t-QVARMA results. The Monte Carlo experiment with these models and
-this loss recovered a known configuration in 913 (linear), 858 (state 1) and
-781 (state 2) of 1000 repetitions (docs/OLD_MONTECARLO_LP_VALIDATION.md).
+(out/applications/us_lp_fit.npz, applications/us_lp_fit.c) and the run's, over
+all K x (hor + 1) x K = 400 values of one model. The R code the local
+projections were first run with uses the mean squared difference; the absolute
+one is kept for the reason old/naive_mae_loss/applications/abm_system_irf_loss.c
+gives and for comparability with the t-QVARMA results. The Monte Carlo
+experiment with these models and this loss recovered a known configuration in
+913 (linear), 858 (state 1) and 781 (state 2) of 1000 repetitions
+(docs/OLD_MONTECARLO_LP_VALIDATION.md).
 
 Nothing is estimated. The US fit is checked against the US series and every
 simulated fit against its own series before it is used (applications/
@@ -31,11 +32,12 @@ with a missing or non-finite response is a hole, and et_al's mcs refuses a
 table with one, so a replicate with a hole in any column is dropped from that
 model's table and counted in the manifest.
 
-Requires out/us_lp_fit.npz, out/abm_system_fit_lp/ and out/dataset/abm_system/.
-This is that table on the cumulated levels lp_system_r_levels.h builds: reads
-out/us_lp_fit_r_levels.npz and out/abm_system_fit_lp_r_levels/, writes
-out/abm_system_lp_r_levels_irf_loss_<model>.csv and its manifest. Takes no
-arguments. Nothing printed.
+Requires out/applications/us_lp_fit.npz, out/applications/abm_system_fit_lp/ and
+out/dataset/abm_system/. This is that table on the cumulated levels
+lp_system_r_levels.h builds: reads out/old/lp_r_levels/us_lp_fit_r_levels.npz
+and out/old/lp_r_levels/abm_system_fit_lp_r_levels/, writes
+out/old/lp_r_levels/abm_system_lp_r_levels_irf_loss_<model>.csv and its
+manifest. Takes no arguments. Nothing printed.
 */
 
 #include "applications/us_data.h"
@@ -99,8 +101,8 @@ int main(int argc, char **argv) {
     (void)argv;
     assert(argc == 1 && "abm_system_lp_r_levels_irf_loss: takes no arguments");
     openblas_set_num_threads(1);
-    const char *us_fit_path = "out/us_lp_fit_r_levels.npz";
-    const char *output_stem = "out/abm_system_lp_r_levels_irf_loss";
+    const char *us_fit_path = "out/old/lp_r_levels/us_lp_fit_r_levels.npz";
+    const char *output_stem = "out/old/lp_r_levels/abm_system_lp_r_levels_irf_loss";
     const char *fit_dir = LP_FIT_DIR_DEFAULT "_r_levels";
 
     /* The US responses, refused unless fitted on exactly the US series. */
@@ -113,7 +115,7 @@ int main(int argc, char **argv) {
         int count = 0;
         LpSystemRecord *us = lp_system_read_archive(us_fit_path, lp_system_spec(), &count);
         assert(us && count == 1 && lp_system_record_matches(&us[0], y, switching) && us[0].has_responses
-               && "abm_system_lp_irf_loss: out/us_lp_fit.npz is missing or stale - run bin/us_lp_fit");
+               && "abm_system_lp_irf_loss: out/applications/us_lp_fit.npz is missing or stale - run bin/us_lp_fit");
         for (int loss = 0; loss < LP_N_LOSSES; loss++)
             memcpy(reference[loss], lp_response(&us[0], loss), LP_RESPONSE_DIM * sizeof(mreal));
         free(us);
@@ -122,7 +124,7 @@ int main(int argc, char **argv) {
 
     int n_samples;
     LpSample *samples = lp_list_samples(fit_dir, &n_samples);
-    assert(n_samples > 0 && "abm_system_lp_irf_loss: no configurations in out/abm_system_fit_lp/");
+    assert(n_samples > 0 && "abm_system_lp_irf_loss: no configurations in out/applications/abm_system_fit_lp/");
     int n_replicates = lp_count_replicates(LP_INPUT_DIR_DEFAULT, samples[0].name);
 
     Mat values[LP_N_LOSSES];

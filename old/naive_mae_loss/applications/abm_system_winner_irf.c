@@ -3,22 +3,25 @@ The impulse response function of the model the Model Confidence Set kept,
 with the sign-restricted confidence bands of Blazsek, Escribano and Licht
 (2023), section 4.3.
 
-old/naive_mae_loss/applications/abm_system_mcs.c reduces the candidate models, one per ABM
-parameterization fitted under the driftless t-QVARMA spec p1q1r2, to the
-handful the data cannot separate, and writes them to
-out/old/naive_mae_loss/abm_system_mcs.csv with their mean IRF loss against the real-data
-fit. This file takes the surviving model with the smallest mean loss and
-produces the object the whole comparison exists to look at - that model's
-own impulse responses, with bands - rather than one more table of losses.
+old/naive_mae_loss/applications/abm_system_mcs.c reduces the candidate models,
+one per ABM parameterization fitted under the driftless t-QVARMA spec p1q1r2, to
+the handful the data cannot separate, and writes them to
+out/old/naive_mae_loss/applications/abm_system_mcs.csv with their mean IRF loss
+against the real-data fit. This file takes the surviving model with the smallest
+mean loss and produces the object the whole comparison exists to look at - that
+model's own impulse responses, with bands - rather than one more table of
+losses.
 
 The steps, in the order main() runs them:
 
-  1. Read out/old/naive_mae_loss/abm_system_mcs.csv, keep the rows with in_set = 1, and
-     take the one with the smallest mean_loss. Its name carries both the ABM
-     sample directory and the spec, "<sample>_qvarma_p1q1r<N>", the naming
-     old/naive_mae_loss/applications/abm_system_irf_loss.c gave its own loss columns.
+  1. Read out/old/naive_mae_loss/applications/abm_system_mcs.csv, keep the rows
+     with in_set = 1, and take the one with the smallest mean_loss. Its name
+     carries both the ABM sample directory and the spec,
+     "<sample>_qvarma_p1q1r<N>", the naming
+     old/naive_mae_loss/applications/abm_system_irf_loss.c gave its own loss
+     columns.
   2. Read every replicate_<NNN>_p1q1r<N>_fit.json that sample's directory
-     under out/abm_system_fit_qvarma/ holds, one per replicate.
+     under out/applications/abm_system_fit_qvarma/ holds, one per replicate.
   3. Average theta over those replicates, coordinate by coordinate, in the
      unconstrained space the JSON stores - not in the constrained space.
      That is what the averaged object is: the mean of what the optimizer
@@ -66,7 +69,7 @@ maximum-likelihood estimates.
 
 Output:
 
-  out/old/naive_mae_loss/abm_system_winner_irf.csv        one row per (component, horizon,
+  out/old/naive_mae_loss/applications/abm_system_winner_irf.csv        one row per (component, horizon,
                                        shock, response): the unrotated
                                        response, and the lower, median and
                                        upper band, with both the index and a
@@ -79,10 +82,11 @@ Output:
                                        total cumulated over the horizon,
                                        which is the response of the level a
                                        differenced series differences.
-  out/old/naive_mae_loss/abm_system_winner_irf_theta.json the averaged parameter set, in
+  out/old/naive_mae_loss/applications/abm_system_winner_irf_theta.json the
+  averaged parameter set, in
                                        save_params' own format, so it
                                        reloads through load_params.
-  out/old/naive_mae_loss/abm_system_winner_irf_manifest.txt
+  out/old/naive_mae_loss/applications/abm_system_winner_irf_manifest.txt
                                        which model won and by what loss, how
                                        many replicates went into the average
                                        and how many of them converged, the
@@ -120,9 +124,11 @@ old/naive_mae_loss/applications/abm_system_winner_irf_plots.py reads the CSV and
 figures; it is the only consumer, and nothing here is written for its
 convenience rather than for a reader of the CSV itself.
 
-Requires out/old/naive_mae_loss/abm_system_mcs.csv (old/naive_mae_loss/applications/abm_system_mcs.c),
-out/abm_system_fit_qvarma/ (applications/abm_system_fit_qvarma.c) and
-out/dataset/abm_system/ (applications/abm_system_simulate_all.sh). Nothing printed.
+Requires out/old/naive_mae_loss/applications/abm_system_mcs.csv
+(old/naive_mae_loss/applications/abm_system_mcs.c),
+out/applications/abm_system_fit_qvarma/ (applications/abm_system_fit_qvarma.c)
+and out/dataset/abm_system/ (applications/abm_system_simulate_all.sh). Nothing
+printed.
 */
 
 #include "applications/abm_system.h"
@@ -157,12 +163,12 @@ static int n_replicates = 0;
 #define BAND_DRAWS 10000000
 #define BAND_SEED 20260822
 
-#define MCS_PATH "out/old/naive_mae_loss/abm_system_mcs.csv"
-#define FIT_DIR "out/abm_system_fit_qvarma"
+#define MCS_PATH "out/old/naive_mae_loss/applications/abm_system_mcs.csv"
+#define FIT_DIR "out/applications/abm_system_fit_qvarma"
 #define INPUT_DIR "out/dataset/abm_system"
-#define IRF_PATH "out/old/naive_mae_loss/abm_system_winner_irf.csv"
-#define THETA_PATH "out/old/naive_mae_loss/abm_system_winner_irf_theta.json"
-#define MANIFEST_PATH "out/old/naive_mae_loss/abm_system_winner_irf_manifest.txt"
+#define IRF_PATH "out/old/naive_mae_loss/applications/abm_system_winner_irf.csv"
+#define THETA_PATH "out/old/naive_mae_loss/applications/abm_system_winner_irf_theta.json"
+#define MANIFEST_PATH "out/old/naive_mae_loss/applications/abm_system_winner_irf_manifest.txt"
 
 /* Column order of a response matrix, the three the paper's Table 1 names
    followed by the two this system adds. */
@@ -240,7 +246,7 @@ static Winner find_winner(void) {
         w.n_in_set++;
         if (best < 0 || AT(mean_loss, i, 0) < AT(mean_loss, best, 0)) best = i;
     }
-    assert(best >= 0 && "abm_system_winner_irf: no model in out/old/naive_mae_loss/abm_system_mcs.csv "
+    assert(best >= 0 && "abm_system_winner_irf: no model in out/old/naive_mae_loss/applications/abm_system_mcs.csv "
                         "is in the confidence set");
 
     const char *marker = strstr(name[best], "_qvarma_p");
@@ -379,7 +385,7 @@ int main(void) {
     fprintf(manifest, "averaged over  %d of %d replicates, %d parameters each, in the "
                       "unconstrained space\n", n_loaded, n_replicates, n);
     fprintf(manifest, "converged      %d of the %d averaged fits; the rest did not converge by "
-                      "the solver's test, and out/abm_system_fit_qvarma_manifest.txt says why "
+                      "the solver's test, and out/applications/abm_system_fit_qvarma_manifest.txt says why "
                       "each stopped\n\n", n_converged, n_loaded);
 
     qvarma_params_from_theta(average, &m);

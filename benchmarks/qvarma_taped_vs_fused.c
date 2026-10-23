@@ -14,7 +14,7 @@ Value-only and value-and-gradient are timed separately because a line search
 asks for the value alone, and that is most of the objective calls a fit makes.
 
 The spec is t-QVARMA(1,1,2), the one the ABM pipeline fits.
-Writes out/qvarma_taped_vs_fused.txt.
+Writes out/benchmarks/qvarma_taped_vs_fused.txt.
 */
 #include "applications/abm_system.h"
 #include <et_al./sd/qvarma.h>
@@ -158,7 +158,7 @@ int main(void) {
         if (relative > worst_gradient) worst_gradient = relative;
     }
 
-    FILE *report = fopen("out/qvarma_taped_vs_fused.txt", "w");
+    FILE *report = fopen("out/benchmarks/qvarma_taped_vs_fused.txt", "w");
     assert(report && "qvarma_taped_vs_fused: cannot open the report path");
     fprintf(report, "series: EstimationSeriesSample1_1 replicate 0\n");
     fprintf(report, "K = %d, T = %d, spec r = %d, %d parameters\n\n", K, T, SPEC_R, n);

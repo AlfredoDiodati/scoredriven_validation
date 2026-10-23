@@ -9,7 +9,7 @@ a maximum. Whether that matters is not answerable from the 2000-iteration run
 alone: it needs the same 500,000 fits at a larger budget and a comparison of
 the two, which is what this reads and reports.
 
-Both budgets are on disk as whole trees, out/throughput_fit_i2000/
+Both budgets are on disk as whole trees, out/applications/throughput_fit_i2000/
 and _i4000/, because the fitting script names every file it writes after its
 own cap. This opens both JSONs for each series and compares them. It fits
 nothing and writes nothing into either tree.
@@ -69,9 +69,9 @@ here.
 Wall time comes from the two runs' own timing files, quoted rather than
 recomputed.
 
-out/throughput_iteration_budget_i<base>_i<high>.txt holds the summary
-and the .csv beside it one row per series, for whatever plot the summary does
-not answer. Both are named for the pair of budgets compared, which are
+out/applications/throughput_iteration_budget_i<base>_i<high>.txt holds the
+summary and the .csv beside it one row per series, for whatever plot the summary
+does not answer. Both are named for the pair of budgets compared, which are
 compile-time constants, so one binary per pair writes one pair of files and
 cannot overwrite another's. Nothing printed.
 
@@ -117,16 +117,16 @@ run, since a partial second budget is a normal state to want a comparison of.
 #define STRINGIFY(x) STRINGIFY_(x)
 
 #define INPUT_DIR "out/dataset/throughput"
-#define BASE_DIR "out/throughput_fit_i" STRINGIFY(BASE_ITERATIONS)
-#define HIGH_DIR "out/throughput_fit_i" STRINGIFY(HIGH_ITERATIONS)
-#define BASE_TIMING "out/throughput_fit_i" STRINGIFY(BASE_ITERATIONS) "_timing.txt"
-#define HIGH_TIMING "out/throughput_fit_i" STRINGIFY(HIGH_ITERATIONS) "_timing.txt"
-#define BASE_PROVENANCE "out/throughput_fit_i" STRINGIFY(BASE_ITERATIONS) "_provenance.txt"
-#define HIGH_PROVENANCE "out/throughput_fit_i" STRINGIFY(HIGH_ITERATIONS) "_provenance.txt"
+#define BASE_DIR "out/applications/throughput_fit_i" STRINGIFY(BASE_ITERATIONS)
+#define HIGH_DIR "out/applications/throughput_fit_i" STRINGIFY(HIGH_ITERATIONS)
+#define BASE_TIMING "out/applications/throughput_fit_i" STRINGIFY(BASE_ITERATIONS) "_timing.txt"
+#define HIGH_TIMING "out/applications/throughput_fit_i" STRINGIFY(HIGH_ITERATIONS) "_timing.txt"
+#define BASE_PROVENANCE "out/applications/throughput_fit_i" STRINGIFY(BASE_ITERATIONS) "_provenance.txt"
+#define HIGH_PROVENANCE "out/applications/throughput_fit_i" STRINGIFY(HIGH_ITERATIONS) "_provenance.txt"
 /* Named for the pair compared, so a second pair does not overwrite the first. */
-#define REPORT_PATH "out/throughput_iteration_budget_i" STRINGIFY(BASE_ITERATIONS) \
+#define REPORT_PATH "out/applications/throughput_iteration_budget_i" STRINGIFY(BASE_ITERATIONS) \
                     "_i" STRINGIFY(HIGH_ITERATIONS) ".txt"
-#define CSV_PATH "out/throughput_iteration_budget_i" STRINGIFY(BASE_ITERATIONS) \
+#define CSV_PATH "out/applications/throughput_iteration_budget_i" STRINGIFY(BASE_ITERATIONS) \
                  "_i" STRINGIFY(HIGH_ITERATIONS) ".csv"
 
 /* The named blocks of QvarmaParams, in the paper's own spelling where it has

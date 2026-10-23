@@ -3,11 +3,12 @@ Whether the t-QVARMA(1,1,2) estimates of the configuration the Model Confidence
 Set keeps are jointly normal across its replicates, on the unconstrained scale
 theta the optimizer steps.
 
-Reads out/old/naive_mae_loss/abm_system_winner_diagnostics_winner_theta.csv, written by
-old/naive_mae_loss/studies/abm_system_winner_diagnostics.c: one row per replicate, the d = 42
-coordinates of theta and whether the fit converged. Nothing is fitted and no
-fit cache is read. The test is run twice, on every replicate and on the
-replicates whose fit converged.
+Reads
+out/old/naive_mae_loss/studies/abm_system_winner_diagnostics_winner_theta.csv,
+written by old/naive_mae_loss/studies/abm_system_winner_diagnostics.c: one row
+per replicate, the d = 42 coordinates of theta and whether the fit converged.
+Nothing is fitted and no fit cache is read. The test is run twice, on every
+replicate and on the replicates whose fit converged.
 
 The test is Mardia's (1970). With xbar the sample mean, S the sample covariance
 divided by n, and
@@ -45,7 +46,7 @@ inference/ directory later; the functions take a plain n x d sample for that
 reason.
 
 Output, none of it printed:
-    out/old/naive_mae_loss/abm_system_winner_normality.txt
+    out/old/naive_mae_loss/studies/abm_system_winner_normality.txt
 */
 
 #include <et_al./dist/mv/gauss.h>
@@ -61,9 +62,9 @@ Output, none of it printed:
 #include <math.h>
 #include <float.h>
 
-#define THETA_PATH "out/old/naive_mae_loss/abm_system_winner_diagnostics_winner_theta.csv"
-#define CONFIDENCE_SET_PATH "out/old/naive_mae_loss/abm_system_mcs.csv"
-#define REPORT_PATH "out/old/naive_mae_loss/abm_system_winner_normality.txt"
+#define THETA_PATH "out/old/naive_mae_loss/studies/abm_system_winner_diagnostics_winner_theta.csv"
+#define CONFIDENCE_SET_PATH "out/old/naive_mae_loss/applications/abm_system_mcs.csv"
+#define REPORT_PATH "out/old/naive_mae_loss/studies/abm_system_winner_normality.txt"
 
 #define SIGNIFICANCE_LEVEL 0.05
 #define CALIBRATION_REPLICATIONS 1000

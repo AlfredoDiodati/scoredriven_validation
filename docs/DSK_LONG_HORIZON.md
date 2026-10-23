@@ -19,11 +19,11 @@ growth of world emissions is not changed, so a run still overflows near period
 
 Every run below used the build `make model` produces, the parameter file
 `model/dsk_sfc/dsk_sfc_inputs.json` with the nine design parameters of one row
-of `out/dataset/abm_system_design.csv` written into it, the horizon `T` overwritten,
-and `-f 0 -c 0 -v 0`. The row is `cop_0191`, the only configuration left in
-`out/old/naive_mae_loss/abm_system_mcs.txt`, unless a table says otherwise. Runs were made
-one or four at a time on the machine `docs/DSK_MODEL_CHANGES.md` describes, with
-nothing else of note running.
+of `out/dataset/abm_system_design.csv` written into it, the horizon `T`
+overwritten, and `-f 0 -c 0 -v 0`. The row is `cop_0191`, the only configuration
+left in `out/old/naive_mae_loss/applications/abm_system_mcs.txt`, unless a table
+says otherwise. Runs were made one or four at a time on the machine
+`docs/DSK_MODEL_CHANGES.md` describes, with nothing else of note running.
 
 A run counts as failed on the same rule `applications/abm_system_simulate.c`
 applies: a non-empty error log, or a results file with fewer rows than `T`.

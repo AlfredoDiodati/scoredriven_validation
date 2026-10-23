@@ -1,1 +1,0 @@
-events=1744 min_x=272837 max_x=16776706 full_range=16777215

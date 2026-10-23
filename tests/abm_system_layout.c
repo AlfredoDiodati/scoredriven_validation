@@ -39,8 +39,8 @@ anything; it takes a few hundredths of a second.
 5. Does abm_system_list_replicates find every replicate, in ascending order,
    across several archives and with a whole batch missing?
 
-Writes out/abm_system_layout_report.txt and scratches in
-out/abm_system_layout_scratch/, which it removes on the way out.
+Writes out/tests/abm_system_layout_report.txt and scratches in
+out/tests/abm_system_layout_scratch/, which it removes on the way out.
 */
 
 #include "applications/abm_system.h"
@@ -55,8 +55,8 @@ out/abm_system_layout_scratch/, which it removes on the way out.
 #include <errno.h>
 #include <assert.h>
 
-#define REPORT "out/abm_system_layout_report.txt"
-#define SCRATCH "out/abm_system_layout_scratch"
+#define REPORT "out/tests/abm_system_layout_report.txt"
+#define SCRATCH "out/tests/abm_system_layout_scratch"
 
 static int failures = 0;
 static FILE *report;

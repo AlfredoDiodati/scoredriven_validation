@@ -1,5 +1,5 @@
 """
-Figures for out/seri_against_naive_by_configuration_identifiability.csv, which
+Figures for out/montecarlo/seri_against_naive_by_configuration_identifiability.csv, which
 bin/seri_against_naive_by_configuration writes: how easy each configuration is
 to identify when one of its own runs stands in for the real data, under the
 Seri grid of montecarlo/seri_true_configuration_recovery.c and under the
@@ -21,7 +21,7 @@ x axis, both on a 0 to 100 axis:
 A dashed line marks the mean over CoPs in each figure. The CoP numbers the bars
 are keyed by are the numbers in the CoP names, so cop_0191 is at x = 191.
 
-Writes out/seri_against_naive_by_configuration_plots/. Nothing is printed.
+Writes out/montecarlo/seri_against_naive_by_configuration_plots/. Nothing is printed.
 
 usage: python montecarlo/seri_against_naive_by_configuration_plots.py
 """
@@ -31,8 +31,8 @@ from pathlib import Path
 import polars as pl
 import plotly.graph_objects as go
 
-TABLE_PATH = Path("out/seri_against_naive_by_configuration_identifiability.csv")
-FIGURE_DIR = Path("out/seri_against_naive_by_configuration_plots")
+TABLE_PATH = Path("out/montecarlo/seri_against_naive_by_configuration_identifiability.csv")
+FIGURE_DIR = Path("out/montecarlo/seri_against_naive_by_configuration_plots")
 
 GRIDS = {
     "Seri": "Seri et al. loss and confidence set",

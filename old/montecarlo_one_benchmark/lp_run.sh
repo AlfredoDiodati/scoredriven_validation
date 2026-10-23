@@ -11,29 +11,29 @@
 # confidence set settings, with the local projections in place of
 # the t-QVARMA as the auxiliary model.
 #
-# The benchmark is the one out/montecarlo/benchmark.env already names, so both
-# auxiliary models are asked to recover the same known answer from the same
-# series. bin/benchmark_choice is not rerun here: it chooses on grounds that
-# belong to the t-QVARMA fits, and rerunning it could move the benchmark under
-# results already written.
+# The benchmark is the one out/old/montecarlo_one_benchmark/benchmark.env
+# already names, so both auxiliary models are asked to recover the same known
+# answer from the same series. bin/benchmark_choice is not rerun here: it
+# chooses on grounds that belong to the t-QVARMA fits, and rerunning it could
+# move the benchmark under results already written.
 #
 #   ./old/montecarlo_one_benchmark/lp_run.sh the single-benchmark run, a few minutes
 #   ./bin/lp_sweep                every replicate of the benchmark configuration
 #                                 as the benchmark, four models: linear, each
 #                                 state, and both states as one vector
 #
-# Reads out/abm_system_fit_lp/ (make app-abm_system_fit_lp writes it) and
-# out/dataset/abm_system/, and rebuilds neither. docs/OLD_MONTECARLO_LP_VALIDATION.md is
-# the write-up.
+# Reads out/applications/abm_system_fit_lp/ (make app-abm_system_fit_lp writes
+# it) and out/dataset/abm_system/, and rebuilds neither.
+# docs/OLD_MONTECARLO_LP_VALIDATION.md is the write-up.
 
 set -euo pipefail
 
 cd "$(dirname "$0")/../.."
-test -f out/montecarlo/benchmark.env || {
-    echo "out/montecarlo/benchmark.env is missing; ./old/montecarlo_one_benchmark/run.sh chooses the benchmark"
+test -f out/old/montecarlo_one_benchmark/benchmark.env || {
+    echo "out/old/montecarlo_one_benchmark/benchmark.env is missing; ./old/montecarlo_one_benchmark/run.sh chooses the benchmark"
     exit 1
 }
-sed 's/^/  /' out/montecarlo/benchmark.env
+sed 's/^/  /' out/old/montecarlo_one_benchmark/benchmark.env
 
 echo "local-projection losses, linear, each state and both states"
 ./bin/lp_irf_loss
@@ -41,4 +41,4 @@ echo "local-projection losses, linear, each state and both states"
 echo "confidence sets, both statistics over the four losses"
 ./bin/lp_mcs
 
-echo "done, results in out/montecarlo/lp_*"
+echo "done, results in out/old/montecarlo_one_benchmark/lp_*"

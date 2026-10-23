@@ -19,15 +19,17 @@ periods at the fitted nu and at nu one per cent higher. A fit is called
                  than SMOOTH_LIMIT
     knife-edge   when either changes it by more than KNIFE_EDGE_LIMIT
     between      otherwise
-Each fit's loss is read from out/old/naive_mae_loss/abm_system_irf_loss.csv.
+Each fit's loss is read from
+out/old/naive_mae_loss/applications/abm_system_irf_loss.csv.
 
-Requires out/old/naive_mae_loss/abm_system_mcs.csv, out/old/naive_mae_loss/abm_system_irf_loss.csv, the
-fit cache and out/dataset/abm_system/. None are Makefile prerequisites, because
-rebuilding them reruns a million fits.
+Requires out/old/naive_mae_loss/applications/abm_system_mcs.csv,
+out/old/naive_mae_loss/applications/abm_system_irf_loss.csv, the fit cache and
+out/dataset/abm_system/. None are Makefile prerequisites, because rebuilding
+them reruns a million fits.
 
 Output, none of it printed:
-    out/old/naive_mae_loss/abm_system_winner_nu_likelihood_scan.txt   the summary
-    out/old/naive_mae_loss/abm_system_winner_nu_likelihood_scan.csv   one row per replicate
+    out/old/naive_mae_loss/studies/abm_system_winner_nu_likelihood_scan.txt   the summary
+    out/old/naive_mae_loss/studies/abm_system_winner_nu_likelihood_scan.csv   one row per replicate
 */
 
 #include "applications/abm_system.h"
@@ -51,12 +53,12 @@ Output, none of it printed:
 #define PHI_STAR_BOUND ((mreal)1)
 #define SPEC_LABEL "p1q1r2"
 
-#define FIT_DIR "out/abm_system_fit_qvarma"
+#define FIT_DIR "out/applications/abm_system_fit_qvarma"
 #define INPUT_DIR "out/dataset/abm_system"
-#define CONFIDENCE_SET_PATH "out/old/naive_mae_loss/abm_system_mcs.csv"
-#define LOSS_TABLE_PATH "out/old/naive_mae_loss/abm_system_irf_loss.csv"
-#define REPORT_PATH "out/old/naive_mae_loss/abm_system_winner_nu_likelihood_scan.txt"
-#define TABLE_PATH "out/old/naive_mae_loss/abm_system_winner_nu_likelihood_scan.csv"
+#define CONFIDENCE_SET_PATH "out/old/naive_mae_loss/applications/abm_system_mcs.csv"
+#define LOSS_TABLE_PATH "out/old/naive_mae_loss/applications/abm_system_irf_loss.csv"
+#define REPORT_PATH "out/old/naive_mae_loss/studies/abm_system_winner_nu_likelihood_scan.txt"
+#define TABLE_PATH "out/old/naive_mae_loss/studies/abm_system_winner_nu_likelihood_scan.csv"
 
 static const double nu_factor[] = { 0.5, 0.9, 0.99, 1.01, 1.1, 2 };
 #define N_FACTORS ((int)(sizeof nu_factor / sizeof nu_factor[0]))

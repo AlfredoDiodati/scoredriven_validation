@@ -79,9 +79,9 @@ files and the aggregate file are the same run.
 Periods 201 to 600 of each run, the window out/dataset/abm_system keeps.
 
 Output, none of it printed:
-    out/abm_system_micro_clt_report.txt
-    out/abm_system_micro_clt_by_run.csv
-    out/abm_system_micro_clt_growth.csv
+    out/studies/abm_system_micro_clt_report.txt
+    out/studies/abm_system_micro_clt_by_run.csv
+    out/studies/abm_system_micro_clt_growth.csv
 */
 
 #include "applications/abm_system.h"
@@ -95,9 +95,9 @@ Output, none of it printed:
 #include <omp.h>
 
 #define INPUT_DIR "out/dataset/abm_system_micro"
-#define REPORT_PATH "out/abm_system_micro_clt_report.txt"
-#define BY_RUN_PATH "out/abm_system_micro_clt_by_run.csv"
-#define GROWTH_PATH "out/abm_system_micro_clt_growth.csv"
+#define REPORT_PATH "out/studies/abm_system_micro_clt_report.txt"
+#define BY_RUN_PATH "out/studies/abm_system_micro_clt_by_run.csv"
+#define GROWTH_PATH "out/studies/abm_system_micro_clt_growth.csv"
 
 #define FIRST_PERIOD ABM_SYSTEM_BURN_IN
 #define SEEDS 5

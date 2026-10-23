@@ -6,7 +6,7 @@ would give up rather than assumed. Not part of the pipeline; run explicitly.
 For each of several replicates and both specs, records the full L-BFGS trace
 and reports the iteration at which the log-likelihood first comes within
 0.01, 0.1 and 1.0 of the value the fit reaches at iteration 2000.
-Writes out/qvarma_iteration_budget.txt.
+Writes out/benchmarks/qvarma_iteration_budget.txt.
 */
 #include "applications/abm_system.h"
 #include <et_al./sd/qvarma.h>
@@ -123,7 +123,7 @@ int main(void) {
     int n_replicates = (int)(sizeof replicate / sizeof replicate[0]);
     const int r_list[2] = { 2, 4 };
 
-    FILE *report = fopen("out/qvarma_iteration_budget.txt", "w");
+    FILE *report = fopen("out/benchmarks/qvarma_iteration_budget.txt", "w");
     assert(report);
     fprintf(report, "Iterations needed to come within a given log-likelihood of what "
                     "%d iterations reach.\n", MAX_ITERATIONS);
@@ -139,11 +139,11 @@ int main(void) {
             QvarmaParams start = build_start(y, r_list[s]);
             QvarmaFitOptions options = qvarma_default_fit_options();
             options.max_iterations = MAX_ITERATIONS;
-            options.trace = fopen("out/qvarma_iteration_budget_trace.txt", "w");
+            options.trace = fopen("out/benchmarks/qvarma_iteration_budget_trace.txt", "w");
             QvarmaFitResult result = qvarma_fit(y, &start, options);
             fclose(options.trace);
 
-            int n = read_trace("out/qvarma_iteration_budget_trace.txt", nll, MAX_ITERATIONS);
+            int n = read_trace("out/benchmarks/qvarma_iteration_budget_trace.txt", nll, MAX_ITERATIONS);
             double final = -(double)result.log_likelihood;
             char label[128];
             snprintf(label, sizeof label, "%s replicate %d",
@@ -161,6 +161,6 @@ int main(void) {
     }
     free(nll);
     fclose(report);
-    remove("out/qvarma_iteration_budget_trace.txt");
+    remove("out/benchmarks/qvarma_iteration_budget_trace.txt");
     return 0;
 }

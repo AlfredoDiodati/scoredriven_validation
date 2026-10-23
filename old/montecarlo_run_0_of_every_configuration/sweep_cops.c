@@ -44,8 +44,9 @@ was decided by an accepted test, the final p-value, replicates dropped for a
 hole, the configuration with the smallest mean loss, seconds spent in the
 confidence set alone, and the configurations in the set, space separated.
 
-Requires out/abm_system_fit_qvarma/, out/abm_system_fit_lp/ and
-out/dataset/abm_system/, and rebuilds none of them. Progress goes to stderr.
+Requires out/applications/abm_system_fit_qvarma/,
+out/applications/abm_system_fit_lp/ and out/dataset/abm_system/, and rebuilds
+none of them. Progress goes to stderr.
 */
 
 #include "montecarlo/response_cache.h"
@@ -56,8 +57,8 @@ out/dataset/abm_system/, and rebuilds none of them. Progress goes to stderr.
 #include <cblas.h>
 
 #define BENCHMARK_REPLICATE 0
-#define PROGRESS_PATH "out/montecarlo/sweep_cops_progress.csv"
-#define RESULT_PATH "out/montecarlo/sweep_cops.csv.gz"
+#define PROGRESS_PATH "out/old/montecarlo_run_0_of_every_configuration/sweep_cops_progress.csv"
+#define RESULT_PATH "out/old/montecarlo_run_0_of_every_configuration/sweep_cops.csv.gz"
 #define HEADER "model,benchmark_cop,in_set,rank,pvalue,set_size,decided_by_accepted_test," \
                "final_pvalue,n_dropped_replicates,lowest_loss_cop,mcs_seconds,set_members\n"
 

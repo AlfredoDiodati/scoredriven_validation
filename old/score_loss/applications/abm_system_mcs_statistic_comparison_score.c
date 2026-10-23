@@ -22,18 +22,20 @@ old/naive_mae_loss/applications/abm_system_mcs_statistic_comparison.c.
 
 Two loss matrices, both written by old/score_loss/applications/abm_system_score_loss.c:
 
-  - out/abm_system_score_loss.csv, q'q with q the score of the t-QVARMA
-    log-likelihood at the real data's own estimate, evaluated on the
-    simulated series and fitting nothing.
-  - out/abm_system_score_loss_weighted.csv, that same score weighted by the
-    inverse information matrix, q' [T_sim I_1]^-1 q, which is Rao's score
-    statistic.
+  - out/old/score_loss/applications/abm_system_score_loss.csv, q'q with q the
+    score of the t-QVARMA log-likelihood at the real data's own estimate,
+    evaluated on the simulated series and fitting nothing.
+  - out/old/score_loss/applications/abm_system_score_loss_weighted.csv, that
+    same score weighted by the inverse information matrix, q' [T_sim I_1]^-1 q,
+    which is Rao's score statistic.
 
 Each matrix gets its own pair of output files, since one report already
 carries two full elimination tables of a thousand rows:
 
-  out/abm_system_mcs_statistic_comparison_score.txt and .csv
-  out/abm_system_mcs_statistic_comparison_score_weighted.txt and .csv
+  out/old/score_loss/applications/abm_system_mcs_statistic_comparison_score.txt
+  and .csv
+  out/old/score_loss/applications/abm_system_mcs_statistic_comparison_score_weighted.txt
+  and .csv
 
 The .txt is a summary followed by the full report of each run, the .csv one
 row per configuration with each statistic's MCS p-value, membership of the set
@@ -50,13 +52,13 @@ In OLD_SOURCES. Nothing printed.
 #include <stdlib.h>
 #include <time.h>
 
-#define SCORE_LOSS_PATH "out/abm_system_score_loss.csv"
-#define SCORE_REPORT_PATH "out/abm_system_mcs_statistic_comparison_score.txt"
-#define SCORE_TABLE_PATH "out/abm_system_mcs_statistic_comparison_score.csv"
+#define SCORE_LOSS_PATH "out/old/score_loss/applications/abm_system_score_loss.csv"
+#define SCORE_REPORT_PATH "out/old/score_loss/applications/abm_system_mcs_statistic_comparison_score.txt"
+#define SCORE_TABLE_PATH "out/old/score_loss/applications/abm_system_mcs_statistic_comparison_score.csv"
 
-#define WEIGHTED_LOSS_PATH "out/abm_system_score_loss_weighted.csv"
-#define WEIGHTED_REPORT_PATH "out/abm_system_mcs_statistic_comparison_score_weighted.txt"
-#define WEIGHTED_TABLE_PATH "out/abm_system_mcs_statistic_comparison_score_weighted.csv"
+#define WEIGHTED_LOSS_PATH "out/old/score_loss/applications/abm_system_score_loss_weighted.csv"
+#define WEIGHTED_REPORT_PATH "out/old/score_loss/applications/abm_system_mcs_statistic_comparison_score_weighted.txt"
+#define WEIGHTED_TABLE_PATH "out/old/score_loss/applications/abm_system_mcs_statistic_comparison_score_weighted.csv"
 
 #define N_LAST_STANDING 10
 

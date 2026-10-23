@@ -12,8 +12,8 @@ falls towards 4. How much more often q_t/K lands far out than the Gaussian
 reference allows is what the likelihood reads as a small nu.
 
 Four sets of residuals, each at the parameters of its own fit:
-    US, nu free          out/us_qvarma_spec_choice_p1q1r2_fit.json
-    US, nu held          out/old/naive_mae_loss/us_qvarma_nu_sensitivity_nu<nu>_fit.json, the US
+    US, nu free          out/applications/us_qvarma_spec_choice_p1q1r2_fit.json
+    US, nu held          out/old/naive_mae_loss/studies/us_qvarma_nu_sensitivity_nu<nu>_fit.json, the US
                          data refitted with nu held at the winner's averaged nu,
                          so the US tails are also measured under a near-Gaussian
                          fit
@@ -23,11 +23,12 @@ The largest US values of q_t/K are listed with their quarter and the whitened
 residual z_t = Omega_inv^-1 v_t series by series, to show which variable
 carries them.
 
-Requires the two US fit caches above, out/us_system.csv,
-out/old/naive_mae_loss/abm_system_mcs.csv, the fit cache and out/dataset/abm_system/.
+Requires the two US fit caches above, out/applications/us_system.csv,
+out/old/naive_mae_loss/applications/abm_system_mcs.csv, the fit cache and
+out/dataset/abm_system/.
 
 Output, none of it printed:
-    out/old/naive_mae_loss/abm_system_winner_tail_comparison.txt
+    out/old/naive_mae_loss/studies/abm_system_winner_tail_comparison.txt
 */
 
 #include "applications/abm_system.h"
@@ -53,12 +54,12 @@ Output, none of it printed:
 #define PHI_STAR_BOUND ((mreal)1)
 #define SPEC_LABEL "p1q1r2"
 
-#define FIT_DIR "out/abm_system_fit_qvarma"
+#define FIT_DIR "out/applications/abm_system_fit_qvarma"
 #define INPUT_DIR "out/dataset/abm_system"
-#define BENCHMARK_FIT_PATH "out/us_qvarma_spec_choice_p1q1r2_fit.json"
-#define WINNER_PARAMS_PATH "out/old/naive_mae_loss/abm_system_winner_irf_theta.json"
-#define CONFIDENCE_SET_PATH "out/old/naive_mae_loss/abm_system_mcs.csv"
-#define REPORT_PATH "out/old/naive_mae_loss/abm_system_winner_tail_comparison.txt"
+#define BENCHMARK_FIT_PATH "out/applications/us_qvarma_spec_choice_p1q1r2_fit.json"
+#define WINNER_PARAMS_PATH "out/old/naive_mae_loss/applications/abm_system_winner_irf_theta.json"
+#define CONFIDENCE_SET_PATH "out/old/naive_mae_loss/applications/abm_system_mcs.csv"
+#define REPORT_PATH "out/old/naive_mae_loss/studies/abm_system_winner_tail_comparison.txt"
 
 /* The US block starts one quarter after us_system.csv, lost to differencing. */
 #define US_FIRST_YEAR 1973
@@ -196,7 +197,7 @@ int main(void) {
     int loaded = qvarma_load_params(&winner_average, WINNER_PARAMS_PATH);
     assert(loaded && "abm_system_winner_tail_comparison: the winner's averaged parameters are missing");
     char held_path[160];
-    snprintf(held_path, sizeof held_path, "out/old/naive_mae_loss/us_qvarma_nu_sensitivity_nu%.4f_fit.json", (double)winner_average.nu);
+    snprintf(held_path, sizeof held_path, "out/old/naive_mae_loss/studies/us_qvarma_nu_sensitivity_nu%.4f_fit.json", (double)winner_average.nu);
 
     Mat us_y = build_us_block();
     QvarmaParams shape = spec_shape();

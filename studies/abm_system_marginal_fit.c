@@ -32,8 +32,9 @@ charges the five-parameter laws for their parameters on a sample of 400. Akaike
 is reported beside it because the two disagree about how much to charge, and
 the disagreement is the point at which a reader should look at both.
 
-The same eight are fitted to the US series, 187 quarters from out/us_system.csv,
-so the simulated answer has something to be read against.
+The same eight are fitted to the US series, 187 quarters from
+out/applications/us_system.csv, so the simulated answer has something to be read
+against.
 
 A fit that did not converge is counted and excluded from the comparison rather
 than being allowed to win by having stopped somewhere flat.
@@ -48,10 +49,11 @@ called a few thousand times per fit by a line search that has no analytic
 gradient to shorten it. Measured at 4.4 minutes for 96 series on 16 threads, so
 the whole million replicates would be years.
 
-Reads out/dataset/abm_system and out/us_system.csv. Writes, none of it printed:
-    out/abm_system_marginal_fit_report.txt
-    out/abm_system_marginal_fit_by_law.csv
-    out/abm_system_marginal_fit_us.csv
+Reads out/dataset/abm_system and out/applications/us_system.csv. Writes, none of
+it printed:
+    out/studies/abm_system_marginal_fit_report.txt
+    out/studies/abm_system_marginal_fit_by_law.csv
+    out/studies/abm_system_marginal_fit_us.csv
 */
 
 #include "applications/abm_system.h"
@@ -65,9 +67,9 @@ Reads out/dataset/abm_system and out/us_system.csv. Writes, none of it printed:
 
 #define K ABM_SYSTEM_K
 #define INPUT_DIR "out/dataset/abm_system"
-#define REPORT_PATH "out/abm_system_marginal_fit_report.txt"
-#define BY_LAW_PATH "out/abm_system_marginal_fit_by_law.csv"
-#define US_PATH "out/abm_system_marginal_fit_us.csv"
+#define REPORT_PATH "out/studies/abm_system_marginal_fit_report.txt"
+#define BY_LAW_PATH "out/studies/abm_system_marginal_fit_by_law.csv"
+#define US_PATH "out/studies/abm_system_marginal_fit_us.csv"
 
 #define PERIODS 400
 #define US_PERIODS (ESTIMATION_PERIODS - 1)

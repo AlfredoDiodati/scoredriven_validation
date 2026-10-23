@@ -54,8 +54,8 @@ should be 0.05 and the share below 0.01 should be 0.01.
     ./bin/abm_system_gaussian_convergence [CONFIGURATIONS]
 
 Reads out/dataset/abm_system only. Writes, none of it printed:
-    out/abm_system_gaussian_convergence_report.txt
-    out/abm_system_gaussian_convergence_by_sample_size.csv
+    out/studies/abm_system_gaussian_convergence_report.txt
+    out/studies/abm_system_gaussian_convergence_by_sample_size.csv
 */
 
 #include "applications/abm_system.h"
@@ -70,8 +70,8 @@ Reads out/dataset/abm_system only. Writes, none of it printed:
 
 #define K ABM_SYSTEM_K
 #define INPUT_DIR "out/dataset/abm_system"
-#define REPORT_PATH "out/abm_system_gaussian_convergence_report.txt"
-#define BY_SAMPLE_SIZE_PATH "out/abm_system_gaussian_convergence_by_sample_size.csv"
+#define REPORT_PATH "out/studies/abm_system_gaussian_convergence_report.txt"
+#define BY_SAMPLE_SIZE_PATH "out/studies/abm_system_gaussian_convergence_by_sample_size.csv"
 
 #define PERIODS 400
 #define REPLICATES 1000

@@ -42,11 +42,11 @@ replicate index each row belongs to, so a reader takes one replicate out of
 it through abm_system_read_replicate without needing to know how the
 archives were filled. tests/abm_system_layout.c checks that round trip.
 
-out/abm_system_convert_rdata_manifest.txt records, per source file: its own
-sample number, how many replicates it held, and how many periods each
-replicate has after the burn-in and differencing - the actual counts, not
-an assumption, since dataset/simulated/'s own 100 files were not all
-checked to hold exactly 108 replicates before this ran.
+out/applications/abm_system_convert_rdata_manifest.txt records, per source file:
+its own sample number, how many replicates it held, and how many periods each
+replicate has after the burn-in and differencing - the actual counts, not an
+assumption, since dataset/simulated/'s own 100 files were not all checked to
+hold exactly 108 replicates before this ran.
 
 Not a final implementation: no parallelism, no resumability (a rerun
 overwrites everything it already wrote), no handling for a file whose
@@ -149,7 +149,7 @@ int main(void) {
     char **basenames = list_rdata_basenames(SIMULATED_DIR, &n_files);
     assert(n_files > 0 && "abm_system_convert_rdata: no .Rdata files found under dataset/simulated/");
 
-    FILE *manifest = fopen("out/abm_system_convert_rdata_manifest.txt", "w");
+    FILE *manifest = fopen("out/applications/abm_system_convert_rdata_manifest.txt", "w");
     assert(manifest && "cannot open the manifest path for writing");
     fprintf(manifest, "source file -> %s/<source>/batch_<000..>.npz\n", OUTPUT_DIR);
     fprintf(manifest, "%d source files found under %s\n\n", n_files, SIMULATED_DIR);

@@ -3,12 +3,13 @@ Why the configuration the Model Confidence Set keeps wins, given that the
 parameter set averaged over its replicates has nu near 2853 while the US fit has
 nu near 7.2.
 
-Reads every cached fit under out/abm_system_fit_qvarma/ and recomputes each
-replicate's impulse response exactly as old/naive_mae_loss/applications/abm_system_irf_loss.c
-does: total component, horizons 0 to 20, stacked into 525 elements, loss the
-mean absolute error against the US benchmark's. The recomputed losses are
-checked against out/old/naive_mae_loss/abm_system_irf_loss.csv before anything else is
-reported. Nothing is fitted.
+Reads every cached fit under out/applications/abm_system_fit_qvarma/ and
+recomputes each replicate's impulse response exactly as
+old/naive_mae_loss/applications/abm_system_irf_loss.c does: total component,
+horizons 0 to 20, stacked into 525 elements, loss the mean absolute error
+against the US benchmark's. The recomputed losses are checked against
+out/old/naive_mae_loss/applications/abm_system_irf_loss.csv before anything else
+is reported. Nothing is fitted.
 
 Four questions, one section of the report each:
 
@@ -32,34 +33,36 @@ horizon, to show which elements the win comes from.
 
 The winner is the configuration in the confidence set with the smallest mean
 loss, and the runner-up the one with the largest elimination round, both read
-from out/old/naive_mae_loss/abm_system_mcs.csv.
+from out/old/naive_mae_loss/applications/abm_system_mcs.csv.
 
-Requires out/us_qvarma_spec_choice_p1q1r2_fit.json, out/us_system.csv,
-out/old/naive_mae_loss/abm_system_irf_loss.csv, out/old/naive_mae_loss/abm_system_mcs.csv, the fit cache
-and out/dataset/abm_system/. None are Makefile prerequisites, because rebuilding
-the loss table reruns a million impulse responses.
+Requires out/applications/us_qvarma_spec_choice_p1q1r2_fit.json,
+out/applications/us_system.csv,
+out/old/naive_mae_loss/applications/abm_system_irf_loss.csv,
+out/old/naive_mae_loss/applications/abm_system_mcs.csv, the fit cache and
+out/dataset/abm_system/. None are Makefile prerequisites, because rebuilding the
+loss table reruns a million impulse responses.
 
 Output, none of it printed:
-    out/old/naive_mae_loss/abm_system_winner_diagnostics.txt
-    out/old/naive_mae_loss/abm_system_winner_diagnostics_parameters.csv      one row per coordinate
+    out/old/naive_mae_loss/studies/abm_system_winner_diagnostics.txt
+    out/old/naive_mae_loss/studies/abm_system_winner_diagnostics_parameters.csv      one row per coordinate
                                                           of theta, winner only,
                                                           with the US and
                                                           averaged values also
                                                           on the unconstrained
                                                           scale and the link
-    out/old/naive_mae_loss/abm_system_winner_diagnostics_configurations.csv  one row per
+    out/old/naive_mae_loss/studies/abm_system_winner_diagnostics_configurations.csv  one row per
                                                           configuration
-    out/old/naive_mae_loss/abm_system_winner_diagnostics_winner_fits.csv     one row per replicate
+    out/old/naive_mae_loss/studies/abm_system_winner_diagnostics_winner_fits.csv     one row per replicate
                                                           of the winner: nu and
                                                           loss
-    out/old/naive_mae_loss/abm_system_winner_diagnostics_winner_parameters.csv
+    out/old/naive_mae_loss/studies/abm_system_winner_diagnostics_winner_parameters.csv
                                                           one row per replicate
                                                           of the winner: every
                                                           coordinate of theta
                                                           on the model's scale,
                                                           and whether the fit
                                                           converged
-    out/old/naive_mae_loss/abm_system_winner_diagnostics_winner_theta.csv    the same on the
+    out/old/naive_mae_loss/studies/abm_system_winner_diagnostics_winner_theta.csv    the same on the
                                                           unconstrained scale
                                                           the optimizer steps
 */
@@ -89,17 +92,17 @@ Output, none of it printed:
 #define SPEC_LABEL "p1q1r2"
 #define COLUMN_SUFFIX "_qvarma_p1q1r2"
 
-#define FIT_DIR "out/abm_system_fit_qvarma"
+#define FIT_DIR "out/applications/abm_system_fit_qvarma"
 #define INPUT_DIR "out/dataset/abm_system"
-#define BENCHMARK_FIT_PATH "out/us_qvarma_spec_choice_p1q1r2_fit.json"
-#define LOSS_TABLE_PATH "out/old/naive_mae_loss/abm_system_irf_loss.csv"
-#define CONFIDENCE_SET_PATH "out/old/naive_mae_loss/abm_system_mcs.csv"
-#define REPORT_PATH "out/old/naive_mae_loss/abm_system_winner_diagnostics.txt"
-#define PARAMETERS_PATH "out/old/naive_mae_loss/abm_system_winner_diagnostics_parameters.csv"
-#define CONFIGURATIONS_PATH "out/old/naive_mae_loss/abm_system_winner_diagnostics_configurations.csv"
-#define WINNER_FITS_PATH "out/old/naive_mae_loss/abm_system_winner_diagnostics_winner_fits.csv"
-#define WINNER_PARAMETERS_PATH "out/old/naive_mae_loss/abm_system_winner_diagnostics_winner_parameters.csv"
-#define WINNER_THETA_PATH "out/old/naive_mae_loss/abm_system_winner_diagnostics_winner_theta.csv"
+#define BENCHMARK_FIT_PATH "out/applications/us_qvarma_spec_choice_p1q1r2_fit.json"
+#define LOSS_TABLE_PATH "out/old/naive_mae_loss/applications/abm_system_irf_loss.csv"
+#define CONFIDENCE_SET_PATH "out/old/naive_mae_loss/applications/abm_system_mcs.csv"
+#define REPORT_PATH "out/old/naive_mae_loss/studies/abm_system_winner_diagnostics.txt"
+#define PARAMETERS_PATH "out/old/naive_mae_loss/studies/abm_system_winner_diagnostics_parameters.csv"
+#define CONFIGURATIONS_PATH "out/old/naive_mae_loss/studies/abm_system_winner_diagnostics_configurations.csv"
+#define WINNER_FITS_PATH "out/old/naive_mae_loss/studies/abm_system_winner_diagnostics_winner_fits.csv"
+#define WINNER_PARAMETERS_PATH "out/old/naive_mae_loss/studies/abm_system_winner_diagnostics_winner_parameters.csv"
+#define WINNER_THETA_PATH "out/old/naive_mae_loss/studies/abm_system_winner_diagnostics_winner_theta.csv"
 
 /* Horizon groups for the decomposition: impact, the first year, the rest. */
 #define N_HORIZON_GROUPS 3

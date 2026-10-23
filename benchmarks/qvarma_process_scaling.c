@@ -13,7 +13,7 @@ per process.
 
 The spec is t-QVARMA(1,1,2) only, the one the ABM pipeline fits.
 
-Writes out/qvarma_process_scaling.txt.
+Writes out/benchmarks/qvarma_process_scaling.txt.
 */
 #include "applications/abm_system.h"
 #include <et_al./sd/qvarma.h>
@@ -146,7 +146,7 @@ static void keep_the_arena_resident(void) {
 
 int main(void) {
     keep_the_arena_resident();
-    FILE *report = fopen("out/qvarma_process_scaling.txt", "w");
+    FILE *report = fopen("out/benchmarks/qvarma_process_scaling.txt", "w");
     assert(report && "qvarma_process_scaling: cannot open the report path");
     fprintf(report, "spec r = %d, %d fits per copy, max_iterations = %d, "
                     "one BLAS thread per copy\n\n", SPEC_R, FITS_PER_COPY, MAX_ITERATIONS);

@@ -41,15 +41,15 @@ this converts for do not have a slot for them. Variables are looked up by
 name, not position, so this does not break if a future save orders them
 differently.
 
-Every transformation below was checked against the real data's own
-equivalent series (out/us_system.csv, the same five, computed the same way
+Every transformation below was checked against the real data's own equivalent
+series (out/applications/us_system.csv, the same five, computed the same way
 applications/us_qvarma_spec_choice.c's own build_block() does) before being
-adopted: the mean and sd of each of the five, real against simulated,
-replicate 0 of EstimationSeriesSample1_1.Rdata, came out the same order of
-magnitude throughout, which a wrong scale (log10 instead of ln, or a missed
-proportion-to-percentage-point rescale) would not have produced. None of
-this is guaranteed by any documentation of the ABM's own output - it is
-inferred from the numbers, and stated here as exactly that, an inference:
+adopted: the mean and sd of each of the five, real against simulated, replicate
+0 of EstimationSeriesSample1_1.Rdata, came out the same order of magnitude
+throughout, which a wrong scale (log10 instead of ln, or a missed
+proportion-to-percentage-point rescale) would not have produced. None of this is
+guaranteed by any documentation of the ABM's own output - it is inferred from
+the numbers, and stated here as exactly that, an inference:
 
   - GDP, Energy: raw levels (GDP grows monotonically from about 2.2e5 to
     1.4e6 over 600 periods in the one file checked; Energy does not trend

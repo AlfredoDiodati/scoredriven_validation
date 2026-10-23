@@ -60,7 +60,7 @@ Cost, before running it: 500,000 files of about 42 KB (five %.17g fields
 per row, 400 rows) is roughly 21 GB on disk and 500,000 inodes. It is a
 full rewrite every time, not a resume.
 
-out/throughput_dataset_manifest.txt records, per source file, how
+out/applications/throughput_dataset_manifest.txt records, per source file, how
 many replicates it held, how many periods each has after the burn-in and
 differencing, and how many folders and series were written from it.
 
@@ -199,7 +199,7 @@ int main(void) {
         free(original);
     }
 
-    FILE *manifest = fopen("out/throughput_dataset_manifest.txt", "w");
+    FILE *manifest = fopen("out/applications/throughput_dataset_manifest.txt", "w");
     assert(manifest && "cannot open the manifest path for writing");
     fprintf(manifest, "source file -> out/dataset/throughput/<source>[_noise1..%d]/series_<000..%d>.csv\n",
             FOLDERS_PER_SAMPLE - 1, SERIES_PER_FOLDER - 1);

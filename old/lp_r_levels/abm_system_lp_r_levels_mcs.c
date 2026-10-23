@@ -17,11 +17,12 @@ statistic; MCS_TMAX is scored on the same resamples beside it.
 
 No set is run on the two states together.
 
-Requires out/old/naive_mae_loss/abm_system_lp_irf_loss_<model>.csv. Writes
-out/old/naive_mae_loss/abm_system_lp_mcs_<model>.txt, the readable report with both elimination
-tables, and out/old/naive_mae_loss/abm_system_lp_mcs_<model>.csv, one row per configuration.
-This is that run on cumulated levels: every one of these names carries _r_levels
-after abm_system_lp. Takes no arguments. Nothing printed.
+Requires out/old/naive_mae_loss/applications/abm_system_lp_irf_loss_<model>.csv.
+Writes out/old/naive_mae_loss/applications/abm_system_lp_mcs_<model>.txt, the
+readable report with both elimination tables, and
+out/old/naive_mae_loss/applications/abm_system_lp_mcs_<model>.csv, one row per
+configuration. This is that run on cumulated levels: every one of these names
+carries _r_levels after abm_system_lp. Takes no arguments. Nothing printed.
 */
 
 #define _POSIX_C_SOURCE 199309L
@@ -230,9 +231,9 @@ int main(int argc, char **argv) {
     };
     for (int loss = 0; loss < LP_N_LOSSES; loss++) {
         char loss_path[128], report_path[128], table_path[128];
-        snprintf(loss_path, sizeof loss_path, "out/abm_system_lp_r_levels_irf_loss_%s.csv", lp_loss_name(loss));
-        snprintf(report_path, sizeof report_path, "out/abm_system_lp_r_levels_mcs_%s.txt", lp_loss_name(loss));
-        snprintf(table_path, sizeof table_path, "out/abm_system_lp_r_levels_mcs_%s.csv", lp_loss_name(loss));
+        snprintf(loss_path, sizeof loss_path, "out/old/lp_r_levels/abm_system_lp_r_levels_irf_loss_%s.csv", lp_loss_name(loss));
+        snprintf(report_path, sizeof report_path, "out/old/lp_r_levels/abm_system_lp_r_levels_mcs_%s.txt", lp_loss_name(loss));
+        snprintf(table_path, sizeof table_path, "out/old/lp_r_levels/abm_system_lp_r_levels_mcs_%s.csv", lp_loss_name(loss));
         char title[256];
         snprintf(title, sizeof title, "%s, series %s", description[loss], LP_R_LEVELS_SERIES_DESCRIPTION);
         compare_statistics(loss_path, report_path, table_path, title);

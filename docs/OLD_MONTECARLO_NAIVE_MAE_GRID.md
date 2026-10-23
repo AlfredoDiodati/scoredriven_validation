@@ -98,27 +98,29 @@ of the two states' losses, since the two halves have the same length; measured
 on the single-benchmark tables of `docs/OLD_MONTECARLO_LP_VALIDATION.md`, the
 largest relative difference between the two is 4.8e-15.
 
-`applications/abm_system_fit_lp.c` writes the fits to one compressed archive
-per configuration, `out/abm_system_fit_lp/cop_NNNN.npz`, one row per run, with
-the responses, the shock matrix, the fit diagnostics, the settings and a
-checksum of the data each row was fitted on; 8.6 GB in all. No run failed:
+`applications/abm_system_fit_lp.c` writes the fits to one compressed archive per
+configuration, `out/applications/abm_system_fit_lp/cop_NNNN.npz`, one row per
+run, with the responses, the shock matrix, the fit diagnostics, the settings and
+a checksum of the data each row was fitted on; 8.6 GB in all. No run failed:
 every fit has responses, every regression at every horizon and the VAR behind
 the shocks were solved by ordinary least squares at full rank (none used the
 minimum-norm solution et_al falls back on), and no state series was constant
-(`out/abm_system_fit_lp_manifest.txt`). Fitting all 1,000,000 runs from scratch
-takes 402 seconds on this machine (AMD Ryzen 7 4800H, 16 threads); the rerun
-that replaced the R-level fits took 1680 seconds, since it first read and
-refused every stored archive.
+(`out/applications/abm_system_fit_lp_manifest.txt`). Fitting all 1,000,000 runs
+from scratch takes 402 seconds on this machine (AMD Ryzen 7 4800H, 16 threads);
+the rerun that replaced the R-level fits took 1680 seconds, since it first read
+and refused every stored archive.
 
 ## A separate pipeline that refits nothing
 
-This is its own pipeline, in its own directory, writing to its own `out/`.
-Nothing under `applications/` is modified or read as source: the main pipeline
-stays exactly as it is, and a change here cannot affect a real-data result.
+This is its own pipeline, in its own directory, writing to its own
+`out/old/naive_mae_loss/montecarlo/`. Nothing under `applications/` is modified
+or read as source: the main pipeline stays exactly as it is, and a change here
+cannot affect a real-data result.
 
-What is reused is that pipeline's **output**: `out/abm_system_fit_qvarma/`, the
-million cached t-QVARMA fits, and `out/abm_system_fit_lp/`, the million
-local-projection fits. No model is estimated anywhere in this experiment.
+What is reused is that pipeline's **output**:
+`out/applications/abm_system_fit_qvarma/`, the million cached t-QVARMA fits, and
+`out/applications/abm_system_fit_lp/`, the million local-projection fits. No
+model is estimated anywhere in this experiment.
 
 | file | what it is |
 | --- | --- |
@@ -192,19 +194,20 @@ Settings read from the environment:
   model takes the same ones, default all 1000 (one model at a time, t-QVARMA
   first).
 - `ABM_SYSTEM_LP_FIT_DIR`, `ABM_SYSTEM_INPUT_DIR`: where the local-projection
-  fits and the dataset are read from, default `out/abm_system_fit_lp` and
-  `out/dataset/abm_system`.
+  fits and the dataset are read from, default
+  `out/applications/abm_system_fit_lp` and `out/dataset/abm_system`.
 
 Compile-time overrides for a test build over part of the grid: `BOOTSTRAP`,
 `FIRST_MODEL`, `RUN_LIMIT`, `BENCHMARK_LIMIT`, `PROGRESS_PATH`, `RESULT_PATH`,
 `RESPONSE_CACHE_DIR`.
 
-It reads `out/abm_system_fit_qvarma/`, `out/abm_system_fit_lp/` and
-`out/dataset/abm_system/` and rebuilds none of them. Each model's responses are kept
-in `out/sweep_grid_response_cache/<model>.f32` (2.1 GB for the t-QVARMA, 1.6 GB
-per local projection, 3.2 GB for both states, ignored by git), built on the
-first run in about 10 minutes for the t-QVARMA and 20 per local projection, then
-read back in seconds. Both states' file is built from the two state files,
+It reads `out/applications/abm_system_fit_qvarma/`,
+`out/applications/abm_system_fit_lp/` and `out/dataset/abm_system/` and rebuilds
+none of them. Each model's responses are kept in
+`out/montecarlo/sweep_grid_response_cache/<model>.f32` (2.1 GB for the t-QVARMA,
+1.6 GB per local projection, 3.2 GB for both states, ignored by git), built on
+the first run in about 10 minutes for the t-QVARMA and 20 per local projection,
+then read back in seconds. Both states' file is built from the two state files,
 copying each run's 400 state-1 entries followed by its 400 state-2 entries, in
 seconds; for every run, the file on disk holds bit for bit that run's entries in
 the two state files. The file is mapped into memory rather than read into it, so
@@ -323,8 +326,9 @@ the right answer essentially never.
 ### Recovery by whether the benchmark's fit converged
 
 Only the t-QVARMA has a convergence status; the local projections are least
-squares. Convergence read from `out/abm_system_fit_qvarma_manifest.txt`, whose
-fits are unchanged since 2026-09-10, before every experiment here.
+squares. Convergence read from
+`out/applications/abm_system_fit_qvarma_manifest.txt`, whose fits are unchanged
+since 2026-09-10, before every experiment here.
 
 Over the grid's t-QVARMA benchmarks, the own configuration is in the set for
 35,764 of the 352,470 converged ones (10.1%) and 59,387 of the 647,530

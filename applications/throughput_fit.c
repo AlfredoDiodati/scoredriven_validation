@@ -17,7 +17,7 @@ abm_system_fit_qvarma.c, because 500 x 1000 is the size being timed and r
 Every fitted parameter set is written the moment that one optimization
 returns, by the fit's own worker thread, never batched: 500,000 fits are
 500,000 independent writes to
-out/throughput_fit_i<cap>/<folder>/series_<NNN>_p1q1r2_fit.json,
+out/applications/throughput_fit_i<cap>/<folder>/series_<NNN>_p1q1r2_fit.json,
 mirroring the input layout exactly so which series a cached fit belongs
 to is never in question. An interrupted run therefore keeps everything it
 had finished.
@@ -34,7 +34,7 @@ serve a binary built at one budget for a request at another.
 applications/throughput_iteration_budget.c reads two such trees
 and reports the difference.
 
-out/throughput_fit_i<cap>_timing.txt is the point of the
+out/applications/throughput_fit_i<cap>_timing.txt is the point of the
 script. It is opened and the start timestamp flushed before the first fit
 begins, a progress line is appended every PROGRESS_EVERY completed fits,
 and the end timestamp, the elapsed wall time and the throughput are
@@ -72,7 +72,7 @@ before the next task starts. What scales with the battery is the summary,
 four arrays of one entry per fit, about 12 MB at 500,000, and the task
 list at 4 MB. Nothing else is held across tasks.
 
-out/throughput_fit_i<cap>_manifest.txt records log-likelihood,
+out/applications/throughput_fit_i<cap>_manifest.txt records log-likelihood,
 gradient norm, iterations, convergence and whether the fit was estimated
 or reused, one line per fit. Written once at the end, a summary of what
 the individual JSONs already hold rather than a substitute for them, and
@@ -124,9 +124,9 @@ to depend on app-throughput_dataset in the Makefile: that step writes
 #define BUDGET_SUFFIX "_i" STRINGIFY(MAX_ITERATIONS)
 
 #define INPUT_DIR "out/dataset/throughput"
-#define OUTPUT_DIR "out/throughput_fit" BUDGET_SUFFIX
-#define TIMING_PATH "out/throughput_fit" BUDGET_SUFFIX "_timing.txt"
-#define MANIFEST_PATH "out/throughput_fit" BUDGET_SUFFIX "_manifest.txt"
+#define OUTPUT_DIR "out/applications/throughput_fit" BUDGET_SUFFIX
+#define TIMING_PATH "out/applications/throughput_fit" BUDGET_SUFFIX "_timing.txt"
+#define MANIFEST_PATH "out/applications/throughput_fit" BUDGET_SUFFIX "_manifest.txt"
 
 static void make_directory(const char *path) {
     if (mkdir(path, 0755) != 0) assert(errno == EEXIST && "throughput_fit: mkdir failed");

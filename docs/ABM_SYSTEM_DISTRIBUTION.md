@@ -3,10 +3,10 @@
 `docs/OLD_ABM_SYSTEM_MCS_VALIDATION.md`, "What the confidence set does not say",
 reports that no configuration of the design reproduces the variance of the US
 interest rate and inflation or the skewness of US GDP growth and employment
-change, and that the simulated series have much lighter tails than the US
-ones (excess kurtosis of GDP growth 2.87 in the US data against a median of
-0.61 over the 1000 configurations, `out/abm_system_tail_origin_report.txt`).
-That is a property of the model, not of this project's build of it
+change, and that the simulated series have much lighter tails than the US ones
+(excess kurtosis of GDP growth 2.87 in the US data against a median of 0.61 over
+the 1000 configurations, `out/studies/abm_system_tail_origin_report.txt`). That
+is a property of the model, not of this project's build of it
 (`tests/dsk_tail_replicate_reproduction.c`).
 
 This file asks where that shape comes from and what distribution describes
@@ -83,9 +83,10 @@ series look Gaussian, and none at which they are closer to Gaussian than at a
 smaller n. Whatever accounts for the thin tails, it is not that the aggregation
 delivers a Gaussian.
 
-`out/abm_system_gaussian_convergence_by_sample_size.csv` holds every column
-including Jarque-Bera and both null columns;
-`out/abm_system_gaussian_convergence_report.txt` is the run's own report.
+`out/studies/abm_system_gaussian_convergence_by_sample_size.csv` holds every
+column including Jarque-Bera and both null columns;
+`out/studies/abm_system_gaussian_convergence_report.txt` is the run's own
+report.
 
 Two things the study does not control for. A run's quarters are dependent while
 the simulated null draws them independently, so a rejection can come from the
@@ -168,9 +169,10 @@ independent of each other. How much of the overshoot is that dependence is not
 measured here.
 
 0.571 against the 1.151 the first section reports: that one is the mean over
-1,000,000 replicates at n = 400, and `out/abm_system_tail_origin_report.txt`
-gives 0.61 as the median over the 1000 configurations. These 5 configurations
-sit at the median, and the mean is pulled up by a right tail across the design.
+1,000,000 replicates at n = 400, and
+`out/studies/abm_system_tail_origin_report.txt` gives 0.61 as the median over
+the 1000 configurations. These 5 configurations sit at the median, and the mean
+is pulled up by a right tail across the design.
 
 `dim_mach` is not read from the model's parameter file. It is recovered as
 (GDP - sum of C-firm output) / (sum of K-firm output) at every period and
@@ -264,10 +266,11 @@ sample variance grow with n whatever its tails are. And Hill assumes the tail
 is already power-law over the order statistics used, which at n = 400 and
 k = 40 it need not be.
 
-`out/abm_system_stable_tails_report.txt` and
-`out/abm_system_stable_tails_by_series.csv` hold the run's own output;
-`out/abm_system_micro_clt_report.txt`, `out/abm_system_micro_clt_by_run.csv`
-and `out/abm_system_micro_clt_growth.csv` hold the cross-section study's.
+`out/studies/abm_system_stable_tails_report.txt` and
+`out/studies/abm_system_stable_tails_by_series.csv` hold the run's own output;
+`out/studies/abm_system_micro_clt_report.txt`,
+`out/studies/abm_system_micro_clt_by_run.csv` and
+`out/studies/abm_system_micro_clt_growth.csv` hold the cross-section study's.
 
 ## What the measurements leave, and which laws have those properties
 
@@ -276,12 +279,12 @@ excess kurtosis 0.57 to 1.15 depending on the sample length, skewness near zero
 for the four growth series and -0.124 for inflation, no stable behaviour, and
 Hill below the Gaussian calibration at the same n.
 
-"Thin tailed" is the wrong phrase for that. Excess kurtosis is positive and
-Hill comes back at 3.99, 4.79 and 5.64 against the Gaussian calibration's 4.76,
-6.14 and 7.73, and a lower Hill is a heavier tail. The series are heavier
-tailed than a Gaussian and much lighter than the US ones, which
-`out/abm_system_tail_origin_report.txt` puts at 2.87 excess kurtosis for US GDP
-growth against a simulated median of 0.61.
+"Thin tailed" is the wrong phrase for that. Excess kurtosis is positive and Hill
+comes back at 3.99, 4.79 and 5.64 against the Gaussian calibration's 4.76, 6.14
+and 7.73, and a lower Hill is a heavier tail. The series are heavier tailed than
+a Gaussian and much lighter than the US ones, which
+`out/studies/abm_system_tail_origin_report.txt` puts at 2.87 excess kurtosis for
+US GDP growth against a simulated median of 0.61.
 
 Hill's level narrows nothing here. The Gaussian calibration returned 4.76
 although a Gaussian has no tail index at all, so at n = 400 only the comparison
@@ -404,9 +407,9 @@ The simulated series have 400 quarters and the US series 187, and the Schwarz
 penalty depends on n, so the two tables are not a like-for-like comparison of
 which law wins where.
 
-`out/abm_system_marginal_fit_report.txt`,
-`out/abm_system_marginal_fit_by_law.csv` and
-`out/abm_system_marginal_fit_us.csv` hold the run's own output.
+`out/studies/abm_system_marginal_fit_report.txt`,
+`out/studies/abm_system_marginal_fit_by_law.csv` and
+`out/studies/abm_system_marginal_fit_us.csv` hold the run's own output.
 
 ## What the correctness test caught
 

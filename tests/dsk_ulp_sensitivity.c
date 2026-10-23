@@ -30,7 +30,7 @@ parameter and seed pairs resolve 1e-13 or finer, which a file printed at fewer
 digits would fail outright while one quantised parameter leaves intact.
 
 Seeds 1 to N, N = 2 unless given as the first argument, over all nine design
-parameters. Writes out/dsk_ulp_sensitivity.txt.
+parameters. Writes out/tests/dsk_ulp_sensitivity.txt.
 */
 
 #define _XOPEN_SOURCE 700
@@ -52,7 +52,7 @@ parameters. Writes out/dsk_ulp_sensitivity.txt.
 
 #define MODEL "model/dsk_sfc/dsk_SFC"
 #define INPUTS "model/dsk_sfc/dsk_sfc_inputs.json"
-#define REPORT "out/dsk_ulp_sensitivity.txt"
+#define REPORT "out/tests/dsk_ulp_sensitivity.txt"
 #define RUN_NAME "ulp"
 #define DEFAULT_SEEDS 2
 #define N_RUNGS 15

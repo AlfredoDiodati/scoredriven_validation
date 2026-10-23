@@ -24,7 +24,7 @@ that silently overflowed into a neighbouring global could just as easily have
 changed a number as crashed.
 
 Needs model/dsk_sfc/dsk_SFC built - `make model` - and writes
-out/dsk_long_path.txt.
+out/tests/dsk_long_path.txt.
 */
 
 #define _XOPEN_SOURCE 700
@@ -41,7 +41,7 @@ out/dsk_long_path.txt.
 
 #define MODEL "model/dsk_sfc/dsk_SFC"
 #define INPUTS "model/dsk_sfc/dsk_sfc_inputs.json"
-#define REPORT "out/dsk_long_path.txt"
+#define REPORT "out/tests/dsk_long_path.txt"
 #define RUN_NAME "longpath"
 #define SEED 1
 

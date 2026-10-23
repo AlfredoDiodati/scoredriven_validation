@@ -12,13 +12,13 @@ these two models behave alike", which raw parameter distance does not
 response, not the fitted parameters").
 
 For the auxiliary spec p1q1r2:
-  1. Fit the real-data QVARMA (out/us_qvarma_spec_choice_p1q1r2_fit.json,
-     applications/us_qvarma_spec_choice.c's own grid) and compute its
-     own impulse response function via qvarma.h's impulse_responses.
-  2. For every simulated fit
-     applications/abm_system_fit_qvarma.c already wrote to
-     out/abm_system_fit_qvarma/, compute that fit's own impulse response
-     function the same way.
+  1. Fit the real-data QVARMA
+     (out/applications/us_qvarma_spec_choice_p1q1r2_fit.json,
+     applications/us_qvarma_spec_choice.c's own grid) and compute its own
+     impulse response function via qvarma.h's impulse_responses.
+  2. For every simulated fit applications/abm_system_fit_qvarma.c already wrote
+     to out/applications/abm_system_fit_qvarma/, compute that fit's own impulse
+     response function the same way.
   3. Stack every horizon's K x K response matrix (qvarma.h's own "total",
      contemporaneous + stationary + cointegrated) into one flat vector per
      model, horizon 0 first.
@@ -40,35 +40,35 @@ disk is exactly that case, arrived at after the fact rather than during the
 fit itself, so it is checked and skipped here (counted as missing, same as
 an unreadable cache file) rather than left to the library's own assert.
 
-Requires out/abm_system_fit_qvarma/ to already hold every replicate's fit (run
-applications/abm_system_fit_qvarma.c to completion first),
-out/us_qvarma_spec_choice_p1q1r2_fit.json to exist
-(applications/us_qvarma_spec_choice.c, run separately) and out/us_system.csv to
-exist (applications/us_prepare_data.c), which load_us_system reads directly to
-rebuild the real data's own K x ESTIMATION_PERIODS block the same way
-applications/us_qvarma_spec_choice.c itself does.
+Requires out/applications/abm_system_fit_qvarma/ to already hold every
+replicate's fit (run applications/abm_system_fit_qvarma.c to completion first),
+out/applications/us_qvarma_spec_choice_p1q1r2_fit.json to exist
+(applications/us_qvarma_spec_choice.c, run separately) and
+out/applications/us_system.csv to exist (applications/us_prepare_data.c), which
+load_us_system reads directly to rebuild the real data's own K x
+ESTIMATION_PERIODS block the same way applications/us_qvarma_spec_choice.c
+itself does.
 
-Output: out/old/naive_mae_loss/abm_system_irf_loss.csv, the loss matrix
-old/naive_mae_loss/applications/abm_system_mcs.c reads. One row per replicate and one column per
-configuration, plus a leading "replicate" column, so over the design experiment
-that is 1000 rows and 1001 columns. Each column is named for its configuration
-and the spec it was fitted under, and every numeric column except "replicate"
-is a model to the confidence set.
+Output: out/old/naive_mae_loss/applications/abm_system_irf_loss.csv, the loss
+matrix old/naive_mae_loss/applications/abm_system_mcs.c reads. One row per
+replicate and one column per configuration, plus a leading "replicate" column,
+so over the design experiment that is 1000 rows and 1001 columns. Each column is
+named for its configuration and the spec it was fitted under, and every numeric
+column except "replicate" is a model to the confidence set.
 
 The matrix has no holes, which is a requirement rather than a nicety: et_al's
-mcs asserts a finite loss matrix because one NaN in a model's column loses
-every comparison that model takes part in, and the p-values that come back look
+mcs asserts a finite loss matrix because one NaN in a model's column loses every
+comparison that model takes part in, and the p-values that come back look
 ordinary. A cell can go missing when a fit will not load, when its nu is not
 above two, or when its impulse response comes back non-finite. Where that
-happens the replicate is dropped from every column rather than the
-configuration from every row, since a missing cell belongs to one
-(configuration, replicate) pair and dropping the row is the direction that does
-not change which models are being compared.
-The manifest is named after the loss table rather than after this script, so
-the two cannot be separated: the default is
-out/old/naive_mae_loss/abm_system_irf_loss_manifest.txt, and pointing
-ABM_SYSTEM_LOSS_PATH somewhere else moves both. It names every missing cell and
-counts the replicates dropped.
+happens the replicate is dropped from every column rather than the configuration
+from every row, since a missing cell belongs to one (configuration, replicate)
+pair and dropping the row is the direction that does not change which models are
+being compared. The manifest is named after the loss table rather than after
+this script, so the two cannot be separated: the default is
+out/old/naive_mae_loss/applications/abm_system_irf_loss_manifest.txt, and
+pointing ABM_SYSTEM_LOSS_PATH somewhere else moves both. It names every missing
+cell and counts the replicates dropped.
 
 The fits are used as they stand, converged or not. About a third of them
 converged and the rest stopped because the line search could not move;
@@ -108,9 +108,9 @@ static int n_replicates = 0;
 #define HORIZON 20
 #define IRF_DIM (K * K * (HORIZON + 1))
 
-#define FIT_DIR_DEFAULT "out/abm_system_fit_qvarma"
+#define FIT_DIR_DEFAULT "out/applications/abm_system_fit_qvarma"
 #define INPUT_DIR_DEFAULT "out/dataset/abm_system"
-#define OUTPUT_PATH_DEFAULT "out/old/naive_mae_loss/abm_system_irf_loss.csv"
+#define OUTPUT_PATH_DEFAULT "out/old/naive_mae_loss/applications/abm_system_irf_loss.csv"
 
 /* Overridable so the whole pass can be run over a couple of configurations,
    which is how the parallel loop was checked against the serial one. */
@@ -125,7 +125,7 @@ static const char *OUTPUT_PATH;
    name the spec a column was fitted under. */
 typedef struct { int r; const char *label; const char *column_label; const char *real_fit_path; } Spec;
 static const Spec spec_list[] = {
-    { 2, "p1q1r2", MODEL_LABEL "_p1q1r2", "out/us_qvarma_spec_choice_p1q1r2_fit.json" }
+    { 2, "p1q1r2", MODEL_LABEL "_p1q1r2", "out/applications/us_qvarma_spec_choice_p1q1r2_fit.json" }
 };
 #define N_SPECS ((int)(sizeof spec_list / sizeof spec_list[0]))
 
@@ -229,7 +229,7 @@ static int compare_sample_entries(const void *a, const void *b) {
 
 static SampleEntry *list_samples(const char *dir, int *count) {
     DIR *handle = opendir(dir);
-    assert(handle && "abm_system_irf_loss: cannot open out/abm_system_fit_qvarma/ - run abm_system_fit_qvarma first");
+    assert(handle && "abm_system_irf_loss: cannot open out/applications/abm_system_fit_qvarma/ - run abm_system_fit_qvarma first");
 
     SampleEntry *entries = NULL;
     int n = 0, cap = 0;
@@ -408,7 +408,7 @@ int main(void) {
 
     int n_samples;
     SampleEntry *samples = list_samples(FIT_DIR, &n_samples);
-    assert(n_samples > 0 && "abm_system_irf_loss: no sample directories under out/abm_system_fit_qvarma/");
+    assert(n_samples > 0 && "abm_system_irf_loss: no sample directories under out/applications/abm_system_fit_qvarma/");
 
     Mat original = load_us_system();
     Mat real_y = build_real_block(original);

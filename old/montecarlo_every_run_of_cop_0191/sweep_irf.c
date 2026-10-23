@@ -39,9 +39,11 @@ summary as it finishes, and a rerun reads back which ones are already there and
 skips them. The impulse-response cache is not persisted, so a restart pays the
 574 seconds again but nothing else.
 
-Requires out/abm_system_fit_qvarma/ and out/dataset/abm_system/, and rebuilds
-neither. Writes out/montecarlo/sweep_irf.csv, one row per benchmark. Nothing
-printed except progress, which goes to stderr so the summary is the result.
+Requires out/applications/abm_system_fit_qvarma/ and out/dataset/abm_system/,
+and rebuilds neither. Writes
+out/old/montecarlo_every_run_of_cop_0191/sweep_irf.csv, one row per benchmark.
+Nothing printed except progress, which goes to stderr so the summary is the
+result.
 */
 
 #include "applications/abm_system.h"
@@ -72,9 +74,9 @@ printed except progress, which goes to stderr so the summary is the result.
 #define HORIZON 20
 #define IRF_DIM (K * K * (HORIZON + 1))
 
-#define FIT_DIR "out/abm_system_fit_qvarma"
+#define FIT_DIR "out/applications/abm_system_fit_qvarma"
 #define INPUT_DIR "out/dataset/abm_system"
-#define SUMMARY_PATH "out/montecarlo/sweep_irf.csv"
+#define SUMMARY_PATH "out/old/montecarlo_every_run_of_cop_0191/sweep_irf.csv"
 #define BENCHMARK_SAMPLE "cop_0191"
 
 static int n_samples = 0;

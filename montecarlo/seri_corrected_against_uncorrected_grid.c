@@ -13,7 +13,7 @@ Every count below is over the benchmarks both grids hold, so the report can be
 run while the uncorrected grid is still going. The uncorrected rows are read
 from its result, or from its progress file when the result does not exist yet.
 
-Writes out/seri_corrected_against_uncorrected_grid_report.txt:
+Writes out/montecarlo/seri_corrected_against_uncorrected_grid_report.txt:
 
 1. Per model and grid: the benchmark's configuration in the set, alone in it,
    first by mean loss, its mean rank by mean loss, and the mean, median and
@@ -27,12 +27,12 @@ Writes out/seri_corrected_against_uncorrected_grid_report.txt:
    configurations of the two grids' shares.
 4. Per model and grid, against each configuration's noise, its mean response
    variance over all its runs averaged over the entries, read from
-   out/response_variance_by_configuration.csv: the Spearman correlation across
-   configurations between noise and the own rate (share of its own sets
-   holding it) and the off-target rate (share of the other configurations'
-   sets holding it), and the mean noise rank, 1 the least noisy, of the
-   configuration with the smallest mean loss and of the configurations in the
-   set. A loss that does not depend on noise puts both mean ranks near the
+   out/montecarlo/response_variance_by_configuration.csv: the Spearman
+   correlation across configurations between noise and the own rate (share of
+   its own sets holding it) and the off-target rate (share of the other
+   configurations' sets holding it), and the mean noise rank, 1 the least noisy,
+   of the configuration with the smallest mean loss and of the configurations in
+   the set. A loss that does not depend on noise puts both mean ranks near the
    middle, (n + 1) / 2 for n configurations.
 */
 
@@ -56,15 +56,21 @@ Writes out/seri_corrected_against_uncorrected_grid_report.txt:
 #define UNCORRECTED_PROGRESS_PATH "out/montecarlo/seri_uncorrected_true_configuration_recovery_progress.csv"
 #endif
 #ifndef REPORT_PATH
-#define REPORT_PATH "out/seri_corrected_against_uncorrected_grid_report.txt"
+#define REPORT_PATH "out/montecarlo/seri_corrected_against_uncorrected_grid_report.txt"
 #endif
-#define NOISE_PATH "out/response_variance_by_configuration.csv"
+#define NOISE_PATH "out/montecarlo/response_variance_by_configuration.csv"
 #define MAX_COP 1024
 #define MAX_RUN 1000
 #define N_GRIDS 2
 
 enum { GRID_CORRECTED, GRID_UNCORRECTED };
-static const char *const grid_label[N_GRIDS] = { "corrected", "uncorrected" };
+#ifndef CORRECTED_LABEL
+#define CORRECTED_LABEL "corrected"
+#endif
+#ifndef UNCORRECTED_LABEL
+#define UNCORRECTED_LABEL "uncorrected"
+#endif
+static const char *const grid_label[N_GRIDS] = { CORRECTED_LABEL, UNCORRECTED_LABEL };
 
 /* One benchmark's row, absent when in_set is -1. */
 typedef struct {
@@ -260,8 +266,8 @@ static void write_per_grid(FILE *out) {
 static void write_paired(FILE *out) {
     fprintf(out, "2. Per model: whether the benchmark's configuration is in each set, and whether both losses "
                  "give the same configuration the smallest mean loss.\n\n");
-    fprintf(out, "model, benchmarks in both, in both sets, corrected set only, uncorrected set only, neither, "
-                 "same smallest-loss configuration\n");
+    fprintf(out, "model, benchmarks in both, in both sets, %s set only, %s set only, neither, "
+                 "same smallest-loss configuration\n", grid_label[GRID_CORRECTED], grid_label[GRID_UNCORRECTED]);
     for (int model = 0; model < N_MODELS; model++) {
         long n = 0, both = 0, corrected_only = 0, uncorrected_only = 0, neither = 0, same_lowest = 0;
         for (size_t at = 0; at < (size_t)MAX_COP * MAX_RUN; at++) {
@@ -309,8 +315,10 @@ static long count_paired(int model) {
 static void write_per_configuration(FILE *out) {
     fprintf(out, "3. Per model and configuration: the share of its own benchmarks whose set holds it, with the "
                  "Pearson correlation of the two grids' shares across configurations.\n\n");
-    fprintf(out, "model, configurations, corrected at least half, corrected at least 90%%, corrected none, "
-                 "uncorrected at least half, uncorrected at least 90%%, uncorrected none, correlation\n");
+    fprintf(out, "model, configurations, %s at least half, %s at least 90%%, %s none, "
+                 "%s at least half, %s at least 90%%, %s none, correlation\n", grid_label[GRID_CORRECTED],
+            grid_label[GRID_CORRECTED], grid_label[GRID_CORRECTED], grid_label[GRID_UNCORRECTED],
+            grid_label[GRID_UNCORRECTED], grid_label[GRID_UNCORRECTED]);
     for (int model = 0; model < N_MODELS; model++) {
         long n_paired = count_paired(model);
         int n_configurations = 0, half[N_GRIDS] = { 0, 0 }, ninety[N_GRIDS] = { 0, 0 }, none[N_GRIDS] = { 0, 0 };
@@ -392,9 +400,11 @@ int main(void) {
     read_grid(GRID_UNCORRECTED, uncorrected_path, count_members);
 
     mkdir("out", 0755);
+    mkdir("out/montecarlo", 0755);
     FILE *out = fopen(REPORT_PATH, "w");
     assert(out && "seri_corrected_against_uncorrected_grid: cannot open the report");
-    fprintf(out, "Corrected: %s. Uncorrected: %s.\n", CORRECTED_PATH, uncorrected_path);
+    fprintf(out, "%s: %s. %s: %s.\n", grid_label[GRID_CORRECTED], CORRECTED_PATH, grid_label[GRID_UNCORRECTED],
+            uncorrected_path);
     for (int grid = 0; grid < N_GRIDS; grid++)
         fprintf(out, "%s: %ld rows that did not parse, %ld benchmarks found twice.\n", grid_label[grid],
                 n_unparsed[grid], n_duplicated[grid]);

@@ -7,11 +7,12 @@ Two loss matrices for the Model Confidence Set, built without fitting
 anything: how strongly each simulated series pulls the real data's own fitted
 auxiliary model away from where the real data put it.
 
-old/naive_mae_loss/applications/abm_system_irf_loss.c fits a t-QVARMA to every simulated
-replicate and measures the distance between that fit's impulse responses and
-the real data's. Here nothing is estimated. The real data's fitted parameter
-vector theta_US (out/us_qvarma_spec_choice_p1q1r2_fit.json, the same p1q1r2
-spec) is held fixed, and for configuration i and replicate n the score
+old/naive_mae_loss/applications/abm_system_irf_loss.c fits a t-QVARMA to every
+simulated replicate and measures the distance between that fit's impulse
+responses and the real data's. Here nothing is estimated. The real data's fitted
+parameter vector theta_US
+(out/applications/us_qvarma_spec_choice_p1q1r2_fit.json, the same p1q1r2 spec)
+is held fixed, and for configuration i and replicate n the score
 
     q_in = d log L(theta_US ; y_in) / d theta
 
@@ -27,16 +28,18 @@ rather than a difference quotient.
 
 Two losses are written, from the same pass over the data.
 
-The plain sum of squares, q_in' q_in, out/abm_system_score_loss.csv. It gives
-every coordinate of theta equal weight, which means it is not a distance in
-any metric the model supplies: theta is the optimizer's own unconstrained
-parameterization, its coordinates carry different units and differ in scale by
-orders of magnitude, and the loss is dominated by whichever of them happens to
-have the largest one. Measured on this dataset, Omega_inv[2,0] alone carries
-62 per cent of it. Kept because it is the object that was asked for and
-because it is what the weighted version has to be compared against.
+The plain sum of squares, q_in' q_in,
+out/old/score_loss/applications/abm_system_score_loss.csv. It gives every
+coordinate of theta equal weight, which means it is not a distance in any metric
+the model supplies: theta is the optimizer's own unconstrained parameterization,
+its coordinates carry different units and differ in scale by orders of
+magnitude, and the loss is dominated by whichever of them happens to have the
+largest one. Measured on this dataset, Omega_inv[2,0] alone carries 62 per cent
+of it. Kept because it is the object that was asked for and because it is what
+the weighted version has to be compared against.
 
-The score test statistic, out/abm_system_score_loss_weighted.csv:
+The score test statistic,
+out/old/score_loss/applications/abm_system_score_loss_weighted.csv:
 
     LM_in = q_in' [T_sim I_1(theta_US)]^-1 q_in
 
@@ -98,20 +101,22 @@ a zero.
 
 Requires out/dataset/abm_system/ (applications/abm_system_simulate.c or
 applications/abm_system_convert_rdata.c),
-out/us_qvarma_spec_choice_p1q1r2_fit.json
-(applications/us_qvarma_spec_choice.c) and out/us_system.csv
+out/applications/us_qvarma_spec_choice_p1q1r2_fit.json
+(applications/us_qvarma_spec_choice.c) and out/applications/us_system.csv
 (applications/us_prepare_data.c), the last of these because the information
 matrix is computed on the real data. It does not read
-out/abm_system_fit_qvarma/ at all - no fit of a simulated series takes part in
-either loss.
+out/applications/abm_system_fit_qvarma/ at all - no fit of a simulated series
+takes part in either loss.
 
-Output: two CSVs, one row per replicate and one column per configuration plus
-a leading "replicate" column, with the column names
-old/naive_mae_loss/applications/abm_system_irf_loss.c uses for the same configurations so the
-matrices can be read side by side. The manifest is named after the unweighted
-table, out/abm_system_score_loss_manifest.txt, covers both, and records the
-information matrix's eigenvalues and condition number, since a weighting that
-came out of a badly conditioned matrix is worth no more than its conditioning.
+Output: two CSVs, one row per replicate and one column per configuration plus a
+leading "replicate" column, with the column names
+old/naive_mae_loss/applications/abm_system_irf_loss.c uses for the same
+configurations so the matrices can be read side by side. The manifest is named
+after the unweighted table,
+out/old/score_loss/applications/abm_system_score_loss_manifest.txt, covers both,
+and records the information matrix's eigenvalues and condition number, since a
+weighting that came out of a badly conditioned matrix is worth no more than its
+conditioning.
 
 Neither matrix has holes, which et_al's mcs requires: one NaN in a model's
 column loses every comparison that model takes part in and the p-values come
@@ -149,11 +154,11 @@ Nothing printed.
 #define SPEC_R 2
 #define SPEC_LABEL "p1q1r2"
 #define COLUMN_LABEL "qvarma_" SPEC_LABEL
-#define REAL_FIT_PATH "out/us_qvarma_spec_choice_p1q1r2_fit.json"
+#define REAL_FIT_PATH "out/applications/us_qvarma_spec_choice_p1q1r2_fit.json"
 #define REAL_PERIODS (ESTIMATION_PERIODS - 1)
 
 #define INPUT_DIR_DEFAULT "out/dataset/abm_system"
-#define OUTPUT_PATH_DEFAULT "out/abm_system_score_loss.csv"
+#define OUTPUT_PATH_DEFAULT "out/old/score_loss/applications/abm_system_score_loss.csv"
 
 /* Overridable so the pass can be run over a couple of configurations before it
    is turned loose on the whole design. */

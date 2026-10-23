@@ -6,8 +6,8 @@ number of bootstrap resamples (10000 here, 2000 in the grid). The grid
 answers the same question on all of them. docs/OLD_EXPERIMENTS.md.
 
 The headline confidence set of the Monte Carlo experiment: MCS_TR over
-out/montecarlo/irf_loss.csv, the impulse-response distance between one chosen
-simulated run and every configuration's replicates.
+out/old/montecarlo_one_benchmark/irf_loss.csv, the impulse-response distance
+between one chosen simulated run and every configuration's replicates.
 
 This is old/naive_mae_loss/applications/abm_system_mcs.c's procedure over a different loss matrix.
 Every numeric column except "replicate" is a model, one per configuration, and
@@ -24,8 +24,9 @@ block length 1 for the iid bootstrap the independent replicates call for, and
 the bootstrap variance of the resampled mean. That file's own header comment
 explains each choice; none of them is revisited here.
 
-Requires out/montecarlo/irf_loss.csv. Writes out/montecarlo/mcs.txt and
-out/montecarlo/mcs.csv. Nothing printed.
+Requires out/old/montecarlo_one_benchmark/irf_loss.csv. Writes
+out/old/montecarlo_one_benchmark/mcs.txt and
+out/old/montecarlo_one_benchmark/mcs.csv. Nothing printed.
 */
 
 #include <et_al./inference/mcs.h>
@@ -34,9 +35,9 @@ out/montecarlo/mcs.csv. Nothing printed.
 #include <stdlib.h>
 #include <assert.h>
 
-#define LOSS_PATH "out/montecarlo/irf_loss.csv"
-#define REPORT_PATH "out/montecarlo/mcs.txt"
-#define TABLE_PATH "out/montecarlo/mcs.csv"
+#define LOSS_PATH "out/old/montecarlo_one_benchmark/irf_loss.csv"
+#define REPORT_PATH "out/old/montecarlo_one_benchmark/mcs.txt"
+#define TABLE_PATH "out/old/montecarlo_one_benchmark/mcs.csv"
 
 int main(void) {
     const char *loss_path = LOSS_PATH;

@@ -41,13 +41,15 @@ vector each run is mapped to changes.
 ## Why the raw responses fail
 
 All measurements in this section are on the response caches
-`old/naive_mae_loss/montecarlo/sweep_grid.c` keeps, `out/sweep_grid_response_cache/qvarma.f32`
-and `lp_lin.f32`, and on its result rows for those two models, one row per
-benchmark, 1,000,000 benchmarks per model. They were read from
-`out/old/naive_mae_loss/montecarlo/sweep_grid_qvarma.csv.gz` and `sweep_grid_lp_lin.csv.gz`, which
-an earlier version of `sweep_grid.c` wrote and which are byte for byte the
-t-QVARMA and linear rows of `out/old/naive_mae_loss/montecarlo/sweep_grid.csv.gz`; the setup and
-the full results of that experiment are in `docs/OLD_MONTECARLO_NAIVE_MAE_GRID.md`,
+`old/naive_mae_loss/montecarlo/sweep_grid.c` keeps,
+`out/montecarlo/sweep_grid_response_cache/qvarma.f32` and `lp_lin.f32`, and on
+its result rows for those two models, one row per benchmark, 1,000,000
+benchmarks per model. They were read from
+`out/old/naive_mae_loss/montecarlo/sweep_grid_qvarma.csv.gz` and
+`sweep_grid_lp_lin.csv.gz`, which an earlier version of `sweep_grid.c` wrote and
+which are byte for byte the t-QVARMA and linear rows of
+`out/old/naive_mae_loss/montecarlo/sweep_grid.csv.gz`; the setup and the full
+results of that experiment are in `docs/OLD_MONTECARLO_NAIVE_MAE_GRID.md`,
 "Every run of every configuration as the benchmark".
 
 **Most entries are noise.** For each entry of the response vector, the
@@ -105,11 +107,14 @@ formed. Two kinds of map were tried, both learned from runs 500 to 999 of all
 side by side, 925 entries, before the map is learned. This is the ensemble of
 the auxiliary models: one output that uses both.
 
-`old/naive_mae_loss/montecarlo/compressed_response_learn.py` learns the maps and writes the mapped
-vectors of all 1,000,000 runs to `out/old/naive_mae_loss/compressed_response_cache/`, in the
-layout of the response cache. `old/naive_mae_loss/montecarlo/compressed_response_recovery.c` runs
-the confidence set on any such file. `old/naive_mae_loss/montecarlo/compressed_response_report.py`
-writes `out/old/naive_mae_loss/montecarlo/compressed_response/report.txt`.
+`old/naive_mae_loss/montecarlo/compressed_response_learn.py` learns the maps and
+writes the mapped vectors of all 1,000,000 runs to
+`out/old/naive_mae_loss/montecarlo/compressed_response_cache/`, in the layout of
+the response cache.
+`old/naive_mae_loss/montecarlo/compressed_response_recovery.c` runs the
+confidence set on any such file.
+`old/naive_mae_loss/montecarlo/compressed_response_report.py` writes
+`out/old/naive_mae_loss/montecarlo/compressed_response/report.txt`.
 
 ## How it was measured
 
@@ -206,11 +211,11 @@ hypercube also differ in the identified parameters.
 
 The state-dependent local projection's responses in state 1 and state 2
 (`docs/MONTECARLO_VALIDATION.md`, "The local projections", 400 entries each,
-cached as `out/sweep_grid_response_cache/lp_s1.f32` and `lp_s2.f32`) went
-through the same learning step and the same two setups. Stacks: the two states
-together (800 entries), and all four models together (1725 entries). The
-regression used 20 training runs per configuration for the two states and 10
-for all four, for memory.
+cached as `out/montecarlo/sweep_grid_response_cache/lp_s1.f32` and `lp_s2.f32`)
+went through the same learning step and the same two setups. Stacks: the two
+states together (800 entries), and all four models together (1725 entries). The
+regression used 20 training runs per configuration for the two states and 10 for
+all four, for memory.
 
 On the raw responses they are the worst of the four. Over all 1,000,000
 benchmarks of `out/old/naive_mae_loss/montecarlo/sweep_grid.csv.gz` the true configuration is in
@@ -282,20 +287,22 @@ from, but no routine for it), and ridge regression.
 
 ## How to rerun
 
-Reads `out/sweep_grid_response_cache/`, `out/old/naive_mae_loss/montecarlo/sweep_grid.csv.gz` and
+Reads `out/montecarlo/sweep_grid_response_cache/`,
+`out/old/naive_mae_loss/montecarlo/sweep_grid.csv.gz` and
 `out/dataset/abm_system_design.csv`. The learning and report scripts need numpy,
-scipy and pandas; the baseline copy needs only the Python standard library.
-The response cache is 2.1 GB for the t-QVARMA; the learning step streams it
-one configuration at a time and peaks at about 650 MB.
+scipy and pandas; the baseline copy needs only the Python standard library. The
+response cache is 2.1 GB for the t-QVARMA; the learning step streams it one
+configuration at a time and peaks at about 650 MB.
 
 Learn the maps. Each call writes every `discriminant_<k>` for the k in
 DIRECTIONS (default 3, 5, 8, 12, 20, 40) and the `parameters` map to
-`out/old/naive_mae_loss/compressed_response_cache/<label>_<map>.f32`, `<label>` being the model
-names joined by underscores; a single model also gets `<model>_raw.f32`, the
-raw responses of runs 0 to 199. What was learned goes to
-`out/old/naive_mae_loss/montecarlo/compressed_response/learn_<label>.txt`. DIRECTIONS changes
-which files are written, not their contents, since each map keeps the leading
-k directions of the same decomposition. RIDGE_RUNS changes the `parameters` map.
+`out/old/naive_mae_loss/montecarlo/compressed_response_cache/<label>_<map>.f32`,
+`<label>` being the model names joined by underscores; a single model also gets
+`<model>_raw.f32`, the raw responses of runs 0 to 199. What was learned goes to
+`out/old/naive_mae_loss/montecarlo/compressed_response/learn_<label>.txt`.
+DIRECTIONS changes which files are written, not their contents, since each map
+keeps the leading k directions of the same decomposition. RIDGE_RUNS changes the
+`parameters` map.
 
     python old/naive_mae_loss/montecarlo/compressed_response_learn.py qvarma
     python old/naive_mae_loss/montecarlo/compressed_response_learn.py lp_lin
@@ -320,7 +327,7 @@ the confidence set. The main setup is `0 4 0 200`, the full-scale setup
 `0 1 0 1000`.
 
     make bin/compressed_response_recovery
-    run() { ./bin/compressed_response_recovery out/old/naive_mae_loss/compressed_response_cache/$1.f32 "${@:2}"; }
+    run() { ./bin/compressed_response_recovery out/old/naive_mae_loss/montecarlo/compressed_response_cache/$1.f32 "${@:2}"; }
     dir=out/old/naive_mae_loss/montecarlo/compressed_response
 
     # main setup, confidence sets
@@ -332,7 +339,7 @@ the confidence set. The main setup is `0 4 0 200`, the full-scale setup
 
     # main setup, rank only, for every other vector; a recovery file already
     # holds the rank
-    for f in out/old/naive_mae_loss/compressed_response_cache/*.f32; do
+    for f in out/old/naive_mae_loss/montecarlo/compressed_response_cache/*.f32; do
         v=$(basename $f .f32)
         [ -f $dir/recovery_${v}_rows200.csv ] || run $v 0 4 0 200 $dir/rank_${v}_rows200.csv rank_only
     done

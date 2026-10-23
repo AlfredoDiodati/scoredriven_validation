@@ -17,19 +17,21 @@ their scatter (docs/OLD_MONTECARLO_LP_VALIDATION.md). If the t-QVARMA passes onl
 because its scatter is small, the failure belongs to the protocol rather than
 to the local projections.
 
-The responses are the ones old/montecarlo_one_benchmark/irf_loss.c and old/montecarlo_every_run_of_cop_0191/sweep_irf.c
-compare: the total response, horizons 0 to 20, 5 x 5 x 21 = 525 values, from
-each run's stored p1q1r2 fit in out/abm_system_fit_qvarma/ and its own series.
-A fit with nu <= 2 or a non-finite response counts as missing. The stand-in is
-out/montecarlo/benchmark.env's run, cop_0191 run 706, left out of every
-configuration. As a check that these are the protocol's own numbers, every
-run's mean absolute difference from the stand-in is compared with
-out/montecarlo/irf_loss.csv.
+The responses are the ones old/montecarlo_one_benchmark/irf_loss.c and
+old/montecarlo_every_run_of_cop_0191/sweep_irf.c compare: the total response,
+horizons 0 to 20, 5 x 5 x 21 = 525 values, from each run's stored p1q1r2 fit in
+out/applications/abm_system_fit_qvarma/ and its own series. A fit with nu <= 2
+or a non-finite response counts as missing. The stand-in is
+out/old/montecarlo_one_benchmark/benchmark.env's run, cop_0191 run 706, left out
+of every configuration. As a check that these are the protocol's own numbers,
+every run's mean absolute difference from the stand-in is compared with
+out/old/montecarlo_one_benchmark/irf_loss.csv.
 
-Requires out/abm_system_fit_qvarma/, out/dataset/abm_system/,
-out/montecarlo/benchmark.env and out/montecarlo/irf_loss.csv, and rebuilds
-none of them. Writes out/qvarma_recovery_diagnostics_report.txt. Progress to
-stderr.
+Requires out/applications/abm_system_fit_qvarma/, out/dataset/abm_system/,
+out/old/montecarlo_one_benchmark/benchmark.env and
+out/old/montecarlo_one_benchmark/irf_loss.csv, and rebuilds none of them. Writes
+out/old/montecarlo_one_benchmark/studies/qvarma_recovery_diagnostics_report.txt.
+Progress to stderr.
 */
 
 #include "applications/abm_system.h"
@@ -58,10 +60,10 @@ stderr.
 #define HORIZON 20
 #define DIM (K * K * (HORIZON + 1))
 
-#define FIT_DIR "out/abm_system_fit_qvarma"
+#define FIT_DIR "out/applications/abm_system_fit_qvarma"
 #define INPUT_DIR "out/dataset/abm_system"
-#define LOSS_TABLE "out/montecarlo/irf_loss.csv"
-#define REPORT_PATH "out/qvarma_recovery_diagnostics_report.txt"
+#define LOSS_TABLE "out/old/montecarlo_one_benchmark/irf_loss.csv"
+#define REPORT_PATH "out/old/montecarlo_one_benchmark/studies/qvarma_recovery_diagnostics_report.txt"
 
 static QvarmaParams spec_shape(void) {
     QvarmaParams m = qvarma_params_new(K, K_STAR, P, Q, SPEC_R, R, SHARED_BETA, WARMUP_LONGEST);

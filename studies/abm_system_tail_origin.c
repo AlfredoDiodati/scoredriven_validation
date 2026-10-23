@@ -21,7 +21,7 @@ difference of the log price level, and the interest rate in percentage points,
 in levels. The interest rate is a persistent level, so its moments mostly
 describe where the level wanders rather than how large its shocks are; its
 first difference is reported as a sixth series for that reason. The US series
-are built the same way from out/us_system.csv, 187 quarters.
+are built the same way from out/applications/us_system.csv, 187 quarters.
 
 A replicate has 400 periods and the US sample 187. The sample kurtosis of a
 shorter series is more variable, and from finite samples of heavy-tailed data
@@ -30,9 +30,9 @@ all 400 periods, and over the first 187 so the comparison with the US value is
 at equal length.
 
 Part 2 sets the same moments against the fitted nu of each replicate, read from
-the cached fits under out/abm_system_fit_qvarma/. Configurations are ranked by
-the median nu of their fits, and the rank correlation between nu and each
-series' excess kurtosis is taken across configurations and across all
+the cached fits under out/applications/abm_system_fit_qvarma/. Configurations
+are ranked by the median nu of their fits, and the rank correlation between nu
+and each series' excess kurtosis is taken across configurations and across all
 replicates.
 
 Moments are the plain moment ratios: skewness m3 / m2^(3/2) and excess
@@ -44,8 +44,8 @@ to move to et_al's stats.h; they are checked here against hand-computed values
 before anything else runs, and the study stops if a check fails.
 
 Reads only. Writes:
-    out/abm_system_tail_origin_report.txt
-    out/abm_system_tail_origin_configurations.csv   one row per configuration
+    out/studies/abm_system_tail_origin_report.txt
+    out/studies/abm_system_tail_origin_configurations.csv   one row per configuration
 */
 #include "applications/abm_system.h"
 #include "applications/us_data.h"
@@ -71,9 +71,9 @@ Reads only. Writes:
 #define SPEC_LABEL "p1q1r2"
 
 #define INPUT_DIR "out/dataset/abm_system"
-#define FIT_DIR "out/abm_system_fit_qvarma"
-#define REPORT_PATH "out/abm_system_tail_origin_report.txt"
-#define CONFIGURATIONS_PATH "out/abm_system_tail_origin_configurations.csv"
+#define FIT_DIR "out/applications/abm_system_fit_qvarma"
+#define REPORT_PATH "out/studies/abm_system_tail_origin_report.txt"
+#define CONFIGURATIONS_PATH "out/studies/abm_system_tail_origin_configurations.csv"
 
 #define US_PERIODS (ESTIMATION_PERIODS - 1)
 #define N_RANKED_SHOWN 10

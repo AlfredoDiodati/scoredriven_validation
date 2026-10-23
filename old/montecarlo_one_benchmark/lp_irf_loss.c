@@ -28,8 +28,8 @@ under nl), as in the t-QVARMA protocol. The R pipeline uses the mean squared err
 absolute error is kept for comparability with the t-QVARMA results and for the
 reason old/montecarlo_one_benchmark/irf_loss.c gives.
 
-Nothing is estimated here. Every fit is read from the per-configuration
-archives in out/abm_system_fit_lp/, which applications/abm_system_fit_lp.c
+Nothing is estimated here. Every fit is read from the per-configuration archives
+in out/applications/abm_system_fit_lp/, which applications/abm_system_fit_lp.c
 writes, and checked against the cell's own data on the way in
 (applications/abm_system_lp.h).
 
@@ -39,9 +39,10 @@ column is dropped from that model's matrix and counted in the manifest.
 Dropping the row rather than the configuration keeps every configuration in
 the comparison.
 
-Requires out/abm_system_fit_lp/, out/dataset/abm_system/ and
-out/montecarlo/benchmark.env. Writes out/montecarlo/lp_irf_loss_<model>.csv,
-one per model, and out/montecarlo/lp_irf_loss_manifest.txt. Nothing printed.
+Requires out/applications/abm_system_fit_lp/, out/dataset/abm_system/ and
+out/old/montecarlo_one_benchmark/benchmark.env. Writes
+out/old/montecarlo_one_benchmark/lp_irf_loss_<model>.csv, one per model, and
+out/old/montecarlo_one_benchmark/lp_irf_loss_manifest.txt. Nothing printed.
 */
 
 #include "montecarlo/response_cache.h"
@@ -52,7 +53,7 @@ one per model, and out/montecarlo/lp_irf_loss_manifest.txt. Nothing printed.
 #include <cblas.h>
 #include <math.h>
 
-#define OUTPUT_STEM "out/montecarlo/lp_irf_loss"
+#define OUTPUT_STEM "out/old/montecarlo_one_benchmark/lp_irf_loss"
 
 static const char *FIT_DIR;
 static const char *INPUT_DIR;

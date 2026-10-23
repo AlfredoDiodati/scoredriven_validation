@@ -12,13 +12,13 @@ is smaller than the independent sum. In an agent-based model the parameters
 change how many random draws each period consumes, so the streams of two
 configurations fall out of step and the correlation can vanish.
 
-Reads out/old/naive_mae_loss/abm_system_irf_loss.csv, one row per replicate and one column
-per configuration, and for every pair of configurations computes the Pearson
-correlation of their per-replicate losses. The reference for no shared
-randomness is the same correlation with the rows of the second configuration
-moved down by one replicate, pairing seed n with seed n + 1 (the last row
-wraps to the first). Under independence both have mean zero and standard
-deviation close to 1/sqrt(1000) = 0.032.
+Reads out/old/naive_mae_loss/applications/abm_system_irf_loss.csv, one row per
+replicate and one column per configuration, and for every pair of configurations
+computes the Pearson correlation of their per-replicate losses. The reference
+for no shared randomness is the same correlation with the rows of the second
+configuration moved down by one replicate, pairing seed n with seed n + 1 (the
+last row wraps to the first). Under independence both have mean zero and
+standard deviation close to 1/sqrt(1000) = 0.032.
 
 For every pair it also reports the variance ratio
 
@@ -33,7 +33,8 @@ rank correlation between a pair's loss correlation and its distance in the
 parameter design, each of the nine parameters scaled to [0, 1] by its range in
 out/dataset/abm_system_design.csv.
 
-Reads only. Writes out/old/naive_mae_loss/abm_system_seed_correlation_report.txt.
+Reads only. Writes
+out/old/naive_mae_loss/studies/abm_system_seed_correlation_report.txt.
 */
 #include "applications/abm_system.h"
 #include <et_al./stats.h>
@@ -43,10 +44,10 @@ Reads only. Writes out/old/naive_mae_loss/abm_system_seed_correlation_report.txt
 #include <stdlib.h>
 #include <math.h>
 
-#define LOSS_TABLE_PATH "out/old/naive_mae_loss/abm_system_irf_loss.csv"
-#define CONFIDENCE_SET_PATH "out/old/naive_mae_loss/abm_system_mcs.csv"
+#define LOSS_TABLE_PATH "out/old/naive_mae_loss/applications/abm_system_irf_loss.csv"
+#define CONFIDENCE_SET_PATH "out/old/naive_mae_loss/applications/abm_system_mcs.csv"
 #define DESIGN_PATH "out/dataset/abm_system_design.csv"
-#define REPORT_PATH "out/old/naive_mae_loss/abm_system_seed_correlation_report.txt"
+#define REPORT_PATH "out/old/naive_mae_loss/studies/abm_system_seed_correlation_report.txt"
 
 /* Pairs sampled for the rank correlation against design distance. Every pair
    is used for everything else. */

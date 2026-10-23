@@ -13,8 +13,9 @@
 #
 # NUMPY_PYTHON is a Python with numpy, scipy and pandas (default python3);
 # PLOT_PYTHON one with polars, plotly and kaleido, and the figures are skipped
-# when it is not set. Reads out/abm_system_fit_lp/, out/dataset/abm_system/ and
-# out/sweep_grid_response_cache/, and rebuilds none of them.
+# when it is not set. Reads out/applications/abm_system_fit_lp/,
+# out/dataset/abm_system/ and out/montecarlo/sweep_grid_response_cache/, and
+# rebuilds none of them.
 
 set -euo pipefail
 
@@ -35,7 +36,7 @@ if [ -f $progress ]; then
 fi
 
 echo "the raw stacked vector on runs 0 to 199 $(date)"
-raw=out/old/naive_mae_loss/compressed_response_cache/lp_nl_raw.f32
+raw=out/old/naive_mae_loss/montecarlo/compressed_response_cache/lp_nl_raw.f32
 recovery=out/old/naive_mae_loss/montecarlo/compressed_response/recovery_lp_nl_raw_rows200.csv
 [ -f $raw ] || $NUMPY_PYTHON old/naive_mae_loss/montecarlo/compressed_response_learn.py lp_nl raw_only
 [ -f $recovery ] || ./bin/compressed_response_recovery $raw 0 4 0 200 $recovery
