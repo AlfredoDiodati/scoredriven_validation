@@ -578,6 +578,34 @@ app-throughput_fit-i$(1): $(BIN)/throughput_fit_i$(1) | out/applications
 endef
 $(foreach cap,$(THROUGHPUT_ITERATION_CAPS),$(eval $(call scale_fit_target_for_cap,$(cap))))
 
+# The fits of the simulated runs on their first N stored periods instead of all
+# of them, one N per entry, 188 being the length of the US sample. Each length
+# is compiled into its own binaries and writes its own
+# out/applications/abm_system_fit_{lp,qvarma}_t<N> trees.
+# app-abm_system_fit_t<N> runs both, the local projections first since they take
+# minutes and the t-QVARMA fits far longer.
+FIT_ESTIMATION_PERIODS := 188
+
+define shortened_fit_targets_for_periods
+.PHONY: app-abm_system_fit_lp_t$(1) app-abm_system_fit_qvarma_t$(1) app-abm_system_fit_t$(1)
+$(BIN)/abm_system_fit_lp_t$(1): applications/abm_system_fit_lp.c $(HEADERS) $(APPLICATION_HEADERS) \
+                                $(ETAL_INSTALLED_HEADERS) | $(BIN)
+	$(CC) $(CFLAGS) -DMAT_DOUBLE -DESTIMATION_PERIODS=$(1) -fopenmp $(ETAL_CFLAGS) $(INCLUDES) \
+	      $$< -o $$@ $(ETAL_LIBS)
+$(BIN)/abm_system_fit_qvarma_t$(1): applications/abm_system_fit_qvarma.c $(HEADERS) $(APPLICATION_HEADERS) \
+                                    $(ETAL_INSTALLED_HEADERS) | $(BIN)
+	$(CC) $(CFLAGS) -DMAT_DOUBLE -DESTIMATION_PERIODS=$(1) -fopenmp $(ETAL_CFLAGS) $(INCLUDES) \
+	      $$< -o $$@ $(ETAL_LIBS)
+app-abm_system_fit_lp_t$(1): $(BIN)/abm_system_fit_lp_t$(1) | out/applications
+	./$(BIN)/abm_system_fit_lp_t$(1)
+app-abm_system_fit_qvarma_t$(1): $(BIN)/abm_system_fit_qvarma_t$(1) | out/applications
+	./$(BIN)/abm_system_fit_qvarma_t$(1)
+app-abm_system_fit_t$(1): $(BIN)/abm_system_fit_lp_t$(1) $(BIN)/abm_system_fit_qvarma_t$(1) | out/applications
+	./$(BIN)/abm_system_fit_lp_t$(1)
+	./$(BIN)/abm_system_fit_qvarma_t$(1)
+endef
+$(foreach periods,$(FIT_ESTIMATION_PERIODS),$(eval $(call shortened_fit_targets_for_periods,$(periods))))
+
 # The DSK simulator itself, vendored under model/dsk_sfc with the changes
 # docs/DSK_MODEL_CHANGES.md records. Its own script builds it rather
 # than a rule here: it is 35 translation units of someone else's C++ with its

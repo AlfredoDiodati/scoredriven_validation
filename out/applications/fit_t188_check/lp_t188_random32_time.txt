@@ -1,0 +1,2 @@
+run 1, 32 configurations, 32000 fits, 16 threads, wall seconds 6484e-3
+run 2, 32 configurations, 32000 fits, 16 threads, wall seconds 6888e-3

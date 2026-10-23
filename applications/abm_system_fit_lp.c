@@ -33,6 +33,12 @@ it is not retried on every run only to fail the same way.
 - ./bin/abm_system_fit_lp fits what is not stored.
 - ./bin/abm_system_fit_lp --refit ignores what is stored and fits everything.
 
+Built with -DESTIMATION_PERIODS=188, each replicate is cut to its first 188
+stored periods before lp_system_from_stored, the length of the US sample
+applications/us_data.h reads, so the projections see 185 periods as the US fit
+does, and everything goes under out/applications/abm_system_fit_lp_t188
+instead. The Makefile builds that variant as bin/abm_system_fit_lp_t188.
+
 One task per configuration. openblas_set_num_threads(1) for the reason
 applications/abm_system_fit_qvarma.c gives: the parallelism is the outer loop.
 
@@ -53,7 +59,14 @@ series was constant, and whether it has responses. Nothing printed.
 #include <assert.h>
 
 #define INPUT_DIR_DEFAULT "out/dataset/abm_system"
-#define OUTPUT_DIR_DEFAULT "out/applications/abm_system_fit_lp"
+#define FULL_SAMPLE_OUTPUT_DIR "out/applications/abm_system_fit_lp"
+#define QUOTED_VALUE(x) #x
+#define QUOTED(x) QUOTED_VALUE(x)
+#ifdef ESTIMATION_PERIODS
+#define OUTPUT_DIR_DEFAULT FULL_SAMPLE_OUTPUT_DIR "_t" QUOTED(ESTIMATION_PERIODS)
+#else
+#define OUTPUT_DIR_DEFAULT FULL_SAMPLE_OUTPUT_DIR
+#endif
 
 static const char *INPUT_DIR;
 static const char *OUTPUT_DIR;
@@ -134,6 +147,12 @@ static Series read_series(const char *sample) {
         int replicate[ABM_SYSTEM_BATCH];
         int count = abm_system_read_batch(dir, batch, block, replicate);
         for (int b = 0; b < count; b++) {
+#ifdef ESTIMATION_PERIODS
+            assert(block[b].c >= ESTIMATION_PERIODS && "abm_system_fit_lp: replicate shorter than ESTIMATION_PERIODS");
+            Mat head = mat_copy(mat_slice(block[b], 0, block[b].r, 0, ESTIMATION_PERIODS));
+            mat_free(block[b]);
+            block[b] = head;
+#endif
             s.replicate[s.count] = replicate[b];
             lp_system_from_stored(block[b], &s.y[s.count], &s.switching[s.count]);
             s.count++;
@@ -194,6 +213,12 @@ int main(int argc, char **argv) {
     if (!INPUT_DIR) INPUT_DIR = INPUT_DIR_DEFAULT;
     OUTPUT_DIR = getenv("ABM_SYSTEM_LP_FIT_DIR");
     if (!OUTPUT_DIR) OUTPUT_DIR = OUTPUT_DIR_DEFAULT;
+#ifdef ESTIMATION_PERIODS
+    /* A shortened fit does not match the full-sample archives' fingerprints, so
+       pointed at them it would refit and rewrite every one. */
+    assert(strcmp(OUTPUT_DIR, FULL_SAMPLE_OUTPUT_DIR) != 0
+           && "abm_system_fit_lp: a shortened build must not write into the full-sample fits");
+#endif
 
     openblas_set_num_threads(1);
     make_directory(OUTPUT_DIR);
@@ -257,6 +282,10 @@ int main(int argc, char **argv) {
     fprintf(manifest, "Local projections of the R pipeline on every replicate of %s\n", INPUT_DIR);
     fprintf(manifest, "data: %s (applications/lp_system.h); state series R's GDP_MA4\n",
             LP_SYSTEM_SERIES_DESCRIPTION);
+#ifdef ESTIMATION_PERIODS
+    fprintf(manifest, "each replicate cut to its first %d stored periods, %d after the moving average\n",
+            ESTIMATION_PERIODS, lp_system_n_periods(ESTIMATION_PERIODS));
+#endif
     fprintf(manifest, "spec: lags_endog_lin %d, lags_endog_nl %d, hor %d, unit shocks, use_hp %d, "
                       "lambda %g, gamma %g, lag_switching %d\n",
             spec.lin.lags_endog_lin, spec.lags_endog_nl, spec.lin.hor, spec.use_hp, spec.lambda,

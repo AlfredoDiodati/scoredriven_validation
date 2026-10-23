@@ -130,6 +130,14 @@ starting point, matching the real-data grid's own convention, is what
 runs here. Whether any of the million fits need either is a question for
 whoever consumes out/applications/abm_system_fit_qvarma_manifest.txt next.
 
+Built with -DESTIMATION_PERIODS=188, every fit sees only the first 188 stored
+periods of each replicate, the length of the US sample applications/us_data.h
+reads, and everything this script writes goes under
+out/applications/abm_system_fit_qvarma_t188 instead, so the two lengths keep
+separate caches. The Makefile builds that variant as
+bin/abm_system_fit_qvarma_t188. Without the define the whole stored series is
+fitted, as before.
+
 Not part of `make applications` or EXPERIMENT_STEMS - meant to be run
 explicitly, once (or resumed after an interruption), not on every routine
 build. Requires out/dataset/abm_system/ to already exist
@@ -163,7 +171,14 @@ printed.
 #define Q 1
 
 #define INPUT_DIR_DEFAULT "out/dataset/abm_system"
-#define OUTPUT_DIR_DEFAULT "out/applications/abm_system_fit_qvarma"
+#define FULL_SAMPLE_OUTPUT_DIR "out/applications/abm_system_fit_qvarma"
+#define QUOTED_VALUE(x) #x
+#define QUOTED(x) QUOTED_VALUE(x)
+#ifdef ESTIMATION_PERIODS
+#define OUTPUT_DIR_DEFAULT FULL_SAMPLE_OUTPUT_DIR "_t" QUOTED(ESTIMATION_PERIODS)
+#else
+#define OUTPUT_DIR_DEFAULT FULL_SAMPLE_OUTPUT_DIR
+#endif
 
 /* Both directories are overridable so the whole procedure can be exercised on a
    copy of a configuration or two before it is turned loose on the real cache,
@@ -216,6 +231,20 @@ static int *list_replicates(const char *sample_dir, int *count) {
     char path[560];
     snprintf(path, sizeof path, "%s/%s", INPUT_DIR, sample_dir);
     return abm_system_list_replicates(path, count);
+}
+
+/* One replicate as the fits see it: its first ESTIMATION_PERIODS stored periods
+   when the build sets that, the whole stored series otherwise. Caller must
+   mat_free. */
+static Mat read_estimation_sample(const char *sample_dir, int replicate) {
+    Mat y = abm_system_read_replicate(sample_dir, replicate);
+#ifdef ESTIMATION_PERIODS
+    assert(y.c >= ESTIMATION_PERIODS && "abm_system_fit_qvarma: replicate shorter than ESTIMATION_PERIODS");
+    Mat head = mat_copy(mat_slice(y, 0, y.r, 0, ESTIMATION_PERIODS));
+    mat_free(y);
+    y = head;
+#endif
+    return y;
 }
 
 static mreal first_difference_sd(Mat y, int row) {
@@ -352,6 +381,12 @@ int main(void) {
     if (!INPUT_DIR) INPUT_DIR = INPUT_DIR_DEFAULT;
     OUTPUT_DIR = getenv("ABM_SYSTEM_FIT_DIR");
     if (!OUTPUT_DIR) OUTPUT_DIR = OUTPUT_DIR_DEFAULT;
+#ifdef ESTIMATION_PERIODS
+    /* A shortened fit does not match the full-sample cache's data fingerprint,
+       so pointed at that cache it would refit and overwrite every file in it. */
+    assert(strcmp(OUTPUT_DIR, FULL_SAMPLE_OUTPUT_DIR) != 0
+           && "abm_system_fit_qvarma: a shortened build must not write into the full-sample cache");
+#endif
 
     /* See this file's own header comment for why. */
     openblas_set_num_threads(1);
@@ -401,7 +436,7 @@ int main(void) {
 
         char sample_dir[560];
         snprintf(sample_dir, sizeof sample_dir, "%s/%s", INPUT_DIR, sample);
-        Mat y = abm_system_read_replicate(sample_dir, task.replicate);
+        Mat y = read_estimation_sample(sample_dir, task.replicate);
 
         for (int spec = 0; spec < N_SPECS; spec++) {
             int out_idx = i * N_SPECS + spec;
@@ -550,7 +585,7 @@ int main(void) {
             snprintf(donor_path, sizeof donor_path, "%s/%s/replicate_%03d_%s_fit.json",
                      OUTPUT_DIR, samples[s], tasks[first + best].replicate, spec_list[spec].label);
             QvarmaFitResult source = qvarma_fit_result_new(&shape);
-            Mat donor_y = abm_system_read_replicate(sample_dir, tasks[first + best].replicate);
+            Mat donor_y = read_estimation_sample(sample_dir, tasks[first + best].replicate);
             int have_donor = qvarma_load_fit(&source, donor_y, donor_path);
             mat_free(donor_y);
             if (!have_donor) {
@@ -567,7 +602,7 @@ int main(void) {
                 if (donor[r] == tasks[first + best].replicate) continue;
 
                 int idx = (first + r) * N_SPECS + spec;
-                Mat y = abm_system_read_replicate(sample_dir, tasks[first + r].replicate);
+                Mat y = read_estimation_sample(sample_dir, tasks[first + r].replicate);
 
                 double gradient_at, value = likelihood_of(theta, &shape, y, &gradient_at);
                 if (value > log_lik[idx]) {
@@ -620,6 +655,9 @@ int main(void) {
     FILE *manifest = fopen(manifest_path, "w");
     assert(manifest && "cannot open the manifest path for writing");
     fprintf(manifest, "%d samples, %d total (replicate, spec) fits\n\n", n_samples, total_tasks);
+#ifdef ESTIMATION_PERIODS
+    fprintf(manifest, "each fit on the first %d stored periods of its replicate\n\n", ESTIMATION_PERIODS);
+#endif
     fprintf(manifest, "origin is what this run did with the cache: cached, a converged fit "
                       "reused untouched;\nresumed, an unconverged one carried on from its own "
                       "parameters for another %d iterations;\nfresh, no usable cache, estimated "

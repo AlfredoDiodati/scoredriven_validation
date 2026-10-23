@@ -1,0 +1,25 @@
+Timing of the fits on the first 188 stored periods, 2026-10-23, this machine
+(Ryzen 7 4800H, 16 threads, all busy, nothing else heavy running).
+
+Input: 32 configurations chosen with shuf (random source "yes 123"), listed in
+random32_configurations.txt, 1000 replicates each, read through symlinks to
+out/dataset/abm_system/. Outputs went to this folder only.
+
+Local projections, bin/abm_system_fit_lp_t188 --refit, 32,000 fits, run twice:
+6.484 s and 6.888 s wall. Scaled to 1000 configurations: about 3.5 minutes.
+
+t-QVARMA, bin/abm_system_fit_qvarma_t188, fresh fits from build_start, cap
+1,000,000 iterations, stopped by hand after 911 s. Fits written over time are in
+qvarma_t188_random32_progress.txt: 3105 at 300 s, 7872 at 901 s, so 7.9 fits per
+second between 300 s and 900 s and 8.7 per second over the whole 900 s.
+
+Of the 7953 fits written: 7034 converged, iterations mean 19,833, median 5198,
+99th percentile 218,258, 4 stopped at the 1,000,000 cap. 8 configurations
+finished, 1 partly, all others untouched when stopped.
+
+Scaled to 1,000,000 fits at 7.9 per second: about 35 hours, plus the
+cross-replicate restart pass at the end, which was not reached and not timed.
+The 15 minutes undercount the slowest fits, at most 16 of which were still in
+flight when the run was stopped, and the rate differs between configurations
+(between 13 and 22 fits per second from 630 s to 690 s, 4.5 to 7 per second
+over most of the rest), so 32 configurations are a rough sample of the 1000.
