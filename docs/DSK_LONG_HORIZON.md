@@ -13,7 +13,9 @@ upstream and how that is tested. Each section below that ends with
 the two bugs, the cost of rationing, and the growth of machine counts, money
 and real output, the last three handled by counting in bigger units. The
 growth of world emissions is not changed, so a run still overflows near period
-127,672.
+127,672. With all the changes, the longest run measured is 48,000 periods, a
+limit set by the memory of the machine it ran on; the section on memory near
+the end gives that machine and the run.
 
 ## How the failures were found
 
@@ -299,7 +301,8 @@ value goes through the standard formatter as before, so any output that was
 readable is byte-identical, which the equivalence tests against upstream
 confirm. Checked with `tests/dsk_max_horizon.c` at 14,000 periods, the same
 parameter file and seed: before the change 726 of the 14,000 rows did not split
-into 83 numbers, the first at period 13,273; after it all 14,000 do.
+into 83 numbers, the first at period 13,273; after it all 14,000 do, and so do
+all 48,000 of a 48,000-period run.
 
 ### World emissions grow by a fixed factor every year, forever
 
@@ -468,6 +471,46 @@ one int, allocated in `dsk_sfc_main.cpp` at the start of the run. With
 `N1 = 20` and `N2 = 200` that is 112 KB per period of horizon, 44.8 GB at
 `T = 400,200`. The measured peak resident memory grows by 0.108 MB per period of
 horizon between `T = 600` and `T = 4,800`, which agrees. The machine has 7.5 GB.
+
+### The longest run measured, and why it belongs to this machine
+
+The longest horizon run to the end is 48,000 periods, on the machine below. The
+limit is this machine's memory, not the model: the same build on a machine with
+more free memory can run longer, until it meets the next failure in this file
+that is not changed, world emissions overflowing near period 127,672. Nothing
+longer than 48,000 periods has been run on any machine.
+
+| | |
+|---|---|
+| processor | AMD Ryzen 7 4800H, 8 cores, 2 threads each, 1 socket |
+| memory | 7.5 GB (7,472,088 kB as the kernel reports it), plus a 512 MB swap file |
+| disk | NVMe SSD, WDC PC SN530, 512 GB |
+| system | EndeavourOS, Linux 6.19.14, GCC 15.2.1 |
+| build | the one `make model` produces |
+
+The run: `tests/dsk_max_horizon.c` with `T = 48,000`, which is
+`./bin/dsk_max_horizon 48000`. It uses the model's own parameter file
+`model/dsk_sfc/dsk_sfc_inputs.json` with only `T` changed, seed 1, and
+`-f 0 -c 0 -v 0`. It was one run, with nothing else of note running on the
+machine. The run passes when the model exits with status 0, writes all `T` rows,
+every row splits into 83 finite numbers, and the error log is empty.
+
+| T | memory free at the start | memory the horizon-sized arrays need | peak resident memory | wall time | result |
+|---:|---:|---:|---:|---:|---|
+| 40,000 | 5.71 GB | 4.48 GB | 4,338 MB | 245 s | passed |
+| 48,000 | 5.85 GB | 5.38 GB | 5,204 MB | 340 s | passed |
+
+In the 48,000 run, machines were rebased 127 times. Money was never
+redenominated and the unit of the good never changed, so neither change has
+been exercised on a long run. The time per period rose from 4.0 ms over the
+first 2,000 periods to 9.5 ms over the last 2,000. The full report is
+`out/tests/dsk_max_horizon.txt`.
+
+On another machine the ceiling is about the memory free at the start divided by
+112 KB. The test computes this before it starts and refuses a horizon whose
+arrays need more memory than the kernel reports as available. On this machine,
+5.85 GB free would allow about 52,000 periods, but no run between 48,000 and
+52,000 has been made.
 
 ### Time
 

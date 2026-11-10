@@ -32,6 +32,8 @@ out/old/lp_r_levels/lp_r_levels_reproduction/before/
 # kept.
 out/applications/abm_system_fit_qvarma_manifest.txt
 out/applications/abm_system_fit_lp_manifest.txt
+out/applications/abm_system_fit_qvarma_t*_manifest.txt
+out/applications/abm_system_fit_lp_t*_manifest.txt
 out/old/lp_r_levels/abm_system_fit_lp_r_levels_manifest.txt
 out/old/lp_r_levels/montecarlo/abm_system_fit_lp_manifest.txt
 out/applications/throughput_fit_i*_manifest.txt

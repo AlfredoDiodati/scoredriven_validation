@@ -1,43 +1,47 @@
-One run of 40000 periods, seed 1, the model's own parameter file.
+One run of 48000 periods, seed 1, the model's own parameter file.
 
-memory the horizon-sized arrays need: 4.48 GB
-memory available at the start: 5.71 GB
+memory the horizon-sized arrays need: 5.38 GB
+memory available at the start: 5.85 GB
 
-wall time: 245.2 s
-peak resident memory: 4337.7 MB
+wall time: 340.2 s
+peak resident memory: 5204.4 MB
 how it ended: exit status 0
-rows written: 40000 of 40000
-rows that split into 83 clean numbers: 40000
+rows written: 48000 of 48000
+rows that split into 83 clean numbers: 48000
 first row whose fields run together: none
 error log: 0 bytes
 first non-finite value: none
 first non-finite value in a pipeline column: none
 money redenominated: 0 times
-machines rebased: 103 times
+machines rebased: 127 times
 unit of the good: changed 0 times
 
 elapsed time by period reached, read from the results file once a second
-  period 2000: 8.0 s, 4.01 ms a period over the last 2000
-  period 4000: 12.0 s, 2.00 ms a period over the last 2000
-  period 6000: 19.0 s, 3.51 ms a period over the last 2000
-  period 8000: 24.0 s, 2.50 ms a period over the last 2000
-  period 10000: 32.1 s, 4.00 ms a period over the last 2000
-  period 12000: 43.1 s, 5.50 ms a period over the last 2000
-  period 14000: 55.1 s, 6.00 ms a period over the last 2000
-  period 16000: 67.1 s, 6.00 ms a period over the last 2000
-  period 18000: 79.1 s, 6.00 ms a period over the last 2000
-  period 20000: 92.1 s, 6.50 ms a period over the last 2000
-  period 22000: 105.1 s, 6.50 ms a period over the last 2000
-  period 24000: 118.1 s, 6.50 ms a period over the last 2000
-  period 26000: 133.1 s, 7.50 ms a period over the last 2000
-  period 28000: 147.1 s, 7.00 ms a period over the last 2000
-  period 30000: 162.1 s, 7.51 ms a period over the last 2000
-  period 32000: 177.2 s, 7.50 ms a period over the last 2000
-  period 34000: 193.2 s, 8.00 ms a period over the last 2000
-  period 36000: 209.2 s, 8.00 ms a period over the last 2000
-  period 38000: 226.2 s, 8.50 ms a period over the last 2000
-  period 40000: 244.2 s, 9.00 ms a period over the last 2000
+  period 2000: 8.0 s, 4.00 ms a period over the last 2000
+  period 4000: 13.0 s, 2.50 ms a period over the last 2000
+  period 6000: 19.0 s, 3.00 ms a period over the last 2000
+  period 8000: 25.0 s, 3.00 ms a period over the last 2000
+  period 10000: 34.0 s, 4.50 ms a period over the last 2000
+  period 12000: 45.0 s, 5.50 ms a period over the last 2000
+  period 14000: 59.1 s, 7.00 ms a period over the last 2000
+  period 16000: 73.1 s, 7.00 ms a period over the last 2000
+  period 18000: 85.1 s, 6.00 ms a period over the last 2000
+  period 20000: 100.1 s, 7.51 ms a period over the last 2000
+  period 22000: 115.1 s, 7.50 ms a period over the last 2000
+  period 24000: 129.1 s, 7.00 ms a period over the last 2000
+  period 26000: 144.1 s, 7.51 ms a period over the last 2000
+  period 28000: 160.1 s, 8.01 ms a period over the last 2000
+  period 30000: 176.1 s, 8.01 ms a period over the last 2000
+  period 32000: 192.1 s, 8.01 ms a period over the last 2000
+  period 34000: 209.2 s, 8.50 ms a period over the last 2000
+  period 36000: 227.2 s, 9.01 ms a period over the last 2000
+  period 38000: 246.2 s, 9.51 ms a period over the last 2000
+  period 40000: 265.2 s, 9.50 ms a period over the last 2000
+  period 42000: 282.2 s, 8.50 ms a period over the last 2000
+  period 44000: 301.2 s, 9.50 ms a period over the last 2000
+  period 46000: 321.2 s, 10.01 ms a period over the last 2000
+  period 48000: 340.2 s, 9.50 ms a period over the last 2000
 
-all 40000 periods written, finite and without errors
+all 48000 periods written, finite and without errors
 
 PASSED
