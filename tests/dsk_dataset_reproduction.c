@@ -57,7 +57,7 @@ Needs `make model`, `make model-upstream`, and out/dataset/abm_system.
 
 #include <et_al./frame/csv.h>
 #include <et_al./json.h>
-#include "tests/dsk_scratch.h"
+#include "tests/dsk_upstream_scratch.h"
 
 #define MODEL "model/dsk_sfc/dsk_SFC"
 #define UPSTREAM "bin/dsk_SFC_upstream"
@@ -91,19 +91,7 @@ typedef struct {
     Mat series;              /* the five series this run produces */
 } Pair;
 
-static void make_directory(const char *path) {
-    if (mkdir(path, 0755) != 0) assert(errno == EEXIST && "dsk_dataset_reproduction: mkdir failed");
-}
-
 static int file_exists(const char *path) { return access(path, F_OK) == 0; }
-
-static void link_build(const char *dir, const char *binary) {
-    make_directory(dir);
-    char link[512];
-    snprintf(link, sizeof link, "%s/dsk_SFC", dir);
-    unlink(link);
-    assert(symlink(binary, link) == 0 && "dsk_dataset_reproduction: cannot link a build into place");
-}
 
 static void write_inputs(const char *base_json, const char *path, const Mat *parameter, int design_row) {
     JsonValue *inputs = json_parse_file(base_json);
@@ -193,23 +181,11 @@ int main(int argc, char **argv) {
     for (int p = 0; p < ABM_SYSTEM_N_PARAMETERS; p++)
         parameter[p] = df_col_numeric(&design, abm_system_parameter_names()[p]);
 
-    const char *scratch = getenv("TMPDIR");
-    if (!scratch) scratch = "/tmp";
-
     /* Short directory names: upstream builds every output filename in a
        64-byte buffer, which a long path overruns. */
     char root[128];
-    snprintf(root, sizeof root, "%s/d%d", scratch, (int)getpid());
-    make_directory(root);
-
     const int threads = omp_get_max_threads();
-    for (int k = 0; k < threads; k++) {
-        char dir[192];
-        snprintf(dir, sizeof dir, "%s/m%d", root, k);
-        link_build(dir, model);
-        snprintf(dir, sizeof dir, "%s/u%d", root, k);
-        link_build(dir, upstream);
-    }
+    dsk_scratch_open_threads(root, sizeof root, "d", base_json, RUN_NAME, upstream, model, threads);
 
     const int stride = design.r / configurations > 0 ? design.r / configurations : 1;
     const int n_pairs = configurations * replications;
@@ -240,8 +216,8 @@ int main(int argc, char **argv) {
 
         char json_path[256], mine[192], theirs[192];
         snprintf(json_path, sizeof json_path, "%s/c%d.json", root, pair[k].cop);
-        snprintf(mine, sizeof mine, "%s/m%d", root, thread);
-        snprintf(theirs, sizeof theirs, "%s/u%d", root, thread);
+        snprintf(mine, sizeof mine, "%s/m%02d", root, thread);
+        snprintf(theirs, sizeof theirs, "%s/u%02d", root, thread);
 
         int my_status = run_build(mine, json_path, seed);
         int their_status = run_build(theirs, json_path, seed);

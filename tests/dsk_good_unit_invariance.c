@@ -176,8 +176,7 @@ int main(int argc, char **argv) {
            "dsk_good_unit_invariance: model/dsk_sfc/dsk_SFC is not built - run make model");
     assert(realpath(INPUTS, inputs) && "dsk_good_unit_invariance: the parameter file is missing");
 
-    const char *scratch = getenv("TMPDIR");
-    if (!scratch) scratch = "/tmp";
+    const char *scratch = dsk_scratch_root();
 
     char root[512], plain_dir[640], scaled_dir[640];
     snprintf(root, sizeof root, "%s/dsk_good_unit_%d", scratch, (int)getpid());

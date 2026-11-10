@@ -3,10 +3,15 @@
 #include "dsk_sfc_redenomination.h"
 #include "dsk_sfc_machine_lots.h"
 #include "dsk_sfc_good_unit.h"
+#include "dsk_sfc_wide_values.h"
 using namespace std;
 
 int main(int argc, char *argv[])
 {
+  //Values too large for their output column are written in scientific notation
+  //rather than against the previous value; dsk_sfc_wide_values.h explains.
+  INSTALL_WIDE_VALUE_FORMAT();
+
   //Command line parser
   CLI::App app{"DSK_SFC, the Dystopian Schumpeter meeting Keynes Stock Flow Consistent model"};
 

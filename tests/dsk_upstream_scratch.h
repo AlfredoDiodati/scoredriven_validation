@@ -84,11 +84,10 @@ static int dsk_scratch_writes(const char *dir, const char *inputs, const char *r
 
 /* Two sibling directories with the two builds linked into them, at a name
    length upstream tolerates. */
-static DskScratch dsk_scratch_open(const char *tag, const char *run_name, const char *inputs,
+static inline DskScratch dsk_scratch_open(const char *tag, const char *run_name, const char *inputs,
                                    const char *upstream_binary, const char *modified_binary,
                                    int n_seeds) {
-    const char *scratch = getenv("TMPDIR");
-    if (!scratch) scratch = "/tmp";
+    const char *scratch = dsk_scratch_root();
 
     int digits = 1;
     for (int seed = n_seeds; seed >= 10; seed /= 10) digits++;
@@ -134,8 +133,45 @@ static DskScratch dsk_scratch_open(const char *tag, const char *run_name, const 
 
 /* Call once, on the way out, with the test's own verdict: the directory goes
    when the test passed and stays when it did not. */
-static void dsk_scratch_close(const DskScratch *scratch, int passed) {
+static inline void dsk_scratch_close(const DskScratch *scratch, int passed) {
     dsk_scratch_finish(scratch->root, passed);
+}
+
+/* For tests that run the two builds on many threads at once: a root directory
+   holding m00, m01, ... linked to the modified build and u00, u01, ... linked
+   to upstream, one pair per thread. Every subdirectory name has the same
+   length, so one run of upstream in u00 tells whether all of them let it
+   write, and the root is lengthened one character at a time until they do. */
+static inline void dsk_scratch_open_threads(char *root, size_t room, const char *tag, const char *inputs,
+                                     const char *run_name, const char *upstream_binary,
+                                     const char *modified_binary, int threads) {
+    assert(threads >= 1 && threads <= 100 && "dsk scratch: thread directories are numbered 00 to 99");
+    const char *scratch = dsk_scratch_root();
+
+    for (int pad = 0; pad < DSK_SCRATCH_ATTEMPTS; pad++) {
+        char suffix[DSK_SCRATCH_ATTEMPTS + 1];
+        for (int k = 0; k < pad; k++) suffix[k] = 'x';
+        suffix[pad] = '\0';
+
+        int written = snprintf(root, room, "%s/%s%s%d", scratch, tag, suffix, (int)getpid());
+        assert(written > 0 && (size_t)written < room && "dsk scratch: root does not fit");
+        dsk_scratch_mkdir(root);
+
+        char dir[320];
+        snprintf(dir, sizeof dir, "%s/u00", root);
+        dsk_scratch_link(dir, upstream_binary);
+        if (dsk_scratch_writes(dir, inputs, run_name)) {
+            for (int k = 0; k < threads; k++) {
+                snprintf(dir, sizeof dir, "%s/u%02d", root, k);
+                dsk_scratch_link(dir, upstream_binary);
+                snprintf(dir, sizeof dir, "%s/m%02d", root, k);
+                dsk_scratch_link(dir, modified_binary);
+            }
+            return;
+        }
+        dsk_scratch_remove(root);
+    }
+    assert(0 && "dsk scratch: no scratch path of any length let the upstream build write its output");
 }
 
 #endif

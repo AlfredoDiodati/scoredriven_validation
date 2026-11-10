@@ -128,11 +128,17 @@ static void append_line(const char *path, const char *line) {
     fclose(f);
 }
 
+/* Scratch directories live inside the repository, like every other output. The
+   path is relative and the directory name short because DSK_EXECUTABLE may name
+   the upstream build, which stores every output filename in a 64-byte buffer:
+   out/applications/s<pid>/output/errors/Errors_cop0001_1000.txt is 62
+   characters. */
+#define SCRATCH_ROOT "out/applications"
+
 static const char *scratch_root(void) {
-    const char *root = getenv("SLURM_TMPDIR");
-    if (!root) root = getenv("TMPDIR");
-    if (!root) root = "/tmp";
-    return root;
+    make_directory("out");
+    make_directory(SCRATCH_ROOT);
+    return SCRATCH_ROOT;
 }
 
 /* The model's parameter file for one design row: the baseline with the nine
@@ -221,7 +227,7 @@ int main(int argc, char **argv) {
     for (int p = 0; p < ABM_SYSTEM_N_PARAMETERS; p++) parameter[p] = df_col_numeric(&design, abm_system_parameter_names()[p]);
 
     char scratch[256];
-    snprintf(scratch, sizeof scratch, "%s/dsk_%d", scratch_root(), (int)getpid());
+    snprintf(scratch, sizeof scratch, "%s/s%d", scratch_root(), (int)getpid());
     make_directory(scratch);
 
     char local_exe[512];

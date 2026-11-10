@@ -130,7 +130,7 @@ START_EPOCH=$(date +%s)
   echo "design           $DESIGN  md5 $design_md5"
   echo "base parameters  model/dsk_sfc/dsk_sfc_inputs.json  md5 $(md5sum model/dsk_sfc/dsk_sfc_inputs.json | cut -d' ' -f1)"
   echo "host             $(uname -srm), $(nproc) hardware threads"
-  echo "scratch          ${SLURM_TMPDIR:-${TMPDIR:-/tmp}}"
+  echo "scratch          out/applications/s<pid>, one per shard"
   echo
   echo "shard ranges"
 } > "$STAMP"

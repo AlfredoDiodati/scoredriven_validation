@@ -3,6 +3,7 @@
 # stays tracked is source, documentation and the human-readable results: .txt
 # reports, .tex tables and .md notes. A data file that should be kept anyway is
 # either listed as an exception at the bottom or added with git add -f.
+*.txt
 *.csv
 *.gz
 *.zip
@@ -51,8 +52,15 @@ core
 vgcore.*
 nohup.out
 .claude/
+.claude-tmp/
 .DS_Store
 _temp/
+
+# Where the tests and the simulation drivers run the model. Removed when a run
+# succeeds, kept for inspection when it fails.
+out/tests/*/
+out/applications/s[0-9]*/
+out/applications/mi[0-9]*/
 
 # R notebooks, except the brief the simulation workflow was derived from.
 *.Rmd

@@ -67,6 +67,10 @@
 
 CC ?= gcc
 CFLAGS ?= -O2 -march=native -Wall -Wextra -std=c11
+# The compiler and everything else make starts keep their temporary files in
+# bin/tmp, inside the repository, instead of /tmp.
+export TMPDIR := $(CURDIR)/bin/tmp
+$(shell mkdir -p $(TMPDIR))
 ETAL_CFLAGS := $(shell pkg-config --cflags et_al.-core)
 ETAL_LIBS := $(shell pkg-config --libs et_al.-core)
 # et_al.'s own -I covers <et_al./...> and the bare <frame/...> spellings. The
@@ -94,7 +98,9 @@ endif
 # own beyond the two under applications/ that describe its own data. A rebuild
 # on an et_al. change is already covered by ETAL_INSTALLED_HEADERS above.
 HEADERS :=
-TEST_HEADERS :=
+# The tests' own shared headers: where every DSK test runs the model, so a
+# change there has to rebuild every test.
+TEST_HEADERS := tests/dsk_scratch.h tests/dsk_upstream_scratch.h
 # The laws and their fits live in one header, so editing it has to rebuild
 # the test that checks them and the study that uses them. The generic rules
 # below know about tests/ and studies/ sources only.
@@ -118,7 +124,7 @@ TEST_STEMS := abm_system_layout abm_system_dataset_finiteness dsk_long_path \
                dsk_build_equivalence \
                dsk_full_output_equivalence dsk_design_equivalence \
                dsk_memory_safety dsk_ulp_sensitivity dsk_redenomination_invariance \
-               dsk_machine_lot_rebase dsk_good_unit_invariance \
+               dsk_machine_lot_rebase dsk_good_unit_invariance dsk_max_horizon \
                dsk_dataset_reproduction dsk_tail_replicate_reproduction \
                marginal_laws_correctness lp_system_transform recovery_loss_correctness \
                own_deviation_loss_correctness
@@ -141,7 +147,7 @@ STUDY_STEMS := qvarma_stuck_fits qvarma_conditioning qvarma_convergence_criteria
                abm_system_tail_origin \
                abm_system_gaussian_convergence abm_system_micro_clt \
                abm_system_stable_tails abm_system_marginal_fit \
-               abm_system_garch_effect
+               abm_system_garch_effect lp_response_persistence
 # us_prepare_data has to come first: it is the only script that reads
 # us_real.csv's Unemployment and Des_Energy_demand columns, and it writes
 # out/applications/us_system.csv, which us_data.h reads back. The order here is
@@ -668,6 +674,7 @@ test-dsk_ulp_sensitivity: model
 test-dsk_redenomination_invariance: model
 test-dsk_machine_lot_rebase: model
 test-dsk_good_unit_invariance: model
+test-dsk_max_horizon: model
 test-dsk_dataset_reproduction: model model-upstream
 test-dsk_tail_replicate_reproduction: model model-upstream
 

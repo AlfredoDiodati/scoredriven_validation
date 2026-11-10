@@ -1,8 +1,10 @@
 /*
-Removing the scratch directory a DSK test ran in, and only when it passed.
+Where a DSK test runs the simulator, and removing that directory only when the
+test passed.
 
-Every test that runs the simulator gives it a directory of its own under TMPDIR,
-because the model writes its output beside the executable it was invoked as and
+Every test that runs the simulator gives it a directory of its own under
+DSK_SCRATCH_ROOT, inside the repository, because the model writes its output
+beside the executable it was invoked as and
 two tests sharing a directory would read each other's files. A 600-period run
 writes about 3 MB, a -f 1 run twelve files and 28 MB, and several of these tests
 run the model tens of times, so the directories are not small and one per test
@@ -15,9 +17,13 @@ directory is and stops touching it; the next passing run of that test does not
 clean it up either, since the path carries the process id and belongs to the run
 that made it.
 
-Nothing here runs a shell. The paths involved come from TMPDIR, and building a
-command string out of an environment variable is a way to execute whatever
-happens to be in it.
+The root is a path relative to the repository, which every test is run from, and
+not TMPDIR or /tmp: nothing a test writes leaves the repository. Relative also
+keeps the names short. The upstream build stores every output filename in a
+64-byte buffer, and the repository's absolute path is 56 characters on its own,
+so an absolute root would leave upstream no room to write anything.
+
+Nothing here runs a shell, so no path is ever interpreted as a command.
 */
 
 #ifndef DSK_SCRATCH_H
@@ -30,7 +36,19 @@ happens to be in it.
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
+#include <assert.h>
 #include <ftw.h>
+#include <sys/stat.h>
+
+#define DSK_SCRATCH_ROOT "out/tests"
+
+/* The directory every test's scratch directory goes in, created if missing. */
+static const char *dsk_scratch_root(void) {
+    if (mkdir("out", 0755) != 0) assert(errno == EEXIST && "dsk scratch: cannot create out/");
+    if (mkdir(DSK_SCRATCH_ROOT, 0755) != 0) assert(errno == EEXIST && "dsk scratch: cannot create the root");
+    return DSK_SCRATCH_ROOT;
+}
 
 /* Enough open descriptors for nftw to walk without reopening, few enough that
    a test running several of these at once cannot run out. */

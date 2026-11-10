@@ -65,6 +65,7 @@ copy of the source. None of that instrumentation is in
 | 2,788 | the run stops advancing and never exits | bug, upstream's |
 | 8,889 | the run appears to stop; one loop has hundreds of millions of steps to do | cost that grows with the economy |
 | 12,908 | the run stops advancing and never exits | machine counts past what a double counts exactly |
+| 13,273 | nominal GDP fills its 60-character output column and runs into the previous value | output format |
 | about 127,700 | world emissions overflow to infinity | property of the model |
 | about 142,800 | the price level overflows to infinity | property of the model |
 
@@ -272,6 +273,33 @@ there on is the process: mean growth of real GDP and of the price level over
 the following 1,600 periods agree within half a standard error.
 
 With this, a run reaches period 14,000, past the 12,908 where it used to stop.
+
+### Values too wide for their output column
+
+`SAVE()` writes each value of the results file right-aligned in 60 characters,
+fixed point, ten decimals, and the padding is the only thing separating one
+value from the next. A value of 1e49 or more has 49 digits before the decimal
+point, fills the 60 characters, and is written against the previous value with
+no space between them. On the model's own parameter file, seed 1, that first
+happens at period 13,273, when nominal GDP (column 39) passes 1e49 and runs
+into column 38. Read back, the two become one malformed number, or two wrong
+ones when the reader splits them at the second decimal point. The run itself is
+unaffected: it continued to period 48,000 with exit status 0 and an empty error
+log, but from period 13,273 its results file could not be read.
+
+Money is redenominated only once the wage passes 2^512, about 1e154, so the
+redenomination never comes near this.
+
+**Changed.** `model/dsk_sfc/dsk_sfc_wide_values.h` installs a number formatter
+as the global locale at the top of `main`, so every file stream the model opens
+uses it and no write is touched. A value whose fixed-point form would fill its
+column is written instead in scientific notation with 17 significant digits,
+enough to give back the same double, after at least one space. Every other
+value goes through the standard formatter as before, so any output that was
+readable is byte-identical, which the equivalence tests against upstream
+confirm. Checked with `tests/dsk_max_horizon.c` at 14,000 periods, the same
+parameter file and seed: before the change 726 of the 14,000 rows did not split
+into 83 numbers, the first at period 13,273; after it all 14,000 do.
 
 ### World emissions grow by a fixed factor every year, forever
 

@@ -1,4 +1,4 @@
-Finiteness and completeness of dataset/abm_system
+Finiteness and completeness of out/dataset/abm_system
 
 configurations cop_0001 .. cop_1000, 1000 replications each, 5 series x 400 periods
 

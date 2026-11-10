@@ -166,8 +166,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    const char *scratch = getenv("TMPDIR");
-    if (!scratch) scratch = "/tmp";
+    const char *scratch = dsk_scratch_root();
 
     char root[512], sanitized_dir[640], ordinary_dir[640], point_json[720];
     snprintf(root, sizeof root, "%s/dsk_safety_%d", scratch, (int)getpid());

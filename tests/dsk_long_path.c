@@ -98,8 +98,7 @@ int main(void) {
     char inputs[PATH_MAX];
     assert(realpath(INPUTS, inputs) && "dsk_long_path: the model's own inputs JSON is missing");
 
-    const char *scratch = getenv("TMPDIR");
-    if (!scratch) scratch = "/tmp";
+    const char *scratch = dsk_scratch_root();
 
     char root[512], short_dir[640], long_dir[1024];
     snprintf(root, sizeof root, "%s/dsk_long_path_%d", scratch, (int)getpid());

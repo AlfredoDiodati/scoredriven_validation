@@ -165,8 +165,7 @@ int main(void) {
            "dsk_machine_lot_rebase: model/dsk_sfc/dsk_SFC is not built - run make model");
     assert(realpath(INPUTS, inputs) && "dsk_machine_lot_rebase: the parameter file is missing");
 
-    const char *scratch = getenv("TMPDIR");
-    if (!scratch) scratch = "/tmp";
+    const char *scratch = dsk_scratch_root();
 
     char root[512], dir[640];
     snprintf(root, sizeof root, "%s/dsk_machine_lots_%d", scratch, (int)getpid());

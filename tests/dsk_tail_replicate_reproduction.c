@@ -89,7 +89,7 @@ out/tests/dsk_tail_replicate_reproduction.txt; the archives are only read.
 
 #include <et_al./frame/csv.h>
 #include <et_al./json.h>
-#include "tests/dsk_scratch.h"
+#include "tests/dsk_upstream_scratch.h"
 
 #define MODEL "model/dsk_sfc/dsk_SFC"
 #define UPSTREAM "bin/dsk_SFC_upstream"
@@ -135,21 +135,7 @@ typedef struct {
     Mat series;              /* the five series this run produces */
 } Comparison;
 
-static void make_directory(const char *path) {
-    if (mkdir(path, 0755) != 0)
-        assert(errno == EEXIST && "dsk_tail_replicate_reproduction: mkdir failed");
-}
-
 static int file_exists(const char *path) { return access(path, F_OK) == 0; }
-
-static void link_build(const char *dir, const char *binary) {
-    make_directory(dir);
-    char link[512];
-    snprintf(link, sizeof link, "%s/dsk_SFC", dir);
-    unlink(link);
-    assert(symlink(binary, link) == 0 &&
-           "dsk_tail_replicate_reproduction: cannot link a build into place");
-}
 
 /* Excess kurtosis m4 / m2^2 - 3 and the largest absolute deviation from the
    mean in standard deviations, of one series of n values. Both are NAN when
@@ -462,23 +448,11 @@ int main(int argc, char **argv) {
         kurtosis_quantile[q] = tail[index].heaviest_kurtosis;
     }
 
-    const char *scratch_root = getenv("TMPDIR");
-    if (!scratch_root) scratch_root = "/tmp";
-
     /* Short directory names: upstream builds every output filename in a
        64-byte buffer, which a long path overruns. */
     char root[128];
-    snprintf(root, sizeof root, "%s/t%d", scratch_root, (int)getpid());
-    make_directory(root);
-
     const int threads = omp_get_max_threads();
-    for (int k = 0; k < threads; k++) {
-        char dir[192];
-        snprintf(dir, sizeof dir, "%s/m%d", root, k);
-        link_build(dir, model);
-        snprintf(dir, sizeof dir, "%s/u%d", root, k);
-        link_build(dir, upstream);
-    }
+    dsk_scratch_open_threads(root, sizeof root, "t", base_json, RUN_NAME, upstream, model, threads);
 
     /* One parameter file per configuration the selection reaches, written
        once even when several of its replicates were chosen. */
@@ -501,8 +475,8 @@ int main(int argc, char **argv) {
 
         char json_path[256], mine[192], theirs[192];
         snprintf(json_path, sizeof json_path, "%s/c%d.json", root, chosen[k].tail.configuration);
-        snprintf(mine, sizeof mine, "%s/m%d", root, thread);
-        snprintf(theirs, sizeof theirs, "%s/u%d", root, thread);
+        snprintf(mine, sizeof mine, "%s/m%02d", root, thread);
+        snprintf(theirs, sizeof theirs, "%s/u%02d", root, thread);
 
         int my_status = run_build(mine, json_path, seed);
         int their_status = run_build(theirs, json_path, seed);

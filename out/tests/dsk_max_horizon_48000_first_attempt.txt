@@ -1,0 +1,45 @@
+One run of 48000 periods, seed 1, the model's own parameter file.
+
+memory the horizon-sized arrays need: 5.38 GB
+memory available at the start: 5.94 GB
+
+wall time: 336.2 s
+peak resident memory: 5204.3 MB
+how it ended: exit status 0
+rows written: 47927 of 48000
+error log: 0 bytes
+first non-finite value: none
+first non-finite value in a pipeline column: none
+money redenominated: 0 times
+machines rebased: 127 times
+unit of the good: changed 0 times
+
+elapsed time by period reached, read from the results file once a second
+  period 2000: 7.0 s, 3.50 ms a period over the last 2000
+  period 4000: 12.0 s, 2.50 ms a period over the last 2000
+  period 6000: 18.0 s, 3.00 ms a period over the last 2000
+  period 8000: 24.0 s, 3.00 ms a period over the last 2000
+  period 10000: 33.0 s, 4.50 ms a period over the last 2000
+  period 12000: 44.0 s, 5.50 ms a period over the last 2000
+  period 14000: 58.1 s, 7.00 ms a period over the last 2000
+  period 16000: 71.1 s, 6.50 ms a period over the last 2000
+  period 18000: 83.1 s, 6.00 ms a period over the last 2000
+  period 20000: 98.1 s, 7.51 ms a period over the last 2000
+  period 22000: 112.1 s, 7.00 ms a period over the last 2000
+  period 24000: 126.1 s, 7.01 ms a period over the last 2000
+  period 26000: 142.1 s, 8.01 ms a period over the last 2000
+  period 28000: 158.1 s, 8.01 ms a period over the last 2000
+  period 30000: 173.1 s, 7.50 ms a period over the last 2000
+  period 32000: 189.1 s, 8.01 ms a period over the last 2000
+  period 34000: 207.2 s, 9.01 ms a period over the last 2000
+  period 36000: 223.2 s, 8.01 ms a period over the last 2000
+  period 38000: 242.2 s, 9.51 ms a period over the last 2000
+  period 40000: 262.2 s, 10.01 ms a period over the last 2000
+  period 42000: 278.2 s, 8.01 ms a period over the last 2000
+  period 44000: 297.2 s, 9.51 ms a period over the last 2000
+  period 46000: 317.2 s, 10.01 ms a period over the last 2000
+  period 48000: 336.2 s, 9.51 ms a period over the last 2000
+
+the run wrote 47927 of 48000 rows  FAILED
+
+FAILED

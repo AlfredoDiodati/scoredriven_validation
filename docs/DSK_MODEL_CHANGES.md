@@ -24,7 +24,7 @@ tree is removed on the way out.
 `build.sh` shows the compiler's output, so a translation unit that fails to
 compile is named rather than surfacing as an undefined reference at the link.
 `dsk_sfc_main.cpp` is compiled with `-Wall`, since that is the unit including
-the six new headers; `newmat10`, `rapidjson` and the modules are upstream's and
+the seven new headers; `newmat10`, `rapidjson` and the modules are upstream's and
 are compiled as upstream wrote them. The warnings this leaves are all
 upstream's, mostly unused variables in the `GENFILE*` functions, and none is in
 the new headers.
@@ -43,6 +43,7 @@ the new headers.
     make test-dsk_redenomination_invariance changing the unit money is counted in changes nothing else
     make test-dsk_machine_lot_rebase        counting machines in bigger lots leaves the economy where it was
     make test-dsk_good_unit_invariance      counting the good in a bigger unit changes nothing else
+    make test-dsk_max_horizon               one long run completes and its results file reads back as numbers
     make test-dsk_dataset_reproduction      the same output as the authors' build and as the experiment's archives
     make test-dsk_tail_replicate_reproduction
                                             the same on the replicates whose tails the study of the tails reads
@@ -1047,10 +1048,12 @@ files per seed, and `tests/dsk_build_equivalence.c` reads it as well.
 
 **Each test runs the model in a directory of its own.** The model writes beside
 the executable it was invoked as, so two tests sharing a directory would read
-each other's files. Each test makes a directory under `TMPDIR` named after the
-test and its process id. `tests/dsk_scratch.h` removes it when the test passes,
+each other's files. Each test makes a directory under `out/tests/` named after
+the test and its process id, a path relative to the repository so that nothing
+a test writes leaves it and the names stay inside the 64 bytes upstream allows.
+`tests/dsk_scratch.h` removes it when the test passes,
 by walking it with `nftw` under `FTW_DEPTH | FTW_PHYS` rather than calling a
-shell: the path comes from an environment variable, and `FTW_PHYS` keeps the
+shell, so no path is ever run as a command, and `FTW_PHYS` keeps the
 walk from following the `dsk_SFC` symlink out of the scratch directory into
 this repository. A failing test keeps its directory, which holds the two files
 that differ, and prints its path.

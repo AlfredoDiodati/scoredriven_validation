@@ -116,12 +116,13 @@ int main(void) {
 
     make_directory(OUTPUT_DIR);
 
-    const char *scratch = getenv("TMPDIR");
-    if (!scratch) scratch = "/tmp";
-
-    /* Short directory name: upstream builds every output filename in a 64-byte
-       buffer, and this build runs in the same places as the tests that check
-       against it. */
+    /* The scratch directory is inside the repository, like every other output,
+       and relative with a short name: upstream builds every output filename in
+       a 64-byte buffer, and this build runs in the same places as the tests
+       that check against it. */
+    const char *scratch = "out/applications";
+    make_directory("out");
+    make_directory(scratch);
     char root[128];
     snprintf(root, sizeof root, "%s/mi%d", scratch, (int)getpid());
     make_directory(root);

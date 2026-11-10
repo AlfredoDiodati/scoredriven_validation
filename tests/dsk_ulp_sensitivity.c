@@ -144,8 +144,7 @@ int main(int argc, char **argv) {
     assert(realpath(MODEL, model) && "dsk_ulp_sensitivity: model/dsk_sfc/dsk_SFC is not built - run make model");
     assert(realpath(INPUTS, base_json) && "dsk_ulp_sensitivity: the model's own inputs JSON is missing");
 
-    const char *scratch = getenv("TMPDIR");
-    if (!scratch) scratch = "/tmp";
+    const char *scratch = dsk_scratch_root();
 
     char root[512], dir[640], json_base[720], json_test[720], link[800];
     snprintf(root, sizeof root, "%s/dsk_ulp_%d", scratch, (int)getpid());

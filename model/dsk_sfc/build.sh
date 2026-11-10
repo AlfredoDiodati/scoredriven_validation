@@ -38,8 +38,12 @@ output="$PWD/dsk_SFC"
 # translation units this project wrote or rewrote rather than on all of them.
 common="-fno-math-errno -msse -ffp-contract=off"
 flags="-O2 -flto=$(nproc) $common"
-# The scratch tree --upstream builds in, removed by the one trap installed
-# below. Empty for the other two modes.
+# Temporary build trees go in the repository's bin/, which make rebuilds and
+# git ignores, never in /tmp. Each one is removed by the one trap installed
+# below.
+build_root="$(cd ../.. && pwd)/bin/dsk_build"
+mkdir -p "$build_root"
+# The scratch tree --upstream builds in. Empty for the other two modes.
 scratch_source=""
 
 if [ "$1" = "--upstream" ]; then
@@ -51,7 +55,7 @@ if [ "$1" = "--upstream" ]; then
     # What CMAKE_BUILD_TYPE Debug and the project's own two flags amount to:
     # no optimisation at all.
     flags="-g $common"
-    scratch_source="$(mktemp -d)"
+    scratch_source="$(mktemp -d "$build_root/upstream.XXXXXX")"
     source_dir="$scratch_source"
     cp -a "$PWD/." "$source_dir/"
     cp "$PWD/upstream/dsk_sfc_main.cpp" "$PWD/upstream/dsk_sfc_globalvars.h" "$source_dir/"
@@ -71,7 +75,9 @@ if [ "$1" = "--sanitize" ]; then
     flags="-fsanitize=address,undefined -fno-omit-frame-pointer -g -O1 $common"
 fi
 
-obj="$(mktemp -d)"
+obj="$(mktemp -d "$build_root/obj.XXXXXX")"
+# The compiler keeps its own temporary files with the object files.
+export TMPDIR="$obj"
 trap 'rm -rf "$obj" ${scratch_source:+"$scratch_source"}' EXIT
 
 cd "$source_dir"
