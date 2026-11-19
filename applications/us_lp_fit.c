@@ -23,9 +23,18 @@ these series, and fits again otherwise.
 - ./bin/us_lp_fit fits unless stored.
 - ./bin/us_lp_fit --refit fits and overwrites.
 
+The state weight is lpirfs' by default, the two-sided HP cycle at lambda 1600.
+--causal-hp and --estimate-lambda change it, alone or together, exactly as in
+applications/abm_system_fit_lp.c, so the US data are fitted under each of the
+four weights the simulated replicates are (applications/lp_system.h,
+LpSystemStateWeight). Under --estimate-lambda the lambda is the maximum
+likelihood estimate on the US switching series itself.
+
 Writes out/applications/us_lp_fit.npz, out/applications/us_lp_fit.txt (the data,
 the settings and the fit notes) and out/applications/us_lp_fit_irf.csv (every
-response: model, response, horizon, shock, value). Nothing printed.
+response: model, response, horizon, shock, value). Under another weight every
+name carries the weight's suffix before the extension, so
+out/applications/us_lp_fit_causal_hp.npz for --causal-hp. Nothing printed.
 */
 
 #include "us_data.h"
@@ -39,12 +48,15 @@ static const char *const growth_name[LP_SYSTEM_K] = {
 };
 
 int main(int argc, char **argv) {
-    int force_refit = lp_parse_refit(argc, argv);
+    int force_refit;
+    LpSystemStateWeight weight = lp_parse_state_weight(argc, argv, &force_refit);
     openblas_set_num_threads(1);
     const char *const *series_name = growth_name;
-    const char *archive_path = "out/applications/us_lp_fit.npz";
-    const char *report_path = "out/applications/us_lp_fit.txt";
-    const char *irf_path = "out/applications/us_lp_fit_irf.csv";
+    const char *suffix = lp_system_state_weight_suffix(weight);
+    char archive_path[256], report_path[256], irf_path[256];
+    snprintf(archive_path, sizeof archive_path, "out/applications/us_lp_fit%s.npz", suffix);
+    snprintf(report_path, sizeof report_path, "out/applications/us_lp_fit%s.txt", suffix);
+    snprintf(irf_path, sizeof irf_path, "out/applications/us_lp_fit%s_irf.csv", suffix);
 
     Mat original = load_us_system();
     Mat stored = us_system_growth_block(original);
@@ -53,16 +65,14 @@ int main(int argc, char **argv) {
     LpNlSpec spec = lp_system_spec();
 
     int count = 0;
-    LpSystemRecord *record = force_refit ? NULL : lp_system_read_archive(archive_path, spec, &count);
+    LpSystemRecord *record = force_refit ? NULL : lp_system_read_weighted_archive(archive_path, spec, weight, &count);
     int loaded = record && count == 1 && lp_system_record_matches(&record[0], y, switching);
     if (!loaded) {
         free(record);
         record = malloc(sizeof(LpSystemRecord));
         assert(record && "us_lp_fit: out of memory");
-        LpLinNlFit fit = lp_lin_and_nl(y, switching, spec, (LpBands){0});
-        record[0] = lp_system_record(&fit, y, switching, 0);
-        lp_lin_nl_fit_free(&fit);
-        lp_system_write_archive(archive_path, record, 1, spec);
+        record[0] = lp_system_fit_record(y, switching, spec, weight, 0);
+        lp_system_write_weighted_archive(archive_path, record, 1, spec, weight);
     }
     const LpSystemRecord *r = &record[0];
 
@@ -74,8 +84,15 @@ int main(int argc, char **argv) {
             LP_SYSTEM_SERIES_DESCRIPTION, y.c);
     fprintf(report, "state series: R's 4-period moving average of 100 log(100 + cumsum(GDP_growth))\n");
     fprintf(report, "spec: lags %d, horizons 0 to %d, unit shocks, HP lambda %g, logistic gamma %g, "
-                    "switching lagged %d period\n", spec.lin.lags_endog_lin, spec.lin.hor, spec.lambda,
+                    "switching lagged %d period\n", spec.lin.lags_endog_lin, spec.lin.hor, r->lambda,
             spec.gamma, spec.lag_switching);
+    fprintf(report, "state weight: %s\n", lp_system_state_weight_description(weight));
+    if (weight.estimate_lambda)
+        fprintf(report, "lambda search (hp_estimate: log q in [%g, %g], xatol %g, at most %d evaluations): "
+                        "converged %d, ended at a bound of the interval %d\n",
+                weight.lambda_options.log_q_lower, weight.lambda_options.log_q_upper,
+                weight.lambda_options.xatol, weight.lambda_options.max_evaluations,
+                r->lambda_is_converged, r->lambda_at_bound);
     fprintf(report, "%s %s\n\n", loaded ? "loaded, fitted on these data under this spec, from"
                                         : "fitted in this run and written to", archive_path);
     fprintf(report, "responses: %s\n", r->has_responses ? "yes" : "NO, the VAR behind the shocks failed");

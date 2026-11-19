@@ -105,20 +105,6 @@ after it. Nothing printed.
 static const char *INPUT_DIR;
 static const char *OUTPUT_DIR;
 
-/* --refit, --causal-hp and --estimate-lambda, in any order. Anything else is a
-   caller's mistake. */
-static LpSystemStateWeight parse_arguments(int argc, char **argv, int *force_refit) {
-    int causal_hp = 0, estimate_lambda = 0;
-    *force_refit = 0;
-    for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "--refit") == 0) *force_refit = 1;
-        else if (strcmp(argv[i], "--causal-hp") == 0) causal_hp = 1;
-        else if (strcmp(argv[i], "--estimate-lambda") == 0) estimate_lambda = 1;
-        else assert(0 && "abm_system_fit_lp: unknown flag; the flags are --refit, --causal-hp, --estimate-lambda");
-    }
-    return lp_system_state_weight(causal_hp, estimate_lambda);
-}
-
 static void make_directory(const char *path) {
     if (mkdir(path, 0755) != 0) assert(errno == EEXIST && "abm_system_fit_lp: mkdir failed");
 }
@@ -260,7 +246,7 @@ static Summary summarise(const LpSystemRecord *r) {
 
 int main(int argc, char **argv) {
     int force_refit;
-    LpSystemStateWeight weight = parse_arguments(argc, argv, &force_refit);
+    LpSystemStateWeight weight = lp_parse_state_weight(argc, argv, &force_refit);
 
     INPUT_DIR = getenv("ABM_SYSTEM_INPUT_DIR");
     if (!INPUT_DIR) INPUT_DIR = INPUT_DIR_DEFAULT;

@@ -663,6 +663,15 @@ $(foreach weight,$(LP_STATE_WEIGHTS),$(eval $(call lp_state_weight_fit_target,,$
 $(foreach window,$(LP_FIT_SHORTENED_WINDOWS),\
   $(foreach weight,$(LP_STATE_WEIGHTS),$(eval $(call lp_state_weight_fit_target,$(window),$(weight)))))
 
+# The US data under the same three weights, out/applications/us_lp_fit_<weight>.*,
+# so for instance app-us_lp_fit_causal_hp.
+define us_lp_state_weight_fit_target
+.PHONY: app-us_lp_fit_$(1)
+app-us_lp_fit_$(1): $(BIN)/us_lp_fit app-us_prepare_data | out/applications
+	./$(BIN)/us_lp_fit $(LP_STATE_WEIGHT_FLAGS_$(1))
+endef
+$(foreach weight,$(LP_STATE_WEIGHTS),$(eval $(call us_lp_state_weight_fit_target,$(weight))))
+
 # The DSK simulator itself, vendored under model/dsk_sfc with the changes
 # docs/DSK_MODEL_CHANGES.md records. Its own script builds it rather
 # than a rule here: it is 35 translation units of someone else's C++ with its

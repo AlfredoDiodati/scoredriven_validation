@@ -493,6 +493,13 @@ archive stores its own lambda and the search's flags, and the manifest gives
 their quantiles. `tests/lp_system_state_weight_correctness.c` checks every
 weight's rows against et_al called directly and the archives' round trip.
 
+The US data are fitted under the same weights by `applications/us_lp_fit.c`
+with the same flags, `make app-us_lp_fit_<weight>`, into
+`out/applications/us_lp_fit_<weight>.npz`, `.txt` and `_irf.csv`. On the US
+switching series the estimated lambda is 4.54e-05, the lower end of the
+search interval (log q at its upper bound 10), under both the two-sided and
+the causal cycle.
+
 ## A separate pipeline that refits nothing
 
 This is its own pipeline, in its own directory, writing to its own

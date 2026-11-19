@@ -180,11 +180,25 @@ static inline const char *lp_system_state_weight_suffix(LpSystemStateWeight weig
 
 static inline const char *lp_system_state_weight_description(LpSystemStateWeight weight) {
     if (weight.causal_hp && weight.estimate_lambda)
-        return "causal HP cycle, lambda estimated by maximum likelihood on each replicate's switching series";
+        return "causal HP cycle, lambda estimated by maximum likelihood on the switching series it weights";
     if (weight.causal_hp) return "causal HP cycle, lambda given";
     if (weight.estimate_lambda)
-        return "two-sided HP cycle, lambda estimated by maximum likelihood on each replicate's switching series";
+        return "two-sided HP cycle, lambda estimated by maximum likelihood on the switching series it weights";
     return "two-sided HP cycle, lambda given, as in lpirfs";
+}
+
+/* The flags every local-projection fitting script takes: --refit, --causal-hp
+   and --estimate-lambda, in any order. Anything else is a caller's mistake. */
+static inline LpSystemStateWeight lp_parse_state_weight(int argc, char **argv, int *force_refit) {
+    int causal_hp = 0, estimate_lambda = 0;
+    *force_refit = 0;
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--refit") == 0) *force_refit = 1;
+        else if (strcmp(argv[i], "--causal-hp") == 0) causal_hp = 1;
+        else if (strcmp(argv[i], "--estimate-lambda") == 0) estimate_lambda = 1;
+        else assert(0 && "lp_system: unknown flag; the flags are --refit, --causal-hp, --estimate-lambda");
+    }
+    return lp_system_state_weight(causal_hp, estimate_lambda);
 }
 
 /*
