@@ -108,7 +108,9 @@ MARGINAL_LAWS_HEADER := studies/marginal_laws.h
 # Most stems here are the DSK simulator's. The auxiliary model lives in the
 # installed et_al. and its correctness suite lives there with it.
 # marginal_laws_correctness checks the densities of studies/marginal_laws.h,
-# lp_system_transform the series applications/lp_system.h builds, and
+# lp_system_transform the series applications/lp_system.h builds,
+# lp_system_state_weight_correctness that header's fits and archives under each
+# state weight of the state-dependent projections, and
 # recovery_loss_correctness the loss of montecarlo/recovery_loss.h, and
 # own_deviation_loss_correctness the loss of montecarlo/own_deviation_loss.h.
 # abm_system_layout is this
@@ -126,7 +128,8 @@ TEST_STEMS := abm_system_layout abm_system_dataset_finiteness dsk_long_path \
                dsk_memory_safety dsk_ulp_sensitivity dsk_redenomination_invariance \
                dsk_machine_lot_rebase dsk_good_unit_invariance dsk_max_horizon \
                dsk_dataset_reproduction dsk_tail_replicate_reproduction \
-               marginal_laws_correctness lp_system_transform recovery_loss_correctness \
+               marginal_laws_correctness lp_system_transform lp_system_state_weight_correctness \
+               recovery_loss_correctness \
                own_deviation_loss_correctness
 # Where the wall time of a t-QVARMA fit goes, and what each way of speeding it
 # up is worth. Measured 2026-08-29 against a 500,000-fit run of
@@ -268,6 +271,7 @@ $(BIN) $(OUT):
 
 $(BIN)/marginal_laws_correctness: $(MARGINAL_LAWS_HEADER)
 $(BIN)/lp_system_transform: applications/lp_system.h
+$(BIN)/lp_system_state_weight_correctness: applications/lp_system.h
 $(BIN)/recovery_loss_correctness: montecarlo/recovery_loss.h montecarlo/response_cache.h $(APPLICATION_HEADERS)
 $(BIN)/own_deviation_loss_correctness: montecarlo/own_deviation_loss.h montecarlo/recovery_loss.h \
     montecarlo/response_cache.h $(APPLICATION_HEADERS)
@@ -611,6 +615,53 @@ app-abm_system_fit_t$(1): $(BIN)/abm_system_fit_lp_t$(1) $(BIN)/abm_system_fit_q
 	./$(BIN)/abm_system_fit_qvarma_t$(1)
 endef
 $(foreach periods,$(FIT_ESTIMATION_PERIODS),$(eval $(call shortened_fit_targets_for_periods,$(periods))))
+
+# The same two scripts on the 188 observations right after the first window:
+# stored periods 188 to 375, 0-based. Own binaries, own output directories.
+FIT_NEXT_WINDOW_FIRST_PERIOD := 188
+
+define next_window_fit_targets_for_periods
+.PHONY: app-abm_system_fit_lp_t$(1)_from$(2) app-abm_system_fit_qvarma_t$(1)_from$(2) app-abm_system_fit_t$(1)_from$(2)
+$(BIN)/abm_system_fit_lp_t$(1)_from$(2): applications/abm_system_fit_lp.c $(HEADERS) $(APPLICATION_HEADERS) \
+                                         $(ETAL_INSTALLED_HEADERS) | $(BIN)
+	$(CC) $(CFLAGS) -DMAT_DOUBLE -DESTIMATION_PERIODS=$(1) -DESTIMATION_FIRST_PERIOD=$(2) -fopenmp $(ETAL_CFLAGS) $(INCLUDES) \
+	      $$< -o $$@ $(ETAL_LIBS)
+$(BIN)/abm_system_fit_qvarma_t$(1)_from$(2): applications/abm_system_fit_qvarma.c $(HEADERS) $(APPLICATION_HEADERS) \
+                                             $(ETAL_INSTALLED_HEADERS) | $(BIN)
+	$(CC) $(CFLAGS) -DMAT_DOUBLE -DESTIMATION_PERIODS=$(1) -DESTIMATION_FIRST_PERIOD=$(2) -fopenmp $(ETAL_CFLAGS) $(INCLUDES) \
+	      $$< -o $$@ $(ETAL_LIBS)
+app-abm_system_fit_lp_t$(1)_from$(2): $(BIN)/abm_system_fit_lp_t$(1)_from$(2) | out/applications
+	./$(BIN)/abm_system_fit_lp_t$(1)_from$(2)
+app-abm_system_fit_qvarma_t$(1)_from$(2): $(BIN)/abm_system_fit_qvarma_t$(1)_from$(2) | out/applications
+	./$(BIN)/abm_system_fit_qvarma_t$(1)_from$(2)
+app-abm_system_fit_t$(1)_from$(2): $(BIN)/abm_system_fit_lp_t$(1)_from$(2) $(BIN)/abm_system_fit_qvarma_t$(1)_from$(2) | out/applications
+	./$(BIN)/abm_system_fit_lp_t$(1)_from$(2)
+	./$(BIN)/abm_system_fit_qvarma_t$(1)_from$(2)
+endef
+$(foreach periods,$(FIT_ESTIMATION_PERIODS),$(eval $(call next_window_fit_targets_for_periods,$(periods),$(FIT_NEXT_WINDOW_FIRST_PERIOD))))
+
+# The local projections under the three state weights other than lpirfs'
+# (applications/lp_system.h, LpSystemStateWeight): the causal HP cycle, an
+# estimated lambda, and both. Each is a flag of the same binary, not a binary
+# of its own, and writes out/applications/abm_system_fit_lp<window>_<weight>.
+# One target per weight and estimation window: the full sample, the first 188
+# periods and the 188 after them, so for instance
+# app-abm_system_fit_lp_t188_causal_hp_estimated_lambda.
+LP_STATE_WEIGHTS := causal_hp estimated_lambda causal_hp_estimated_lambda
+LP_STATE_WEIGHT_FLAGS_causal_hp := --causal-hp
+LP_STATE_WEIGHT_FLAGS_estimated_lambda := --estimate-lambda
+LP_STATE_WEIGHT_FLAGS_causal_hp_estimated_lambda := --causal-hp --estimate-lambda
+LP_FIT_SHORTENED_WINDOWS := $(foreach periods,$(FIT_ESTIMATION_PERIODS),\
+                              _t$(periods) _t$(periods)_from$(FIT_NEXT_WINDOW_FIRST_PERIOD))
+
+define lp_state_weight_fit_target
+.PHONY: app-abm_system_fit_lp$(1)_$(2)
+app-abm_system_fit_lp$(1)_$(2): $(BIN)/abm_system_fit_lp$(1) | out/applications
+	./$(BIN)/abm_system_fit_lp$(1) $(LP_STATE_WEIGHT_FLAGS_$(2))
+endef
+$(foreach weight,$(LP_STATE_WEIGHTS),$(eval $(call lp_state_weight_fit_target,,$(weight))))
+$(foreach window,$(LP_FIT_SHORTENED_WINDOWS),\
+  $(foreach weight,$(LP_STATE_WEIGHTS),$(eval $(call lp_state_weight_fit_target,$(window),$(weight)))))
 
 # The DSK simulator itself, vendored under model/dsk_sfc with the changes
 # docs/DSK_MODEL_CHANGES.md records. Its own script builds it rather

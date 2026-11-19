@@ -474,6 +474,25 @@ from scratch takes 402 seconds on this machine (AMD Ryzen 7 4800H, 16 threads);
 the rerun that replaced the R-level fits took 1680 seconds, since it first read
 and refused every stored archive.
 
+Those fits build the state weight as lpirfs does, from the two-sided HP cycle
+of the switching series at lambda 1600. Three other weights are fitted beside
+them, each by the same script with a flag and into its own tree
+(`applications/lp_system.h`, `LpSystemStateWeight`):
+
+- `--causal-hp`: the cycle at `t` from periods `1..t` only, et_al's
+  `lp_lin_and_nl_causal`, at lambda 1600; `abm_system_fit_lp_causal_hp/`.
+- `--estimate-lambda`: the two-sided cycle at the lambda et_al's `hp_estimate`
+  finds by maximum likelihood on each replicate's own switching series;
+  `abm_system_fit_lp_estimated_lambda/`.
+- both flags: the causal cycle at that estimated lambda;
+  `abm_system_fit_lp_causal_hp_estimated_lambda/`.
+
+`make app-abm_system_fit_lp<window>_<weight>` runs one, `<window>` empty for
+the full sample or `_t188` or `_t188_from188`. Each row of an estimated-lambda
+archive stores its own lambda and the search's flags, and the manifest gives
+their quantiles. `tests/lp_system_state_weight_correctness.c` checks every
+weight's rows against et_al called directly and the archives' round trip.
+
 ## A separate pipeline that refits nothing
 
 This is its own pipeline, in its own directory, writing to its own

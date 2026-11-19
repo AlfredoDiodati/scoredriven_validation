@@ -33,11 +33,31 @@ it is not retried on every run only to fail the same way.
 - ./bin/abm_system_fit_lp fits what is not stored.
 - ./bin/abm_system_fit_lp --refit ignores what is stored and fits everything.
 
+The state weight of the state-dependent projections is lpirfs' by default: the
+two-sided HP cycle of the switching series at lambda 1600. Two flags change
+it, alone or together (applications/lp_system.h, LpSystemStateWeight):
+
+- --causal-hp builds the cycle at t from periods 1..t only, through et_al's
+  lp_lin_and_nl_causal.
+- --estimate-lambda replaces 1600 with et_al's hp_estimate, the maximum
+  likelihood lambda of each replicate's own switching series.
+
+Each weight writes its own tree, the directory name followed by
+_causal_hp, _estimated_lambda or _causal_hp_estimated_lambda, so
+out/applications/abm_system_fit_lp_causal_hp for --causal-hp on the full
+sample. The linear projection does not depend on the weight; every tree stores
+it anyway, so a reader of one tree needs no other.
+
 Built with -DESTIMATION_PERIODS=188, each replicate is cut to its first 188
 stored periods before lp_system_from_stored, the length of the US sample
 applications/us_data.h reads, so the projections see 185 periods as the US fit
 does, and everything goes under out/applications/abm_system_fit_lp_t188
 instead. The Makefile builds that variant as bin/abm_system_fit_lp_t188.
+
+Adding -DESTIMATION_FIRST_PERIOD=188 moves that window to stored periods 188
+to 375 (0-based), the 188 observations right after the first window, and
+everything goes under out/applications/abm_system_fit_lp_t188_from188. The
+Makefile builds that variant as bin/abm_system_fit_lp_t188_from188.
 
 One task per configuration. openblas_set_num_threads(1) for the reason
 applications/abm_system_fit_qvarma.c gives: the parallelism is the outer loop.
@@ -45,11 +65,15 @@ applications/abm_system_fit_qvarma.c gives: the parallelism is the outer loop.
 out/applications/abm_system_fit_lp_manifest.txt records per replicate whether
 its configuration was loaded or fitted, the VAR's statuses, how many horizons of
 each model went through the rank-deficient fallback, whether the switching
-series was constant, and whether it has responses. Nothing printed.
+series was constant, and whether it has responses; under --estimate-lambda
+also the estimated lambda and whether its search converged and ended at a
+bound of its interval. Each weight's manifest sits beside its tree, named
+after it. Nothing printed.
 */
 
 #include "abm_system.h"
 #include "lp_system.h"
+#include <et_al./stats.h>
 #include <cblas.h>
 #include <dirent.h>
 #include <sys/stat.h>
@@ -62,14 +86,38 @@ series was constant, and whether it has responses. Nothing printed.
 #define FULL_SAMPLE_OUTPUT_DIR "out/applications/abm_system_fit_lp"
 #define QUOTED_VALUE(x) #x
 #define QUOTED(x) QUOTED_VALUE(x)
-#ifdef ESTIMATION_PERIODS
+#ifdef ESTIMATION_FIRST_PERIOD
+#ifndef ESTIMATION_PERIODS
+#error "ESTIMATION_FIRST_PERIOD needs ESTIMATION_PERIODS: it says where the window of that length starts"
+#endif
+#define OUTPUT_DIR_DEFAULT FULL_SAMPLE_OUTPUT_DIR "_t" QUOTED(ESTIMATION_PERIODS) "_from" QUOTED(ESTIMATION_FIRST_PERIOD)
+#elif defined(ESTIMATION_PERIODS)
 #define OUTPUT_DIR_DEFAULT FULL_SAMPLE_OUTPUT_DIR "_t" QUOTED(ESTIMATION_PERIODS)
 #else
 #define OUTPUT_DIR_DEFAULT FULL_SAMPLE_OUTPUT_DIR
 #endif
+#ifdef ESTIMATION_FIRST_PERIOD
+#define ESTIMATION_WINDOW_START ESTIMATION_FIRST_PERIOD
+#else
+#define ESTIMATION_WINDOW_START 0
+#endif
 
 static const char *INPUT_DIR;
 static const char *OUTPUT_DIR;
+
+/* --refit, --causal-hp and --estimate-lambda, in any order. Anything else is a
+   caller's mistake. */
+static LpSystemStateWeight parse_arguments(int argc, char **argv, int *force_refit) {
+    int causal_hp = 0, estimate_lambda = 0;
+    *force_refit = 0;
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--refit") == 0) *force_refit = 1;
+        else if (strcmp(argv[i], "--causal-hp") == 0) causal_hp = 1;
+        else if (strcmp(argv[i], "--estimate-lambda") == 0) estimate_lambda = 1;
+        else assert(0 && "abm_system_fit_lp: unknown flag; the flags are --refit, --causal-hp, --estimate-lambda");
+    }
+    return lp_system_state_weight(causal_hp, estimate_lambda);
+}
 
 static void make_directory(const char *path) {
     if (mkdir(path, 0755) != 0) assert(errno == EEXIST && "abm_system_fit_lp: mkdir failed");
@@ -148,8 +196,10 @@ static Series read_series(const char *sample) {
         int count = abm_system_read_batch(dir, batch, block, replicate);
         for (int b = 0; b < count; b++) {
 #ifdef ESTIMATION_PERIODS
-            assert(block[b].c >= ESTIMATION_PERIODS && "abm_system_fit_lp: replicate shorter than ESTIMATION_PERIODS");
-            Mat head = mat_copy(mat_slice(block[b], 0, block[b].r, 0, ESTIMATION_PERIODS));
+            assert(block[b].c >= ESTIMATION_WINDOW_START + ESTIMATION_PERIODS
+                   && "abm_system_fit_lp: replicate shorter than ESTIMATION_FIRST_PERIOD + ESTIMATION_PERIODS");
+            Mat head = mat_copy(mat_slice(block[b], 0, block[b].r, ESTIMATION_WINDOW_START,
+                                          ESTIMATION_WINDOW_START + ESTIMATION_PERIODS));
             mat_free(block[b]);
             block[b] = head;
 #endif
@@ -197,28 +247,39 @@ typedef struct {
     int var_ols_status, var_chol_status;
     int lin_fallback_horizons, nl_fallback_horizons;
     int switching_is_constant, has_responses;
+    double lambda;
+    int lambda_is_converged, lambda_at_bound;
 } Summary;
 
 static Summary summarise(const LpSystemRecord *r) {
     return (Summary){ r->replicate, r->var_ols_status, r->var_chol_status,
                       fallback_horizons(r->lin_ols_status), fallback_horizons(r->nl_ols_status),
-                      r->switching_is_constant, r->has_responses };
+                      r->switching_is_constant, r->has_responses,
+                      r->lambda, r->lambda_is_converged, r->lambda_at_bound };
 }
 
 int main(int argc, char **argv) {
     int force_refit;
-    force_refit = lp_parse_refit(argc, argv);
+    LpSystemStateWeight weight = parse_arguments(argc, argv, &force_refit);
 
     INPUT_DIR = getenv("ABM_SYSTEM_INPUT_DIR");
     if (!INPUT_DIR) INPUT_DIR = INPUT_DIR_DEFAULT;
+    static char weighted_output_dir[512];
+    snprintf(weighted_output_dir, sizeof weighted_output_dir, "%s%s", OUTPUT_DIR_DEFAULT,
+             lp_system_state_weight_suffix(weight));
     OUTPUT_DIR = getenv("ABM_SYSTEM_LP_FIT_DIR");
-    if (!OUTPUT_DIR) OUTPUT_DIR = OUTPUT_DIR_DEFAULT;
+    if (!OUTPUT_DIR) OUTPUT_DIR = weighted_output_dir;
 #ifdef ESTIMATION_PERIODS
     /* A shortened fit does not match the full-sample archives' fingerprints, so
        pointed at them it would refit and rewrite every one. */
     assert(strcmp(OUTPUT_DIR, FULL_SAMPLE_OUTPUT_DIR) != 0
            && "abm_system_fit_lp: a shortened build must not write into the full-sample fits");
 #endif
+    /* An archive of lpirfs' weight reads as a miss under any other, so pointed
+       at those a run would refit and rewrite every one. */
+    assert((lp_system_state_weight_is_lpirfs(weight)
+            || (strcmp(OUTPUT_DIR, OUTPUT_DIR_DEFAULT) != 0 && strcmp(OUTPUT_DIR, FULL_SAMPLE_OUTPUT_DIR) != 0))
+           && "abm_system_fit_lp: another state weight must not write into the fits of lpirfs' weight");
 
     openblas_set_num_threads(1);
     make_directory(OUTPUT_DIR);
@@ -240,7 +301,7 @@ int main(int argc, char **argv) {
         Series series = read_series(samples[s]);
 
         int count = 0;
-        LpSystemRecord *stored = force_refit ? NULL : lp_system_read_archive(path, spec, &count);
+        LpSystemRecord *stored = force_refit ? NULL : lp_system_read_weighted_archive(path, spec, weight, &count);
         if (stored_rows_match(stored, count, &series)) {
             loaded[s] = 1;
         } else {
@@ -248,12 +309,9 @@ int main(int argc, char **argv) {
             count = series.count;
             stored = malloc((size_t)count * sizeof(LpSystemRecord));
             assert(stored && "abm_system_fit_lp: out of memory for a configuration's fits");
-            for (int i = 0; i < count; i++) {
-                LpLinNlFit fit = lp_lin_and_nl(series.y[i], series.switching[i], spec, (LpBands){0});
-                stored[i] = lp_system_record(&fit, series.y[i], series.switching[i], series.replicate[i]);
-                lp_lin_nl_fit_free(&fit);
-            }
-            if (count > 0) lp_system_write_archive(path, stored, count, spec);
+            for (int i = 0; i < count; i++)
+                stored[i] = lp_system_fit_record(series.y[i], series.switching[i], spec, weight, series.replicate[i]);
+            if (count > 0) lp_system_write_weighted_archive(path, stored, count, spec, weight);
         }
         records[s] = malloc((size_t)(count > 0 ? count : 1) * sizeof(Summary));
         assert(records[s] && "abm_system_fit_lp: out of memory for the manifest");
@@ -275,6 +333,28 @@ int main(int argc, char **argv) {
             n_constant += r->switching_is_constant;
         }
 
+    /* The estimated lambdas, as quantiles over every replicate that has one. */
+    long n_estimated = 0, n_not_converged = 0, n_at_bound = 0;
+    Mat estimated_lambda = mat_new(n_fits > 0 ? (int)n_fits : 1, 1);
+    for (int s = 0; s < n_samples && weight.estimate_lambda; s++)
+        for (int i = 0; i < n_records[s]; i++) {
+            const Summary *r = &records[s][i];
+            if (MISNAN(r->lambda)) continue;
+            AT(estimated_lambda, (int)n_estimated, 0) = (mreal)r->lambda;
+            n_estimated++;
+            n_not_converged += !r->lambda_is_converged;
+            n_at_bound += r->lambda_at_bound;
+        }
+    const double lambda_probability[] = { 0, 0.05, 0.25, 0.5, 0.75, 0.95, 1 };
+    const int n_lambda_probabilities = (int)(sizeof lambda_probability / sizeof lambda_probability[0]);
+    double lambda_quantile[sizeof lambda_probability / sizeof lambda_probability[0]];
+    if (n_estimated > 0) {
+        Mat finite = mat_slice(estimated_lambda, 0, (int)n_estimated, 0, 1);
+        for (int p = 0; p < n_lambda_probabilities; p++)
+            lambda_quantile[p] = (double)stats_quantile(finite, (mreal)lambda_probability[p]);
+    }
+    mat_free(estimated_lambda);
+
     char manifest_path[640];
     snprintf(manifest_path, sizeof manifest_path, "%s_manifest.txt", OUTPUT_DIR);
     FILE *manifest = fopen(manifest_path, "w");
@@ -286,10 +366,20 @@ int main(int argc, char **argv) {
     fprintf(manifest, "each replicate cut to its first %d stored periods, %d after the moving average\n",
             ESTIMATION_PERIODS, lp_system_n_periods(ESTIMATION_PERIODS));
 #endif
+    char lambda_text[256];
+    if (weight.estimate_lambda)
+        snprintf(lambda_text, sizeof lambda_text,
+                 "lambda estimated per replicate (hp_estimate: log q in [%g, %g], xatol %g, at most %d evaluations)",
+                 weight.lambda_options.log_q_lower, weight.lambda_options.log_q_upper,
+                 weight.lambda_options.xatol, weight.lambda_options.max_evaluations);
+    else
+        snprintf(lambda_text, sizeof lambda_text, "lambda %g", spec.lambda);
     fprintf(manifest, "spec: lags_endog_lin %d, lags_endog_nl %d, hor %d, unit shocks, use_hp %d, "
-                      "lambda %g, gamma %g, lag_switching %d\n",
-            spec.lin.lags_endog_lin, spec.lags_endog_nl, spec.lin.hor, spec.use_hp, spec.lambda,
+                      "%s, gamma %g, lag_switching %d\n",
+            spec.lin.lags_endog_lin, spec.lags_endog_nl, spec.lin.hor, spec.use_hp, lambda_text,
             spec.gamma, spec.lag_switching);
+    if (!lp_system_state_weight_is_lpirfs(weight))
+        fprintf(manifest, "state weight: %s\n", lp_system_state_weight_description(weight));
     fprintf(manifest, "stored in %s/<sample>.npz, one row per replicate\n", OUTPUT_DIR);
     fprintf(manifest, "%s\n\n", force_refit ? "run with --refit: nothing read from the stored fits"
                                             : "stored fits kept where they match, the rest fitted");
@@ -299,23 +389,45 @@ int main(int argc, char **argv) {
     fprintf(manifest, "  without responses (no d) %ld\n", n_without);
     fprintf(manifest, "  with at least one rank-deficient horizon: linear %ld, state dependent %ld\n",
             n_lin_fallback, n_nl_fallback);
-    fprintf(manifest, "  with a constant switching series %ld\n\n", n_constant);
+    fprintf(manifest, "  with a constant switching series %ld\n", n_constant);
+    if (weight.estimate_lambda) {
+        fprintf(manifest, "  with an estimated lambda %ld, of which search not converged %ld, "
+                          "ended at a bound of the interval %ld\n",
+                n_estimated, n_not_converged, n_at_bound);
+        if (n_estimated > 0) {
+            fprintf(manifest, "  estimated lambda, quantiles over those replicates:");
+            for (int p = 0; p < n_lambda_probabilities; p++)
+                fprintf(manifest, " %g: %.6g%s", lambda_probability[p], lambda_quantile[p],
+                        p + 1 < n_lambda_probabilities ? "," : "");
+            fprintf(manifest, "\n");
+        }
+    }
+    fprintf(manifest, "\n");
 
     fprintf(manifest, "origin: loaded, the configuration's archive matched the dataset and was kept; "
                       "fitted, computed in this run.\nvar_ols and var_chol are the VAR's statuses behind d "
                       "(0 is fine; var_ols -1 means the data held a NaN\nor an infinity). lin_fallback and "
                       "nl_fallback count the horizons solved by the minimum-norm\nfallback for a "
                       "rank-deficient design. constant is the switching series' flag. responses says\n"
-                      "whether the row has d and the three response tensors.\n\n");
-    fprintf(manifest, "%-12s %9s %7s %7s %8s %12s %11s %8s %9s\n", "sample", "replicate", "origin",
+                      "whether the row has d and the three response tensors.\n");
+    if (weight.estimate_lambda)
+        fprintf(manifest, "lambda is the replicate's estimate, nan where the switching series held a NaN or "
+                          "an infinity;\nconverged and at_bound are hp_estimate's flags.\n");
+    fprintf(manifest, "\n");
+    fprintf(manifest, "%-12s %9s %7s %7s %8s %12s %11s %8s %9s", "sample", "replicate", "origin",
             "var_ols", "var_chol", "lin_fallback", "nl_fallback", "constant", "responses");
+    if (weight.estimate_lambda) fprintf(manifest, " %13s %9s %8s", "lambda", "converged", "at_bound");
+    fprintf(manifest, "\n");
     for (int s = 0; s < n_samples; s++)
         for (int i = 0; i < n_records[s]; i++) {
             const Summary *r = &records[s][i];
-            fprintf(manifest, "%-12s %9d %7s %7d %8d %12d %11d %8d %9s\n", samples[s], r->replicate,
+            fprintf(manifest, "%-12s %9d %7s %7d %8d %12d %11d %8d %9s", samples[s], r->replicate,
                     loaded[s] ? "loaded" : "fitted", r->var_ols_status, r->var_chol_status,
                     r->lin_fallback_horizons, r->nl_fallback_horizons,
                     r->switching_is_constant, r->has_responses ? "yes" : "no");
+            if (weight.estimate_lambda)
+                fprintf(manifest, " %13.6g %9d %8d", r->lambda, r->lambda_is_converged, r->lambda_at_bound);
+            fprintf(manifest, "\n");
         }
     fclose(manifest);
 

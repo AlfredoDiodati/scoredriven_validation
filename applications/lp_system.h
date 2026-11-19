@@ -2,7 +2,13 @@
 #define LP_SYSTEM_H
 
 #include <et_al./linalg/mat.h>
-#include <et_al./lp/lp.h>
+/* et_al's filter/hp.h uses M_PI, which math.h does not define under the
+   -std=c11 this project builds with. Defined here until et_al defines it. */
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+#include <et_al./lp/lp_nl_causal.h>
+#include <et_al./filter/hp.h>
 #include <et_al./frame/npz.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -130,6 +136,58 @@ static inline LpNlSpec lp_system_spec(void) {
 }
 
 /*
+How the weight that splits the lags between the two states is built from the
+switching series. lpirfs builds it from the two-sided HP cycle at the lambda
+of lp_system_spec(), and every fit stored before the other three existed used
+that one. The other three change one or both of two things:
+
+  causal_hp        the cycle at t from periods 1..t only, et_al's
+                   lp_lin_and_nl_causal, standardised with the mean and
+                   standard deviation of the cycle up to t
+  estimate_lambda  lambda by maximum likelihood on the replicate's own
+                   switching series, et_al's hp_estimate searched with
+                   lambda_options, in place of spec.lambda
+
+An estimated lambda uses every period of the switching series, so with both
+set the weight at t still depends on the periods after t through that one
+number (et_al's docs/LP_NL_CAUSAL_DOCUMENTATION.md, Known limitations).
+*/
+typedef struct {
+    int causal_hp;
+    int estimate_lambda;
+    HpEstimateOptions lambda_options;
+} LpSystemStateWeight;
+
+static inline LpSystemStateWeight lp_system_state_weight(int causal_hp, int estimate_lambda) {
+    LpSystemStateWeight weight = { causal_hp != 0, estimate_lambda != 0, hp_estimate_default_options() };
+    return weight;
+}
+
+/* The weight of lpirfs: two-sided cycle, lambda given. */
+static inline int lp_system_state_weight_is_lpirfs(LpSystemStateWeight weight) {
+    return !weight.causal_hp && !weight.estimate_lambda;
+}
+
+/* What a directory of fits under this weight appends to its name. Nothing for
+   lpirfs' weight, so the fits stored before the other three existed keep their
+   paths. */
+static inline const char *lp_system_state_weight_suffix(LpSystemStateWeight weight) {
+    if (weight.causal_hp && weight.estimate_lambda) return "_causal_hp_estimated_lambda";
+    if (weight.causal_hp) return "_causal_hp";
+    if (weight.estimate_lambda) return "_estimated_lambda";
+    return "";
+}
+
+static inline const char *lp_system_state_weight_description(LpSystemStateWeight weight) {
+    if (weight.causal_hp && weight.estimate_lambda)
+        return "causal HP cycle, lambda estimated by maximum likelihood on each replicate's switching series";
+    if (weight.causal_hp) return "causal HP cycle, lambda given";
+    if (weight.estimate_lambda)
+        return "two-sided HP cycle, lambda estimated by maximum likelihood on each replicate's switching series";
+    return "two-sided HP cycle, lambda given, as in lpirfs";
+}
+
+/*
 How the fits are stored: one compressed .npz archive per configuration, one row
 per replicate, written and read through et_al's df_write_npz_compressed and
 df_read_npz. et_al's own LP cache (lp_lin_save_fit, lp_nl_save_fit) writes one
@@ -150,12 +208,32 @@ A row holds what a later comparison reads and what is needed to trust it:
                               lp_data_fingerprint of the fitted y and switching
                               series, so a reader can refuse a row computed
                               from other data
-  spec_*                      the LpNlSpec the row was fitted under
+  spec_*                      the LpNlSpec the row was fitted under;
+                              spec_lambda is the lambda the row's weight used,
+                              its own estimate under estimate_lambda
   d_<i>                       d, K x K, row-major
   lin_<i>, s1_<i>, s2_<i>     irf_lin_mean, irf_s1_mean, irf_s2_mean, each
                               K x (hor + 1) x K flattened in the tensor's own
                               order: i = (k (hor + 1) + h) K + j for the
                               response of variable k at horizon h to shock j
+
+Under any state weight other than lpirfs', the row goes on with
+
+  spec_causal_hp, spec_estimate_lambda
+                              the LpSystemStateWeight
+
+and under estimate_lambda with
+
+  spec_lambda_log_q_lower, spec_lambda_log_q_upper, spec_lambda_xatol,
+  spec_lambda_max_evaluations the search hp_estimate ran
+  lambda_is_converged, lambda_at_bound
+                              hp_estimate's flags. Both 0, and spec_lambda NaN,
+                              when the switching series held a NaN or an
+                              infinity and nothing was estimated; the fit then
+                              has no responses either
+
+so an archive of lpirfs' weight has exactly the columns it had before the
+other weights existed, and the archives already stored still read.
 
 fz, the state weight at every period, is not stored: it is a function of the
 data and of lambda, gamma and lag_switching alone, and no comparison reads it.
@@ -174,9 +252,19 @@ typedef struct {
     int lin_ols_status[LP_SYSTEM_HOR], nl_ols_status[LP_SYSTEM_HOR];
     int switching_is_constant;
     double data_fingerprint, switching_fingerprint;
+    /* The lambda the weight used and whether it came from the two-sided or the
+       causal cycle. The two flags are hp_estimate's, 0 under a given lambda. */
+    double lambda;
+    int causal_hp;
+    int lambda_is_converged, lambda_at_bound;
     mreal d[LP_SYSTEM_K * LP_SYSTEM_K];
     mreal lin[LP_SYSTEM_RESPONSE_DIM], s1[LP_SYSTEM_RESPONSE_DIM], s2[LP_SYSTEM_RESPONSE_DIM];
 } LpSystemRecord;
+
+/* Where spec_lambda sits among the spec_* columns. */
+#define LP_SYSTEM_SPEC_LAMBDA 7
+#define LP_SYSTEM_N_WEIGHT 2
+#define LP_SYSTEM_N_LAMBDA_SEARCH 4
 
 static inline void _lp_system_spec_values(LpNlSpec spec, double *value) {
     const double values[LP_SYSTEM_N_SPEC] = {
@@ -186,9 +274,23 @@ static inline void _lp_system_spec_values(LpNlSpec spec, double *value) {
     memcpy(value, values, sizeof values);
 }
 
+/* The weight's own columns, spec_causal_hp onwards, the search's settings
+   included under estimate_lambda; returns how many there are. */
+static inline int _lp_system_weight_values(LpSystemStateWeight weight, double *value) {
+    if (lp_system_state_weight_is_lpirfs(weight)) return 0;
+    value[0] = weight.causal_hp;
+    value[1] = weight.estimate_lambda;
+    if (!weight.estimate_lambda) return LP_SYSTEM_N_WEIGHT;
+    value[2] = weight.lambda_options.log_q_lower;
+    value[3] = weight.lambda_options.log_q_upper;
+    value[4] = weight.lambda_options.xatol;
+    value[5] = weight.lambda_options.max_evaluations;
+    return LP_SYSTEM_N_WEIGHT + LP_SYSTEM_N_LAMBDA_SEARCH;
+}
+
 /* The archive's column names, in the order a row is laid out. Caller frees
    each name and the array. */
-static inline char **_lp_system_column_names(int *count) {
+static inline char **_lp_system_column_names(LpSystemStateWeight weight, int *count) {
     static const char *const fixed[] = {
         "replicate", "has_responses", "var_ols_status", "var_rank", "var_chol_status",
         "switching_is_constant", "data_fingerprint", "switching_fingerprint"
@@ -197,9 +299,16 @@ static inline char **_lp_system_column_names(int *count) {
         "spec_K", "spec_lags_endog_lin", "spec_lags_endog_nl", "spec_hor", "spec_shock_type",
         "spec_use_logistic", "spec_use_hp", "spec_lambda", "spec_gamma", "spec_lag_switching"
     };
+    static const char *const weight_name[] = {
+        "spec_causal_hp", "spec_estimate_lambda", "spec_lambda_log_q_lower", "spec_lambda_log_q_upper",
+        "spec_lambda_xatol", "spec_lambda_max_evaluations", "lambda_is_converged", "lambda_at_bound"
+    };
+    double unused[LP_SYSTEM_N_WEIGHT + LP_SYSTEM_N_LAMBDA_SEARCH];
+    int n_weight = _lp_system_weight_values(weight, unused);
+    if (weight.estimate_lambda) n_weight += 2;
     int n_fixed = (int)(sizeof fixed / sizeof fixed[0]);
     int n = n_fixed + 2 * LP_SYSTEM_HOR + LP_SYSTEM_N_SPEC + LP_SYSTEM_K * LP_SYSTEM_K
-          + 3 * LP_SYSTEM_RESPONSE_DIM;
+          + 3 * LP_SYSTEM_RESPONSE_DIM + n_weight;
     char **names = (char **)malloc((size_t)n * sizeof(char *));
     assert(names && "lp_system: out of memory naming the archive's columns");
     char buffer[64];
@@ -224,6 +333,7 @@ static inline char **_lp_system_column_names(int *count) {
             snprintf(buffer, sizeof buffer, "%s_%d", response_prefix[part], i);
             names[at++] = frame_strdup(buffer);
         }
+    for (int i = 0; i < n_weight; i++) names[at++] = frame_strdup(weight_name[i]);
     assert(at == n && "lp_system: the archive's column count is off");
     *count = n;
     return names;
@@ -250,6 +360,8 @@ static inline LpSystemRecord lp_system_record(const LpLinNlFit *fit, Mat y, Mat 
     r.switching_is_constant = fit->nl.switching_is_constant;
     r.data_fingerprint = lp_data_fingerprint(y);
     r.switching_fingerprint = lp_data_fingerprint(switching);
+    r.lambda = fit->nl.spec.lambda;
+    r.causal_hp = fit->nl.causal_hp;
     if (r.has_responses) {
         memcpy(r.d, fit->lin.d.d, sizeof r.d);
         memcpy(r.lin, fit->lin.irf_lin_mean.d, sizeof r.lin);
@@ -262,6 +374,42 @@ static inline LpSystemRecord lp_system_record(const LpLinNlFit *fit, Mat y, Mat 
     return r;
 }
 
+static inline int _lp_system_all_finite(Mat x) {
+    for (int i = 0; i < x.r; i++)
+        for (int j = 0; j < x.c; j++)
+            if (MISNAN(AT(x, i, j)) || MISINF(AT(x, i, j))) return 0;
+    return 1;
+}
+
+/*
+One replicate's row under a state weight: lambda estimated first when the
+weight says so, then both models fitted by lp_lin_and_nl or
+lp_lin_and_nl_causal. A switching series holding a NaN or an infinity has no
+estimate, since hp_estimate refuses one; the fit then runs at spec.lambda,
+where lp.h finds the same hole and computes nothing, and the row records
+lambda NaN.
+*/
+static inline LpSystemRecord lp_system_fit_record(Mat y, Mat switching, LpNlSpec spec,
+                                                  LpSystemStateWeight weight, int replicate) {
+    HpEstimate estimate;
+    memset(&estimate, 0, sizeof estimate);
+    int estimated = weight.estimate_lambda && _lp_system_all_finite(switching);
+    if (estimated) {
+        estimate = hp_estimate(switching, weight.lambda_options);
+        spec.lambda = estimate.lambda;
+    }
+    LpLinNlFit fit = weight.causal_hp ? lp_lin_and_nl_causal(y, switching, spec, (LpBands){0})
+                                      : lp_lin_and_nl(y, switching, spec, (LpBands){0});
+    LpSystemRecord r = lp_system_record(&fit, y, switching, replicate);
+    lp_lin_nl_fit_free(&fit);
+    if (weight.estimate_lambda) {
+        r.lambda = estimated ? estimate.lambda : (double)NAN;
+        r.lambda_is_converged = estimated && estimate.is_converged;
+        r.lambda_at_bound = estimated && estimate.at_bound;
+    }
+    return r;
+}
+
 /* Whether a stored row was computed from exactly these series. */
 static inline int lp_system_record_matches(const LpSystemRecord *r, Mat y, Mat switching) {
     return r->data_fingerprint == lp_data_fingerprint(y)
@@ -269,22 +417,28 @@ static inline int lp_system_record_matches(const LpSystemRecord *r, Mat y, Mat s
 }
 
 /*
-Writes count rows fitted under spec to path, through a temporary file renamed
-into place once complete, so an interrupted run never leaves a truncated
-archive for the next one to read.
+Writes count rows fitted under spec and weight to path, through a temporary
+file renamed into place once complete, so an interrupted run never leaves a
+truncated archive for the next one to read.
 */
-static inline void lp_system_write_archive(const char *path, const LpSystemRecord *records, int count,
-                                           LpNlSpec spec) {
+static inline void lp_system_write_weighted_archive(const char *path, const LpSystemRecord *records, int count,
+                                                    LpNlSpec spec, LpSystemStateWeight weight) {
     _Static_assert(sizeof(mreal) == sizeof(double), "lp_system: the archive needs the float64 build");
     assert(count >= 1 && "lp_system: an archive with no rows records nothing");
     int n_columns;
-    char **names = _lp_system_column_names(&n_columns);
+    char **names = _lp_system_column_names(weight, &n_columns);
     double spec_value[LP_SYSTEM_N_SPEC];
     _lp_system_spec_values(spec, spec_value);
+    double weight_value[LP_SYSTEM_N_WEIGHT + LP_SYSTEM_N_LAMBDA_SEARCH];
+    int n_weight = _lp_system_weight_values(weight, weight_value);
 
     Mat table = mat_new(count, n_columns);
     for (int row = 0; row < count; row++) {
         const LpSystemRecord *r = &records[row];
+        assert(r->causal_hp == weight.causal_hp && "lp_system: a row fitted under another cycle than the weight's");
+        assert((weight.estimate_lambda || r->lambda == spec.lambda)
+               && "lp_system: a row fitted at another lambda than the spec's");
+        spec_value[LP_SYSTEM_SPEC_LAMBDA] = r->lambda;
         mreal *out = &AT(table, row, 0);
         int at = 0;
         out[at++] = r->replicate;
@@ -302,6 +456,11 @@ static inline void lp_system_write_archive(const char *path, const LpSystemRecor
         for (int i = 0; i < LP_SYSTEM_RESPONSE_DIM; i++) out[at++] = r->lin[i];
         for (int i = 0; i < LP_SYSTEM_RESPONSE_DIM; i++) out[at++] = r->s1[i];
         for (int i = 0; i < LP_SYSTEM_RESPONSE_DIM; i++) out[at++] = r->s2[i];
+        for (int i = 0; i < n_weight; i++) out[at++] = weight_value[i];
+        if (weight.estimate_lambda) {
+            out[at++] = r->lambda_is_converged;
+            out[at++] = r->lambda_at_bound;
+        }
         assert(at == n_columns && "lp_system: a row does not fill the archive's columns");
     }
 
@@ -318,6 +477,12 @@ static inline void lp_system_write_archive(const char *path, const LpSystemRecor
     _lp_system_free_names(names, n_columns);
 }
 
+/* lp_system_write_weighted_archive under lpirfs' weight. */
+static inline void lp_system_write_archive(const char *path, const LpSystemRecord *records, int count,
+                                           LpNlSpec spec) {
+    lp_system_write_weighted_archive(path, records, count, spec, lp_system_state_weight(0, 0));
+}
+
 /* The value of row in column *at, advancing *at to the next column. */
 static inline mreal _lp_system_next(const Mat *column, int *at, int row) {
     mreal value = AT(column[*at], row, 0);
@@ -327,10 +492,13 @@ static inline mreal _lp_system_next(const Mat *column, int *at, int row) {
 
 /*
 The rows of the archive at path, in the order stored, or NULL when there is no
-archive there or it was written for a specification other than spec or in
-another layout. A NULL is a cache miss, never a fault. Caller frees the result.
+archive there or it was written for a specification or a state weight other
+than spec and weight, or in another layout. Under estimate_lambda the rows'
+spec_lambda is their own estimate and is not compared with spec.lambda. A NULL
+is a cache miss, never a fault. Caller frees the result.
 */
-static inline LpSystemRecord *lp_system_read_archive(const char *path, LpNlSpec spec, int *count) {
+static inline LpSystemRecord *lp_system_read_weighted_archive(const char *path, LpNlSpec spec,
+                                                              LpSystemStateWeight weight, int *count) {
     *count = 0;
     FILE *probe = fopen(path, "rb");
     if (!probe) return NULL;
@@ -338,7 +506,7 @@ static inline LpSystemRecord *lp_system_read_archive(const char *path, LpNlSpec 
 
     DataFrame frame = df_read_npz(path);
     int n_columns;
-    char **names = _lp_system_column_names(&n_columns);
+    char **names = _lp_system_column_names(weight, &n_columns);
     Mat *column = (Mat *)malloc((size_t)n_columns * sizeof(Mat));
     assert(column && "lp_system: out of memory reading an archive");
     int layout_matches = frame.n_cols == n_columns && frame.r >= 1;
@@ -354,7 +522,15 @@ static inline LpSystemRecord *lp_system_read_archive(const char *path, LpNlSpec 
     int spec_start = 8 + 2 * LP_SYSTEM_HOR;
     for (int row = 0; row < frame.r && layout_matches; row++)
         for (int i = 0; i < LP_SYSTEM_N_SPEC; i++)
-            if (AT(column[spec_start + i], row, 0) != spec_value[i]) layout_matches = 0;
+            if (!(weight.estimate_lambda && i == LP_SYSTEM_SPEC_LAMBDA)
+                && AT(column[spec_start + i], row, 0) != spec_value[i]) layout_matches = 0;
+
+    double weight_value[LP_SYSTEM_N_WEIGHT + LP_SYSTEM_N_LAMBDA_SEARCH];
+    int n_weight = _lp_system_weight_values(weight, weight_value);
+    int weight_start = spec_start + LP_SYSTEM_N_SPEC + LP_SYSTEM_K * LP_SYSTEM_K + 3 * LP_SYSTEM_RESPONSE_DIM;
+    for (int row = 0; row < frame.r && layout_matches; row++)
+        for (int i = 0; i < n_weight; i++)
+            if (AT(column[weight_start + i], row, 0) != weight_value[i]) layout_matches = 0;
 
     LpSystemRecord *records = NULL;
     if (layout_matches) {
@@ -373,11 +549,16 @@ static inline LpSystemRecord *lp_system_read_archive(const char *path, LpNlSpec 
             r->switching_fingerprint = (double)_lp_system_next(column, &at, row);
             for (int h = 0; h < LP_SYSTEM_HOR; h++) r->lin_ols_status[h] = (int)_lp_system_next(column, &at, row);
             for (int h = 0; h < LP_SYSTEM_HOR; h++) r->nl_ols_status[h] = (int)_lp_system_next(column, &at, row);
+            r->lambda = (double)AT(column[spec_start + LP_SYSTEM_SPEC_LAMBDA], row, 0);
             at += LP_SYSTEM_N_SPEC;
             for (int i = 0; i < LP_SYSTEM_K * LP_SYSTEM_K; i++) r->d[i] = _lp_system_next(column, &at, row);
             for (int i = 0; i < LP_SYSTEM_RESPONSE_DIM; i++) r->lin[i] = _lp_system_next(column, &at, row);
             for (int i = 0; i < LP_SYSTEM_RESPONSE_DIM; i++) r->s1[i] = _lp_system_next(column, &at, row);
             for (int i = 0; i < LP_SYSTEM_RESPONSE_DIM; i++) r->s2[i] = _lp_system_next(column, &at, row);
+            at += n_weight;
+            r->causal_hp = weight.causal_hp;
+            r->lambda_is_converged = weight.estimate_lambda ? (int)_lp_system_next(column, &at, row) : 0;
+            r->lambda_at_bound = weight.estimate_lambda ? (int)_lp_system_next(column, &at, row) : 0;
         }
         *count = frame.r;
     }
@@ -386,6 +567,11 @@ static inline LpSystemRecord *lp_system_read_archive(const char *path, LpNlSpec 
     _lp_system_free_names(names, n_columns);
     df_free(&frame);
     return records;
+}
+
+/* lp_system_read_weighted_archive under lpirfs' weight. */
+static inline LpSystemRecord *lp_system_read_archive(const char *path, LpNlSpec spec, int *count) {
+    return lp_system_read_weighted_archive(path, spec, lp_system_state_weight(0, 0), count);
 }
 
 #endif /* LP_SYSTEM_H */

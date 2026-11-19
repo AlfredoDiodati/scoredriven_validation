@@ -138,6 +138,11 @@ separate caches. The Makefile builds that variant as
 bin/abm_system_fit_qvarma_t188. Without the define the whole stored series is
 fitted, as before.
 
+Adding -DESTIMATION_FIRST_PERIOD=188 moves that window to stored periods 188
+to 375 (0-based), the 188 observations right after the first window, and the
+output goes under out/applications/abm_system_fit_qvarma_t188_from188. The
+Makefile builds that variant as bin/abm_system_fit_qvarma_t188_from188.
+
 Not part of `make applications` or EXPERIMENT_STEMS - meant to be run
 explicitly, once (or resumed after an interruption), not on every routine
 build. Requires out/dataset/abm_system/ to already exist
@@ -174,10 +179,20 @@ printed.
 #define FULL_SAMPLE_OUTPUT_DIR "out/applications/abm_system_fit_qvarma"
 #define QUOTED_VALUE(x) #x
 #define QUOTED(x) QUOTED_VALUE(x)
-#ifdef ESTIMATION_PERIODS
+#ifdef ESTIMATION_FIRST_PERIOD
+#ifndef ESTIMATION_PERIODS
+#error "ESTIMATION_FIRST_PERIOD needs ESTIMATION_PERIODS: it says where the window of that length starts"
+#endif
+#define OUTPUT_DIR_DEFAULT FULL_SAMPLE_OUTPUT_DIR "_t" QUOTED(ESTIMATION_PERIODS) "_from" QUOTED(ESTIMATION_FIRST_PERIOD)
+#elif defined(ESTIMATION_PERIODS)
 #define OUTPUT_DIR_DEFAULT FULL_SAMPLE_OUTPUT_DIR "_t" QUOTED(ESTIMATION_PERIODS)
 #else
 #define OUTPUT_DIR_DEFAULT FULL_SAMPLE_OUTPUT_DIR
+#endif
+#ifdef ESTIMATION_FIRST_PERIOD
+#define ESTIMATION_WINDOW_START ESTIMATION_FIRST_PERIOD
+#else
+#define ESTIMATION_WINDOW_START 0
 #endif
 
 /* Both directories are overridable so the whole procedure can be exercised on a
@@ -239,8 +254,9 @@ static int *list_replicates(const char *sample_dir, int *count) {
 static Mat read_estimation_sample(const char *sample_dir, int replicate) {
     Mat y = abm_system_read_replicate(sample_dir, replicate);
 #ifdef ESTIMATION_PERIODS
-    assert(y.c >= ESTIMATION_PERIODS && "abm_system_fit_qvarma: replicate shorter than ESTIMATION_PERIODS");
-    Mat head = mat_copy(mat_slice(y, 0, y.r, 0, ESTIMATION_PERIODS));
+    assert(y.c >= ESTIMATION_WINDOW_START + ESTIMATION_PERIODS
+           && "abm_system_fit_qvarma: replicate shorter than ESTIMATION_FIRST_PERIOD + ESTIMATION_PERIODS");
+    Mat head = mat_copy(mat_slice(y, 0, y.r, ESTIMATION_WINDOW_START, ESTIMATION_WINDOW_START + ESTIMATION_PERIODS));
     mat_free(y);
     y = head;
 #endif
@@ -656,7 +672,8 @@ int main(void) {
     assert(manifest && "cannot open the manifest path for writing");
     fprintf(manifest, "%d samples, %d total (replicate, spec) fits\n\n", n_samples, total_tasks);
 #ifdef ESTIMATION_PERIODS
-    fprintf(manifest, "each fit on the first %d stored periods of its replicate\n\n", ESTIMATION_PERIODS);
+    fprintf(manifest, "each fit on %d stored periods of its replicate, starting at stored period %d (0 is the first)\n\n",
+            ESTIMATION_PERIODS, ESTIMATION_WINDOW_START);
 #endif
     fprintf(manifest, "origin is what this run did with the cache: cached, a converged fit "
                       "reused untouched;\nresumed, an unconverged one carried on from its own "
