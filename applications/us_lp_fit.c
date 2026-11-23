@@ -34,7 +34,9 @@ Writes out/applications/us_lp_fit.npz, out/applications/us_lp_fit.txt (the data,
 the settings and the fit notes) and out/applications/us_lp_fit_irf.csv (every
 response: model, response, horizon, shock, value). Under another weight every
 name carries the weight's suffix before the extension, so
-out/applications/us_lp_fit_causal_hp.npz for --causal-hp. Nothing printed.
+out/applications/us_lp_fit_causal_hp.npz for --causal-hp, and holds the two
+states' responses only: the linear projection does not depend on the weight
+and is stored once, in the files of lpirfs' weight. Nothing printed.
 */
 
 #include "us_data.h"
@@ -103,8 +105,16 @@ int main(int argc, char **argv) {
         lin_fallback += r->lin_ols_status[h] != 0;
         nl_fallback += r->nl_ols_status[h] != 0;
     }
-    fprintf(report, "horizons solved by the minimum-norm fallback for a rank-deficient design: linear %d, "
-                    "state dependent %d, of %d each\n", lin_fallback, nl_fallback, LP_SYSTEM_HOR);
+    /* Only lpirfs' weight stores the linear projection; the others report the
+       state-dependent one alone, whether this run fitted or loaded it. */
+    int linear = lp_system_state_weight_is_lpirfs(weight);
+    if (linear)
+        fprintf(report, "horizons solved by the minimum-norm fallback for a rank-deficient design: linear %d, "
+                        "state dependent %d, of %d each\n", lin_fallback, nl_fallback, LP_SYSTEM_HOR);
+    else
+        fprintf(report, "horizons solved by the minimum-norm fallback for a rank-deficient design: state dependent "
+                        "%d of %d; the linear projection is in out/applications/us_lp_fit.txt\n",
+                nl_fallback, LP_SYSTEM_HOR);
     fprintf(report, "switching series constant: %s\n", r->switching_is_constant ? "yes" : "no");
     fclose(report);
 
@@ -113,7 +123,7 @@ int main(int argc, char **argv) {
     fprintf(irf, "model,response,horizon,shock,value\n");
     const mreal *part[3] = { r->lin, r->s1, r->s2 };
     static const char *const part_name[3] = { "lin", "s1", "s2" };
-    for (int p = 0; p < 3; p++)
+    for (int p = linear ? 0 : 1; p < 3; p++)
         for (int k = 0; k < LP_SYSTEM_K; k++)
             for (int h = 0; h <= LP_SYSTEM_HOR; h++)
                 for (int j = 0; j < LP_SYSTEM_K; j++)

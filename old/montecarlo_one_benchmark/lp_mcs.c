@@ -225,13 +225,13 @@ static void compare_statistics(const char *loss_path, const char *report_path,
 }
 
 int main(void) {
-    static const char *const description[N_MODELS] = {
+    static const char *const description[N_LPIRFS_WEIGHT_MODELS] = {
         [MODEL_LP_LIN] = "linear local projection impulse-response MAE",
         [MODEL_LP_S1] = "state-dependent local projection impulse-response MAE, state 1 (lags times 1 - F)",
         [MODEL_LP_S2] = "state-dependent local projection impulse-response MAE, state 2 (lags times F)",
         [MODEL_LP_NL] = "state-dependent local projection impulse-response MAE, states 1 and 2 in one vector"
     };
-    for (int model = MODEL_LP_LIN; model < N_MODELS; model++) {
+    for (int model = MODEL_LP_LIN; model < N_LPIRFS_WEIGHT_MODELS; model++) {
         char loss_path[128], report_path[128], table_path[128];
         snprintf(loss_path, sizeof loss_path, "out/old/montecarlo_one_benchmark/lp_irf_loss_%s.csv", lp_model_name(model));
         snprintf(report_path, sizeof report_path, "out/old/montecarlo_one_benchmark/lp_mcs_%s.txt", lp_model_name(model));

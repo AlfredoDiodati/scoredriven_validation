@@ -39,7 +39,9 @@
 #                                 already-settled work every time.
 #   make asan                     under AddressSanitizer and UndefinedBehaviorSanitizer
 #   make mc-true_configuration_recovery: the Monte Carlo experiment, every
-#   run of every configuration as the benchmark, built at -O3 by its own rule.
+#   run of every configuration as the benchmark, built at -O3 by its own rule,
+#   under the t-QVARMA, the linear projection and the state-dependent
+#   projection of all four state weights.
 #   make mc-seri_true_configuration_recovery: the same grid under the
 #   procedure of docs/MCS_ALTERNATIVE_CALIBRATION.md, also at -O3.
 #   make mc-seri_uncorrected_true_configuration_recovery: that grid with the
@@ -112,7 +114,13 @@ MARGINAL_LAWS_HEADER := studies/marginal_laws.h
 # lp_system_state_weight_correctness that header's fits and archives under each
 # state weight of the state-dependent projections, and
 # recovery_loss_correctness the loss of montecarlo/recovery_loss.h, and
-# own_deviation_loss_correctness the loss of montecarlo/own_deviation_loss.h.
+# own_deviation_loss_correctness the loss of montecarlo/own_deviation_loss.h,
+# response_cache_state_weight_correctness that montecarlo/response_cache.h
+# holds the stored responses of every state weight, and
+# response_cache_state_weight_archive_agreement that the caches the grids read
+# under the three other weights agree with their fits at every entry, and
+# progress_file_torn_tail_repair that montecarlo/progress_file.h leaves a
+# grid's progress file only whole rows after an unclean shutdown.
 # abm_system_layout is this
 # project's own and tests the one header both dataset
 # writers and every reader agree about the stored layout through;
@@ -130,7 +138,8 @@ TEST_STEMS := abm_system_layout abm_system_dataset_finiteness dsk_long_path \
                dsk_dataset_reproduction dsk_tail_replicate_reproduction \
                marginal_laws_correctness lp_system_transform lp_system_state_weight_correctness \
                recovery_loss_correctness \
-               own_deviation_loss_correctness
+               own_deviation_loss_correctness response_cache_state_weight_correctness \
+               response_cache_state_weight_archive_agreement progress_file_torn_tail_repair
 # Where the wall time of a t-QVARMA fit goes, and what each way of speeding it
 # up is worth. Measured 2026-08-29 against a 500,000-fit run of
 # abm_system_fit_qvarma; out/benchmarks/fit_speedup_options.txt collects the
@@ -228,7 +237,14 @@ OLD_SOURCES := old/score_loss/applications/abm_system_score_loss.c \
                old/naive_mae_loss/montecarlo/fit_metric_bootstrap.c \
                old/naive_mae_loss/montecarlo/fit_metric_pairwise.c \
                old/naive_mae_loss/montecarlo/fit_metric_report.c \
-               old/naive_mae_loss/tests/fit_metric_correctness.c
+               old/naive_mae_loss/tests/fit_metric_correctness.c \
+               old/montecarlo_single_states/single_state_seri_true_configuration_recovery_report.c \
+               old/montecarlo_single_states/single_state_seri_against_naive_grid.c \
+               old/montecarlo_single_states/single_state_seri_against_naive_by_configuration.c \
+               old/montecarlo_single_states/single_state_response_variance_by_configuration.c \
+               old/montecarlo_single_states/single_state_seri_corrected_against_uncorrected_grid.c \
+               old/montecarlo_single_states/single_state_identification_table.c \
+               old/montecarlo_single_states/single_state_rows_split.c
 
 # Whatever the application scripts share, so editing it rebuilds them.
 APPLICATION_HEADERS := applications/us_data.h applications/abm_system.h applications/lp_system.h \
@@ -273,6 +289,9 @@ $(BIN)/marginal_laws_correctness: $(MARGINAL_LAWS_HEADER)
 $(BIN)/lp_system_transform: applications/lp_system.h
 $(BIN)/lp_system_state_weight_correctness: applications/lp_system.h
 $(BIN)/recovery_loss_correctness: montecarlo/recovery_loss.h montecarlo/response_cache.h $(APPLICATION_HEADERS)
+$(BIN)/response_cache_state_weight_correctness: montecarlo/response_cache.h $(APPLICATION_HEADERS)
+$(BIN)/response_cache_state_weight_archive_agreement: montecarlo/response_cache.h $(APPLICATION_HEADERS)
+$(BIN)/progress_file_torn_tail_repair: montecarlo/progress_file.h
 $(BIN)/own_deviation_loss_correctness: montecarlo/own_deviation_loss.h montecarlo/recovery_loss.h \
     montecarlo/response_cache.h $(APPLICATION_HEADERS)
 $(BIN)/abm_system_marginal_fit: $(MARGINAL_LAWS_HEADER)
@@ -385,6 +404,11 @@ $(foreach source,$(OLD_SOURCES),$(eval $(call old_target_for_source,$(notdir $(b
 # The headers the rules above do not know about.
 OLD_BENCHMARK_HEADER := old/montecarlo_one_benchmark/benchmark.h
 $(addprefix $(BIN)/,lp_irf_loss lp_mcs lp_sweep sweep_cops sweep_grid): applications/abm_system_lp.h montecarlo/response_cache.h
+$(addprefix $(BIN)/single_state_,seri_true_configuration_recovery_report seri_against_naive_grid \
+    seri_against_naive_by_configuration seri_corrected_against_uncorrected_grid identification_table): \
+    montecarlo/response_cache.h
+$(BIN)/single_state_response_variance_by_configuration: montecarlo/recovery_loss.h montecarlo/response_cache.h
+$(BIN)/single_state_rows_split: montecarlo/response_cache.h
 $(BIN)/seri_true_configuration_recovery_report $(BIN)/seri_against_naive_grid \
     $(BIN)/seri_against_naive_by_configuration $(BIN)/seri_corrected_against_uncorrected_grid \
     $(BIN)/identification_table: \
@@ -407,7 +431,8 @@ $(addprefix $(BIN)/,$(FIT_METRIC_BINARIES)): montecarlo/response_cache.h old/nai
 # grid's were below. Its own rule, because the generic one fixes the flags when
 # it is generated.
 .PHONY: mc-true_configuration_recovery
-$(BIN)/true_configuration_recovery: montecarlo/true_configuration_recovery.c montecarlo/recovery_loss.h \
+$(BIN)/true_configuration_recovery: montecarlo/true_configuration_recovery.c montecarlo/progress_file.h \
+    montecarlo/recovery_loss.h \
     montecarlo/response_cache.h $(HEADERS) $(APPLICATION_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
 	$(CC) $(subst -O2,-O3,$(CFLAGS)) -DMAT_DOUBLE -fopenmp $(ETAL_CFLAGS) $(INCLUDES) $< -o $@ $(ETAL_LIBS)
 mc-true_configuration_recovery: $(BIN)/true_configuration_recovery | out/montecarlo
@@ -417,7 +442,7 @@ mc-true_configuration_recovery: $(BIN)/true_configuration_recovery | out/monteca
 # loss corrected by each run's own deviation and et_al's seri_mcs, at -O3 for
 # the loss pass. Its own rule for the same reason.
 .PHONY: mc-seri_true_configuration_recovery
-$(BIN)/seri_true_configuration_recovery: montecarlo/seri_true_configuration_recovery.c \
+$(BIN)/seri_true_configuration_recovery: montecarlo/seri_true_configuration_recovery.c montecarlo/progress_file.h \
     montecarlo/own_deviation_loss.h montecarlo/recovery_loss.h montecarlo/response_cache.h $(HEADERS) \
     $(APPLICATION_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
 	$(CC) $(subst -O2,-O3,$(CFLAGS)) -DMAT_DOUBLE -fopenmp $(ETAL_CFLAGS) $(INCLUDES) $< -o $@ $(ETAL_LIBS)
@@ -428,7 +453,7 @@ mc-seri_true_configuration_recovery: $(BIN)/seri_true_configuration_recovery | o
 # et_al's seri_mcs, so the two differ only in the correction. -O3 and its own
 # rule for the same reasons.
 .PHONY: mc-seri_uncorrected_true_configuration_recovery
-$(BIN)/seri_uncorrected_true_configuration_recovery: montecarlo/seri_uncorrected_true_configuration_recovery.c \
+$(BIN)/seri_uncorrected_true_configuration_recovery: montecarlo/seri_uncorrected_true_configuration_recovery.c montecarlo/progress_file.h \
     montecarlo/recovery_loss.h montecarlo/response_cache.h $(HEADERS) $(APPLICATION_HEADERS) \
     $(ETAL_INSTALLED_HEADERS) | $(BIN)
 	$(CC) $(subst -O2,-O3,$(CFLAGS)) -DMAT_DOUBLE -fopenmp $(ETAL_CFLAGS) $(INCLUDES) $< -o $@ $(ETAL_LIBS)
@@ -439,7 +464,7 @@ mc-seri_uncorrected_true_configuration_recovery: $(BIN)/seri_uncorrected_true_co
 # and MCS_TR at 2000 resamples, so it differs from true_configuration_recovery
 # only in the correction. -O3 and its own rule for the same reasons.
 .PHONY: mc-uncorrected_true_configuration_recovery
-$(BIN)/uncorrected_true_configuration_recovery: montecarlo/uncorrected_true_configuration_recovery.c \
+$(BIN)/uncorrected_true_configuration_recovery: montecarlo/uncorrected_true_configuration_recovery.c montecarlo/progress_file.h \
     montecarlo/recovery_loss.h montecarlo/response_cache.h $(HEADERS) $(APPLICATION_HEADERS) \
     $(ETAL_INSTALLED_HEADERS) | $(BIN)
 	$(CC) $(subst -O2,-O3,$(CFLAGS)) -DMAT_DOUBLE -fopenmp $(ETAL_CFLAGS) $(INCLUDES) $< -o $@ $(ETAL_LIBS)
@@ -473,6 +498,49 @@ $(BIN)/seri_against_bootstrap_grid: montecarlo/seri_corrected_against_uncorrecte
 	    -DREPORT_PATH='"out/montecarlo/seri_against_bootstrap_grid_report.txt"' $< -o $@ $(ETAL_LIBS)
 mc-seri_against_bootstrap_grid: $(BIN)/seri_against_bootstrap_grid | out/montecarlo
 	./$(BIN)/seri_against_bootstrap_grid
+
+# The four grids over state 1 and state 2 on their own, the models the grids of
+# montecarlo/ leave out, at -O3 like those grids and with their own rules for
+# the same reason. The two comparisons are
+# single_state_seri_corrected_against_uncorrected_grid pointed at the bootstrap
+# grids' files, as for the grids of montecarlo/.
+SINGLE_STATE_GRIDS := true_configuration_recovery uncorrected_true_configuration_recovery \
+                      seri_true_configuration_recovery seri_uncorrected_true_configuration_recovery
+SINGLE_STATE_DIR := old/montecarlo_single_states
+SINGLE_STATE_OUT := out/old/montecarlo_single_states
+.PHONY: $(addprefix old-single_state_,$(SINGLE_STATE_GRIDS)) old-single_state_corrected_against_uncorrected_grid \
+        old-single_state_seri_against_bootstrap_grid
+$(BIN)/single_state_true_configuration_recovery $(BIN)/single_state_uncorrected_true_configuration_recovery \
+    $(BIN)/single_state_seri_uncorrected_true_configuration_recovery: montecarlo/recovery_loss.h
+$(BIN)/single_state_seri_true_configuration_recovery: montecarlo/own_deviation_loss.h montecarlo/recovery_loss.h
+$(addprefix $(BIN)/single_state_,$(SINGLE_STATE_GRIDS)): $(BIN)/single_state_%: $(SINGLE_STATE_DIR)/single_state_%.c \
+    montecarlo/progress_file.h montecarlo/response_cache.h $(HEADERS) $(APPLICATION_HEADERS) \
+    $(ETAL_INSTALLED_HEADERS) | $(BIN)
+	$(CC) $(subst -O2,-O3,$(CFLAGS)) -DMAT_DOUBLE -fopenmp $(ETAL_CFLAGS) $(INCLUDES) $< -o $@ $(ETAL_LIBS)
+$(addprefix old-single_state_,$(SINGLE_STATE_GRIDS)): old-single_state_%: $(BIN)/single_state_% | $(SINGLE_STATE_OUT)
+	./$(BIN)/single_state_$*
+$(BIN)/single_state_corrected_against_uncorrected_grid: \
+    $(SINGLE_STATE_DIR)/single_state_seri_corrected_against_uncorrected_grid.c montecarlo/response_cache.h \
+    $(HEADERS) $(APPLICATION_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
+	$(CC) $(CFLAGS) -DMAT_DOUBLE -fopenmp $(ETAL_CFLAGS) $(INCLUDES) \
+	    -DCORRECTED_PATH='"$(SINGLE_STATE_OUT)/true_configuration_recovery.csv.gz"' \
+	    -DUNCORRECTED_RESULT_PATH='"$(SINGLE_STATE_OUT)/uncorrected_true_configuration_recovery.csv.gz"' \
+	    -DUNCORRECTED_PROGRESS_PATH='"$(SINGLE_STATE_OUT)/uncorrected_true_configuration_recovery_progress.csv"' \
+	    -DREPORT_PATH='"$(SINGLE_STATE_OUT)/corrected_against_uncorrected_grid_report.txt"' $< -o $@ $(ETAL_LIBS)
+old-single_state_corrected_against_uncorrected_grid: $(BIN)/single_state_corrected_against_uncorrected_grid | \
+    $(SINGLE_STATE_OUT)
+	./$(BIN)/single_state_corrected_against_uncorrected_grid
+$(BIN)/single_state_seri_against_bootstrap_grid: \
+    $(SINGLE_STATE_DIR)/single_state_seri_corrected_against_uncorrected_grid.c montecarlo/response_cache.h \
+    $(HEADERS) $(APPLICATION_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
+	$(CC) $(CFLAGS) -DMAT_DOUBLE -fopenmp $(ETAL_CFLAGS) $(INCLUDES) \
+	    -DCORRECTED_PATH='"$(SINGLE_STATE_OUT)/seri_true_configuration_recovery.csv.gz"' \
+	    -DUNCORRECTED_RESULT_PATH='"$(SINGLE_STATE_OUT)/true_configuration_recovery.csv.gz"' \
+	    -DUNCORRECTED_PROGRESS_PATH='"$(SINGLE_STATE_OUT)/true_configuration_recovery_progress.csv"' \
+	    -DCORRECTED_LABEL='"Seri"' -DUNCORRECTED_LABEL='"bootstrap"' \
+	    -DREPORT_PATH='"$(SINGLE_STATE_OUT)/seri_against_bootstrap_grid_report.txt"' $< -o $@ $(ETAL_LIBS)
+old-single_state_seri_against_bootstrap_grid: $(BIN)/single_state_seri_against_bootstrap_grid | $(SINGLE_STATE_OUT)
+	./$(BIN)/single_state_seri_against_bootstrap_grid
 
 # The naive-loss grid's five million confidence sets are built at -O3, where GCC
 # vectorises mcs()'s pair spreads; without -ffast-math that changes no

@@ -91,7 +91,7 @@ static size_t done_index(int model, int sample, int replicate) {
 
 /* Which benchmarks the progress file already holds. */
 static unsigned char *read_done(long *n_done) {
-    unsigned char *done = calloc((size_t)N_MODELS * n_samples * n_replicates, 1);
+    unsigned char *done = calloc((size_t)N_LPIRFS_WEIGHT_MODELS * n_samples * n_replicates, 1);
     assert(done);
     int *sample_of_cop = NULL;
     int highest = 0;
@@ -112,7 +112,7 @@ static unsigned char *read_done(long *n_done) {
             if (sscanf(line, "%31[^,],%d,%d,", label, &cop, &replicate) != 3) continue;
             if (cop < 0 || cop > highest || sample_of_cop[cop] < 0) continue;
             if (replicate < 0 || replicate >= n_replicates) continue;
-            for (int model = 0; model < N_MODELS; model++) {
+            for (int model = 0; model < N_LPIRFS_WEIGHT_MODELS; model++) {
                 if (strcmp(label, model_label[model]) != 0) continue;
                 size_t at = done_index(model, sample_of_cop[cop], replicate);
                 if (!done[at]) { done[at] = 1; (*n_done)++; }
@@ -398,7 +398,7 @@ int main(void) {
     long n_done;
     unsigned char *done = read_done(&n_done);
     fprintf(stderr, "%ld benchmarks already in %s\n", n_done, PROGRESS_PATH);
-    if (restored && n_done == (long)N_MODELS * n_samples * n_replicates) {
+    if (restored && n_done == (long)N_LPIRFS_WEIGHT_MODELS * n_samples * n_replicates) {
         remove(PROGRESS_PATH);
         fprintf(stderr, "%s holds every model, nothing to do\n", RESULT_PATH);
         free(done);
@@ -419,12 +419,12 @@ int main(void) {
     const char *block_text = getenv("SWEEP_GRID_RUN_BLOCK");
     int run_block = block_text ? atoi(block_text) : n_replicates;
     assert(run_block >= 1 && "sweep_grid: SWEEP_GRID_RUN_BLOCK must be at least 1");
-    for (int model = FIRST_MODEL; model < N_MODELS; model++)
+    for (int model = FIRST_MODEL; model < N_LPIRFS_WEIGHT_MODELS; model++)
         session_remaining += count_remaining(model, 0, n_replicates, done);
     session_started = omp_get_wtime();
     for (int run_from = 0; run_from < n_replicates; run_from += run_block) {
         int run_to = run_from + run_block < n_replicates ? run_from + run_block : n_replicates;
-        for (int model = FIRST_MODEL; model < N_MODELS; model++)
+        for (int model = FIRST_MODEL; model < N_LPIRFS_WEIGHT_MODELS; model++)
             sweep_model(model, run_from, run_to, done, n_workers, progress);
     }
     fclose(progress);

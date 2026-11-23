@@ -40,7 +40,7 @@ printed.
 #define MAX_ROWS 16
 #define CELL 48
 
-static const char *const model_name[N_MODELS] = { "qvarma", "linear", "state 1", "state 2", "both states" };
+static const char *const model_name[N_LPIRFS_WEIGHT_MODELS] = { "qvarma", "linear", "state 1", "state 2", "both states" };
 
 typedef struct {
     const char *label, *title;
@@ -73,7 +73,7 @@ static double median(const Column *c) { return (double)stats_median(as_mat(c)); 
 static double spearman(const Column *x, const Column *y) { return (double)stats_spearman(as_mat(x), as_mat(y)); }
 
 static int model_of(const char *label) {
-    for (int model = 0; model < N_MODELS; model++)
+    for (int model = 0; model < N_LPIRFS_WEIGHT_MODELS; model++)
         if (strcmp(label, model_label[model]) == 0) return model;
     assert(0 && "fit_metric_report: unknown model label");
     return -1;
@@ -132,7 +132,7 @@ typedef struct {
 static int read_bootstrap(const char *path, BootstrapColumns *boot) {
     FILE *f = fopen(path, "r");
     if (!f) return 0;
-    for (int model = 0; model < N_MODELS; model++) {
+    for (int model = 0; model < N_LPIRFS_WEIGHT_MODELS; model++) {
         memset(&boot[model], 0, sizeof boot[model]);
         boot[model].fewest_usable = 1 << 30;
     }
@@ -167,7 +167,7 @@ static int read_bootstrap(const char *path, BootstrapColumns *boot) {
 }
 
 static void free_bootstrap(BootstrapColumns *boot) {
-    for (int model = 0; model < N_MODELS; model++) {
+    for (int model = 0; model < N_LPIRFS_WEIGHT_MODELS; model++) {
         free(boot[model].sigma2.value);
         free(boot[model].sigma2_star.value);
         free(boot[model].ratio.value);
@@ -180,8 +180,8 @@ static void oracle_table(Table *t, const OracleColumns *oracle) {
     static const char *const names[] = { "model", "benchmarks", "median d", "median sigma2", "s 10%", "s 50%",
                                          "s 90%", "v 10%", "v 50%", "v 90%", "mean v" };
     set_header(t, 11, names);
-    t->n_rows = N_MODELS;
-    for (int m = 0; m < N_MODELS; m++) {
+    t->n_rows = N_LPIRFS_WEIGHT_MODELS;
+    for (int m = 0; m < N_LPIRFS_WEIGHT_MODELS; m++) {
         const OracleColumns *o = &oracle[m];
         char (*row)[CELL] = t->cell[m];
         snprintf(row[0], CELL, "%s", model_name[m]);
@@ -202,8 +202,8 @@ static void winner_table(Table *t, const OracleColumns *oracle) {
     static const char *const names[] = { "model", "winner is the true configuration", "median v there",
                                          "winner is another", "median v there" };
     set_header(t, 5, names);
-    t->n_rows = N_MODELS;
-    for (int m = 0; m < N_MODELS; m++) {
+    t->n_rows = N_LPIRFS_WEIGHT_MODELS;
+    for (int m = 0; m < N_LPIRFS_WEIGHT_MODELS; m++) {
         const OracleColumns *o = &oracle[m];
         char (*row)[CELL] = t->cell[m];
         snprintf(row[0], CELL, "%s", model_name[m]);
@@ -219,8 +219,8 @@ static void bootstrap_table(Table *t, const BootstrapColumns *boot) {
                                          "ratio 50%", "ratio 90%", "rank correlation sigma2", "median v",
                                          "median v_star", "rank correlation v" };
     set_header(t, 11, names);
-    t->n_rows = N_MODELS;
-    for (int m = 0; m < N_MODELS; m++) {
+    t->n_rows = N_LPIRFS_WEIGHT_MODELS;
+    for (int m = 0; m < N_LPIRFS_WEIGHT_MODELS; m++) {
         const BootstrapColumns *b = &boot[m];
         char (*row)[CELL] = t->cell[m];
         snprintf(row[0], CELL, "%s", model_name[m]);
@@ -241,8 +241,8 @@ static void resample_table(Table *t, const BootstrapColumns *boot) {
     static const char *const names[] = { "model", "benchmarks", "resamples each", "fewest usable",
                                          "benchmarks with every resample usable" };
     set_header(t, 5, names);
-    t->n_rows = N_MODELS;
-    for (int m = 0; m < N_MODELS; m++) {
+    t->n_rows = N_LPIRFS_WEIGHT_MODELS;
+    for (int m = 0; m < N_LPIRFS_WEIGHT_MODELS; m++) {
         const BootstrapColumns *b = &boot[m];
         char (*row)[CELL] = t->cell[m];
         snprintf(row[0], CELL, "%s", model_name[m]);
@@ -275,14 +275,14 @@ static int block_length_table(Table *t) {
             || entry->d_name[consumed] != 0 || run != 0) continue;
         char path[600];
         snprintf(path, sizeof path, "%s/%s", OUT_DIR, entry->d_name);
-        BootstrapColumns boot[N_MODELS];
+        BootstrapColumns boot[N_LPIRFS_WEIGHT_MODELS];
         read_bootstrap(path, boot);
         int at = t->n_rows++;
         block[at] = length;
         snprintf(t->cell[at][0], CELL, "%d", length);
         snprintf(t->cell[at][1], CELL, "%d", n_bootstrap);
         snprintf(t->cell[at][2], CELL, "%d", first);
-        for (int m = 0; m < N_MODELS; m++) snprintf(t->cell[at][3 + m], CELL, "%.4f", median(&boot[m].ratio));
+        for (int m = 0; m < N_LPIRFS_WEIGHT_MODELS; m++) snprintf(t->cell[at][3 + m], CELL, "%.4f", median(&boot[m].ratio));
         free_bootstrap(boot);
     }
     closedir(dir);
@@ -351,7 +351,7 @@ static void write_latex(FILE *f, const Table *t) {
 }
 
 int main(void) {
-    static OracleColumns oracle[N_MODELS];
+    static OracleColumns oracle[N_LPIRFS_WEIGHT_MODELS];
     read_oracle(oracle);
 
     static Table table[5];
@@ -362,7 +362,7 @@ int main(void) {
                                .title = "Oracle v by whether the configuration with the smallest mean loss is the true one" };
     winner_table(&table[n_tables++], oracle);
 
-    BootstrapColumns boot[N_MODELS];
+    BootstrapColumns boot[N_LPIRFS_WEIGHT_MODELS];
     if (read_bootstrap(BOOTSTRAP_PATH, boot)) {
         table[n_tables] = (Table){ .label = "bootstrap",
                                    .title = "Bootstrap against oracle sigma2 on run 0 of every configuration" };
@@ -384,7 +384,7 @@ int main(void) {
     fclose(report);
     fclose(latex);
 
-    for (int m = 0; m < N_MODELS; m++) {
+    for (int m = 0; m < N_LPIRFS_WEIGHT_MODELS; m++) {
         free(oracle[m].d.value);
         free(oracle[m].sigma2.value);
         free(oracle[m].s.value);

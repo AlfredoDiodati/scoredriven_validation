@@ -133,8 +133,8 @@ static inline FitMetricBootstrapOptions fit_metric_bootstrap_options_default(voi
 }
 
 typedef struct {
-    double sigma2_star[N_MODELS];
-    int n_usable[N_MODELS];      /* resamples whose response under the method is finite */
+    double sigma2_star[N_LPIRFS_WEIGHT_MODELS];
+    int n_usable[N_LPIRFS_WEIGHT_MODELS];      /* resamples whose response under the method is finite */
     int n_qvarma_converged;      /* resamples whose t-QVARMA fit met the tolerance */
     double qvarma_mean_iterations;
 } FitMetricBootstrap;
@@ -149,7 +149,7 @@ fit_iterations. The local projections are fitted through lp_system_from_stored a
 lp_lin_and_nl as applications/abm_system_fit_lp.c fits every simulated run.
 */
 static inline void fit_metric_responses(Mat series, const QvarmaParams *qvarma_start, QvarmaFitOptions fit_options,
-                                        double *out[N_MODELS], int usable[N_MODELS], int *fit_converged,
+                                        double *out[N_LPIRFS_WEIGHT_MODELS], int usable[N_LPIRFS_WEIGHT_MODELS], int *fit_converged,
                                         int *fit_iterations) {
     float qvarma_response[RESPONSE_QVARMA_DIM];
     QvarmaFitResult fit = qvarma_fit(series, qvarma_start, fit_options);
@@ -171,7 +171,7 @@ static inline void fit_metric_responses(Mat series, const QvarmaParams *qvarma_s
         state[LP_LOSS_S2] = lp.nl.irf_s2_mean.d;
         for (int loss = 0; loss < LP_N_LOSSES; loss++) finite[loss] = _lp_all_finite(state[loss]);
     }
-    for (int model = MODEL_LP_LIN; model < N_MODELS; model++) {
+    for (int model = MODEL_LP_LIN; model < N_LPIRFS_WEIGHT_MODELS; model++) {
         int first = model == MODEL_LP_NL ? LP_LOSS_S1 : model - MODEL_LP_LIN;
         int last = model == MODEL_LP_NL ? LP_LOSS_S2 : first;
         usable[model] = has_responses;
@@ -202,8 +202,8 @@ static inline FitMetricBootstrap fit_metric_bootstrap(Mat stored, const QvarmaPa
     const int B = options.n_bootstrap, T = stored.c;
     FitMetricBootstrap result = { { 0 }, { 0 }, 0, 0 };
 
-    double *responses[N_MODELS], *slot[N_MODELS];
-    for (int model = 0; model < N_MODELS; model++) {
+    double *responses[N_LPIRFS_WEIGHT_MODELS], *slot[N_LPIRFS_WEIGHT_MODELS];
+    for (int model = 0; model < N_LPIRFS_WEIGHT_MODELS; model++) {
         responses[model] = malloc((size_t)B * response_dim(model) * sizeof(double));
         assert(responses[model] && "fit_metric_bootstrap: out of memory");
     }
@@ -221,16 +221,16 @@ static inline FitMetricBootstrap fit_metric_bootstrap(Mat stored, const QvarmaPa
 
         /* Each method writes into its next free row, which is kept only when
            the response is usable. */
-        for (int model = 0; model < N_MODELS; model++)
+        for (int model = 0; model < N_LPIRFS_WEIGHT_MODELS; model++)
             slot[model] = responses[model] + (size_t)result.n_usable[model] * response_dim(model);
-        int usable[N_MODELS], converged, fit_iterations;
+        int usable[N_LPIRFS_WEIGHT_MODELS], converged, fit_iterations;
         fit_metric_responses(resample, qvarma_start, fit_options, slot, usable, &converged, &fit_iterations);
-        for (int model = 0; model < N_MODELS; model++) result.n_usable[model] += usable[model];
+        for (int model = 0; model < N_LPIRFS_WEIGHT_MODELS; model++) result.n_usable[model] += usable[model];
         result.n_qvarma_converged += converged;
         iterations += fit_iterations;
     }
 
-    for (int model = 0; model < N_MODELS; model++) {
+    for (int model = 0; model < N_LPIRFS_WEIGHT_MODELS; model++) {
         int n = result.n_usable[model];
         result.sigma2_star[model] = n >= 2 ? fit_metric_sigma2(responses[model], n, response_dim(model)) : NAN;
         free(responses[model]);

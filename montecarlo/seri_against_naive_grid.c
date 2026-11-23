@@ -24,6 +24,9 @@ Writes out/montecarlo/seri_against_naive_grid_report.txt:
    holds it, summarised per grid as how many configurations reach at least
    half, at least 90% and none, and the correlation across configurations of
    the two grids' shares.
+
+State 1 and state 2 on their own are left out; they are reported by
+old/montecarlo_single_states/single_state_seri_against_naive_grid.c.
 */
 
 /* getline and fmemopen are POSIX, hidden by -std=c11 otherwise. */
@@ -53,18 +56,23 @@ typedef struct {
     int set_size;
 } Cell;
 
-static Cell *cells[N_GRIDS][N_MODELS];
+static Cell *cells[N_GRIDS][N_LPIRFS_WEIGHT_MODELS];
 static long n_unparsed[N_GRIDS], n_duplicated[N_GRIDS];
 
 static size_t cell_index(int cop, int run) {
     return (size_t)cop * MAX_RUN + run;
 }
 
+/* The models reported: every model but state 1 and state 2 on their own. A row of any other model is skipped. */
+static int reported(int model) {
+    return !model_is_single_state(model);
+}
+
 static void add_row(int grid, const char *line) {
-    char label[32];
+    char label[MODEL_LABEL_CAPACITY];
     int cop, run, in_set, rank, set_size, decided, dropped, lowest;
     double pvalue, final_pvalue;
-    if (sscanf(line, "%31[^,],%d,%d,%d,%d,%lf,%d,%d,%lf,%d,%d", label, &cop, &run, &in_set, &rank, &pvalue,
+    if (sscanf(line, "%63[^,],%d,%d,%d,%d,%lf,%d,%d,%lf,%d,%d", label, &cop, &run, &in_set, &rank, &pvalue,
                &set_size, &decided, &final_pvalue, &dropped, &lowest) != 11
         || cop < 0 || cop >= MAX_COP || run < 0 || run >= MAX_RUN || lowest < 0 || lowest >= MAX_COP) {
         n_unparsed[grid]++;
@@ -77,6 +85,8 @@ static void add_row(int grid, const char *line) {
         n_unparsed[grid]++;
         return;
     }
+    /* The naive grid holds only the models of lpirfs' weight. */
+    if (model >= N_LPIRFS_WEIGHT_MODELS || !reported(model)) return;
     Cell *cell = &cells[grid][model][cell_index(cop, run)];
     if (cell->in_set >= 0) n_duplicated[grid]++;
     cell->in_set = (signed char)in_set;
@@ -120,7 +130,7 @@ static void write_per_grid(FILE *out) {
                  "benchmarks.\n\n");
     fprintf(out, "model, grid, benchmarks, own configuration in the set, alone in the set, first by mean loss, "
                  "mean rank, mean set size, median set size, largest set\n");
-    for (int model = 0; model < N_MODELS; model++)
+    for (int model = 0; model < N_LPIRFS_WEIGHT_MODELS; model++)
         for (int grid = 0; grid < N_GRIDS; grid++) {
             long n = 0, in_set = 0, alone = 0, first = 0, largest = 0;
             double rank_sum = 0, size_sum = 0;
@@ -155,7 +165,7 @@ static void write_paired(FILE *out) {
                  "in each set, and whether both losses give the same configuration the smallest mean loss.\n\n");
     fprintf(out, "model, benchmarks in both, in both sets, Seri set only, naive set only, neither, "
                  "same smallest-loss configuration\n");
-    for (int model = 0; model < N_MODELS; model++) {
+    for (int model = 0; model < N_LPIRFS_WEIGHT_MODELS; model++) {
         long n = 0, both = 0, seri_only = 0, naive_only = 0, neither = 0, same_lowest = 0;
         for (size_t at = 0; at < (size_t)MAX_COP * MAX_RUN; at++) {
             const Cell *s = &cells[GRID_SERI][model][at], *v = &cells[GRID_NAIVE][model][at];
@@ -180,7 +190,7 @@ static void write_per_configuration(FILE *out) {
                  "configurations.\n\n");
     fprintf(out, "model, configurations, Seri at least half, Seri at least 90%%, Seri none, naive at least half, "
                  "naive at least 90%%, naive none, correlation\n");
-    for (int model = 0; model < N_MODELS; model++) {
+    for (int model = 0; model < N_LPIRFS_WEIGHT_MODELS; model++) {
         int n_configurations = 0, half[N_GRIDS] = { 0, 0 }, ninety[N_GRIDS] = { 0, 0 }, none[N_GRIDS] = { 0, 0 };
         double sum[N_GRIDS] = { 0, 0 }, square[N_GRIDS] = { 0, 0 }, cross = 0;
         for (int cop = 0; cop < MAX_COP; cop++) {
@@ -218,7 +228,7 @@ static void write_per_configuration(FILE *out) {
 
 int main(void) {
     for (int grid = 0; grid < N_GRIDS; grid++)
-        for (int model = 0; model < N_MODELS; model++) {
+        for (int model = 0; model < N_LPIRFS_WEIGHT_MODELS; model++) {
             cells[grid][model] = malloc((size_t)MAX_COP * MAX_RUN * sizeof(Cell));
             assert(cells[grid][model]);
             for (size_t at = 0; at < (size_t)MAX_COP * MAX_RUN; at++) cells[grid][model][at].in_set = -1;
@@ -241,6 +251,6 @@ int main(void) {
     fclose(out);
 
     for (int grid = 0; grid < N_GRIDS; grid++)
-        for (int model = 0; model < N_MODELS; model++) free(cells[grid][model]);
+        for (int model = 0; model < N_LPIRFS_WEIGHT_MODELS; model++) free(cells[grid][model]);
     return 0;
 }

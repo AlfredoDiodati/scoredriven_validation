@@ -36,6 +36,9 @@ Writes, per grid:
 Every row of both files is read; a row that does not parse, a benchmark found
 twice, and a row whose member list disagrees with its set size are counted
 and reported at the top of the text files.
+
+State 1 and state 2 on their own are left out; they are reported by
+old/montecarlo_single_states/single_state_seri_against_naive_by_configuration.c.
 */
 
 /* getline and fmemopen are POSIX, hidden by -std=c11 otherwise. */
@@ -63,7 +66,7 @@ and reported at the top of the text files.
 
 enum { GRID_SERI, GRID_NAIVE };
 static const char *const grid_label[N_GRIDS] = { "Seri", "naive" };
-static const char *const model_name[N_MODELS] = { "qvarma", "linear", "state 1", "state 2", "both states" };
+static const char *const model_name[N_LPIRFS_WEIGHT_MODELS] = { "qvarma", "linear", "state 1", "state 2", "both states" };
 
 /* The three outcomes of the cop_0191 tables, for one configuration in one set. */
 enum { OUTCOME_IN_SET, OUTCOME_ALONE, OUTCOME_SMALLEST_LOSS, N_OUTCOMES };
@@ -83,9 +86,9 @@ typedef struct {
     int *appearances;
 } ModelCounts;
 
-static ModelCounts counts[N_GRIDS][N_MODELS];
+static ModelCounts counts[N_GRIDS][N_LPIRFS_WEIGHT_MODELS];
 /* set_size_of[grid][model][cop * MAX_RUN + run], 0 for a benchmark not in the file. */
-static short *set_size_of[N_GRIDS][N_MODELS];
+static short *set_size_of[N_GRIDS][N_LPIRFS_WEIGHT_MODELS];
 static long n_unparsed[N_GRIDS], n_duplicated[N_GRIDS], n_size_mismatch[N_GRIDS];
 
 static void tally(Tally *t, const int *members, int n_members, int lowest_loss_cop, int cop) {
@@ -97,11 +100,16 @@ static void tally(Tally *t, const int *members, int n_members, int lowest_loss_c
     t->outcome[OUTCOME_SMALLEST_LOSS] += lowest_loss_cop == cop;
 }
 
+/* The models reported: every model but state 1 and state 2 on their own. A row of any other model is skipped. */
+static int reported(int model) {
+    return !model_is_single_state(model);
+}
+
 static void add_row(int grid, const char *line) {
-    char label[32];
+    char label[MODEL_LABEL_CAPACITY];
     int cop, run, in_set, rank, set_size, decided, dropped, lowest, offset;
     double pvalue, final_pvalue;
-    if (sscanf(line, "%31[^,],%d,%d,%d,%d,%lf,%d,%d,%lf,%d,%d,%n", label, &cop, &run, &in_set, &rank, &pvalue,
+    if (sscanf(line, "%63[^,],%d,%d,%d,%d,%lf,%d,%d,%lf,%d,%d,%n", label, &cop, &run, &in_set, &rank, &pvalue,
                &set_size, &decided, &final_pvalue, &dropped, &lowest, &offset) != 11
         || cop < 0 || cop >= MAX_COP || run < 0 || run >= MAX_RUN || lowest < 0 || lowest >= MAX_COP) {
         n_unparsed[grid]++;
@@ -114,6 +122,8 @@ static void add_row(int grid, const char *line) {
         n_unparsed[grid]++;
         return;
     }
+    /* The naive grid holds only the models of lpirfs' weight. */
+    if (model >= N_LPIRFS_WEIGHT_MODELS || !reported(model)) return;
 
     int members[MAX_COP], n_members = 0;
     const char *at = line + offset;
@@ -237,7 +247,8 @@ static void write_cop_0191_text(void) {
         fprintf(out, "%s\n", title);
         fprintf(out, "order: %s, %s, %s, median configurations in the set; Seri grid, then naive grid\n",
                 outcome_name[0], outcome_name[1], outcome_name[2]);
-        for (int model = 0; model < N_MODELS; model++) {
+        for (int model = 0; model < N_LPIRFS_WEIGHT_MODELS; model++) {
+            if (!reported(model)) continue;
             fprintf(out, "%s:", model_name[model]);
             for (int grid = 0; grid < N_GRIDS; grid++) {
                 const Tally *t = &counts[grid][model].table[table];
@@ -272,7 +283,8 @@ static void write_cop_0191_latex(void) {
         fprintf(out, " & \\multicolumn{4}{c}{Seri} & \\multicolumn{4}{c}{naive} \\\\\n");
         fprintf(out, "model & %s & %s & %s & median set size & %s & %s & %s & median set size \\\\\n\\hline\n",
                 outcome_name[0], outcome_name[1], outcome_name[2], outcome_name[0], outcome_name[1], outcome_name[2]);
-        for (int model = 0; model < N_MODELS; model++) {
+        for (int model = 0; model < N_LPIRFS_WEIGHT_MODELS; model++) {
+            if (!reported(model)) continue;
             fprintf(out, "%s", model_name[model]);
             for (int grid = 0; grid < N_GRIDS; grid++) {
                 for (int outcome = 0; outcome < N_OUTCOMES; outcome++)
@@ -345,8 +357,9 @@ static void write_presence(void) {
     write_row_checks(out);
     fprintf(out, "Own rate: the share of a configuration's own benchmarks whose set holds it. Off-target rate: the "
                  "share of the other configurations' benchmarks whose set holds it.\n\n");
-    for (int model = 0; model < N_MODELS; model++)
+    for (int model = 0; model < N_LPIRFS_WEIGHT_MODELS; model++)
         for (int grid = 0; grid < N_GRIDS; grid++) {
+            if (!reported(model)) continue;
             write_presence_block(out, grid, model);
             fprintf(out, "\n");
         }
@@ -358,7 +371,7 @@ static void write_identifiability(void) {
     assert(out && "seri_against_naive_by_configuration: cannot open the identifiability file");
     fprintf(out, "grid,model,benchmark_cop,runs,true_cop_percent,top_other_cop,top_other_percent,off_target_percent\n");
     for (int grid = 0; grid < N_GRIDS; grid++)
-        for (int model = 0; model < N_MODELS; model++) {
+        for (int model = 0; model < N_LPIRFS_WEIGHT_MODELS; model++) {
             const ModelCounts *c = &counts[grid][model];
             long total = 0;
             for (int cop = 0; cop < MAX_COP; cop++) total += c->benchmarks[cop];
@@ -381,7 +394,7 @@ static void write_identifiability(void) {
 
 int main(void) {
     for (int grid = 0; grid < N_GRIDS; grid++)
-        for (int model = 0; model < N_MODELS; model++) {
+        for (int model = 0; model < N_LPIRFS_WEIGHT_MODELS; model++) {
             counts[grid][model].appearances = calloc((size_t)MAX_COP * MAX_COP, sizeof(int));
             set_size_of[grid][model] = calloc((size_t)MAX_COP * MAX_RUN, sizeof(short));
             assert(counts[grid][model].appearances && set_size_of[grid][model]);
@@ -397,7 +410,7 @@ int main(void) {
     write_identifiability();
 
     for (int grid = 0; grid < N_GRIDS; grid++)
-        for (int model = 0; model < N_MODELS; model++) {
+        for (int model = 0; model < N_LPIRFS_WEIGHT_MODELS; model++) {
             free(counts[grid][model].appearances);
             free(set_size_of[grid][model]);
         }

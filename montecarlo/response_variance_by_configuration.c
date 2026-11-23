@@ -17,7 +17,12 @@ configuration, and out/montecarlo/response_variance_by_configuration_report.txt:
 per model, where cop_0191 ranks by noise, and per grid the Spearman correlation
 across configurations between noise and the own rate (share of its own sets
 holding it) and the off-target rate (share of the other configurations' sets
-holding it).
+holding it). The noise is written for every model reported; the correlations
+only for those of lpirfs' state weight, the only ones the naive grid holds,
+and nan for the rest.
+
+State 1 and state 2 on their own are left out; they are reported by
+old/montecarlo_single_states/single_state_response_variance_by_configuration.c.
 */
 
 /* getline is POSIX, hidden by -std=c11 otherwise. */
@@ -38,6 +43,11 @@ static const char *const grid_label[N_GRIDS] = { "Seri", "naive" };
 
 /* own and off-target percentages, indexed [grid][model][cop], NaN when absent. */
 static double own_percent[N_GRIDS][N_MODELS][MAX_COP], off_percent[N_GRIDS][N_MODELS][MAX_COP];
+
+/* The models reported: every model but state 1 and state 2 on their own. */
+static int reported(int model) {
+    return !model_is_single_state(model);
+}
 
 static void read_rates(void) {
     for (int grid = 0; grid < N_GRIDS; grid++)
@@ -92,6 +102,7 @@ int main(void) {
                     "noise against off-target rate Seri, naive\n", FOCUS_COP, FOCUS_COP);
 
     for (int model = 0; model < N_MODELS; model++) {
+        if (!reported(model)) continue;
         ResponseCache cache = response_cache_load_or_build(model, samples, n_samples, n_replicates,
                                                            LP_FIT_DIR_DEFAULT,
                                                            LP_INPUT_DIR_DEFAULT,
@@ -111,8 +122,10 @@ int main(void) {
         for (int sample = 0; sample < n_samples; sample++) AT(noise, sample, 0) = mean_variance[sample];
         mreal median = stats_median(noise);
 
-        double rho[2][N_GRIDS];
-        for (int grid = 0; grid < N_GRIDS; grid++) {
+        /* The naive grid holds only the models of lpirfs' weight, so the
+           others get their noise and no correlations. */
+        double rho[2][N_GRIDS] = { { NAN, NAN }, { NAN, NAN } };
+        for (int grid = 0; grid < N_GRIDS && model < N_LPIRFS_WEIGHT_MODELS; grid++) {
             Mat own = mat_new(n_samples, 1), off = mat_new(n_samples, 1);
             for (int sample = 0; sample < n_samples; sample++) {
                 AT(own, sample, 0) = own_percent[grid][model][samples[sample].index];

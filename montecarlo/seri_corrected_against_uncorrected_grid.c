@@ -34,6 +34,9 @@ Writes out/montecarlo/seri_corrected_against_uncorrected_grid_report.txt:
    of the configuration with the smallest mean loss and of the configurations in
    the set. A loss that does not depend on noise puts both mean ranks near the
    middle, (n + 1) / 2 for n configurations.
+
+State 1 and state 2 on their own are left out; they are reported by
+old/montecarlo_single_states/single_state_seri_corrected_against_uncorrected_grid.c.
 */
 
 /* getline and fmemopen are POSIX, hidden by -std=c11 otherwise. */
@@ -108,14 +111,20 @@ static int paired(int model, size_t at) {
     return cells[GRID_CORRECTED][model][at].in_set >= 0 && cells[GRID_UNCORRECTED][model][at].in_set >= 0;
 }
 
+/* The models reported: every model but state 1 and state 2 on their own. A row of any other model is skipped. */
+static int reported(int model) {
+    return !model_is_single_state(model);
+}
+
 static void store_row(int grid, const char *line) {
-    char label[32];
+    char label[MODEL_LABEL_CAPACITY];
     int cop, run, in_set, rank, set_size, decided, dropped, lowest;
     double pvalue, final_pvalue;
     int model = -1;
-    if (sscanf(line, "%31[^,],%d,%d,%d,%d,%lf,%d,%d,%lf,%d,%d", label, &cop, &run, &in_set, &rank, &pvalue,
+    if (sscanf(line, "%63[^,],%d,%d,%d,%d,%lf,%d,%d,%lf,%d,%d", label, &cop, &run, &in_set, &rank, &pvalue,
                &set_size, &decided, &final_pvalue, &dropped, &lowest) == 11)
         model = model_of(label);
+    if (model >= 0 && !reported(model)) return;
     if (model < 0 || cop < 0 || cop >= MAX_COP || run < 0 || run >= MAX_RUN || lowest < 0 || lowest >= MAX_COP) {
         n_unparsed[grid]++;
         return;
@@ -130,9 +139,9 @@ static void store_row(int grid, const char *line) {
 
 /* The second pass: the set members, which the first pass does not keep. */
 static void count_members(int grid, const char *line) {
-    char label[32];
+    char label[MODEL_LABEL_CAPACITY];
     int cop, run, model = -1;
-    if (sscanf(line, "%31[^,],%d,%d,", label, &cop, &run) == 3) model = model_of(label);
+    if (sscanf(line, "%63[^,],%d,%d,", label, &cop, &run) == 3) model = model_of(label);
     if (model < 0 || cop < 0 || cop >= MAX_COP || run < 0 || run >= MAX_RUN) return;
     size_t at = cell_index(cop, run);
     if (!paired(model, at)) return;
@@ -208,10 +217,10 @@ static void read_noise(void) {
     int header = 1;
     while (getline(&line, &capacity, f) > 0) {
         if (header) { header = 0; continue; }
-        char label[32];
+        char label[MODEL_LABEL_CAPACITY];
         int cop;
         double value;
-        if (sscanf(line, "%31[^,],%d,%lf", label, &cop, &value) != 3) continue;
+        if (sscanf(line, "%63[^,],%d,%lf", label, &cop, &value) != 3) continue;
         int model = model_of(label);
         if (model < 0 || cop < 0 || cop >= MAX_COP) continue;
         noise[model][cop] = value;

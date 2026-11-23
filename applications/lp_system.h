@@ -249,6 +249,18 @@ and under estimate_lambda with
 so an archive of lpirfs' weight has exactly the columns it had before the
 other weights existed, and the archives already stored still read.
 
+The linear projection and d do not depend on the state weight, so only an
+archive of lpirfs' weight stores them. Under any other weight the row has no
+lin_ols_status_<h>, d_<i> or lin_<i>: a reader wanting the linear responses
+of that replicate reads them from the archive of lpirfs' weight for the same
+sample, where the row of the same replicate has the same data_fingerprint.
+
+The fits under the other weights still compute the linear projection and d,
+through lp_lin_and_nl and lp_lin_and_nl_causal, once per weight. Computing them
+once per replicate needs a state-dependent fit in et_al that takes d and the
+VAR's notes as inputs instead of fitting the VAR itself; et_al has none yet.
+docs/MONTECARLO_VALIDATION.md records it as an optimization to do.
+
 fz, the state weight at every period, is not stored: it is a function of the
 data and of lambda, gamma and lag_switching alone, and no comparison reads it.
 
@@ -271,6 +283,9 @@ typedef struct {
     double lambda;
     int causal_hp;
     int lambda_is_converged, lambda_at_bound;
+    /* 0 for a row read from an archive of another weight than lpirfs', which
+       does not store lin_ols_status, d and lin; they are then 0, NaN and NaN. */
+    int has_linear;
     mreal d[LP_SYSTEM_K * LP_SYSTEM_K];
     mreal lin[LP_SYSTEM_RESPONSE_DIM], s1[LP_SYSTEM_RESPONSE_DIM], s2[LP_SYSTEM_RESPONSE_DIM];
 } LpSystemRecord;
@@ -302,6 +317,22 @@ static inline int _lp_system_weight_values(LpSystemStateWeight weight, double *v
     return LP_SYSTEM_N_WEIGHT + LP_SYSTEM_N_LAMBDA_SEARCH;
 }
 
+/* Whether an archive of this weight stores the linear projection and d. */
+static inline int _lp_system_stores_linear(LpSystemStateWeight weight) {
+    return lp_system_state_weight_is_lpirfs(weight);
+}
+
+/* Where the spec_* columns and the weight's own columns start in a row. */
+static inline int _lp_system_spec_start(LpSystemStateWeight weight) {
+    return 8 + (_lp_system_stores_linear(weight) ? 2 : 1) * LP_SYSTEM_HOR;
+}
+
+static inline int _lp_system_weight_start(LpSystemStateWeight weight) {
+    int stored_after_spec = _lp_system_stores_linear(weight) ? LP_SYSTEM_K * LP_SYSTEM_K + 3 * LP_SYSTEM_RESPONSE_DIM
+                                                             : 2 * LP_SYSTEM_RESPONSE_DIM;
+    return _lp_system_spec_start(weight) + LP_SYSTEM_N_SPEC + stored_after_spec;
+}
+
 /* The archive's column names, in the order a row is laid out. Caller frees
    each name and the array. */
 static inline char **_lp_system_column_names(LpSystemStateWeight weight, int *count) {
@@ -321,14 +352,14 @@ static inline char **_lp_system_column_names(LpSystemStateWeight weight, int *co
     int n_weight = _lp_system_weight_values(weight, unused);
     if (weight.estimate_lambda) n_weight += 2;
     int n_fixed = (int)(sizeof fixed / sizeof fixed[0]);
-    int n = n_fixed + 2 * LP_SYSTEM_HOR + LP_SYSTEM_N_SPEC + LP_SYSTEM_K * LP_SYSTEM_K
-          + 3 * LP_SYSTEM_RESPONSE_DIM + n_weight;
+    int linear = _lp_system_stores_linear(weight);
+    int n = _lp_system_weight_start(weight) + n_weight;
     char **names = (char **)malloc((size_t)n * sizeof(char *));
     assert(names && "lp_system: out of memory naming the archive's columns");
     char buffer[64];
     int at = 0;
     for (int i = 0; i < n_fixed; i++) names[at++] = frame_strdup(fixed[i]);
-    for (int h = 1; h <= LP_SYSTEM_HOR; h++) {
+    for (int h = 1; h <= LP_SYSTEM_HOR && linear; h++) {
         snprintf(buffer, sizeof buffer, "lin_ols_status_%d", h);
         names[at++] = frame_strdup(buffer);
     }
@@ -337,12 +368,12 @@ static inline char **_lp_system_column_names(LpSystemStateWeight weight, int *co
         names[at++] = frame_strdup(buffer);
     }
     for (int i = 0; i < LP_SYSTEM_N_SPEC; i++) names[at++] = frame_strdup(spec_name[i]);
-    for (int i = 0; i < LP_SYSTEM_K * LP_SYSTEM_K; i++) {
+    for (int i = 0; i < LP_SYSTEM_K * LP_SYSTEM_K && linear; i++) {
         snprintf(buffer, sizeof buffer, "d_%d", i);
         names[at++] = frame_strdup(buffer);
     }
     static const char *const response_prefix[3] = { "lin", "s1", "s2" };
-    for (int part = 0; part < 3; part++)
+    for (int part = linear ? 0 : 1; part < 3; part++)
         for (int i = 0; i < LP_SYSTEM_RESPONSE_DIM; i++) {
             snprintf(buffer, sizeof buffer, "%s_%d", response_prefix[part], i);
             names[at++] = frame_strdup(buffer);
@@ -376,6 +407,7 @@ static inline LpSystemRecord lp_system_record(const LpLinNlFit *fit, Mat y, Mat 
     r.switching_fingerprint = lp_data_fingerprint(switching);
     r.lambda = fit->nl.spec.lambda;
     r.causal_hp = fit->nl.causal_hp;
+    r.has_linear = 1;
     if (r.has_responses) {
         memcpy(r.d, fit->lin.d.d, sizeof r.d);
         memcpy(r.lin, fit->lin.irf_lin_mean.d, sizeof r.lin);
@@ -445,6 +477,7 @@ static inline void lp_system_write_weighted_archive(const char *path, const LpSy
     _lp_system_spec_values(spec, spec_value);
     double weight_value[LP_SYSTEM_N_WEIGHT + LP_SYSTEM_N_LAMBDA_SEARCH];
     int n_weight = _lp_system_weight_values(weight, weight_value);
+    int linear = _lp_system_stores_linear(weight);
 
     Mat table = mat_new(count, n_columns);
     for (int row = 0; row < count; row++) {
@@ -463,11 +496,11 @@ static inline void lp_system_write_weighted_archive(const char *path, const LpSy
         out[at++] = r->switching_is_constant;
         out[at++] = r->data_fingerprint;
         out[at++] = r->switching_fingerprint;
-        for (int h = 0; h < LP_SYSTEM_HOR; h++) out[at++] = r->lin_ols_status[h];
+        for (int h = 0; h < LP_SYSTEM_HOR && linear; h++) out[at++] = r->lin_ols_status[h];
         for (int h = 0; h < LP_SYSTEM_HOR; h++) out[at++] = r->nl_ols_status[h];
         for (int i = 0; i < LP_SYSTEM_N_SPEC; i++) out[at++] = spec_value[i];
-        for (int i = 0; i < LP_SYSTEM_K * LP_SYSTEM_K; i++) out[at++] = r->d[i];
-        for (int i = 0; i < LP_SYSTEM_RESPONSE_DIM; i++) out[at++] = r->lin[i];
+        for (int i = 0; i < LP_SYSTEM_K * LP_SYSTEM_K && linear; i++) out[at++] = r->d[i];
+        for (int i = 0; i < LP_SYSTEM_RESPONSE_DIM && linear; i++) out[at++] = r->lin[i];
         for (int i = 0; i < LP_SYSTEM_RESPONSE_DIM; i++) out[at++] = r->s1[i];
         for (int i = 0; i < LP_SYSTEM_RESPONSE_DIM; i++) out[at++] = r->s2[i];
         for (int i = 0; i < n_weight; i++) out[at++] = weight_value[i];
@@ -533,7 +566,8 @@ static inline LpSystemRecord *lp_system_read_weighted_archive(const char *path, 
 
     double spec_value[LP_SYSTEM_N_SPEC];
     _lp_system_spec_values(spec, spec_value);
-    int spec_start = 8 + 2 * LP_SYSTEM_HOR;
+    int linear = _lp_system_stores_linear(weight);
+    int spec_start = _lp_system_spec_start(weight);
     for (int row = 0; row < frame.r && layout_matches; row++)
         for (int i = 0; i < LP_SYSTEM_N_SPEC; i++)
             if (!(weight.estimate_lambda && i == LP_SYSTEM_SPEC_LAMBDA)
@@ -541,7 +575,7 @@ static inline LpSystemRecord *lp_system_read_weighted_archive(const char *path, 
 
     double weight_value[LP_SYSTEM_N_WEIGHT + LP_SYSTEM_N_LAMBDA_SEARCH];
     int n_weight = _lp_system_weight_values(weight, weight_value);
-    int weight_start = spec_start + LP_SYSTEM_N_SPEC + LP_SYSTEM_K * LP_SYSTEM_K + 3 * LP_SYSTEM_RESPONSE_DIM;
+    int weight_start = _lp_system_weight_start(weight);
     for (int row = 0; row < frame.r && layout_matches; row++)
         for (int i = 0; i < n_weight; i++)
             if (AT(column[weight_start + i], row, 0) != weight_value[i]) layout_matches = 0;
@@ -561,12 +595,16 @@ static inline LpSystemRecord *lp_system_read_weighted_archive(const char *path, 
             r->switching_is_constant = (int)_lp_system_next(column, &at, row);
             r->data_fingerprint = (double)_lp_system_next(column, &at, row);
             r->switching_fingerprint = (double)_lp_system_next(column, &at, row);
-            for (int h = 0; h < LP_SYSTEM_HOR; h++) r->lin_ols_status[h] = (int)_lp_system_next(column, &at, row);
+            r->has_linear = linear;
+            for (int h = 0; h < LP_SYSTEM_HOR; h++)
+                r->lin_ols_status[h] = linear ? (int)_lp_system_next(column, &at, row) : 0;
             for (int h = 0; h < LP_SYSTEM_HOR; h++) r->nl_ols_status[h] = (int)_lp_system_next(column, &at, row);
             r->lambda = (double)AT(column[spec_start + LP_SYSTEM_SPEC_LAMBDA], row, 0);
             at += LP_SYSTEM_N_SPEC;
-            for (int i = 0; i < LP_SYSTEM_K * LP_SYSTEM_K; i++) r->d[i] = _lp_system_next(column, &at, row);
-            for (int i = 0; i < LP_SYSTEM_RESPONSE_DIM; i++) r->lin[i] = _lp_system_next(column, &at, row);
+            for (int i = 0; i < LP_SYSTEM_K * LP_SYSTEM_K; i++)
+                r->d[i] = linear ? _lp_system_next(column, &at, row) : (mreal)NAN;
+            for (int i = 0; i < LP_SYSTEM_RESPONSE_DIM; i++)
+                r->lin[i] = linear ? _lp_system_next(column, &at, row) : (mreal)NAN;
             for (int i = 0; i < LP_SYSTEM_RESPONSE_DIM; i++) r->s1[i] = _lp_system_next(column, &at, row);
             for (int i = 0; i < LP_SYSTEM_RESPONSE_DIM; i++) r->s2[i] = _lp_system_next(column, &at, row);
             at += n_weight;

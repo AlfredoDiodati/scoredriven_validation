@@ -55,7 +55,7 @@ static int *read_best(const LpSample *samples, int n_samples, int n_replicates) 
     for (int c = 0; c <= highest; c++) sample_of_cop[c] = -1;
     for (int i = 0; i < n_samples; i++) sample_of_cop[samples[i].index] = i;
 
-    size_t n_cells = (size_t)N_MODELS * n_samples * n_replicates;
+    size_t n_cells = (size_t)N_LPIRFS_WEIGHT_MODELS * n_samples * n_replicates;
     int *best = malloc(n_cells * sizeof(int));
     assert(best && sample_of_cop && "fit_metric_oracle: out of memory");
     for (size_t i = 0; i < n_cells; i++) best[i] = -1;
@@ -76,8 +76,8 @@ static int *read_best(const LpSample *samples, int n_samples, int n_replicates) 
         assert(matched == 4 && "fit_metric_oracle: a malformed row in the grid result");
         (void)matched;
         int model = 0;
-        while (model < N_MODELS && strcmp(label, model_label[model]) != 0) model++;
-        assert(model < N_MODELS && cop <= highest && lowest <= highest && run >= 0 && run < n_replicates
+        while (model < N_LPIRFS_WEIGHT_MODELS && strcmp(label, model_label[model]) != 0) model++;
+        assert(model < N_LPIRFS_WEIGHT_MODELS && cop <= highest && lowest <= highest && run >= 0 && run < n_replicates
                && sample_of_cop[cop] >= 0 && sample_of_cop[lowest] >= 0 && "fit_metric_oracle: unknown row");
         best[((size_t)model * n_samples + sample_of_cop[cop]) * n_replicates + run] = sample_of_cop[lowest];
         n_rows++;
@@ -130,7 +130,7 @@ int main(void) {
     int *first_of = malloc((size_t)(n_samples + 1) * sizeof(int));
     assert(d && sigma2 && order && first_of && "fit_metric_oracle: out of memory");
 
-    for (int model = 0; model < N_MODELS; model++) {
+    for (int model = 0; model < N_LPIRFS_WEIGHT_MODELS; model++) {
         double started = omp_get_wtime();
         ResponseCache cache = response_cache_load_or_build(model, samples, n_samples, n_replicates, lp_fit_dir,
                                                            input_dir, RESPONSE_CACHE_DIR_DEFAULT);

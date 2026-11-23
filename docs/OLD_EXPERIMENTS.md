@@ -159,3 +159,48 @@ location, rewrote `out/old/naive_mae_loss/applications/abm_system_mcs.csv` and
 `.txt`, `out/old/naive_mae_loss/montecarlo/fit_metric_report.txt` and `.tex` and
 `out/old/naive_mae_loss/montecarlo/sweep_grid_presence.txt` byte for byte. The
 other programs were not rerun.
+
+## The states on their own, `old/montecarlo_single_states/`
+
+**What it was.** The Monte Carlo grids of `montecarlo/` (bootstrap or Seri
+confidence set, adjusted or naive loss) run on state 1 and state 2 of the
+state-dependent local projection on their own, 400 entries each, beside both
+states in one vector, 800 entries, under each of the four state weights.
+
+**Why it is out.** Including the states on their own is strictly worse than
+both states jointly. Under the adjusted loss, in every grid and under every
+state weight, both states in one vector put the true configuration in the set
+more often, and give it the smallest mean loss more often, than state 1 or
+state 2 alone. Share of the 1,000,000 benchmarks whose set holds the true
+configuration, both states against state 1 and state 2, from
+`out/montecarlo/identification_table/` on 2026-11-23:
+
+- Bootstrap set, lpirfs' weight: 58.4% against 41.4% and 36.9%.
+- Seri set: 24.3% against 11.7% and 10.2% under lpirfs' weight, 27.3% against
+  11.5% and 11.3% under the causal HP cycle, 34.3% against 21.2% and 20.9%
+  under the estimated lambda, 38.6% against 16.4% and 16.0% under both.
+
+The naive loss is left out of the comparison: it is biased, since without the
+variance correction it favours the configurations whose responses are least
+noisy over the true one, so its shares (all below 1%) measure that bias rather
+than the models.
+
+**Where it is recorded.** `out/old/montecarlo_single_states/`, where
+`single_state_rows_split.c` moved the single-state rows of the four results of
+`out/montecarlo/` once the Seri grids finished, with a byte-for-byte check that
+the two parts are a partition of each result. The grids' results before the new
+state weights were added stay whole in `out/montecarlo/before_state_weights/`.
+
+| folder | programs |
+| --- | --- |
+| `old/montecarlo_single_states/` | the four grids `single_state_true_configuration_recovery.c`, `single_state_uncorrected_true_configuration_recovery.c`, `single_state_seri_true_configuration_recovery.c`, `single_state_seri_uncorrected_true_configuration_recovery.c`; the reports `single_state_seri_true_configuration_recovery_report.c`, `single_state_seri_against_naive_grid.c`, `single_state_seri_against_naive_by_configuration.c`, `single_state_response_variance_by_configuration.c`, `single_state_seri_corrected_against_uncorrected_grid.c`, `single_state_identification_table.c`; `single_state_rows_split.c` |
+
+Each is the program of `montecarlo/` with the same name less the prefix,
+restricted to the single-state models (`model_is_single_state` of
+`montecarlo/response_cache.h`) and reading and writing
+`out/old/montecarlo_single_states/`. The grids build at -O3 with `make
+old-single_state_<grid>`; the bootstrap comparisons with `make
+old-single_state_corrected_against_uncorrected_grid` and `make
+old-single_state_seri_against_bootstrap_grid`. The response caches of the
+states stay in `out/montecarlo/sweep_grid_response_cache/`, since both states
+in one vector is stacked from them.

@@ -3,12 +3,13 @@ The grid of montecarlo/seri_true_configuration_recovery.c with the loss left
 uncorrected: the squared error between response vectors averaged over the
 entries, nothing subtracted. Everything else is that grid's: every simulated
 run of every configuration stands in as the benchmark in turn, 1000
-configurations times 1000 runs, for the t-QVARMA and the four local
-projections (linear, state 1, state 2, both states in one vector), the
-benchmark's run index held out of every column, a run with a missing response
-in any column dropped, then et_al's seri_mcs at alpha 0.05. The two grids
-differ only in the subtracted own deviation, so comparing them benchmark by
-benchmark measures what the correction of docs/MCS_ALTERNATIVE_CALIBRATION.md,
+configurations times 1000 runs, for the t-QVARMA, the linear local projection
+and the state-dependent one with both states in one vector under each of the
+four state weights (state 1 and state 2 on their own are run by
+old/montecarlo_single_states/), the benchmark's run index held out of every
+column, a run with a missing response in any column dropped, then et_al's
+seri_mcs at alpha 0.05. The two grids differ only in the subtracted own
+deviation, so comparing them benchmark by benchmark measures what the correction of docs/MCS_ALTERNATIVE_CALIBRATION.md,
 step 2, does on its own.
 
 The loss is montecarlo/recovery_loss.h's recovery_loss_fill with every
@@ -50,6 +51,7 @@ out/montecarlo/sweep_grid_response_cache/, and built there when missing.
 */
 
 #include "montecarlo/recovery_loss.h"
+#include "montecarlo/progress_file.h"
 #include <et_al./inference/seri_mcs.h>
 #include <et_al./frame/frame.h>
 #include <et_al./frame/gzip.h>
@@ -94,6 +96,17 @@ static int n_samples = 0;
 static int n_replicates = 0;
 static int n_threads = 0;
 
+/* The models this grid runs: every model but state 1 and state 2 on their own. */
+static int runs_model(int model) {
+    return !model_is_single_state(model);
+}
+
+static long n_run_models(void) {
+    long n = 0;
+    for (int model = 0; model < N_MODELS; model++) n += runs_model(model);
+    return n;
+}
+
 static size_t done_index(int model, int sample, int replicate) {
     return ((size_t)model * n_samples + sample) * n_replicates + replicate;
 }
@@ -116,13 +129,13 @@ static unsigned char *read_done(long *n_done) {
         int first = 1;
         while (fgets(line, sizeof line, f)) {
             if (first) { first = 0; continue; }
-            char label[32];
+            char label[MODEL_LABEL_CAPACITY];
             int cop, replicate;
-            if (sscanf(line, "%31[^,],%d,%d,", label, &cop, &replicate) != 3) continue;
+            if (sscanf(line, "%63[^,],%d,%d,", label, &cop, &replicate) != 3) continue;
             if (cop < 0 || cop > highest || sample_of_cop[cop] < 0) continue;
             if (replicate < 0 || replicate >= n_replicates) continue;
             for (int model = 0; model < N_MODELS; model++) {
-                if (strcmp(label, model_label[model]) != 0) continue;
+                if (strcmp(label, model_label[model]) != 0 || !runs_model(model)) continue;
                 size_t at = done_index(model, sample_of_cop[cop], replicate);
                 if (!done[at]) { done[at] = 1; (*n_done)++; }
             }
@@ -392,6 +405,7 @@ int main(void) {
     fprintf(stderr, "%d hardware threads\n", n_threads);
 
     struct stat st;
+    progress_file_drop_torn_tail(PROGRESS_PATH);
     int progress_exists = stat(PROGRESS_PATH, &st) == 0;
     int restored = stat(RESULT_PATH, &st) == 0 && !progress_exists;
 
@@ -411,7 +425,7 @@ int main(void) {
     long n_done;
     unsigned char *done = read_done(&n_done);
     fprintf(stderr, "%ld benchmarks already in %s\n", n_done, PROGRESS_PATH);
-    if (restored && n_done == (long)N_MODELS * n_samples * n_replicates) {
+    if (restored && n_done == n_run_models() * n_samples * n_replicates) {
         remove(PROGRESS_PATH);
         fprintf(stderr, "%s holds every model, nothing to do\n", RESULT_PATH);
         free(done);
@@ -434,12 +448,12 @@ int main(void) {
     int run_block = block_text ? atoi(block_text) : n_replicates;
     assert(run_block >= 1 && "seri_uncorrected_true_configuration_recovery: the run block must be at least 1");
     for (int model = FIRST_MODEL; model <= LAST_MODEL; model++)
-        session_remaining += count_remaining(model, 0, n_replicates, done);
+        if (runs_model(model)) session_remaining += count_remaining(model, 0, n_replicates, done);
     session_started = omp_get_wtime();
     for (int run_from = 0; run_from < n_replicates; run_from += run_block) {
         int run_to = run_from + run_block < n_replicates ? run_from + run_block : n_replicates;
         for (int model = FIRST_MODEL; model <= LAST_MODEL; model++)
-            recover_model(model, run_from, run_to, done, progress);
+            if (runs_model(model)) recover_model(model, run_from, run_to, done, progress);
     }
     fclose(progress);
 

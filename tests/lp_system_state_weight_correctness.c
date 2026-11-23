@@ -27,9 +27,13 @@ growth at period 50, so that its switching series is NaN from there on.
 4. The archive: every field of every row read back bit for bit under its own
    weight, and a miss under each of the three others. An archive of lpirfs'
    weight has exactly the columns the archives stored before the other weights
-   existed. An estimated-lambda archive reads whatever spec.lambda is and is a
-   miss under another search tolerance; a given-lambda archive is a miss under
-   another lambda.
+   existed. An archive of any other weight stores no linear projection and no
+   d: its rows read back with has_linear 0, lin_ols_status 0 and d and lin NaN,
+   every other field bit for bit, and it has exactly lpirfs' columns less
+   lin_ols_status_<h>, d_<i> and lin_<i>, plus the weight's own. An
+   estimated-lambda archive reads whatever spec.lambda is and is a miss under
+   another search tolerance; a given-lambda archive is a miss under another
+   lambda.
 
 Writes out/tests/lp_system_state_weight_correctness_report.txt, and a scratch
 archive under out/tests/ that it removes on the way out. Exits 1 on any
@@ -73,21 +77,42 @@ static Mat stored_block(Rng *rng, int T) {
 
 static int same_bits(double a, double b) { return memcmp(&a, &b, sizeof a) == 0; }
 
-/* Every field, the doubles and the response tensors by bit pattern, so a NaN
-   compares equal to itself and finite values to exact equality. Padding is
-   not compared, since a row read back is not zeroed first. */
-static int records_identical(const LpSystemRecord *a, const LpSystemRecord *b) {
+/* Every field but the linear projection's, the doubles and the response
+   tensors by bit pattern, so a NaN compares equal to itself and finite values
+   to exact equality. Padding is not compared, since a row read back is not
+   zeroed first. */
+static int state_fields_identical(const LpSystemRecord *a, const LpSystemRecord *b) {
     return a->replicate == b->replicate && a->has_responses == b->has_responses
         && a->var_ols_status == b->var_ols_status && a->var_rank == b->var_rank
         && a->var_chol_status == b->var_chol_status && a->switching_is_constant == b->switching_is_constant
-        && memcmp(a->lin_ols_status, b->lin_ols_status, sizeof a->lin_ols_status) == 0
         && memcmp(a->nl_ols_status, b->nl_ols_status, sizeof a->nl_ols_status) == 0
         && same_bits(a->data_fingerprint, b->data_fingerprint)
         && same_bits(a->switching_fingerprint, b->switching_fingerprint)
         && same_bits(a->lambda, b->lambda) && a->causal_hp == b->causal_hp
         && a->lambda_is_converged == b->lambda_is_converged && a->lambda_at_bound == b->lambda_at_bound
-        && memcmp(a->d, b->d, sizeof a->d) == 0 && memcmp(a->lin, b->lin, sizeof a->lin) == 0
         && memcmp(a->s1, b->s1, sizeof a->s1) == 0 && memcmp(a->s2, b->s2, sizeof a->s2) == 0;
+}
+
+static int linear_fields_identical(const LpSystemRecord *a, const LpSystemRecord *b) {
+    return a->has_linear == b->has_linear
+        && memcmp(a->lin_ols_status, b->lin_ols_status, sizeof a->lin_ols_status) == 0
+        && memcmp(a->d, b->d, sizeof a->d) == 0 && memcmp(a->lin, b->lin, sizeof a->lin) == 0;
+}
+
+/* What a row read from an archive without the linear projection holds there. */
+static int linear_fields_absent(const LpSystemRecord *r) {
+    int absent = r->has_linear == 0;
+    for (int h = 0; h < LP_SYSTEM_HOR; h++) absent = absent && r->lin_ols_status[h] == 0;
+    for (int i = 0; i < LP_SYSTEM_K * LP_SYSTEM_K; i++) absent = absent && MISNAN(r->d[i]);
+    for (int i = 0; i < LP_SYSTEM_RESPONSE_DIM; i++) absent = absent && MISNAN(r->lin[i]);
+    return absent;
+}
+
+/* Whether the archive has a column whose name starts with prefix. */
+static int has_column_prefix(const DataFrame *frame, const char *prefix) {
+    for (int j = 0; j < frame->n_cols; j++)
+        if (strncmp(frame->columns[j].name, prefix, strlen(prefix)) == 0) return 1;
+    return 0;
 }
 
 int main(void) {
@@ -177,11 +202,29 @@ int main(void) {
         lp_system_write_weighted_archive(SCRATCH_ARCHIVE, rows[w], N_REPLICATES, spec, weights[w]);
         int n_read = 0;
         LpSystemRecord *read_back = lp_system_read_weighted_archive(SCRATCH_ARCHIVE, spec, weights[w], &n_read);
+        int lpirfs_weight = lp_system_state_weight_is_lpirfs(weights[w]);
         int identical = read_back && n_read == N_REPLICATES;
-        for (int i = 0; identical && i < N_REPLICATES; i++) identical = records_identical(&rows[w][i], &read_back[i]);
+        for (int i = 0; identical && i < N_REPLICATES; i++)
+            identical = state_fields_identical(&rows[w][i], &read_back[i])
+                     && (lpirfs_weight ? linear_fields_identical(&rows[w][i], &read_back[i])
+                                       : linear_fields_absent(&read_back[i]));
         free(read_back);
-        snprintf(what, sizeof what, "4. %s: every field of every row read back bit for bit", name);
+        snprintf(what, sizeof what, "4. %s: %s", name,
+                 lpirfs_weight ? "every field of every row read back bit for bit"
+                               : "every field of every row read back bit for bit, the linear projection and d "
+                                 "absent");
         check(report, identical, what);
+
+        if (!lpirfs_weight) {
+            DataFrame frame = df_read_npz(SCRATCH_ARCHIVE);
+            int n_weight_columns = 2 + (weights[w].estimate_lambda ? LP_SYSTEM_N_LAMBDA_SEARCH + 2 : 0);
+            int expected = 8 + LP_SYSTEM_HOR + LP_SYSTEM_N_SPEC + 2 * LP_SYSTEM_RESPONSE_DIM + n_weight_columns;
+            int no_linear = !has_column_prefix(&frame, "lin_") && !has_column_prefix(&frame, "d_");
+            snprintf(what, sizeof what, "4. %s: the archive has no lin_ or d_ column and %d columns in all",
+                     name, expected);
+            check(report, no_linear && frame.n_cols == expected, what);
+            df_free(&frame);
+        }
 
         int others_miss = 1;
         for (int v = 0; v < N_WEIGHTS; v++) {

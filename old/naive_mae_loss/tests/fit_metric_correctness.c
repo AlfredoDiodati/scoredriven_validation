@@ -163,13 +163,13 @@ static void real_series(FILE *report) {
     QvarmaParams start = _response_qvarma_shape();
     check(report, qvarma_load_params(&start, fit_path), "the cached t-QVARMA fit of cop_0191 run 706 loads");
 
-    double *out[N_MODELS];
+    double *out[N_LPIRFS_WEIGHT_MODELS];
     float *stored = malloc(2 * LP_RESPONSE_DIM * sizeof(float));
-    for (int model = 0; model < N_MODELS; model++) out[model] = malloc((size_t)response_dim(model) * sizeof(double));
-    int usable[N_MODELS], converged, iterations;
+    for (int model = 0; model < N_LPIRFS_WEIGHT_MODELS; model++) out[model] = malloc((size_t)response_dim(model) * sizeof(double));
+    int usable[N_LPIRFS_WEIGHT_MODELS], converged, iterations;
     fit_metric_responses(series, &start, qvarma_default_fit_options(), out, usable, &converged, &iterations);
 
-    for (int model = MODEL_LP_LIN; model < N_MODELS; model++) {
+    for (int model = MODEL_LP_LIN; model < N_LPIRFS_WEIGHT_MODELS; model++) {
         int read = stored_response(model, sample, n_samples, n_replicates, REAL_RUN, stored);
         double gap = read && usable[model] ? largest_relative_gap(out[model], stored, response_dim(model)) : INFINITY;
         char what[160];
@@ -202,7 +202,7 @@ static void real_series(FILE *report) {
        the last bit, so a deviation of order 1e-17 survives. */
     int all_zero = 1;
     double largest = 0;
-    for (int model = 0; model < N_MODELS; model++) {
+    for (int model = 0; model < N_LPIRFS_WEIGHT_MODELS; model++) {
         all_zero = all_zero && whole.n_usable[model] == 3 && whole.sigma2_star[model] < 1e-25;
         if (whole.sigma2_star[model] > largest) largest = whole.sigma2_star[model];
     }
@@ -216,14 +216,14 @@ static void real_series(FILE *report) {
     FitMetricBootstrap first = fit_metric_bootstrap(series, &start, options, &first_rng);
     FitMetricBootstrap second = fit_metric_bootstrap(series, &start, options, &second_rng);
     int same = 1;
-    for (int model = 0; model < N_MODELS; model++) {
+    for (int model = 0; model < N_LPIRFS_WEIGHT_MODELS; model++) {
         same = same && first.sigma2_star[model] == second.sigma2_star[model];
         fprintf(report, "      %s sigma2_star over 3 resamples, blocks of 8: %.6g (%d usable)\n", model_label[model],
                 first.sigma2_star[model], first.n_usable[model]);
     }
     check(report, same, "the same seed gives the same sigma2_star");
 
-    for (int model = 0; model < N_MODELS; model++) free(out[model]);
+    for (int model = 0; model < N_LPIRFS_WEIGHT_MODELS; model++) free(out[model]);
     free(stored);
     qvarma_params_free(&start);
     mat_free(series);

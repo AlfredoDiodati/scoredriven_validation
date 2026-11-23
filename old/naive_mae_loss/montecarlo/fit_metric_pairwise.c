@@ -37,11 +37,11 @@ out/old/naive_mae_loss/montecarlo/fit_metric_pairwise_per_cop.csv. Nothing print
 #define PER_COP_PATH OUT_DIR "/fit_metric_pairwise_per_cop.csv"
 #define N_COPS 1000
 #define N_RUNS 1000
-#define N_PAIRS (N_MODELS * (N_MODELS - 1) / 2)
+#define N_PAIRS (N_LPIRFS_WEIGHT_MODELS * (N_LPIRFS_WEIGHT_MODELS - 1) / 2)
 #define ALPHA 0.05
 
 static int model_of(const char *label) {
-    for (int model = 0; model < N_MODELS; model++)
+    for (int model = 0; model < N_LPIRFS_WEIGHT_MODELS; model++)
         if (strcmp(label, model_label[model]) == 0) return model;
     assert(0 && "fit_metric_pairwise: unknown model label");
     return -1;
@@ -65,7 +65,7 @@ static double *read_oracle_v(void) {
     char *text = (char *)gzip_inflate(compressed, length, &text_length);
     free(compressed);
 
-    size_t n_cells = (size_t)N_MODELS * N_COPS * N_RUNS, n_filled = 0;
+    size_t n_cells = (size_t)N_LPIRFS_WEIGHT_MODELS * N_COPS * N_RUNS, n_filled = 0;
     double *v = malloc(n_cells * sizeof *v);
     assert(v && "fit_metric_pairwise: out of memory");
     for (size_t c = 0; c < n_cells; c++) v[c] = NAN;
@@ -100,8 +100,8 @@ static void across_cops_table(Table *t, const double *v) {
     static const char *const names[] = { "model i", "model i'", "mean v_i - v_i'", "std error", "z",
                                          "p, i not higher", "p, i' not higher" };
     set_header(t, 7, names);
-    Mat mean_v = mat_new(N_COPS, N_MODELS);
-    for (int model = 0; model < N_MODELS; model++)
+    Mat mean_v = mat_new(N_COPS, N_LPIRFS_WEIGHT_MODELS);
+    for (int model = 0; model < N_LPIRFS_WEIGHT_MODELS; model++)
         for (int cop = 0; cop < N_COPS; cop++) {
             double total = 0;
             for (int run = 0; run < N_RUNS; run++) total += v[cell_of(model, cop, run)];
@@ -111,8 +111,8 @@ static void across_cops_table(Table *t, const double *v) {
     mat_free(mean_v);
 
     t->n_rows = 0;
-    for (int i = 0; i < N_MODELS; i++)
-        for (int i_prime = i + 1; i_prime < N_MODELS; i_prime++) {
+    for (int i = 0; i < N_LPIRFS_WEIGHT_MODELS; i++)
+        for (int i_prime = i + 1; i_prime < N_LPIRFS_WEIGHT_MODELS; i_prime++) {
             DieboldMariano dm = dm_test(&frame, model_label[i], model_label[i_prime], dm_options_default());
             char (*row)[CELL] = t->cell[t->n_rows++];
             snprintf(row[0], CELL, "%s", model_name[i]);
@@ -141,14 +141,14 @@ static void per_cop_tests(const double *v, PairCounts *counts) {
                  "p_i_prime_not_higher\n");
     memset(counts, 0, N_PAIRS * sizeof *counts);
     const double bonferroni = ALPHA / N_COPS;
-    Mat runs = mat_new(N_RUNS, N_MODELS);
+    Mat runs = mat_new(N_RUNS, N_LPIRFS_WEIGHT_MODELS);
     for (int cop = 0; cop < N_COPS; cop++) {
-        for (int model = 0; model < N_MODELS; model++)
+        for (int model = 0; model < N_LPIRFS_WEIGHT_MODELS; model++)
             for (int run = 0; run < N_RUNS; run++) AT(runs, run, model) = v[cell_of(model, cop, run)];
         DataFrame frame = df_from_matrix(runs, model_label);
         int pair = 0;
-        for (int i = 0; i < N_MODELS; i++)
-            for (int i_prime = i + 1; i_prime < N_MODELS; i_prime++, pair++) {
+        for (int i = 0; i < N_LPIRFS_WEIGHT_MODELS; i++)
+            for (int i_prime = i + 1; i_prime < N_LPIRFS_WEIGHT_MODELS; i_prime++, pair++) {
                 DieboldMariano dm = dm_test(&frame, model_label[i], model_label[i_prime], dm_options_default());
                 PairCounts *c = &counts[pair];
                 c->i_above += dm.mean_diff > 0;
@@ -172,8 +172,8 @@ static void per_cop_table(Table *t, const PairCounts *counts) {
     set_header(t, 7, names);
     t->n_rows = 0;
     int pair = 0;
-    for (int i = 0; i < N_MODELS; i++)
-        for (int i_prime = i + 1; i_prime < N_MODELS; i_prime++, pair++) {
+    for (int i = 0; i < N_LPIRFS_WEIGHT_MODELS; i++)
+        for (int i_prime = i + 1; i_prime < N_LPIRFS_WEIGHT_MODELS; i_prime++, pair++) {
             char (*row)[CELL] = t->cell[t->n_rows++];
             snprintf(row[0], CELL, "%s", model_name[i]);
             snprintf(row[1], CELL, "%s", model_name[i_prime]);

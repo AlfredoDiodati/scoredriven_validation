@@ -14,8 +14,10 @@ gone, and writes out/montecarlo/seri_true_configuration_recovery_report.txt:
    finished before it was stopped: whether the configuration is in each
    procedure's set, as a two by two table, and the mean set size under each.
 
-Rows are read as written; a benchmark appearing twice is counted twice, and
-the report says how many duplicates it found.
+State 1 and state 2 on their own are left out; their rows are in
+old/montecarlo_single_states/ with their own report. Rows are read as written;
+a benchmark appearing twice is counted twice, and the report says how many
+duplicates it found.
 */
 
 /* getline and fmemopen are POSIX, hidden by -std=c11 otherwise. */
@@ -46,9 +48,15 @@ static ModelSummary summary[N_MODELS];
 static signed char *seri_qvarma_in_set, *old_qvarma_in_set;
 static int *seri_qvarma_set_size, *old_qvarma_set_size;
 
+/* The models reported: every model but state 1 and state 2 on their own. */
+static int reported(int model) {
+    return !model_is_single_state(model);
+}
+
+/* A row of a model not reported is skipped like a row that does not parse. */
 static int model_of(const char *label) {
     for (int model = 0; model < N_MODELS; model++)
-        if (strcmp(label, model_label[model]) == 0) return model;
+        if (strcmp(label, model_label[model]) == 0) return reported(model) ? model : -1;
     return -1;
 }
 
@@ -56,9 +64,9 @@ static int model_of(const char *label) {
    does not parse. */
 static int parse_row(const char *line, int *model, int *cop, int *run, int *in_set, int *rank, int *set_size,
                      int *decided) {
-    char label[32];
+    char label[MODEL_LABEL_CAPACITY];
     double pvalue;
-    if (sscanf(line, "%31[^,],%d,%d,%d,%d,%lf,%d,%d,", label, cop, run, in_set, rank, &pvalue, set_size, decided)
+    if (sscanf(line, "%63[^,],%d,%d,%d,%d,%lf,%d,%d,", label, cop, run, in_set, rank, &pvalue, set_size, decided)
         != 8)
         return 0;
     *model = model_of(label);
@@ -144,6 +152,7 @@ static void write_per_model(FILE *out) {
                  "first by mean loss, mean set size, largest set, decided by an accepted test\n");
     for (int model = 0; model < N_MODELS; model++) {
         const ModelSummary *s = &summary[model];
+        if (!reported(model)) continue;
         if (!s->rows) {
             fprintf(out, "%s, 0 benchmarks so far\n", model_label[model]);
             continue;
@@ -163,6 +172,7 @@ static void write_per_configuration(FILE *out) {
     fprintf(out, "model, configurations, at least half, at least 90%%, none, largest share\n");
     for (int model = 0; model < N_MODELS; model++) {
         const ModelSummary *s = &summary[model];
+        if (!reported(model)) continue;
         int n_configurations = 0, half = 0, ninety = 0, none = 0;
         double largest = 0;
         for (int cop = 0; cop < MAX_COP; cop++) {

@@ -48,6 +48,13 @@ state 1 and state 2 (400 entries each) and both states stacked (800 entries).
 It answers, for each configuration, how often the procedure returns it when it
 is the right answer.
 
+The grids now run six models: the t-QVARMA, the linear projection and both
+states stacked under each of the four state weights ("The four grids under the
+other three state weights" below). State 1 and state 2 on their own are
+discarded; their programs and rows are in `old/montecarlo_single_states/` and
+`out/old/montecarlo_single_states/`, and `docs/OLD_EXPERIMENTS.md` says why.
+The results below that quote them were measured before.
+
 - `make mc-true_configuration_recovery` builds at -O3 and runs.
 - `./bin/true_configuration_recovery` does the same, once built.
 
@@ -418,18 +425,124 @@ in `out/montecarlo/seri_true_configuration_recovery_trial/progress.csv`, log in
   the grid above. The set was decided by an accepted test in 58.9% of
   benchmarks.
 
+## The four grids under the other three state weights
+
+Besides the state-dependent projection of lpirfs' weight, the two-sided HP
+cycle at lambda 1600, the four grids (bootstrap or Seri, corrected or
+uncorrected loss) run state 1, state 2 and both
+states under the three other weights of "The local projections" below: the
+causal cycle at lambda 1600, the two-sided cycle at the estimated lambda, and
+the causal cycle at the estimated lambda. That is nine more models, numbers 5
+to 13 of `montecarlo/response_cache.h`, labelled `lp_s1_causal_hp`,
+`lp_nl_estimated_lambda`, `lp_s2_causal_hp_estimated_lambda` and so on, each
+over the same 1,000,000 benchmarks, so 14 million confidence sets per grid. All
+fits are of the 400-period samples; the 188-period fits are not used, as for
+lpirfs' weight. The linear projection does not depend on the weight and is not
+rerun.
+
+Each grid finds its finished result, unpacks it into its progress file, runs
+only the new models and writes the result again with all of them. The results
+as they were before are kept in `out/montecarlo/before_state_weights/`. The two
+Seri grids ran all nine; the state models among them were then moved to
+`out/old/montecarlo_single_states/` with the state models of lpirfs' weight, so
+each grid's result holds six models, and the bootstrap grids, when started,
+run only the three new both-states models (7, 10 and 13), 3 million
+confidence sets each.
+The programs that compare grids against the naive grid
+(`seri_against_naive_grid`, `seri_against_naive_by_configuration`) and the
+programs under `old/` stay on the original five models.
+
+The response caches of the nine models are in
+`out/montecarlo/sweep_grid_response_cache/`, built 2026-11-19, about 11 minutes
+per state model and seconds per both-states model.
+`tests/response_cache_state_weight_correctness.c` checks the cache under every
+weight against the archives on three configurations, and that lpirfs' caches
+are unchanged byte for byte. `tests/response_cache_state_weight_archive_agreement.c`
+checks every entry of the nine new caches, 1000 configurations by 1000 runs,
+against the archives of its weight: equal exactly, none missing (passed
+2026-11-20, after the machine went down without a clean shutdown a minute after
+the last cache was written).
+
+Unclean shutdowns leave a progress file ending in NUL bytes, sometimes after a
+row cut in half. Each grid cuts its progress file at the line holding the
+first NUL byte, or after its last newline, before resuming
+(`montecarlo/progress_file.h`, checked by
+`tests/progress_file_torn_tail_repair.c`), so those benchmarks are redone
+instead of being read as finished.
+
+### Trial
+
+Setup: test builds of the four grids, rows in
+`out/montecarlo/state_weight_trial/`, log in `trial.log` there. Machine: AMD
+Ryzen 7 4800H, 16 hardware threads, nothing else heavy running, under a 10 GB
+address-space cap. Run 2026-11-19 from 19:42, interrupted by the shutdown at
+about 20:50 and resumed 2026-11-20 at 01:22.
+
+- Seri corrected and Seri uncorrected, `FIRST_MODEL=5 LAST_MODEL=13
+  RUN_LIMIT=1`: run 0 of all 1000 configurations under the nine models, 9000
+  benchmarks each. Both hold 9000 distinct rows, 1000 per model.
+- Time, Seri corrected: about 0.035 s per benchmark once the caches exist
+  (over the 936 benchmarks after the first batch of the both-states models),
+  which would give about 90 hours for its 9 million; the full run's opening
+  rate is lower, below.
+- Time, Seri uncorrected: 0.025 s per benchmark over its first 1256, 0.017 s
+  over the 7744 after the restart, so 45 to 60 hours.
+- Bootstrap corrected and uncorrected, also `BENCHMARK_LIMIT=64`: run 0 of
+  `cop_0001` to `cop_0064` under the nine models, 576 benchmarks each, at
+  0.149 and 0.132 s per benchmark wall clock including the variances of the
+  run index. At the 0.09 to 0.125 s the corrected bootstrap grid ran at in
+  October, the two need 450 to 750 hours together.
+- Seri corrected under `lp_nl` of lpirfs' weight, run 0 of `cop_0001` to
+  `cop_0064`: the 64 rows equal byte for byte the same rows of the finished
+  `seri_true_configuration_recovery.csv.gz`, so the change to the model table
+  leaves lpirfs' weight computing what it did.
+
+### Full run
+
+Two launchers, each detached, 10 GB address-space cap, all 16 hardware
+threads, running its two grids one after the other:
+
+- `out/montecarlo/run_seri_state_weight_grids_detached.sh`: Seri corrected,
+  then Seri uncorrected; log `out/montecarlo/seri_state_weight_grids.log`.
+- `out/montecarlo/run_bootstrap_state_weight_grids_detached.sh`: the bootstrap
+  grids (Hansen et al.'s MCS), corrected, then uncorrected; log
+  `out/montecarlo/bootstrap_state_weight_grids.log`.
+
+Each grid appends to its own log (`out/montecarlo/<grid>.log`); the launcher's
+log records the start and end of each grid, whether the earlier result is
+unchanged at the start of the new one, and the rows per model. A launcher can
+be started again after an interruption: a finished grid reports nothing to do,
+an interrupted one resumes.
+
+The Seri launcher runs since 2026-11-20; the bootstrap launcher has not been
+started, so the bootstrap columns of C, E and C E in the identification table
+are "-". Seri corrected ran at about 0.02 s per benchmark (0.0196 s over its
+first 1.54 million) and finished on 2026-11-22.
+
+When the Seri launcher has finished,
+`out/old/montecarlo_single_states/run_single_state_split_detached.sh` (started
+2026-11-23, waiting) moves the single-state rows out of the four results with
+`bin/single_state_rows_split`, checks test builds of the Seri and bootstrap
+corrected grids, in their `montecarlo/` version and their single-state copy,
+against the parted results (run 0 of `cop_0001` to `cop_0064` under models 0
+to 4, byte for byte), and rewrites every report of `montecarlo/` and its
+single-state copy. Log `out/old/montecarlo_single_states/run_single_state_split.log`.
+
 ## One table for the four grids
 
-`make mc-identification_table` writes
-`out/montecarlo/identification_table.tex`: the four grids above (Hansen et
-al.'s bootstrap set or `seri_mcs`, each with the naive or the adjusted loss)
-as one LaTeX table, rows LP linear, LP both states, LP state 1, LP state 2 and
-t-QVARMA, and per grid the share of benchmarks whose set holds the true
+`make mc-identification_table` writes, in `out/montecarlo/identification_table/`,
+`identification_table.tex`: the four grids above (Hansen et al.'s bootstrap
+set or `seri_mcs`, each with the naive or the adjusted loss) as one LaTeX
+table, and per grid the share of benchmarks whose set holds the true
 configuration, the share where it has the smallest mean loss, and the median
-final set size. A cell is filled only when its grid holds all 1,000,000
-benchmarks of that model and is "-" otherwise, so it can be rerun as the
-bootstrap grids finish. `out/montecarlo/identification_table_counts.txt`
-lists the file each grid was read from and its benchmarks per model.
+final set size. Rows: LP (linear); NLP (both states in one vector), also with
+C (causal HP cycle, otherwise two-sided), E (lambda estimated on each run's
+switching series, otherwise 1600) or both; and QVARMA. The states on their
+own are in the grids' results but not in the table. A cell is filled only when its grid holds all 1,000,000
+benchmarks of that model and is "-" otherwise, so it can be rerun as grids
+finish. `identification_table_counts.txt` beside it lists the file each grid
+was read from and its benchmarks per model, and `identification_table.log`
+when each grid was read and how long it took.
 
 ## The local projections
 
@@ -499,6 +612,26 @@ with the same flags, `make app-us_lp_fit_<weight>`, into
 switching series the estimated lambda is 4.54e-05, the lower end of the
 search interval (log q at its upper bound 10), under both the two-sided and
 the causal cycle.
+
+The linear projection and d do not depend on the state weight, so they are
+stored once per sample, in the archives of lpirfs' weight
+(`abm_system_fit_lp<window>/`, `us_lp_fit.npz`). The archives of the other
+three weights hold the state-dependent responses, their fit notes and the VAR's
+statuses, and no `lin_`, `lin_ols_status_` or `d_` column; a reader that needs
+the linear responses of a replicate reads them from the lpirfs archive of the
+same sample. Each of those archives is about two thirds of an lpirfs one.
+
+Optimization to do: the linear projection and d are still computed once per
+weight, four times per replicate and sample, since each weight's run calls
+et_al's `lp_lin_and_nl` or `lp_lin_and_nl_causal`, which fit both models.
+Computing them once needs a state-dependent fit in et_al that takes d and the
+VAR's statuses as inputs instead of fitting the VAR itself, for the two-sided
+and the causal cycle; et_al has none yet. Then one run per sample could fit
+the linear projection once and the state-dependent projection under all four
+weights from its d. Not measured; from the regressor counts, 21 per horizon in
+the linear regressions against 41 in the state-dependent ones, the linear part
+is perhaps a fifth of the 54 minutes the three other weights took over the
+three samples on 2026-11-19, so about 10 minutes per full refit.
 
 ## A separate pipeline that refits nothing
 

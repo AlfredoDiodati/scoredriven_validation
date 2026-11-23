@@ -13,14 +13,20 @@ Per model and grid, over every benchmark (every run of every configuration):
 the share whose set holds the benchmark's configuration, the share where that
 configuration has the smallest mean loss, and the median size of the final
 set. Rows are the linear local projection, the state-dependent one with both
-states stacked, each of its two states on its own, and the t-QVARMA. A model's cell is filled only once the grid
-holds all 1,000,000 of its benchmarks, and is "-" otherwise, so the table can
-be written while a grid is still running. A grid is read from its result, or
-from its progress file when the result does not exist yet.
+states stacked under each of the four state weights of
+applications/lp_system.h, and the t-QVARMA; the states on their own are in
+old/montecarlo_single_states/single_state_identification_table.c. A row label
+carries C for the causal HP cycle (none: two-sided) and E for the lambda
+estimated on each run's switching series (none: lambda 1600). A model's cell
+is filled only once the grid holds all 1,000,000 of its benchmarks, and is "-"
+otherwise, so the table can be written while a grid is still running. A grid
+is read from its result, or from its progress file when the result does not
+exist yet.
 
-Writes out/montecarlo/identification_table.tex and
-out/montecarlo/identification_table_counts.txt, the file each grid was read
-from and the benchmarks it holds per model.
+Writes, in out/montecarlo/identification_table/, identification_table.tex,
+identification_table_counts.txt (the file each grid was read from and the
+benchmarks it holds per model) and identification_table.log (when each grid
+was read and how long it took).
 */
 
 /* getline and fmemopen are POSIX, hidden by -std=c11 otherwise. */
@@ -32,9 +38,12 @@ from and the benchmarks it holds per model.
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <time.h>
 
-#define TABLE_PATH "out/montecarlo/identification_table.tex"
-#define COUNTS_PATH "out/montecarlo/identification_table_counts.txt"
+#define OUTPUT_DIR "out/montecarlo/identification_table"
+#define TABLE_PATH OUTPUT_DIR "/identification_table.tex"
+#define COUNTS_PATH OUTPUT_DIR "/identification_table_counts.txt"
+#define LOG_PATH OUTPUT_DIR "/identification_table.log"
 #define MAX_COP 1024
 #define MAX_RUN 1000
 #define FULL_GRID 1000000L
@@ -57,9 +66,12 @@ static const char *const progress_path[N_GRIDS] = {
 };
 
 /* The table's rows, in the order they are printed. */
-#define N_ROWS 5
-static const int row_model[N_ROWS] = { MODEL_LP_LIN, MODEL_LP_NL, MODEL_LP_S1, MODEL_LP_S2, MODEL_QVARMA };
-static const char *const row_label[N_ROWS] = { "LP", "NLP", "NLP state 1", "NLP state 2", "QVARMA" };
+#define N_ROWS 6
+static const int row_model[N_ROWS] = {
+    MODEL_LP_LIN, MODEL_LP_NL, MODEL_LP_NL_CAUSAL_HP, MODEL_LP_NL_ESTIMATED_LAMBDA,
+    MODEL_LP_NL_CAUSAL_HP_ESTIMATED_LAMBDA, MODEL_QVARMA,
+};
+static const char *const row_label[N_ROWS] = { "LP", "NLP", "NLP C", "NLP E", "NLP C E", "QVARMA" };
 
 typedef struct {
     long n, in_set, lowest, unparsed, duplicated;
@@ -81,10 +93,10 @@ static int model_of(const char *label) {
 }
 
 static void add_row(Grid *grid, const char *line) {
-    char label[32];
+    char label[MODEL_LABEL_CAPACITY];
     int cop, run, in_set, rank, set_size, model = -1;
     double pvalue;
-    if (sscanf(line, "%31[^,],%d,%d,%d,%d,%lf,%d,", label, &cop, &run, &in_set, &rank, &pvalue, &set_size) == 7)
+    if (sscanf(line, "%63[^,],%d,%d,%d,%d,%lf,%d,", label, &cop, &run, &in_set, &rank, &pvalue, &set_size) == 7)
         model = model_of(label);
     /* A progress file being appended can end in half a row, which fails here
        unless it reaches the eleventh comma. */
@@ -145,6 +157,7 @@ static void read_grid(int index) {
         fclose(f);
         size_t text_length;
         unsigned char *text = gzip_inflate(compressed, (size_t)length, &text_length);
+        assert(text && "identification_table: a result did not inflate, out of memory or not gzip");
         free(compressed);
         FILE *rows = fmemopen(text, text_length, "r");
         assert(rows);
@@ -214,7 +227,10 @@ static void write_table(void) {
                  "procedures of \\cite{Hansen-Lunde-Nason-Eco-2011} and \\cite{Seri-et-al-ES-2021} and all "
                  "auxiliary models. Naive column uses squared error as loss; adjusted column uses squared error "
                  "minus the variance corrections of Equations \\eqref{eq:hansen_mcs_loss} and "
-                 "\\eqref{eq:seri_mcs_loss}.\n");
+                 "\\eqref{eq:seri_mcs_loss}. NLP compares the responses of both states in one vector; C "
+                 "is the causal HP cycle of the switching series, at $t$ from periods $1$ to $t$ only, otherwise "
+                 "two-sided; E is the $\\lambda$ found by maximum likelihood on each run's own switching series, "
+                 "otherwise $\\lambda = 1600$.\n");
     fprintf(out, "\\end{tablenotes}\n\\end{table}\n");
     fclose(out);
 }
@@ -235,12 +251,33 @@ static void write_counts(void) {
     fclose(out);
 }
 
+static void log_line(FILE *log, const char *what) {
+    char stamp[32];
+    time_t now = time(NULL);
+    strftime(stamp, sizeof stamp, "%Y-%m-%d %H:%M:%S", localtime(&now));
+    fprintf(log, "%s %s\n", stamp, what);
+    fflush(log);
+}
+
 int main(void) {
     mkdir("out", 0755);
     mkdir("out/montecarlo", 0755);
-    for (int index = 0; index < N_GRIDS; index++) read_grid(index);
+    mkdir(OUTPUT_DIR, 0755);
+    FILE *log = fopen(LOG_PATH, "a");
+    assert(log && "identification_table: cannot open the log");
+    log_line(log, "started");
+    for (int index = 0; index < N_GRIDS; index++) {
+        time_t start = time(NULL);
+        read_grid(index);
+        char what[400];
+        snprintf(what, sizeof what, "%s read from %s in %.0f s", grid_label[index],
+                 grids[index].source ? grids[index].source : "nothing", difftime(time(NULL), start));
+        log_line(log, what);
+    }
     write_table();
     write_counts();
+    log_line(log, "wrote " TABLE_PATH " and " COUNTS_PATH);
+    fclose(log);
     for (int index = 0; index < N_GRIDS; index++)
         for (int model = 0; model < N_MODELS; model++) mat_free(grids[index].tally[model].set_sizes);
     return 0;

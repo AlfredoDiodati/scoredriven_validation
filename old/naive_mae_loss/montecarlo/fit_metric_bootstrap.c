@@ -84,9 +84,9 @@ static OracleRow *read_oracle(const LpSample *samples, int n_samples, int run) {
     int *sample_of_cop = malloc((size_t)(highest + 1) * sizeof(int));
     for (int c = 0; c <= highest; c++) sample_of_cop[c] = -1;
     for (int i = 0; i < n_samples; i++) sample_of_cop[samples[i].index] = i;
-    OracleRow *rows = malloc((size_t)N_MODELS * n_samples * sizeof(OracleRow));
+    OracleRow *rows = malloc((size_t)N_LPIRFS_WEIGHT_MODELS * n_samples * sizeof(OracleRow));
     assert(rows && sample_of_cop && "fit_metric_bootstrap: out of memory");
-    for (int i = 0; i < N_MODELS * n_samples; i++) rows[i] = (OracleRow){ NAN, NAN, -1 };
+    for (int i = 0; i < N_LPIRFS_WEIGHT_MODELS * n_samples; i++) rows[i] = (OracleRow){ NAN, NAN, -1 };
 
     FILE *f = fopen(ORACLE_PATH, "rb");
     assert(f && "fit_metric_bootstrap: out/old/naive_mae_loss/montecarlo/fit_metric_oracle.csv.gz is missing, run bin/fit_metric_oracle");
@@ -113,7 +113,7 @@ static OracleRow *read_oracle(const LpSample *samples, int n_samples, int run) {
         assert(matched == 6 && "fit_metric_bootstrap: a malformed row in the oracle file");
         (void)matched;
         if (row_run == run && cop <= highest && sample_of_cop[cop] >= 0)
-            for (int model = 0; model < N_MODELS; model++)
+            for (int model = 0; model < N_LPIRFS_WEIGHT_MODELS; model++)
                 if (strcmp(label, model_label[model]) == 0)
                     rows[model * n_samples + sample_of_cop[cop]] = (OracleRow){ d, sigma2, lowest };
         if (!end) break;
@@ -147,8 +147,8 @@ static unsigned char *read_done(const LpSample *samples, int n_samples, int run,
     }
     fclose(f);
     for (int i = 0; i < n_samples; i++) {
-        assert(rows_seen[i] == 0 || rows_seen[i] == N_MODELS);
-        rows_seen[i] = rows_seen[i] == N_MODELS;
+        assert(rows_seen[i] == 0 || rows_seen[i] == N_LPIRFS_WEIGHT_MODELS);
+        rows_seen[i] = rows_seen[i] == N_LPIRFS_WEIGHT_MODELS;
         *n_done += rows_seen[i];
     }
     return rows_seen;
@@ -160,8 +160,8 @@ static int compare_lines(const void *a, const void *b) {
     int cop_x, cop_y, model_x = 0, model_y = 0;
     sscanf(x, "%31[^,],%d", label_x, &cop_x);
     sscanf(y, "%31[^,],%d", label_y, &cop_y);
-    while (model_x < N_MODELS && strcmp(label_x, model_label[model_x]) != 0) model_x++;
-    while (model_y < N_MODELS && strcmp(label_y, model_label[model_y]) != 0) model_y++;
+    while (model_x < N_LPIRFS_WEIGHT_MODELS && strcmp(label_x, model_label[model_x]) != 0) model_x++;
+    while (model_y < N_LPIRFS_WEIGHT_MODELS && strcmp(label_y, model_label[model_y]) != 0) model_y++;
     if (model_x != model_y) return model_x - model_y;
     return cop_x - cop_y;
 }
@@ -260,7 +260,7 @@ int main(void) {
 
         #pragma omp critical(fit_metric_bootstrap_progress)
         {
-            for (int model = 0; model < N_MODELS; model++) {
+            for (int model = 0; model < N_LPIRFS_WEIGHT_MODELS; model++) {
                 const OracleRow *o = &oracle[model * n_samples + sample];
                 double s = fit_metric_s(o->d, o->sigma2), s_star = fit_metric_s(o->d, result.sigma2_star[model]);
                 fprintf(progress, "%s,%d,%d,%d,%d,%d,%d,%.1f,%d,%.10g,%.10g,%.10g,%.10g,%.10g,%.10g,%.10g\n",

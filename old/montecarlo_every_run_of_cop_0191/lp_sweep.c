@@ -248,7 +248,7 @@ int main(void) {
     int n_workers = workers_text ? atoi(workers_text) : omp_get_num_procs();
     assert(n_workers >= 1 && "lp_sweep: LP_SWEEP_WORKERS must be at least 1");
 
-    for (int model = MODEL_LP_LIN; model < N_MODELS; model++) sweep_model(samples, benchmark_sample, model, n_workers);
+    for (int model = MODEL_LP_LIN; model < N_LPIRFS_WEIGHT_MODELS; model++) sweep_model(samples, benchmark_sample, model, n_workers);
 
     lp_free_samples(samples, n_samples);
     return 0;

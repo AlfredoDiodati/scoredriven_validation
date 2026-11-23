@@ -70,9 +70,9 @@ static int n_replicates = 0;
 
 /* Which benchmarks the progress file already holds, per model. */
 static int *read_done(int *n_done) {
-    int *done = calloc((size_t)N_MODELS * n_samples, sizeof(int));
+    int *done = calloc((size_t)N_LPIRFS_WEIGHT_MODELS * n_samples, sizeof(int));
     assert(done);
-    for (int model = 0; model < N_MODELS; model++) n_done[model] = 0;
+    for (int model = 0; model < N_LPIRFS_WEIGHT_MODELS; model++) n_done[model] = 0;
     FILE *f = fopen(PROGRESS_PATH, "r");
     if (!f) return done;
 
@@ -83,7 +83,7 @@ static int *read_done(int *n_done) {
         char label[32];
         int cop;
         if (sscanf(line, "%31[^,],%d,", label, &cop) != 2) continue;
-        for (int model = 0; model < N_MODELS; model++) {
+        for (int model = 0; model < N_LPIRFS_WEIGHT_MODELS; model++) {
             if (strcmp(label, model_label[model]) != 0) continue;
             for (int sample = 0; sample < n_samples; sample++)
                 if (samples[sample].index == cop && !done[model * n_samples + sample]) {
@@ -288,11 +288,11 @@ int main(void) {
     }
 
     if (restored) restore_progress();
-    int n_done[N_MODELS];
+    int n_done[N_LPIRFS_WEIGHT_MODELS];
     int *done = read_done(n_done);
     int n_done_all = 0;
-    for (int model = 0; model < N_MODELS; model++) n_done_all += n_done[model];
-    if (restored && n_done_all == N_MODELS * n_samples) {
+    for (int model = 0; model < N_LPIRFS_WEIGHT_MODELS; model++) n_done_all += n_done[model];
+    if (restored && n_done_all == N_LPIRFS_WEIGHT_MODELS * n_samples) {
         remove(PROGRESS_PATH);
         fprintf(stderr, "%s holds every model, nothing to do\n", RESULT_PATH);
         free(done);
@@ -312,7 +312,7 @@ int main(void) {
     const char *workers_text = getenv("SWEEP_COPS_WORKERS");
     int n_workers = workers_text ? atoi(workers_text) : omp_get_num_procs();
     assert(n_workers >= 1 && "sweep_cops: SWEEP_COPS_WORKERS must be at least 1");
-    for (int model = 0; model < N_MODELS; model++)
+    for (int model = 0; model < N_LPIRFS_WEIGHT_MODELS; model++)
         sweep_model(model, done, n_done[model], progress, n_workers);
     fclose(progress);
 

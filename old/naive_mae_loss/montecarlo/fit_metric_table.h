@@ -13,7 +13,7 @@ labelled tab:fit_metric_<label>.
 #define MAX_ROWS 16
 #define CELL 48
 
-static const char *const model_name[N_MODELS] = { "qvarma", "linear", "state 1", "state 2", "both states" };
+static const char *const model_name[N_LPIRFS_WEIGHT_MODELS] = { "qvarma", "linear", "state 1", "state 2", "both states" };
 
 typedef struct {
     const char *label, *title;

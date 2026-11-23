@@ -8,14 +8,21 @@ Read by montecarlo/true_configuration_recovery.c through
 montecarlo/recovery_loss.h, and by the discarded naive-loss programs under
 old/naive_mae_loss/montecarlo/.
 
-Five models: the t-QVARMA (p1q1r2, horizon 20, the stacked total responses, 525
-entries per run, computed from the cached fits in
+Fourteen models. The first five: the t-QVARMA (p1q1r2, horizon 20, the stacked
+total responses, 525 entries per run, computed from the cached fits in
 out/applications/abm_system_fit_qvarma/), the three local projections (linear,
 state 1, state 2, 400 entries per run, read from
 out/applications/abm_system_fit_lp/), and lp_nl, the state-dependent local
 projection with its two states in one vector, state 1's 400 entries followed by
-state 2's. A run with no usable response, under lp_nl a run missing either
-state, is marked by a NaN in its first entry.
+state 2's. Their state weight is lpirfs', the two-sided HP cycle at lambda
+1600. The other nine are state 1, state 2 and both states under each of the
+three other weights of applications/lp_system.h: the causal HP cycle at lambda
+1600, the two-sided cycle at the estimated lambda, and the causal cycle at the
+estimated lambda, read from the tree of fits carrying that weight's suffix,
+out/applications/abm_system_fit_lp_causal_hp/ and so on. The linear projection
+does not depend on the weight, so it has no model under the other three. A run
+with no usable response, under a both-states model a run missing either state,
+is marked by a NaN in its first entry.
 
 float32 for storage and double for the arithmetic, so the only precision lost
 is in the stored responses themselves: 2.1 GB for the t-QVARMA, 1.6 GB for each
@@ -46,13 +53,78 @@ larger than the memory left.
 #define RESPONSE_QVARMA_FIT_DIR "out/applications/abm_system_fit_qvarma"
 #define RESPONSE_CACHE_DIR_DEFAULT "out/montecarlo/sweep_grid_response_cache"
 
-/* New models go at the end: a cache file's header records the model's index. */
-enum { MODEL_QVARMA, MODEL_LP_LIN, MODEL_LP_S1, MODEL_LP_S2, MODEL_LP_NL, N_MODELS };
+/* New models go at the end: a cache file's header records the model's index.
+   N_LPIRFS_WEIGHT_MODELS counts the first five, the only models the naive-loss
+   grid of old/naive_mae_loss/ holds. */
+enum {
+    MODEL_QVARMA, MODEL_LP_LIN, MODEL_LP_S1, MODEL_LP_S2, MODEL_LP_NL,
+    MODEL_LP_S1_CAUSAL_HP, MODEL_LP_S2_CAUSAL_HP, MODEL_LP_NL_CAUSAL_HP,
+    MODEL_LP_S1_ESTIMATED_LAMBDA, MODEL_LP_S2_ESTIMATED_LAMBDA, MODEL_LP_NL_ESTIMATED_LAMBDA,
+    MODEL_LP_S1_CAUSAL_HP_ESTIMATED_LAMBDA, MODEL_LP_S2_CAUSAL_HP_ESTIMATED_LAMBDA,
+    MODEL_LP_NL_CAUSAL_HP_ESTIMATED_LAMBDA,
+    N_MODELS
+};
+#define N_LPIRFS_WEIGHT_MODELS (MODEL_LP_NL + 1)
 
-static const char *const model_label[N_MODELS] = { "qvarma", "lp_lin", "lp_s1", "lp_s2", "lp_nl" };
+/* A label is the response's name followed by the suffix of its state weight's
+   tree of fits (lp_system_state_weight_suffix). */
+static const char *const model_label[N_MODELS] = {
+    "qvarma", "lp_lin", "lp_s1", "lp_s2", "lp_nl",
+    "lp_s1_causal_hp", "lp_s2_causal_hp", "lp_nl_causal_hp",
+    "lp_s1_estimated_lambda", "lp_s2_estimated_lambda", "lp_nl_estimated_lambda",
+    "lp_s1_causal_hp_estimated_lambda", "lp_s2_causal_hp_estimated_lambda", "lp_nl_causal_hp_estimated_lambda",
+};
+
+/* Longer than any model label, for the buffers that parse one back from a
+   csv. */
+#define MODEL_LABEL_CAPACITY 64
+
+/* Which response of a local-projection model: the linear one, state 1, state 2
+   or both states stacked. */
+enum { LP_PART_LIN, LP_PART_S1, LP_PART_S2, LP_PART_NL };
+
+static inline int lp_model_part(int model) {
+    assert(model >= MODEL_LP_LIN && model < N_MODELS);
+    if (model <= MODEL_LP_NL) return LP_PART_LIN + (model - MODEL_LP_LIN);
+    return LP_PART_S1 + (model - MODEL_LP_S1_CAUSAL_HP) % 3;
+}
+
+/* Whether a model is state 1 or state 2 of a state-dependent projection on its
+   own. Its cache is what the both-states model of its weight is stacked from.
+   The programs under montecarlo/ run and report every other model; those of
+   old/montecarlo_single_states/ run and report these. */
+static inline int model_is_single_state(int model) {
+    if (model == MODEL_QVARMA) return 0;
+    int part = lp_model_part(model);
+    return part == LP_PART_S1 || part == LP_PART_S2;
+}
+
+/* The state weight a local-projection model was fitted under. */
+static inline LpSystemStateWeight lp_model_state_weight(int model) {
+    assert(model >= MODEL_LP_LIN && model < N_MODELS);
+    if (model <= MODEL_LP_NL) return lp_system_state_weight(0, 0);
+    int weight = (model - MODEL_LP_S1_CAUSAL_HP) / 3;
+    return lp_system_state_weight(weight != 1, weight != 0);
+}
+
+/* The model with the same state weight and the given part, so a both-states
+   model finds its two state models. */
+static inline int lp_model_with_part(int model, int part) {
+    assert(model >= MODEL_LP_LIN && model < N_MODELS);
+    if (model <= MODEL_LP_NL) return MODEL_LP_LIN + (part - LP_PART_LIN);
+    assert(part != LP_PART_LIN && "response_cache: the linear projection has no model under another weight");
+    return model - (lp_model_part(model) - part);
+}
+
+/* Where a local-projection model's fits are: lp_fit_dir, the tree of lpirfs'
+   weight, followed by the model's weight suffix. */
+static inline void lp_model_fit_dir(int model, const char *lp_fit_dir, char *out, size_t capacity) {
+    snprintf(out, capacity, "%s%s", lp_fit_dir, lp_system_state_weight_suffix(lp_model_state_weight(model)));
+}
 
 /* A local-projection model's label without its "lp_" prefix, as the
-   local-projection programs name their files: lin, s1, s2, nl. */
+   local-projection programs name their files: lin, s1, s2, nl, s1_causal_hp
+   and so on. */
 static inline const char *lp_model_name(int model) {
     assert(model >= MODEL_LP_LIN && model < N_MODELS);
     return model_label[model] + 3;
@@ -67,15 +139,19 @@ typedef struct {
 } ResponseCache;
 
 static inline int response_dim(int model) {
-    return model == MODEL_QVARMA ? RESPONSE_QVARMA_DIM : model == MODEL_LP_NL ? 2 * LP_RESPONSE_DIM : LP_RESPONSE_DIM;
+    if (model == MODEL_QVARMA) return RESPONSE_QVARMA_DIM;
+    return lp_model_part(model) == LP_PART_NL ? 2 * LP_RESPONSE_DIM : LP_RESPONSE_DIM;
 }
 
 /* One replicate's response under a local-projection model, response_dim(model)
-   entries written to out. Returns 0 when the response, or under lp_nl either
+   entries written to out, from a configuration loaded under the model's state
+   weight. Returns 0 when the response, or under a both-states model either
    state's response, is missing or not finite. */
 static inline int lp_model_response(const LpConfiguration *c, int replicate, int model, mreal *out) {
-    int first = model == MODEL_LP_NL ? LP_LOSS_S1 : model - MODEL_LP_LIN;
-    int last = model == MODEL_LP_NL ? LP_LOSS_S2 : first;
+    static const int first_loss[] = { LP_LOSS_LIN, LP_LOSS_S1, LP_LOSS_S2, LP_LOSS_S1 };
+    int part = lp_model_part(model);
+    int first = first_loss[part];
+    int last = part == LP_PART_NL ? LP_LOSS_S2 : first;
     for (int loss = first; loss <= last; loss++) {
         if (!lp_configuration_ok(c, replicate, loss)) return 0;
         memcpy(out + (size_t)(loss - first) * LP_RESPONSE_DIM, lp_response(c->row[replicate], loss),
@@ -160,8 +236,10 @@ static inline void _response_cache_fill(ResponseCache *cache, const LpSample *sa
                     }
                 }
             } else {
-                LpConfiguration c = lp_configuration_load(lp_fit_dir, input_dir, samples[sample].name,
-                                                          n_replicates);
+                char fit_dir[600];
+                lp_model_fit_dir(model, lp_fit_dir, fit_dir, sizeof fit_dir);
+                LpConfiguration c = lp_configuration_load_weighted(fit_dir, input_dir, samples[sample].name,
+                                                                   n_replicates, lp_model_state_weight(model));
                 for (int replicate = 0; replicate < n_replicates; replicate++) {
                     if (!lp_model_response(&c, replicate, model, response)) continue;
                     float *slot = response_slot(cache, sample, replicate);
@@ -197,9 +275,9 @@ static inline void response_cache_free(ResponseCache *cache) {
     cache->data = NULL;
 }
 
-/* lp_nl's cache from the two state caches, each opened or built as any other,
-   so the archives are not read a second time for the same responses. A run
-   missing either state is missing. */
+/* A both-states model's cache from the two state caches of the same weight,
+   each opened or built as any other, so the archives are not read a second
+   time for the same responses. A run missing either state is missing. */
 static inline ResponseCache response_cache_load_or_build(int model, const LpSample *samples, int n_samples,
                                                          int n_replicates, const char *lp_fit_dir,
                                                          const char *input_dir, const char *dir);
@@ -208,8 +286,8 @@ static inline void _response_cache_stack_states(ResponseCache *cache, const LpSa
                                                 const char *lp_fit_dir, const char *input_dir, const char *dir) {
     ResponseCache state[2];
     for (int k = 0; k < 2; k++)
-        state[k] = response_cache_load_or_build(MODEL_LP_S1 + k, samples, cache->n_samples, cache->n_replicates,
-                                                lp_fit_dir, input_dir, dir);
+        state[k] = response_cache_load_or_build(lp_model_with_part(cache->model, LP_PART_S1 + k), samples,
+                                                cache->n_samples, cache->n_replicates, lp_fit_dir, input_dir, dir);
     long n_missing = 0;
     for (int sample = 0; sample < cache->n_samples; sample++)
         for (int replicate = 0; replicate < cache->n_replicates; replicate++) {
@@ -231,8 +309,10 @@ static inline void _response_cache_stack_states(ResponseCache *cache, const LpSa
    configuration count, run count and entries per run as four ints, and is
    rebuilt when any of them or the file's length differs; a restarted run then
    maps it in seconds instead of rereading the fits and the dataset (about 20
-   minutes for a local projection, 10 for the t-QVARMA; lp_nl is put together
-   from the two state caches instead). A build goes to
+   minutes for a local projection, 10 for the t-QVARMA; a both-states model is
+   put together from its two state caches instead). lp_fit_dir is the tree of
+   lpirfs' weight; a model under another weight reads the tree with that
+   weight's suffix. A build goes to
    <model>.f32.partial, renamed once complete, so an interrupted build leaves no
    file that looks finished. Delete the file to force a rebuild after the fits
    or the dataset change. */
@@ -270,7 +350,8 @@ static inline ResponseCache response_cache_load_or_build(int model, const LpSamp
     cache.mapping = _response_cache_map(partial, length, 1);
     assert(cache.mapping && "response_cache: cannot map the cache file");
     cache.data = (float *)((char *)cache.mapping + sizeof expected);
-    if (model == MODEL_LP_NL) _response_cache_stack_states(&cache, samples, lp_fit_dir, input_dir, dir);
+    if (model != MODEL_QVARMA && lp_model_part(model) == LP_PART_NL)
+        _response_cache_stack_states(&cache, samples, lp_fit_dir, input_dir, dir);
     else _response_cache_fill(&cache, samples, lp_fit_dir, input_dir);
     memcpy(cache.mapping, expected, sizeof expected);
     int synced = msync(cache.mapping, length, MS_SYNC) == 0 && rename(partial, path) == 0;

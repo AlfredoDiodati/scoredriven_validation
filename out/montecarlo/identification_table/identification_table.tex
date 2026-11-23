@@ -11,21 +11,23 @@
 \cmidrule(lr){2-2}\cmidrule(lr){3-3}\cmidrule(lr){4-4}\cmidrule(lr){5-5}\cmidrule(lr){6-6}\cmidrule(lr){7-7}
 LP & 7.50\% & 4.15\% & 2 & 25.97\% & 8.54\% & 7 \\
 NLP & 0.69\% & 0.38\% & 3 & 58.36\% & 4.43\% & 74 \\
-NLP state 1 & 0.88\% & 0.45\% & 2 & 41.38\% & 2.51\% & 90 \\
-NLP state 2 & 0.87\% & 0.38\% & 4 & 36.93\% & 2.29\% & 93 \\
+NLP C & - & - & - & - & - & - \\
+NLP E & - & - & - & - & - & - \\
+NLP C E & - & - & - & - & - & - \\
 QVARMA & 14.93\% & 2.17\% & 39 & 66.29\% & 6.24\% & 360 \\
 &&&&&&\\
 \rule{0pt}{3ex} & $\params^*_2 \in \mathcal{M}\explab{2}$ & $\params^*_2=\params\udagg_2$ & $\text{Med}|\mathcal{M}\explab{2}|$ & $\params^*_2 \in \mathcal{M}\explab{2}$ & $\params^*_2=\params\udagg_2$ & $\text{Med}|\mathcal{M}\explab{2}|$ \\
 \cmidrule(lr){2-2}\cmidrule(lr){3-3}\cmidrule(lr){4-4}\cmidrule(lr){5-5}\cmidrule(lr){6-6}\cmidrule(lr){7-7}
 LP & 7.30\% & 4.15\% & 2 & 14.74\% & 8.54\% & 2 \\
 NLP & 0.67\% & 0.38\% & 3 & 24.26\% & 4.43\% & 10 \\
-NLP state 1 & 0.83\% & 0.45\% & 2 & 11.69\% & 2.51\% & 8 \\
-NLP state 2 & 0.81\% & 0.38\% & 3 & 10.15\% & 2.29\% & 7 \\
+NLP C & - & - & - & 27.25\% & 6.04\% & 11 \\
+NLP E & - & - & - & 34.28\% & 8.29\% & 10 \\
+NLP C E & - & - & - & 38.59\% & 6.96\% & 18 \\
 QVARMA & 4.41\% & 2.17\% & 2 & 10.47\% & 6.24\% & 2 \\
 \bottomrule
 \end{tabular}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{tablenotes}
-\item \footnotesize \textit{Note:} share of the 1,000,000 Monte Carlo runs whose \mcs holds the true configuration $\params^*_m \in \mathcal{M}\explab{m}$; share where the true configuration has the smallest mean loss $\params^*_m=\params\udagg_m$; and median size of the final MCS $\text{Med}|\mathcal{M}\explab{m}|$; at a 5\% confidence level for both procedures of \cite{Hansen-Lunde-Nason-Eco-2011} and \cite{Seri-et-al-ES-2021} and all auxiliary models. Naive column uses squared error as loss; adjusted column uses squared error minus the variance corrections of Equations \eqref{eq:hansen_mcs_loss} and \eqref{eq:seri_mcs_loss}.
+\item \footnotesize \textit{Note:} share of the 1,000,000 Monte Carlo runs whose \mcs holds the true configuration $\params^*_m \in \mathcal{M}\explab{m}$; share where the true configuration has the smallest mean loss $\params^*_m=\params\udagg_m$; and median size of the final MCS $\text{Med}|\mathcal{M}\explab{m}|$; at a 5\% confidence level for both procedures of \cite{Hansen-Lunde-Nason-Eco-2011} and \cite{Seri-et-al-ES-2021} and all auxiliary models. Naive column uses squared error as loss; adjusted column uses squared error minus the variance corrections of Equations \eqref{eq:hansen_mcs_loss} and \eqref{eq:seri_mcs_loss}. NLP compares the responses of both states in one vector; C is the causal HP cycle of the switching series, at $t$ from periods $1$ to $t$ only, otherwise two-sided; E is the $\lambda$ found by maximum likelihood on each run's own switching series, otherwise $\lambda = 1600$.
 \end{tablenotes}
 \end{table}

@@ -45,8 +45,9 @@ it, alone or together (applications/lp_system.h, LpSystemStateWeight):
 Each weight writes its own tree, the directory name followed by
 _causal_hp, _estimated_lambda or _causal_hp_estimated_lambda, so
 out/applications/abm_system_fit_lp_causal_hp for --causal-hp on the full
-sample. The linear projection does not depend on the weight; every tree stores
-it anyway, so a reader of one tree needs no other.
+sample. The linear projection and d do not depend on the weight, so only the
+tree of lpirfs' weight stores them; a reader of another weight's tree takes
+them from the lpirfs tree of the same sample.
 
 Built with -DESTIMATION_PERIODS=188, each replicate is cut to its first 188
 stored periods before lp_system_from_stored, the length of the US sample
@@ -373,8 +374,15 @@ int main(int argc, char **argv) {
     fprintf(manifest, "  replicates whose configuration was loaded %ld, fitted in this run %ld\n", n_loaded,
             n_fits - n_loaded);
     fprintf(manifest, "  without responses (no d) %ld\n", n_without);
-    fprintf(manifest, "  with at least one rank-deficient horizon: linear %ld, state dependent %ld\n",
-            n_lin_fallback, n_nl_fallback);
+    /* Only lpirfs' weight stores the linear projection, so only its manifest
+       reports on it. */
+    int linear = lp_system_state_weight_is_lpirfs(weight);
+    if (linear)
+        fprintf(manifest, "  with at least one rank-deficient horizon: linear %ld, state dependent %ld\n",
+                n_lin_fallback, n_nl_fallback);
+    else
+        fprintf(manifest, "  with at least one rank-deficient horizon: state dependent %ld (the linear projection "
+                          "is stored, and reported, only under lpirfs' weight)\n", n_nl_fallback);
     fprintf(manifest, "  with a constant switching series %ld\n", n_constant);
     if (weight.estimate_lambda) {
         fprintf(manifest, "  with an estimated lambda %ld, of which search not converged %ld, "
@@ -394,8 +402,9 @@ int main(int argc, char **argv) {
                       "fitted, computed in this run.\nvar_ols and var_chol are the VAR's statuses behind d "
                       "(0 is fine; var_ols -1 means the data held a NaN\nor an infinity). lin_fallback and "
                       "nl_fallback count the horizons solved by the minimum-norm\nfallback for a "
-                      "rank-deficient design. constant is the switching series' flag. responses says\n"
-                      "whether the row has d and the three response tensors.\n");
+                      "rank-deficient design, lin_fallback - under a weight that does not store the\n"
+                      "linear projection. constant is the switching series' flag. responses says\n"
+                      "whether the row has d and its response tensors.\n");
     if (weight.estimate_lambda)
         fprintf(manifest, "lambda is the replicate's estimate, nan where the switching series held a NaN or "
                           "an infinity;\nconverged and at_bound are hp_estimate's flags.\n");
@@ -407,9 +416,12 @@ int main(int argc, char **argv) {
     for (int s = 0; s < n_samples; s++)
         for (int i = 0; i < n_records[s]; i++) {
             const Summary *r = &records[s][i];
-            fprintf(manifest, "%-12s %9d %7s %7d %8d %12d %11d %8d %9s", samples[s], r->replicate,
+            char lin_fallback[16];
+            if (linear) snprintf(lin_fallback, sizeof lin_fallback, "%d", r->lin_fallback_horizons);
+            else snprintf(lin_fallback, sizeof lin_fallback, "-");
+            fprintf(manifest, "%-12s %9d %7s %7d %8d %12s %11d %8d %9s", samples[s], r->replicate,
                     loaded[s] ? "loaded" : "fitted", r->var_ols_status, r->var_chol_status,
-                    r->lin_fallback_horizons, r->nl_fallback_horizons,
+                    lin_fallback, r->nl_fallback_horizons,
                     r->switching_is_constant, r->has_responses ? "yes" : "no");
             if (weight.estimate_lambda)
                 fprintf(manifest, " %13.6g %9d %8d", r->lambda, r->lambda_is_converged, r->lambda_at_bound);

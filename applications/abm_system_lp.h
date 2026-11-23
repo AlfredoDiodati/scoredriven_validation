@@ -60,11 +60,14 @@ static inline int _lp_all_finite(const mreal *values) {
     return 1;
 }
 
-/* Replicates 0 to n_replicates - 1 of sample, their rows checked against the
-   series they are fitted on. A configuration with no usable archive comes back
-   with every row NULL. */
-static inline LpConfiguration lp_configuration_load(const char *fit_dir, const char *input_dir,
-                                                    const char *sample, int n_replicates) {
+/* Replicates 0 to n_replicates - 1 of sample, read from an archive fitted under
+   the given state weight, their rows checked against the series they are
+   fitted on. A configuration with no usable archive comes back with every row
+   NULL. Under a weight other than lpirfs' the archive holds no linear
+   projection, so the linear model's response is never ok. */
+static inline LpConfiguration lp_configuration_load_weighted(const char *fit_dir, const char *input_dir,
+                                                             const char *sample, int n_replicates,
+                                                             LpSystemStateWeight weight) {
     LpConfiguration c;
     c.n_replicates = n_replicates;
     c.row = calloc((size_t)n_replicates, sizeof(LpSystemRecord *));
@@ -74,7 +77,7 @@ static inline LpConfiguration lp_configuration_load(const char *fit_dir, const c
     char path[640];
     snprintf(path, sizeof path, "%s/%s.npz", fit_dir, sample);
     int n_records = 0;
-    c.records = lp_system_read_archive(path, lp_system_spec(), &n_records);
+    c.records = lp_system_read_weighted_archive(path, lp_system_spec(), weight, &n_records);
 
     char dir[560];
     snprintf(dir, sizeof dir, "%s/%s", input_dir, sample);
@@ -107,6 +110,12 @@ static inline LpConfiguration lp_configuration_load(const char *fit_dir, const c
         }
     }
     return c;
+}
+
+/* lp_configuration_load_weighted under lpirfs' weight. */
+static inline LpConfiguration lp_configuration_load(const char *fit_dir, const char *input_dir,
+                                                    const char *sample, int n_replicates) {
+    return lp_configuration_load_weighted(fit_dir, input_dir, sample, n_replicates, lp_system_state_weight(0, 0));
 }
 
 static inline int lp_configuration_ok(const LpConfiguration *c, int replicate, int loss) {

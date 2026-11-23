@@ -59,7 +59,7 @@ static const char *FIT_DIR;
 static const char *INPUT_DIR;
 
 #define FIRST_LP MODEL_LP_LIN
-#define N_LP (N_MODELS - MODEL_LP_LIN)
+#define N_LP (N_LPIRFS_WEIGHT_MODELS - MODEL_LP_LIN)
 #define LONGEST_DIM (2 * LP_RESPONSE_DIM)
 
 /* A vector of dim entries as a 1 x dim view, for stats_mae. */
