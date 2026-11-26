@@ -1,11 +1,13 @@
 /*
 Does the Model Confidence Set return the configuration a benchmark was
 simulated from? Every simulated run of every configuration stands in as the
-benchmark in turn: 1000 configurations times 1000 runs, for the t-QVARMA and
-the linear local projection and the state-dependent one with both states in
-one vector under each of the four state weights (montecarlo/response_cache.h),
-six million confidence sets. State 1 and state 2 on their own are run by
-old/montecarlo_single_states/.
+benchmark in turn: 1000 configurations times 1000 runs, for the t-QVARMA, the linear local projection and the
+state-dependent one with both states in one vector under the causal HP cycle at
+the estimated lambda, and the t-QVARMA with its two growth states in one
+vector (montecarlo/response_cache.h), four million confidence
+sets. State 1 and state 2 on their own are run by
+old/montecarlo_single_states/, both states under the other three state weights
+by old/montecarlo_other_state_weights/.
 
 Each benchmark is the procedure of docs/MCS_VALIDATION_PROCEDURE.md against
 that run: the squared error between response vectors minus each
@@ -91,9 +93,11 @@ static int n_samples = 0;
 static int n_replicates = 0;
 static int n_threads = 0;
 
-/* The models this grid runs: every model but state 1 and state 2 on their own. */
+/* The models this grid runs: the t-QVARMA, the linear projection and both
+   states in one vector under the causal HP cycle at the estimated lambda, and
+   the t-QVARMA with its two growth states in one vector. */
 static int runs_model(int model) {
-    return !model_is_single_state(model);
+    return model_in_main_grid(model);
 }
 
 static long n_run_models(void) {

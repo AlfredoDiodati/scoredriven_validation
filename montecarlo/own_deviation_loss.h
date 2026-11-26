@@ -18,6 +18,10 @@ kept and not on the benchmark, so it is computed once per run index by
 own_deviation_loss_deviations. own_deviation_loss_fill then forms the squared
 errors of a batch of benchmarks through montecarlo/recovery_loss.h's
 recovery_loss_fill and subtracts it.
+
+own_deviation_loss_held_out_mean_deviations is the same term with the entry
+means taken over S runs that are not rows of the loss matrix, scaled by
+S/(S+1) instead of n/(n-1), for montecarlo/seri_held_out_mean_true_configuration_recovery.c.
 */
 
 #include "montecarlo/recovery_loss.h"
@@ -54,6 +58,55 @@ static inline void own_deviation_loss_deviations(const ResponseCache *cache, con
                     sum += deviation * deviation;
                 }
                 own_deviation[(size_t)sample * n_kept + row] = scale * sum;
+            }
+        }
+        free(entry_mean);
+    }
+}
+
+/* The own deviation with the entry means taken from other runs than the
+   deviations: for every configuration i and every run s listed in
+   deviation_runs,
+
+       S/(S+1) (1/K) sum_h (IR_ish - IR_bar_ih)^2,
+
+   with IR_bar_ih the mean of entry h over the S runs listed in mean_runs, none
+   of which may be in deviation_runs. A run s outside the mean runs is
+   independent of IR_bar_ih, so E (IR_ish - IR_bar_ih)^2 = sigma2_ih (1 + 1/S),
+   and S/(S+1) makes the term unbiased for the mean response variance, as
+   n/(n-1) does when the run is among the n it is centred on. Written to
+   own_deviation[i * n_deviation + row] for the run deviation_runs[row]. The
+   entry means are sums in double over the mean runs, in order. Runs on
+   n_threads threads, one configuration at a time per thread. */
+static inline void own_deviation_loss_held_out_mean_deviations(const ResponseCache *cache, const int *mean_runs,
+                                                               int n_mean, const int *deviation_runs,
+                                                               int n_deviation, double *own_deviation,
+                                                               int n_threads) {
+    assert(n_mean >= 1 && "own_deviation_loss: a mean needs at least one run");
+    const int dim = cache->dim;
+    const double scale = (double)n_mean / (n_mean + 1) / dim;
+
+    #pragma omp parallel num_threads(n_threads)
+    {
+        double *entry_mean = malloc((size_t)dim * sizeof(double));
+        assert(entry_mean && "own_deviation_loss: out of memory");
+        #pragma omp for schedule(dynamic)
+        for (int sample = 0; sample < cache->n_samples; sample++) {
+            for (int h = 0; h < dim; h++) entry_mean[h] = 0;
+            for (int row = 0; row < n_mean; row++) {
+                const float *cell = response_slot(cache, sample, mean_runs[row]);
+                for (int h = 0; h < dim; h++) entry_mean[h] += (double)cell[h];
+            }
+            for (int h = 0; h < dim; h++) entry_mean[h] /= n_mean;
+
+            for (int row = 0; row < n_deviation; row++) {
+                const float *cell = response_slot(cache, sample, deviation_runs[row]);
+                double sum = 0;
+                for (int h = 0; h < dim; h++) {
+                    double deviation = (double)cell[h] - entry_mean[h];
+                    sum += deviation * deviation;
+                }
+                own_deviation[(size_t)sample * n_deviation + row] = scale * sum;
             }
         }
         free(entry_mean);

@@ -8,7 +8,7 @@ Read by montecarlo/true_configuration_recovery.c through
 montecarlo/recovery_loss.h, and by the discarded naive-loss programs under
 old/naive_mae_loss/montecarlo/.
 
-Fourteen models. The first five: the t-QVARMA (p1q1r2, horizon 20, the stacked
+Fifteen models. The first five: the t-QVARMA (p1q1r2, horizon 20, the stacked
 total responses, 525 entries per run, computed from the cached fits in
 out/applications/abm_system_fit_qvarma/), the three local projections (linear,
 state 1, state 2, 400 entries per run, read from
@@ -24,9 +24,23 @@ does not depend on the weight, so it has no model under the other three. A run
 with no usable response, under a both-states model a run missing either state,
 is marked by a NaN in its first entry.
 
+The fifteenth, qvarma_growth_states, is the t-QVARMA with its responses
+conditional on the state of the economy, its two states in one vector as
+lp_nl's are: the same fit, the same horizon and the same total responses, at
+two values of D in place of the sample mean of D_t. With
+
+    g_s = (GDP_growth_(s-3) + GDP_growth_(s-2) + GDP_growth_(s-1) + GDP_growth_s) / 4
+
+defined from the fourth period on, period t is in recession when g_(t-1) is at
+or below the 20th percentile of g_(t-1) over the run's periods t = 5..T, and in
+expansion otherwise. D_expansion and D_recession are the plain means of D_t
+over the periods of each state, so periods 1 to 4, which have no g_(t-1), are in
+neither. The vector is the 525 responses at D_expansion followed by the 525 at
+D_recession, expansion first as lp_nl puts state 1 (GDP above trend) first.
+
 float32 for storage and double for the arithmetic, so the only precision lost
-is in the stored responses themselves: 2.1 GB for the t-QVARMA, 1.6 GB for each
-local projection, 3.2 GB for lp_nl. The cache is a file mapped into memory
+is in the stored responses themselves: 2.1 GB for the t-QVARMA, 4.2 GB for
+qvarma_growth_states, 1.6 GB for each local projection, 3.2 GB for lp_nl. The cache is a file mapped into memory
 rather than read into it, so the kernel can drop pages it needs elsewhere and
 read them back, instead of the machine running out of memory with a cache
 larger than the memory left.
@@ -50,6 +64,11 @@ larger than the memory left.
 #define RESPONSE_QVARMA_SPEC_LABEL "p1q1r2"
 #define RESPONSE_QVARMA_HORIZON 20
 #define RESPONSE_QVARMA_DIM (RESPONSE_QVARMA_K * RESPONSE_QVARMA_K * (RESPONSE_QVARMA_HORIZON + 1))
+/* qvarma_growth_states: the window of the moving average of GDP growth that
+   decides the state, and the quantile of it at or below which a period is in
+   recession. */
+#define RESPONSE_QVARMA_STATE_WINDOW 4
+#define RESPONSE_QVARMA_RECESSION_QUANTILE 0.2
 #define RESPONSE_QVARMA_FIT_DIR "out/applications/abm_system_fit_qvarma"
 #define RESPONSE_CACHE_DIR_DEFAULT "out/montecarlo/sweep_grid_response_cache"
 
@@ -62,18 +81,24 @@ enum {
     MODEL_LP_S1_ESTIMATED_LAMBDA, MODEL_LP_S2_ESTIMATED_LAMBDA, MODEL_LP_NL_ESTIMATED_LAMBDA,
     MODEL_LP_S1_CAUSAL_HP_ESTIMATED_LAMBDA, MODEL_LP_S2_CAUSAL_HP_ESTIMATED_LAMBDA,
     MODEL_LP_NL_CAUSAL_HP_ESTIMATED_LAMBDA,
+    MODEL_QVARMA_GROWTH_STATES,
     N_MODELS
 };
 #define N_LPIRFS_WEIGHT_MODELS (MODEL_LP_NL + 1)
 
-/* A label is the response's name followed by the suffix of its state weight's
-   tree of fits (lp_system_state_weight_suffix). */
+/* A local-projection label is the response's name followed by the suffix of
+   its state weight's tree of fits (lp_system_state_weight_suffix). */
 static const char *const model_label[N_MODELS] = {
     "qvarma", "lp_lin", "lp_s1", "lp_s2", "lp_nl",
     "lp_s1_causal_hp", "lp_s2_causal_hp", "lp_nl_causal_hp",
     "lp_s1_estimated_lambda", "lp_s2_estimated_lambda", "lp_nl_estimated_lambda",
     "lp_s1_causal_hp_estimated_lambda", "lp_s2_causal_hp_estimated_lambda", "lp_nl_causal_hp_estimated_lambda",
+    "qvarma_growth_states",
 };
+
+static inline int model_is_lp(int model) {
+    return model >= MODEL_LP_LIN && model <= MODEL_LP_NL_CAUSAL_HP_ESTIMATED_LAMBDA;
+}
 
 /* Longer than any model label, for the buffers that parse one back from a
    csv. */
@@ -84,24 +109,45 @@ static const char *const model_label[N_MODELS] = {
 enum { LP_PART_LIN, LP_PART_S1, LP_PART_S2, LP_PART_NL };
 
 static inline int lp_model_part(int model) {
-    assert(model >= MODEL_LP_LIN && model < N_MODELS);
+    assert(model_is_lp(model));
     if (model <= MODEL_LP_NL) return LP_PART_LIN + (model - MODEL_LP_LIN);
     return LP_PART_S1 + (model - MODEL_LP_S1_CAUSAL_HP) % 3;
 }
 
 /* Whether a model is state 1 or state 2 of a state-dependent projection on its
    own. Its cache is what the both-states model of its weight is stacked from.
-   The programs under montecarlo/ run and report every other model; those of
-   old/montecarlo_single_states/ run and report these. */
+   The programs of old/montecarlo_single_states/ run and report these. */
 static inline int model_is_single_state(int model) {
-    if (model == MODEL_QVARMA) return 0;
+    if (!model_is_lp(model)) return 0;
     int part = lp_model_part(model);
     return part == LP_PART_S1 || part == LP_PART_S2;
 }
 
+/* Whether a model is both states in one vector under a state weight other than
+   the causal HP cycle at the estimated lambda. The programs of
+   old/montecarlo_other_state_weights/ run and report these. */
+static inline int model_is_other_state_weight(int model) {
+    return model == MODEL_LP_NL || model == MODEL_LP_NL_CAUSAL_HP || model == MODEL_LP_NL_ESTIMATED_LAMBDA;
+}
+
+/* Whether a model is the t-QVARMA with its responses at the sample mean of
+   D_t. The programs of old/montecarlo_mean_jacobian_qvarma/ run and report
+   it. */
+static inline int model_is_mean_jacobian_qvarma(int model) {
+    return model == MODEL_QVARMA;
+}
+
+/* The models the programs of montecarlo/ run and report: the linear
+   projection, both states in one vector under the causal HP cycle at the
+   estimated lambda, and the t-QVARMA's two growth states in one vector. */
+static inline int model_in_main_grid(int model) {
+    return !model_is_single_state(model) && !model_is_other_state_weight(model)
+        && !model_is_mean_jacobian_qvarma(model);
+}
+
 /* The state weight a local-projection model was fitted under. */
 static inline LpSystemStateWeight lp_model_state_weight(int model) {
-    assert(model >= MODEL_LP_LIN && model < N_MODELS);
+    assert(model_is_lp(model));
     if (model <= MODEL_LP_NL) return lp_system_state_weight(0, 0);
     int weight = (model - MODEL_LP_S1_CAUSAL_HP) / 3;
     return lp_system_state_weight(weight != 1, weight != 0);
@@ -110,7 +156,7 @@ static inline LpSystemStateWeight lp_model_state_weight(int model) {
 /* The model with the same state weight and the given part, so a both-states
    model finds its two state models. */
 static inline int lp_model_with_part(int model, int part) {
-    assert(model >= MODEL_LP_LIN && model < N_MODELS);
+    assert(model_is_lp(model));
     if (model <= MODEL_LP_NL) return MODEL_LP_LIN + (part - LP_PART_LIN);
     assert(part != LP_PART_LIN && "response_cache: the linear projection has no model under another weight");
     return model - (lp_model_part(model) - part);
@@ -126,7 +172,7 @@ static inline void lp_model_fit_dir(int model, const char *lp_fit_dir, char *out
    local-projection programs name their files: lin, s1, s2, nl, s1_causal_hp
    and so on. */
 static inline const char *lp_model_name(int model) {
-    assert(model >= MODEL_LP_LIN && model < N_MODELS);
+    assert(model_is_lp(model));
     return model_label[model] + 3;
 }
 
@@ -140,6 +186,7 @@ typedef struct {
 
 static inline int response_dim(int model) {
     if (model == MODEL_QVARMA) return RESPONSE_QVARMA_DIM;
+    if (model == MODEL_QVARMA_GROWTH_STATES) return 2 * RESPONSE_QVARMA_DIM;
     return lp_model_part(model) == LP_PART_NL ? 2 * LP_RESPONSE_DIM : LP_RESPONSE_DIM;
 }
 
@@ -172,12 +219,10 @@ static inline QvarmaParams _response_qvarma_shape(void) {
     return m;
 }
 
-/* Fills out with the stacked total responses, horizon 0 first, and returns 1.
-   Returns 0 when nu <= 2, which impulse_responses would abort on, or when a
-   response comes back non-finite. */
-static inline int _response_qvarma_cell(const QvarmaParams *m, Mat y, float *out) {
-    if (!(m->nu > 2)) return 0;
-    Mat D = qvarma_mean_score_jacobian(m, y);
+/* The stacked total responses at D, horizon 0 first, RESPONSE_QVARMA_DIM
+   entries written to out. Returns 0 when one comes back non-finite. The caller
+   has checked nu > 2, which impulse_responses asserts. */
+static inline int _response_qvarma_total(const QvarmaParams *m, Mat D, float *out) {
     QvarmaImpulseOptions options = qvarma_default_impulse_options();
     options.horizon = RESPONSE_QVARMA_HORIZON;
     QvarmaImpulseResponses r = qvarma_impulse_responses(m, D, options);
@@ -191,7 +236,100 @@ static inline int _response_qvarma_cell(const QvarmaParams *m, Mat y, float *out
         }
 
     qvarma_impulse_responses_free(&r);
+    return ok;
+}
+
+/* Fills out with the stacked total responses at the sample mean of D_t, and
+   returns 1. Returns 0 when nu <= 2, which impulse_responses would abort on, or
+   when a response comes back non-finite. */
+static inline int _response_qvarma_cell(const QvarmaParams *m, Mat y, float *out) {
+    if (!(m->nu > 2)) return 0;
+    Mat D = qvarma_mean_score_jacobian(m, y);
+    int ok = _response_qvarma_total(m, D, out);
     mat_free(D);
+    return ok;
+}
+
+/*
+The growth state of every period of the series y, in the stored layout (GDP
+growth in row STORED_GDP_GROWTH): state[t] is 1 in recession, 0 in expansion
+and -1 for the periods with no state. The state of period t comes from g_(t-1),
+the moving average of GDP growth over the RESPONSE_QVARMA_STATE_WINDOW periods
+ending at t-1, so the first period with a state is the one after the first
+full window. state holds y.c entries. Returns 0 when g holds a non-finite
+value.
+*/
+static inline int response_qvarma_growth_states(Mat y, signed char *state) {
+    const int T = y.c, first = RESPONSE_QVARMA_STATE_WINDOW;
+    assert(T > first && "response_cache: fewer periods than the state's moving average needs");
+    Mat growth = mat_slice(y, STORED_GDP_GROWTH, STORED_GDP_GROWTH + 1, 0, T);
+    Mat g = mat_rolling_mean(growth, RESPONSE_QVARMA_STATE_WINDOW, 1);
+    /* lagged[t - first] = g_(t-1) for t = first..T-1. */
+    Mat lagged = mat_new(T - first, 1);
+    for (int t = first; t < T; t++) lagged.d[t - first] = AT(g, 0, t - 1);
+    mat_free(g);
+    int finite = mat_all_finite(lagged);
+    if (finite) {
+        double threshold = (double)stats_quantile(lagged, (mreal)RESPONSE_QVARMA_RECESSION_QUANTILE);
+        for (int t = 0; t < T; t++)
+            state[t] = t < first ? -1 : (signed char)((double)lagged.d[t - first] <= threshold);
+    }
+    mat_free(lagged);
+    return finite;
+}
+
+/*
+D_expansion and D_recession of qvarma_growth_states for the series y, the
+means of D_t over the periods response_qvarma_growth_states puts in each state,
+as K x K matrices the caller must mat_free. n_recession receives the number of
+recession periods. Returns 0, with both matrices unallocated, when there is no
+state or a state has no period.
+*/
+static inline int response_qvarma_state_jacobians(const QvarmaParams *m, Mat y, Mat *D_expansion, Mat *D_recession,
+                                                  int *n_recession) {
+    const int K = m->K, T = y.c;
+    signed char *state = malloc((size_t)T);
+    assert(state && "response_cache: out of memory");
+    if (!response_qvarma_growth_states(y, state)) {
+        free(state);
+        return 0;
+    }
+
+    Mat *D_path = qvarma_score_jacobian(m, y);
+    Mat sum[2] = { mat_new(K, K), mat_new(K, K) };
+    int count[2] = { 0, 0 };
+    for (int t = 0; t < T; t++) {
+        if (state[t] < 0) continue;
+        for (int i = 0; i < K * K; i++) sum[state[t]].d[i] += D_path[t].d[i];
+        count[state[t]]++;
+    }
+    qvarma_free_mat_array(D_path, T);
+    free(state);
+    if (count[0] == 0 || count[1] == 0) {
+        mat_free(sum[0]);
+        mat_free(sum[1]);
+        return 0;
+    }
+    for (int s = 0; s < 2; s++)
+        for (int i = 0; i < K * K; i++) sum[s].d[i] /= (mreal)count[s];
+    *D_expansion = sum[0];
+    *D_recession = sum[1];
+    *n_recession = count[1];
+    return 1;
+}
+
+/* Fills out with qvarma_growth_states' vector, the responses at D_expansion
+   followed by those at D_recession, and returns 1. Returns 0 when nu <= 2, when
+   a state has no D, or when a response comes back non-finite. */
+static inline int _response_qvarma_growth_states_cell(const QvarmaParams *m, Mat y, float *out) {
+    if (!(m->nu > 2)) return 0;
+    Mat D_expansion, D_recession;
+    int n_recession;
+    if (!response_qvarma_state_jacobians(m, y, &D_expansion, &D_recession, &n_recession)) return 0;
+    int ok = _response_qvarma_total(m, D_expansion, out);
+    ok = _response_qvarma_total(m, D_recession, out + RESPONSE_QVARMA_DIM) && ok;
+    mat_free(D_expansion);
+    mat_free(D_recession);
     return ok;
 }
 
@@ -213,7 +351,7 @@ static inline void _response_cache_fill(ResponseCache *cache, const LpSample *sa
 
         #pragma omp for schedule(dynamic)
         for (int sample = 0; sample < n_samples; sample++) {
-            if (model == MODEL_QVARMA) {
+            if (!model_is_lp(model)) {
                 char dir[560];
                 snprintf(dir, sizeof dir, "%s/%s", input_dir, samples[sample].name);
                 int n_batches = (n_replicates + ABM_SYSTEM_BATCH - 1) / ABM_SYSTEM_BATCH;
@@ -229,7 +367,8 @@ static inline void _response_cache_fill(ResponseCache *cache, const LpSample *sa
                                      RESPONSE_QVARMA_FIT_DIR, samples[sample].name, replicate[b],
                                      RESPONSE_QVARMA_SPEC_LABEL);
                             int ok = qvarma_load_params(&working, fit_path)
-                                  && _response_qvarma_cell(&working, block[b], slot);
+                                  && (model == MODEL_QVARMA ? _response_qvarma_cell(&working, block[b], slot)
+                                                            : _response_qvarma_growth_states_cell(&working, block[b], slot));
                             if (!ok) slot[0] = (float)NAN;
                         }
                         mat_free(block[b]);
@@ -350,7 +489,7 @@ static inline ResponseCache response_cache_load_or_build(int model, const LpSamp
     cache.mapping = _response_cache_map(partial, length, 1);
     assert(cache.mapping && "response_cache: cannot map the cache file");
     cache.data = (float *)((char *)cache.mapping + sizeof expected);
-    if (model != MODEL_QVARMA && lp_model_part(model) == LP_PART_NL)
+    if (model_is_lp(model) && lp_model_part(model) == LP_PART_NL)
         _response_cache_stack_states(&cache, samples, lp_fit_dir, input_dir, dir);
     else _response_cache_fill(&cache, samples, lp_fit_dir, input_dir);
     memcpy(cache.mapping, expected, sizeof expected);

@@ -1,9 +1,10 @@
 /*
 State 1 and state 2 of the state-dependent local projection on
 their own, each under the four state weights, through the grid of
-montecarlo/uncorrected_true_configuration_recovery.c, which runs every
-other model. docs/OLD_EXPERIMENTS.md says why they are left out. Rows go
-to out/old/montecarlo_single_states/.
+montecarlo/uncorrected_true_configuration_recovery.c, which runs the t-QVARMA,
+the linear projection and both states under the causal cycle at the estimated
+lambda. docs/OLD_EXPERIMENTS.md says why they are left out. Rows go to
+out/old/montecarlo_single_states/.
 
 The grid of montecarlo/true_configuration_recovery.c with the loss left
 uncorrected: the squared error between response vectors averaged over the

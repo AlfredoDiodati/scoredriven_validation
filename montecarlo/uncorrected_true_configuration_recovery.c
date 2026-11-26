@@ -1,18 +1,21 @@
 /*
 The grid of montecarlo/true_configuration_recovery.c with the loss left
-uncorrected: the squared error between response vectors averaged over the
-entries, nothing subtracted. Everything else is that grid's: every simulated
-run of every configuration stands in as the benchmark in turn, 1000
-configurations times 1000 runs, for the t-QVARMA, the linear local projection
-and the state-dependent one with both states in one vector under each of the
-four state weights (state 1 and state 2 on their own are run by
-old/montecarlo_single_states/), the benchmark's run index held out of every
-column, a run with a missing response in any column dropped, MCS_TR with block
-length 1, bootstrap variance, seed 123 stream 0, at 2000 resamples. The two grids differ only in the subtracted mean
-response variance, so comparing them benchmark by benchmark measures what the
-correction of docs/MCS_CALIBRATION_PROCEDURE.md does on its own under the
-bootstrap confidence set, as
-montecarlo/seri_uncorrected_true_configuration_recovery.c does under seri_mcs.
+uncorrected: the squared error between response vectors averaged over
+the entries, nothing subtracted. Everything else is that grid's: every
+simulated run of every configuration stands in as the benchmark in turn,
+1000 configurations times 1000 runs, for the t-QVARMA, the linear local
+projection and the state-dependent one with both states in one vector under
+the causal HP cycle at the estimated lambda, and the t-QVARMA with its two
+growth states in one vector (state 1 and state 2 on their own
+are run by old/montecarlo_single_states/, both states under the other three
+state weights by old/montecarlo_other_state_weights/), the benchmark's run
+index held out of every column, a run with a missing response in any column
+dropped, MCS_TR with block length 1, bootstrap variance, seed 123 stream 0,
+at 2000 resamples. The two grids differ only in the subtracted mean response
+variance, so comparing them benchmark by benchmark measures what the correction
+of docs/MCS_CALIBRATION_PROCEDURE.md does on its own under the bootstrap
+confidence set, as montecarlo/seri_uncorrected_true_configuration_recovery.c
+does under seri_mcs.
 
 The loss is montecarlo/recovery_loss.h's recovery_loss_fill with every
 configuration's subtracted variance set to zero, which is the uncorrected
@@ -95,9 +98,11 @@ static int n_samples = 0;
 static int n_replicates = 0;
 static int n_threads = 0;
 
-/* The models this grid runs: every model but state 1 and state 2 on their own. */
+/* The models this grid runs: the t-QVARMA, the linear projection and both
+   states in one vector under the causal HP cycle at the estimated lambda, and
+   the t-QVARMA with its two growth states in one vector. */
 static int runs_model(int model) {
-    return !model_is_single_state(model);
+    return model_in_main_grid(model);
 }
 
 static long n_run_models(void) {

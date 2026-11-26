@@ -1,13 +1,23 @@
 /*
+The t-QVARMA with its responses at the sample mean of D_t, through the program
+of montecarlo/seri_true_configuration_recovery.c,
+which runs the t-QVARMA with its two growth states in its
+place; what follows describes that program. docs/OLD_EXPERIMENTS.md says why
+the mean-D_t t-QVARMA is left out. Outputs go to
+out/old/montecarlo_mean_jacobian_qvarma/.
+
 Does the Model Confidence Set of Seri et al. (2021) return the configuration a
 benchmark was simulated from? The question of
 montecarlo/true_configuration_recovery.c, asked of the procedure of
 docs/MCS_ALTERNATIVE_CALIBRATION.md. Every simulated run of every
 configuration stands in as the benchmark in turn: 1000 configurations times
 1000 runs, for the t-QVARMA, the linear local projection and the
-state-dependent one with both states in one vector under each of the four state
-weights (montecarlo/response_cache.h), six million confidence sets. State 1 and
-state 2 on their own are run by old/montecarlo_single_states/.
+state-dependent one with both states in one vector under the causal HP cycle at
+the estimated lambda, and the t-QVARMA with its two growth states in one
+vector (montecarlo/response_cache.h), four million confidence
+sets. State 1 and state 2 on their own are run by
+old/montecarlo_single_states/, both states under the other three state weights
+by old/montecarlo_other_state_weights/.
 
 Each benchmark is that procedure against that run: the squared error between
 response vectors minus each replicate's own squared deviation from its
@@ -66,10 +76,10 @@ out/montecarlo/sweep_grid_response_cache/, and built there when missing.
 #define ALPHA 0.05
 #endif
 #ifndef PROGRESS_PATH
-#define PROGRESS_PATH "out/montecarlo/seri_true_configuration_recovery_progress.csv"
+#define PROGRESS_PATH "out/old/montecarlo_mean_jacobian_qvarma/seri_true_configuration_recovery_progress.csv"
 #endif
 #ifndef RESULT_PATH
-#define RESULT_PATH "out/montecarlo/seri_true_configuration_recovery.csv.gz"
+#define RESULT_PATH "out/old/montecarlo_mean_jacobian_qvarma/seri_true_configuration_recovery.csv.gz"
 #endif
 #ifndef RESPONSE_CACHE_DIR
 #define RESPONSE_CACHE_DIR RESPONSE_CACHE_DIR_DEFAULT
@@ -96,9 +106,11 @@ static int n_samples = 0;
 static int n_replicates = 0;
 static int n_threads = 0;
 
-/* The models this grid runs: every model but state 1 and state 2 on their own. */
+/* The models this grid runs: the t-QVARMA, the linear projection and both
+   states in one vector under the causal HP cycle at the estimated lambda, and
+   the t-QVARMA with its two growth states in one vector. */
 static int runs_model(int model) {
-    return !model_is_single_state(model);
+    return model_is_mean_jacobian_qvarma(model);
 }
 
 static long n_run_models(void) {
@@ -339,23 +351,23 @@ static void recover_model(int model, int run_from, int run_to, const unsigned ch
    skips the rows the result holds, keeps them, and does the new model. */
 static void restore_progress(void) {
     FILE *f = fopen(RESULT_PATH, "rb");
-    assert(f && "seri_true_configuration_recovery: cannot open the result");
+    assert(f && "mean_jacobian_qvarma_seri_true_configuration_recovery: cannot open the result");
     fseek(f, 0, SEEK_END);
     long length = ftell(f);
     fseek(f, 0, SEEK_SET);
     unsigned char *compressed = malloc((size_t)length);
-    assert(compressed && "seri_true_configuration_recovery: out of memory reading the result");
+    assert(compressed && "mean_jacobian_qvarma_seri_true_configuration_recovery: out of memory reading the result");
     size_t n_read = fread(compressed, 1, (size_t)length, f);
-    assert(n_read == (size_t)length && "seri_true_configuration_recovery: short read of the result");
+    assert(n_read == (size_t)length && "mean_jacobian_qvarma_seri_true_configuration_recovery: short read of the result");
     (void)n_read;
     fclose(f);
 
     size_t text_length;
     unsigned char *text = gzip_inflate(compressed, (size_t)length, &text_length);
     FILE *out = fopen(PROGRESS_PATH, "wb");
-    assert(out && "seri_true_configuration_recovery: cannot open the progress file for writing");
+    assert(out && "mean_jacobian_qvarma_seri_true_configuration_recovery: cannot open the progress file for writing");
     size_t n_written = fwrite(text, 1, text_length, out);
-    assert(n_written == text_length && "seri_true_configuration_recovery: short write of the progress file");
+    assert(n_written == text_length && "mean_jacobian_qvarma_seri_true_configuration_recovery: short write of the progress file");
     (void)n_written;
     fclose(out);
     fprintf(stderr, "%s restored to %s, %zu bytes\n", RESULT_PATH, PROGRESS_PATH, text_length);
@@ -366,23 +378,23 @@ static void restore_progress(void) {
 /* The progress file, compressed whole into the result and then removed. */
 static void write_result(void) {
     FILE *f = fopen(PROGRESS_PATH, "rb");
-    assert(f && "seri_true_configuration_recovery: the progress file is missing");
+    assert(f && "mean_jacobian_qvarma_seri_true_configuration_recovery: the progress file is missing");
     fseek(f, 0, SEEK_END);
     long length = ftell(f);
     fseek(f, 0, SEEK_SET);
     unsigned char *text = malloc((size_t)length);
-    assert(text && "seri_true_configuration_recovery: out of memory reading the progress file");
+    assert(text && "mean_jacobian_qvarma_seri_true_configuration_recovery: out of memory reading the progress file");
     size_t n_read = fread(text, 1, (size_t)length, f);
-    assert(n_read == (size_t)length && "seri_true_configuration_recovery: short read of the progress file");
+    assert(n_read == (size_t)length && "mean_jacobian_qvarma_seri_true_configuration_recovery: short read of the progress file");
     (void)n_read;
     fclose(f);
 
     size_t compressed_length;
     unsigned char *compressed = gzip_deflate_level(text, (size_t)length, 9, &compressed_length);
     FILE *out = fopen(RESULT_PATH, "wb");
-    assert(out && "seri_true_configuration_recovery: cannot open the result for writing");
+    assert(out && "mean_jacobian_qvarma_seri_true_configuration_recovery: cannot open the result for writing");
     size_t n_written = fwrite(compressed, 1, compressed_length, out);
-    assert(n_written == compressed_length && "seri_true_configuration_recovery: short write of the result");
+    assert(n_written == compressed_length && "mean_jacobian_qvarma_seri_true_configuration_recovery: short write of the result");
     (void)n_written;
     fclose(out);
     remove(PROGRESS_PATH);
@@ -410,13 +422,13 @@ int main(void) {
     int restored = stat(RESULT_PATH, &st) == 0 && !progress_exists;
 
     samples = lp_list_samples(LP_FIT_DIR, &n_samples);
-    assert(n_samples > 0 && "seri_true_configuration_recovery: no configurations in the LP fit cache");
+    assert(n_samples > 0 && "mean_jacobian_qvarma_seri_true_configuration_recovery: no configurations in the LP fit cache");
     n_replicates = lp_count_replicates(INPUT_DIR, samples[0].name);
     for (int i = 0; i < n_samples; i++) {
         char path[640];
         snprintf(path, sizeof path, "%s/%s", RESPONSE_QVARMA_FIT_DIR, samples[i].name);
         int found = stat(path, &st) == 0;
-        assert(found && "seri_true_configuration_recovery: a configuration has LP fits and no t-QVARMA fits");
+        assert(found && "mean_jacobian_qvarma_seri_true_configuration_recovery: a configuration has LP fits and no t-QVARMA fits");
         (void)found;
     }
 
@@ -431,9 +443,10 @@ int main(void) {
         lp_free_samples(samples, n_samples);
         return 0;
     }
-    mkdir("out/montecarlo", 0755);
+    mkdir("out/old", 0755);
+    mkdir("out/old/montecarlo_mean_jacobian_qvarma", 0755);
     FILE *progress = fopen(PROGRESS_PATH, "a");
-    assert(progress && "seri_true_configuration_recovery: cannot open the progress file");
+    assert(progress && "mean_jacobian_qvarma_seri_true_configuration_recovery: cannot open the progress file");
     if (!progress_exists && !restored) {
         fputs(HEADER, progress);
         fflush(progress);
@@ -445,7 +458,7 @@ int main(void) {
        at each block after the first. */
     const char *block_text = getenv("SERI_TRUE_CONFIGURATION_RECOVERY_RUN_BLOCK");
     int run_block = block_text ? atoi(block_text) : n_replicates;
-    assert(run_block >= 1 && "seri_true_configuration_recovery: the run block must be at least 1");
+    assert(run_block >= 1 && "mean_jacobian_qvarma_seri_true_configuration_recovery: the run block must be at least 1");
     for (int model = FIRST_MODEL; model <= LAST_MODEL; model++)
         if (runs_model(model)) session_remaining += count_remaining(model, 0, n_replicates, done);
     session_started = omp_get_wtime();

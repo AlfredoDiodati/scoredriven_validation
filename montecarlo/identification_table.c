@@ -7,21 +7,28 @@ adjusted one, both at alpha 0.05.
 - Naive: squared error between response vectors averaged over the entries.
 - Adjusted: the same squared error minus the variance correction of the grid,
   montecarlo/recovery_loss.h for Hansen et al. and
-  montecarlo/own_deviation_loss.h for Seri et al.
+  montecarlo/own_deviation_loss.h for Seri et al., there with each
+  configuration's mean response taken from its last 100 runs, which form
+  no loss row (montecarlo/seri_held_out_mean_true_configuration_recovery.c).
 
-Per model and grid, over every benchmark (every run of every configuration):
-the share whose set holds the benchmark's configuration, the share where that
-configuration has the smallest mean loss, and the median size of the final
-set. Rows are the linear local projection, the state-dependent one with both
-states stacked under each of the four state weights of
-applications/lp_system.h, and the t-QVARMA; the states on their own are in
-old/montecarlo_single_states/single_state_identification_table.c. A row label
-carries C for the causal HP cycle (none: two-sided) and E for the lambda
-estimated on each run's switching series (none: lambda 1600). A model's cell
-is filled only once the grid holds all 1,000,000 of its benchmarks, and is "-"
-otherwise, so the table can be written while a grid is still running. A grid
-is read from its result, or from its progress file when the result does not
-exist yet.
+Per model and grid, over every benchmark (every run of every configuration,
+runs 0 to 899 for the adjusted Seri grid): the share whose set holds the
+benchmark's configuration, the share where that configuration has the smallest
+mean loss, and the median size of the final set. Rows are the linear local projection (LP), the state-dependent one with
+both states stacked under the causal HP cycle at the estimated lambda (NLP),
+and the t-QVARMA with its two growth states stacked (QVARMA states). The states
+on their own are in
+old/montecarlo_single_states/single_state_identification_table.c, both states
+under the other three state weights in
+old/montecarlo_other_state_weights/other_state_weights_identification_table.c,
+the t-QVARMA at the sample mean of D_t in
+old/montecarlo_mean_jacobian_qvarma/mean_jacobian_qvarma_identification_table.c,
+the adjusted Seri grid with the mean from all runs in
+old/montecarlo_full_sample_mean_seri/full_sample_mean_identification_table.c.
+A model's cell is filled only once the grid holds all of its 1,000,000
+benchmarks (900,000 for the adjusted Seri grid), and is "-" otherwise, so the table can be written while a grid is
+still running. A grid is read from its result, or from its progress file when
+the result does not exist yet.
 
 Writes, in out/montecarlo/identification_table/, identification_table.tex,
 identification_table_counts.txt (the file each grid was read from and the
@@ -46,7 +53,10 @@ was read and how long it took).
 #define LOG_PATH OUTPUT_DIR "/identification_table.log"
 #define MAX_COP 1024
 #define MAX_RUN 1000
-#define FULL_GRID 1000000L
+/* Benchmarks in a finished grid: every run of every configuration, except in
+   the adjusted Seri grid, whose last 100 runs per configuration estimate the
+   mean response and are not benchmarks. */
+static const long full_grid[] = { 1000000L, 1000000L, 1000000L, 900000L };
 
 enum { HANSEN_NAIVE, HANSEN_ADJUSTED, SERI_NAIVE, SERI_ADJUSTED, N_GRIDS };
 
@@ -56,22 +66,20 @@ static const char *const result_path[N_GRIDS] = {
     "out/montecarlo/uncorrected_true_configuration_recovery.csv.gz",
     "out/montecarlo/true_configuration_recovery.csv.gz",
     "out/montecarlo/seri_uncorrected_true_configuration_recovery.csv.gz",
-    "out/montecarlo/seri_true_configuration_recovery.csv.gz",
+    "out/montecarlo/seri_held_out_mean_true_configuration_recovery_100_mean_runs.csv.gz",
 };
 static const char *const progress_path[N_GRIDS] = {
     "out/montecarlo/uncorrected_true_configuration_recovery_progress.csv",
     "out/montecarlo/true_configuration_recovery_progress.csv",
     "out/montecarlo/seri_uncorrected_true_configuration_recovery_progress.csv",
-    "out/montecarlo/seri_true_configuration_recovery_progress.csv",
+    "out/montecarlo/seri_held_out_mean_true_configuration_recovery_100_mean_runs_progress.csv",
 };
 
 /* The table's rows, in the order they are printed. */
-#define N_ROWS 6
-static const int row_model[N_ROWS] = {
-    MODEL_LP_LIN, MODEL_LP_NL, MODEL_LP_NL_CAUSAL_HP, MODEL_LP_NL_ESTIMATED_LAMBDA,
-    MODEL_LP_NL_CAUSAL_HP_ESTIMATED_LAMBDA, MODEL_QVARMA,
-};
-static const char *const row_label[N_ROWS] = { "LP", "NLP", "NLP C", "NLP E", "NLP C E", "QVARMA" };
+#define N_ROWS 3
+static const int row_model[N_ROWS] = { MODEL_LP_LIN, MODEL_LP_NL_CAUSAL_HP_ESTIMATED_LAMBDA,
+    MODEL_QVARMA_GROWTH_STATES };
+static const char *const row_label[N_ROWS] = { "LP", "NLP", "QVARMA states" };
 
 typedef struct {
     long n, in_set, lowest, unparsed, duplicated;
@@ -179,7 +187,7 @@ static void read_grid(int index) {
 
 static void write_cells(FILE *out, int index, int model) {
     const Tally *t = &grids[index].tally[model];
-    if (t->n != FULL_GRID) {
+    if (t->n != full_grid[index]) {
         fprintf(out, " & - & - & -");
         return;
     }
@@ -227,10 +235,9 @@ static void write_table(void) {
                  "procedures of \\cite{Hansen-Lunde-Nason-Eco-2011} and \\cite{Seri-et-al-ES-2021} and all "
                  "auxiliary models. Naive column uses squared error as loss; adjusted column uses squared error "
                  "minus the variance corrections of Equations \\eqref{eq:hansen_mcs_loss} and "
-                 "\\eqref{eq:seri_mcs_loss}. NLP compares the responses of both states in one vector; C "
-                 "is the causal HP cycle of the switching series, at $t$ from periods $1$ to $t$ only, otherwise "
-                 "two-sided; E is the $\\lambda$ found by maximum likelihood on each run's own switching series, "
-                 "otherwise $\\lambda = 1600$.\n");
+                 "\\eqref{eq:seri_mcs_loss}. In the adjusted column of \\cite{Seri-et-al-ES-2021} each "
+                 "configuration's mean impulse response is estimated from its last 100 runs, which enter no "
+                 "loss, so the shares are over the remaining 900,000 runs.\n");
     fprintf(out, "\\end{tablenotes}\n\\end{table}\n");
     fclose(out);
 }
@@ -238,10 +245,12 @@ static void write_table(void) {
 static void write_counts(void) {
     FILE *out = fopen(COUNTS_PATH, "w");
     assert(out && "identification_table: cannot open the counts");
-    fprintf(out, "Benchmarks per model and grid; a cell of %s is filled only at %ld.\n\n", TABLE_PATH, FULL_GRID);
+    fprintf(out, "Benchmarks per model and grid; a cell of %s is filled only when the grid holds all of its "
+                 "benchmarks.\n\n", TABLE_PATH);
     for (int index = 0; index < N_GRIDS; index++) {
         const Grid *grid = &grids[index];
-        fprintf(out, "%s: %s\n", grid_label[index], grid->source ? grid->source : "no result and no progress file");
+        fprintf(out, "%s, %ld benchmarks per model when finished: %s\n", grid_label[index], full_grid[index],
+                grid->source ? grid->source : "no result and no progress file");
         if (!grid->source) continue;
         fprintf(out, "  rows that did not parse %ld\n", grid->tally[0].unparsed);
         for (int model = 0; model < N_MODELS; model++)

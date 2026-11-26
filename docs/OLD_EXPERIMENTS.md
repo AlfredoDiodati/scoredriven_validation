@@ -204,3 +204,44 @@ old-single_state_corrected_against_uncorrected_grid` and `make
 old-single_state_seri_against_bootstrap_grid`. The response caches of the
 states stay in `out/montecarlo/sweep_grid_response_cache/`, since both states
 in one vector is stacked from them.
+
+## The t-QVARMA at the mean of D_t, `old/montecarlo_mean_jacobian_qvarma/`
+
+**What it was.** The Monte Carlo grids of `montecarlo/` run on the t-QVARMA
+with its 525 total responses computed at D, the sample mean of the score
+Jacobian D_t over all periods (model `qvarma` of
+`montecarlo/response_cache.h`).
+
+**Why it is out.** It is replaced by the t-QVARMA with its two growth states
+in one vector (`qvarma_growth_states`), the same fit with its responses at the
+mean of D_t over recession periods and over expansion periods, stacked. Under
+the Seri set, over the 1,000,000 benchmarks, the two give the same results to
+within 0.01 percentage points: true configuration in the set 10.47% against
+10.48% under the adjusted loss and 4.41% against 4.41% under the naive loss,
+smallest mean loss 6.24% and 2.17% for both, median final set size 2 for both.
+Benchmark by benchmark they disagree on whether the true configuration is in
+the set in 585 benchmarks under the adjusted loss and 178 under the naive one.
+`out/studies/qvarma_growth_state_jacobian_gap_report.txt` says why: the fitted
+nu is large (median 695), so every D_t is close to I / (nu - 2) and any mean of
+them is nearly the same matrix.
+
+**Where it is recorded.** `out/old/montecarlo_mean_jacobian_qvarma/`, where
+`mean_jacobian_qvarma_rows_split.c` moved the `qvarma` rows of the four
+results of `out/montecarlo/`, with a byte-for-byte check that the two parts are
+a partition of each result. The four results before the split stay whole in
+`out/montecarlo/before_mean_jacobian_qvarma_split/`.
+`out/montecarlo/run_mean_jacobian_qvarma_split_detached.sh` ran the split,
+checked test builds of the grids against the parted results and rewrote the
+reports; log in `out/montecarlo/mean_jacobian_qvarma_split/`.
+
+| folder | programs |
+| --- | --- |
+| `old/montecarlo_mean_jacobian_qvarma/` | the four grids `mean_jacobian_qvarma_true_configuration_recovery.c`, `mean_jacobian_qvarma_uncorrected_true_configuration_recovery.c`, `mean_jacobian_qvarma_seri_true_configuration_recovery.c`, `mean_jacobian_qvarma_seri_uncorrected_true_configuration_recovery.c`; the reports `mean_jacobian_qvarma_seri_true_configuration_recovery_report.c`, `mean_jacobian_qvarma_seri_against_naive_grid.c`, `mean_jacobian_qvarma_seri_against_naive_by_configuration.c`, `mean_jacobian_qvarma_response_variance_by_configuration.c`, `mean_jacobian_qvarma_seri_corrected_against_uncorrected_grid.c`, `mean_jacobian_qvarma_identification_table.c`; `mean_jacobian_qvarma_rows_split.c` |
+
+Each is the program of `montecarlo/` with the same name less the prefix,
+restricted to that model (`model_is_mean_jacobian_qvarma`) and reading and
+writing `out/old/montecarlo_mean_jacobian_qvarma/`. The grids build at -O3
+with `make old-mean_jacobian_qvarma_<grid>`. The model's response cache and the
+code computing it stay in `out/montecarlo/sweep_grid_response_cache/qvarma.f32`
+and `montecarlo/response_cache.h`, which the programs of `old/naive_mae_loss/`
+also read.

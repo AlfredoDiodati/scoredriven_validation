@@ -1,13 +1,19 @@
 /*
-The grid of montecarlo/seri_true_configuration_recovery.c against the grid of
-montecarlo/seri_uncorrected_true_configuration_recovery.c, benchmark by
-benchmark. Both run et_al's seri_mcs at alpha 0.05 on the same benchmarks with
-the same run held out; they differ only in the loss.
+The grid of montecarlo/seri_held_out_mean_true_configuration_recovery.c
+against the grid of montecarlo/seri_uncorrected_true_configuration_recovery.c,
+benchmark by benchmark. Both run et_al's seri_mcs at alpha 0.05 with the
+benchmark's run held out.
 
 - Corrected: squared error between response vectors averaged over the entries,
   minus each run's own squared deviation from its configuration's mean
-  response averaged over the entries, scaled by n/(n-1).
-- Uncorrected: the same squared error, nothing subtracted.
+  response averaged over the entries, scaled by 100/101, the mean taken over
+  the configuration's last 100 runs; the benchmarks and the loss rows are runs
+  0 to 899.
+- Uncorrected: the same squared error, nothing subtracted, every run a
+  benchmark and a loss row.
+
+The paired benchmarks are runs 0 to 899; the uncorrected grid has 100 more
+loss rows per column, so the two differ in the loss and in the number of rows.
 
 Every count below is over the benchmarks both grids hold, so the report can be
 run while the uncorrected grid is still going. The uncorrected rows are read
@@ -35,8 +41,10 @@ Writes out/montecarlo/seri_corrected_against_uncorrected_grid_report.txt:
    the set. A loss that does not depend on noise puts both mean ranks near the
    middle, (n + 1) / 2 for n configurations.
 
-State 1 and state 2 on their own are left out; they are reported by
-old/montecarlo_single_states/single_state_seri_corrected_against_uncorrected_grid.c.
+The other models are left out. State 1 and state 2 on their own are reported
+by old/montecarlo_single_states/single_state_seri_corrected_against_uncorrected_grid.c, both states
+under the other three state weights by
+old/montecarlo_other_state_weights/other_state_weights_seri_corrected_against_uncorrected_grid.c.
 */
 
 /* getline and fmemopen are POSIX, hidden by -std=c11 otherwise. */
@@ -50,7 +58,7 @@ old/montecarlo_single_states/single_state_seri_corrected_against_uncorrected_gri
 #include <sys/stat.h>
 
 #ifndef CORRECTED_PATH
-#define CORRECTED_PATH "out/montecarlo/seri_true_configuration_recovery.csv.gz"
+#define CORRECTED_PATH "out/montecarlo/seri_held_out_mean_true_configuration_recovery_100_mean_runs.csv.gz"
 #endif
 #ifndef UNCORRECTED_RESULT_PATH
 #define UNCORRECTED_RESULT_PATH "out/montecarlo/seri_uncorrected_true_configuration_recovery.csv.gz"
@@ -111,9 +119,11 @@ static int paired(int model, size_t at) {
     return cells[GRID_CORRECTED][model][at].in_set >= 0 && cells[GRID_UNCORRECTED][model][at].in_set >= 0;
 }
 
-/* The models reported: every model but state 1 and state 2 on their own. A row of any other model is skipped. */
+/* The models reported: the t-QVARMA, the linear projection and both states in
+   one vector under the causal HP cycle at the estimated lambda. A row of any
+   other model is skipped. */
 static int reported(int model) {
-    return !model_is_single_state(model);
+    return model_in_main_grid(model);
 }
 
 static void store_row(int grid, const char *line) {
@@ -377,6 +387,11 @@ static void write_noise(FILE *out) {
                 AT(rates, n_configurations, 1 + N_GRIDS + grid) = off[grid];
             }
             n_configurations++;
+        }
+        if (n_configurations < 2) {
+            fprintf(out, "%s, no noise values in %s\n", model_label[model], NOISE_PATH);
+            mat_free(rates);
+            continue;
         }
         Mat noise_column = mat_slice(rates, 0, n_configurations, 0, 1);
         for (int grid = 0; grid < N_GRIDS; grid++) {

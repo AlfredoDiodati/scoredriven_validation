@@ -48,11 +48,16 @@ state 1 and state 2 (400 entries each) and both states stacked (800 entries).
 It answers, for each configuration, how often the procedure returns it when it
 is the right answer.
 
-The grids now run six models: the t-QVARMA, the linear projection and both
-states stacked under each of the four state weights ("The four grids under the
-other three state weights" below). State 1 and state 2 on their own are
-discarded; their programs and rows are in `old/montecarlo_single_states/` and
-`out/old/montecarlo_single_states/`, and `docs/OLD_EXPERIMENTS.md` says why.
+The grids run three models: the linear projection, both states stacked under
+the causal HP cycle at the estimated lambda ("The four grids under the other
+three state weights" below) and the t-QVARMA with its two growth states stacked
+("The t-QVARMA conditional on the growth state" below). The other models are
+discarded: state 1 and state 2 on their own, in `old/montecarlo_single_states/`
+and `out/old/montecarlo_single_states/`, both states under the other three
+state weights, in `old/montecarlo_other_state_weights/` and
+`out/old/montecarlo_other_state_weights/`, and the t-QVARMA at the sample mean
+of D_t, in `old/montecarlo_mean_jacobian_qvarma/` and
+`out/old/montecarlo_mean_jacobian_qvarma/`. `docs/OLD_EXPERIMENTS.md` says why.
 The results below that quote them were measured before.
 
 - `make mc-true_configuration_recovery` builds at -O3 and runs.
@@ -425,6 +430,94 @@ in `out/montecarlo/seri_true_configuration_recovery_trial/progress.csv`, log in
   the grid above. The set was decided by an accepted test in 58.9% of
   benchmarks.
 
+## The Seri grid with the mean taken from runs outside the loss matrix
+
+In the corrected Seri grid every row of a configuration's column is centred on
+the mean of all the column's rows, so the rows of the loss matrix are not
+independent, which `seri_mcs` assumes.
+`montecarlo/seri_held_out_mean_true_configuration_recovery.c` splits each
+configuration's 1000 runs: the last S = 100 (runs 900 to 999) give the mean
+response and nothing else, the first 900 give the benchmarks and the rows of
+the loss matrices. For loss run s of configuration i against benchmark d,
+
+    L*_is = (1/K) sum_h (IR_ish - IR_dh)^2 - S/(S+1) (1/K) sum_h (IR_ish - IR_bar_ih)^2,
+
+with IR_bar_ih the mean of entry h over the 100 mean runs. The factor c is the
+one that makes the mean loss over the n loss rows, which is what `seri_mcs`
+compares, have expectation (IR_ih - IR_dh)^2 with no sigma2_ih left. With
+x_s the loss runs, xbar and s2 their mean and sample variance, m the mean of
+the S mean runs and d the benchmark, per entry,
+
+    (1/n) sum_s L*_is = (xbar - d)^2 + (1 - c) (n-1)/n s2 - c (xbar - m)^2,
+
+whose expectation is (mu - d)^2 + sigma2 [1/n + (1 - c)(n-1)/n - c (1/n + 1/S)].
+The bracket is zero at c = S/(S+1). In the corrected Seri grid m is xbar
+itself, the last term is gone, and the bracket 1/n + (1 - c)(n-1)/n is zero at
+c = n/(n-1): the n there is the 1/n in the expectation of (xbar - d)^2, from
+averaging the rows. Keeping n/(n-1) here, with n = 899 and S = 100, would leave
+the bracket at about -0.011, a loss lowered by 1.1% of each configuration's own
+variance.
+`own_deviation_loss_held_out_mean_deviations` in
+`montecarlo/own_deviation_loss.h` computes the term, and
+`tests/own_deviation_loss_held_out_mean_correctness.c` checks it against a
+reference written from the definition and checks, on simulated responses
+(K = 20, S = 5, 200 deviation runs, 2000 draws, seed 20261125), that its
+average is the mean response variance to 0.15% while the term without
+S/(S+1) is 19.8% above it (passed 2026-11-25). Everything else is the Seri
+grid's: the benchmark's run index held out of every column, `seri_mcs` at
+alpha 0.05, the same columns. 900 benchmarks per configuration, 900,000 per
+model, for the linear projection, both states under the causal HP cycle at the
+estimated lambda and the t-QVARMA with its two growth states.
+
+### How many runs for the mean
+
+`studies/response_variance_run_count.c` (`make study-response_variance_run_count`)
+measures how many runs, taken from the last one backwards, the summed response
+variance needs. For configuration i and m runs (runs 1000-m to 999), V_i(m) is
+the sum over every entry of the response vector of the entry's sample variance
+(divisor m - 1), and d_i(m) = |V_i(m) - V_i(1000)| / V_i(1000). A model's run
+count is the smallest m from which on, for every larger m too, d_i(m) < 0.05
+in at least 95% of the 1000 configurations. The runs given to the mean were
+bounded at 100 per configuration. Cached responses of all 1000 runs of all
+1000 configurations, no randomness. Output in
+`out/studies/response_variance_run_count_report.txt` and
+`out/studies/response_variance_run_count_by_size.csv`, measured 2026-11-25:
+
+- LP linear: run count 386. At m = 100 the median d is 0.037, the 95th
+  percentile 0.112, 62.7% of configurations below 0.05.
+- NLP both states (causal HP cycle, estimated lambda): run count 232. At
+  m = 100, median 0.026, 95th percentile 0.081, 77.8% below 0.05.
+- t-QVARMA growth states: run count 939. At m = 100, median 0.126, 95th
+  percentile 0.640, largest 3.45, 22.3% below 0.05; at m = 500 still only
+  50.6% below.
+
+No model meets the criterion within 100 runs, so the grid uses the bound,
+S = 100, for every model.
+
+The study also writes every configuration's V_i(m), m = 2 to 1000, to
+`out/studies/response_variance_run_count_by_configuration.csv`, and
+`studies/response_variance_run_count_plots.py` (polars, plotly, kaleido 1)
+draws V_i(m) / V_i(1000) against m as quantile bands across configurations into
+`out/studies/response_variance_run_count_plots/expanding_variance_ratio.pdf`.
+
+### Trial and full run
+
+Trial: a test build with `RUN_LIMIT=1 BENCHMARK_LIMIT=64`, so run 0 of
+`cop_0001` to `cop_0064` under the three models, 192 benchmarks; no response
+missing, 100 mean runs and 900 loss runs per model. Rows and log in
+`out/montecarlo/seri_held_out_mean_trial/`.
+
+The full grid was started on 2026-11-25 at 23:42 by
+`out/montecarlo/run_seri_held_out_mean_grid_detached.sh` (detached, 12 GB
+address-space cap, all 16 hardware threads), log
+`out/montecarlo/seri_held_out_mean_grid.log` and
+`out/montecarlo/seri_held_out_mean_true_configuration_recovery.log`. Progress
+goes to `out/montecarlo/seri_held_out_mean_true_configuration_recovery_100_mean_runs_progress.csv`,
+the result to `out/montecarlo/seri_held_out_mean_true_configuration_recovery_100_mean_runs.csv.gz`;
+the file names carry S so a grid under another split never resumes from these
+rows. Its first minutes ran at about 0.015 s per benchmark on the linear
+projection.
+
 ## The four grids under the other three state weights
 
 Besides the state-dependent projection of lpirfs' weight, the two-sided HP
@@ -443,11 +536,10 @@ rerun.
 Each grid finds its finished result, unpacks it into its progress file, runs
 only the new models and writes the result again with all of them. The results
 as they were before are kept in `out/montecarlo/before_state_weights/`. The two
-Seri grids ran all nine; the state models among them were then moved to
-`out/old/montecarlo_single_states/` with the state models of lpirfs' weight, so
-each grid's result holds six models, and the bootstrap grids, when started,
-run only the three new both-states models (7, 10 and 13), 3 million
-confidence sets each.
+Seri grids ran all nine; the rows of every discarded model were then moved to
+the two folders of `out/old/` above, so each grid's result holds three models,
+and the bootstrap grids, when started, run only model 13, both states under
+the causal HP cycle at the estimated lambda, 1 million confidence sets each.
 The programs that compare grids against the naive grid
 (`seri_against_naive_grid`, `seri_against_naive_by_configuration`) and the
 programs under `old/` stay on the original five models.
@@ -519,14 +611,15 @@ started, so the bootstrap columns of C, E and C E in the identification table
 are "-". Seri corrected ran at about 0.02 s per benchmark (0.0196 s over its
 first 1.54 million) and finished on 2026-11-22.
 
-When the Seri launcher has finished,
-`out/old/montecarlo_single_states/run_single_state_split_detached.sh` (started
-2026-11-23, waiting) moves the single-state rows out of the four results with
-`bin/single_state_rows_split`, checks test builds of the Seri and bootstrap
-corrected grids, in their `montecarlo/` version and their single-state copy,
-against the parted results (run 0 of `cop_0001` to `cop_0064` under models 0
-to 4, byte for byte), and rewrites every report of `montecarlo/` and its
-single-state copy. Log `out/old/montecarlo_single_states/run_single_state_split.log`.
+`out/montecarlo/run_discarded_model_split_detached.sh` (run 2026-11-24, after
+the Seri launcher finished) moves the rows of the discarded models out of the
+four results with `bin/single_state_rows_split` and
+`bin/other_state_weights_rows_split`, checks test builds of the Seri and
+bootstrap corrected grids, in their `montecarlo/` version and their two old
+copies, against the parted results (run 0 of `cop_0001` to `cop_0064`, models
+0 to 13 for Seri and 0 to 4 for the bootstrap grid, byte for byte), and
+rewrites every report of `montecarlo/` and of both old folders. Outputs and log
+in `out/montecarlo/discarded_model_split/`.
 
 ## One table for the four grids
 
@@ -535,12 +628,13 @@ single-state copy. Log `out/old/montecarlo_single_states/run_single_state_split.
 set or `seri_mcs`, each with the naive or the adjusted loss) as one LaTeX
 table, and per grid the share of benchmarks whose set holds the true
 configuration, the share where it has the smallest mean loss, and the median
-final set size. Rows: LP (linear); NLP (both states in one vector), also with
-C (causal HP cycle, otherwise two-sided), E (lambda estimated on each run's
-switching series, otherwise 1600) or both; and QVARMA. The states on their
-own are in the grids' results but not in the table. A cell is filled only when its grid holds all 1,000,000
-benchmarks of that model and is "-" otherwise, so it can be rerun as grids
-finish. `identification_table_counts.txt` beside it lists the file each grid
+final set size. Rows: LP (linear), NLP (both states in one vector under the
+causal HP cycle at the estimated lambda) and QVARMA states (the t-QVARMA with
+its two growth states in one vector). The discarded models have
+their own tables, written by the `identification_table` copy of each old
+folder into its `identification_table/` subfolder of `out/old/`. A cell is
+filled only when its grid holds all 1,000,000 benchmarks of that model and is
+"-" otherwise, so it can be rerun as grids finish. `identification_table_counts.txt` beside it lists the file each grid
 was read from and its benchmarks per model, and `identification_table.log`
 when each grid was read and how long it took.
 
@@ -632,6 +726,53 @@ weights from its d. Not measured; from the regressor counts, 21 per horizon in
 the linear regressions against 41 in the state-dependent ones, the linear part
 is perhaps a fifth of the 54 minutes the three other weights took over the
 three samples on 2026-11-19, so about 10 minutes per full refit.
+
+## The t-QVARMA conditional on the growth state
+
+The t-QVARMA's response depends on the data only through D, the Jacobian of
+the score with respect to the standardised shock. The model above uses the
+sample mean of D_t over all periods. `qvarma_growth_states` uses two
+conditional means instead, one per state of the economy, and stacks the two
+responses into one vector, as the NLP stacks its two states.
+
+The state of period t is decided by g_(t-1), the mean of GDP growth over the
+four periods t-4..t-1. Period t is in recession when g_(t-1) is at or below the
+20th percentile of g_(t-1) over the run's periods 5 to 400, and in expansion
+otherwise: 80 recession and 316 expansion periods per run. Periods 1 to 4 have
+no g_(t-1) and are in neither state. D_expansion and D_recession are the plain
+means of D_t over each state's periods, and each gives the 525 total responses
+of the same fit, horizons 0 to 20; the vector is the expansion responses
+followed by the recession ones, 1050 entries. No weight is shared with the NLP
+and nothing estimated for it is used.
+
+The state is lagged because D_t is a function of the period's own residual: a
+period of very low growth is mostly one with a large negative GDP shock, so
+conditioning on growth at t would select periods with large residuals, and so
+small D_t, by construction.
+
+`./bin/response_cache_build qvarma_growth_states` builds the model's response
+cache without running a confidence set: the filter of every cached t-QVARMA
+fit is run again to get D_t, nothing is refitted. On 2026-11-24 it took 336 s
+on 16 threads, 4.2 GB, and no run lacked a response.
+`out/montecarlo/run_response_cache_build_detached.sh <model>` runs it detached
+and then `tests/qvarma_growth_states_correctness.c`, which on runs 0 to 9 of
+`cop_0001`, `cop_0500` and `cop_1000` recomputes the split and the two means
+from their definitions and compares them, and the cached responses, exactly.
+
+All four grids run it. The two bootstrap grids have not been run on it:
+`out/montecarlo/run_bootstrap_qvarma_growth_states_grids_detached.sh` runs
+them, corrected loss then uncorrected, adding the model to their results the
+way the Seri launcher below does, log
+`out/montecarlo/bootstrap_qvarma_growth_states_grids.log`. A test build
+of each Seri grid over run 0 of the first 128 configurations
+(`out/montecarlo/qvarma_growth_states_trial/`) found no missing response and
+took 0.049 s per benchmark under the corrected loss and 0.024 s under the
+uncorrected one. The full runs were started on 2026-11-24 at 19:13 by
+`out/montecarlo/run_seri_qvarma_growth_states_grids_detached.sh`, corrected
+loss first, each adding the model to the result that already holds the other
+three, whose earlier copy is kept in `out/montecarlo/before_qvarma_growth_states/`
+and checked to be unchanged at the start of the new result; log
+`out/montecarlo/seri_qvarma_growth_states_grids.log`.
 
 ## A separate pipeline that refits nothing
 

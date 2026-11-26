@@ -1,6 +1,6 @@
 /*
 The per-configuration tables of the discarded naive-loss grid, computed for
-the grid of montecarlo/seri_true_configuration_recovery.c and, from the same
+the grid of montecarlo/seri_held_out_mean_true_configuration_recovery.c and, from the same
 code, for the naive-loss grid of old/naive_mae_loss/montecarlo/sweep_grid.c,
 so the two can be read side by side. They are the tables the Python scripts
 old/naive_mae_loss/montecarlo/sweep_grid_cop_0191.py,
@@ -8,7 +8,8 @@ sweep_grid_presence.py and sweep_grid_identifiability_plots.py wrote for the
 naive grid alone.
 
 - Seri: squared error minus each run's own deviation from its configuration's
-  mean response, scaled by n/(n-1), then et_al's seri_mcs at alpha 0.05.
+  mean response over its last 100 runs, scaled by 100/101, on runs 0 to 899,
+  then et_al's seri_mcs at alpha 0.05.
 - Naive: mean absolute error between response vectors, no correction, then
   et_al's mcs, MCS_TR, alpha 0.05, block length 1, bootstrap variance, 2000
   resamples, seed 123 stream 0.
@@ -37,8 +38,10 @@ Every row of both files is read; a row that does not parse, a benchmark found
 twice, and a row whose member list disagrees with its set size are counted
 and reported at the top of the text files.
 
-State 1 and state 2 on their own are left out; they are reported by
-old/montecarlo_single_states/single_state_seri_against_naive_by_configuration.c.
+The other models are left out. State 1 and state 2 on their own are reported
+by old/montecarlo_single_states/single_state_seri_against_naive_by_configuration.c, both states
+under the other three state weights by
+old/montecarlo_other_state_weights/other_state_weights_seri_against_naive_by_configuration.c.
 */
 
 /* getline and fmemopen are POSIX, hidden by -std=c11 otherwise. */
@@ -52,7 +55,7 @@ old/montecarlo_single_states/single_state_seri_against_naive_by_configuration.c.
 #include <string.h>
 #include <sys/stat.h>
 
-#define SERI_PATH "out/montecarlo/seri_true_configuration_recovery.csv.gz"
+#define SERI_PATH "out/montecarlo/seri_held_out_mean_true_configuration_recovery_100_mean_runs.csv.gz"
 #define NAIVE_PATH "out/old/naive_mae_loss/montecarlo/sweep_grid.csv.gz"
 #define COP_0191_TEXT_PATH "out/montecarlo/seri_against_naive_by_configuration_cop_0191.txt"
 #define COP_0191_LATEX_PATH "out/montecarlo/seri_against_naive_by_configuration_cop_0191.tex"
@@ -100,9 +103,11 @@ static void tally(Tally *t, const int *members, int n_members, int lowest_loss_c
     t->outcome[OUTCOME_SMALLEST_LOSS] += lowest_loss_cop == cop;
 }
 
-/* The models reported: every model but state 1 and state 2 on their own. A row of any other model is skipped. */
+/* The models reported: the t-QVARMA, the linear projection and both states in
+   one vector under the causal HP cycle at the estimated lambda. A row of any
+   other model is skipped. */
 static int reported(int model) {
-    return !model_is_single_state(model);
+    return model_in_main_grid(model);
 }
 
 static void add_row(int grid, const char *line) {
@@ -219,10 +224,10 @@ static double median_set_size(int grid, int model, int table) {
     return median;
 }
 
-/* The title of a cop_0191 table, with the benchmark count of the t-QVARMA as
-   the old script had it; every model holds the same benchmarks. */
+/* The title of a cop_0191 table, with the benchmark count of the linear projection;
+   every model holds the same benchmarks. */
 static void table_title(char *title, size_t size, int table) {
-    long n = counts[GRID_SERI][MODEL_QVARMA].table[table].benchmarks;
+    long n = counts[GRID_SERI][MODEL_LP_LIN].table[table].benchmarks;
     char count[32];
     if (n >= 1000000) snprintf(count, sizeof count, "%ld,%03ld,%03ld", n / 1000000, n / 1000 % 1000, n % 1000);
     else if (n >= 1000) snprintf(count, sizeof count, "%ld,%03ld", n / 1000, n % 1000);

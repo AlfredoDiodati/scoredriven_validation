@@ -1,12 +1,13 @@
 /*
-The grid of montecarlo/seri_true_configuration_recovery.c against the
+The grid of montecarlo/seri_held_out_mean_true_configuration_recovery.c against the
 discarded naive-loss grid of old/naive_mae_loss/montecarlo/sweep_grid.c,
 benchmark by benchmark. Both hold one row per model and benchmark with the
 same columns, and both hold out the benchmark's run index from every
 configuration.
 
 - Seri: squared error minus each run's own deviation from its configuration's
-  mean response, scaled by n/(n-1), then et_al's seri_mcs at alpha 0.05.
+  mean response over its last 100 runs, scaled by 100/101, on runs 0 to 899,
+  then et_al's seri_mcs at alpha 0.05.
 - Naive: mean absolute error between response vectors, no correction, then
   et_al's mcs, MCS_TR, alpha 0.05, block length 1, bootstrap variance, 2000
   resamples, seed 123 stream 0.
@@ -25,8 +26,10 @@ Writes out/montecarlo/seri_against_naive_grid_report.txt:
    half, at least 90% and none, and the correlation across configurations of
    the two grids' shares.
 
-State 1 and state 2 on their own are left out; they are reported by
-old/montecarlo_single_states/single_state_seri_against_naive_grid.c.
+The other models are left out. State 1 and state 2 on their own are reported
+by old/montecarlo_single_states/single_state_seri_against_naive_grid.c, both states
+under the other three state weights by
+old/montecarlo_other_state_weights/other_state_weights_seri_against_naive_grid.c.
 */
 
 /* getline and fmemopen are POSIX, hidden by -std=c11 otherwise. */
@@ -39,7 +42,7 @@ old/montecarlo_single_states/single_state_seri_against_naive_grid.c.
 #include <string.h>
 #include <sys/stat.h>
 
-#define SERI_PATH "out/montecarlo/seri_true_configuration_recovery.csv.gz"
+#define SERI_PATH "out/montecarlo/seri_held_out_mean_true_configuration_recovery_100_mean_runs.csv.gz"
 #define NAIVE_PATH "out/old/naive_mae_loss/montecarlo/sweep_grid.csv.gz"
 #define REPORT_PATH "out/montecarlo/seri_against_naive_grid_report.txt"
 #define MAX_COP 1024
@@ -63,9 +66,11 @@ static size_t cell_index(int cop, int run) {
     return (size_t)cop * MAX_RUN + run;
 }
 
-/* The models reported: every model but state 1 and state 2 on their own. A row of any other model is skipped. */
+/* The models reported: the t-QVARMA, the linear projection and both states in
+   one vector under the causal HP cycle at the estimated lambda. A row of any
+   other model is skipped. */
 static int reported(int model) {
-    return !model_is_single_state(model);
+    return model_in_main_grid(model);
 }
 
 static void add_row(int grid, const char *line) {

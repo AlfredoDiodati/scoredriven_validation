@@ -44,7 +44,7 @@ static const char *const part_name[4] = { "lin", "s1", "s2", "nl" };
 
 static void check_model_table(FILE *report) {
     int labels_ok = 1, parts_ok = 1;
-    for (int model = MODEL_LP_LIN; model < N_MODELS; model++) {
+    for (int model = MODEL_LP_LIN; model_is_lp(model); model++) {
         char expected[MODEL_LABEL_CAPACITY];
         int part = lp_model_part(model);
         snprintf(expected, sizeof expected, "lp_%s%s", part_name[part],
@@ -67,7 +67,7 @@ static void check_model_table(FILE *report) {
     int distinct = 1;
     for (int a = 0; a < N_MODELS; a++)
         for (int b = a + 1; b < N_MODELS; b++) distinct &= strcmp(model_label[a], model_label[b]) != 0;
-    check(report, distinct, "the fourteen labels are distinct");
+    check(report, distinct, "the labels are distinct");
     int fits = 1;
     for (int model = 0; model < N_MODELS; model++) fits &= strlen(model_label[model]) < MODEL_LABEL_CAPACITY;
     check(report, fits, "every label fits MODEL_LABEL_CAPACITY with its terminator");

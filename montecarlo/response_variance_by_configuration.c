@@ -21,8 +21,10 @@ holding it). The noise is written for every model reported; the correlations
 only for those of lpirfs' state weight, the only ones the naive grid holds,
 and nan for the rest.
 
-State 1 and state 2 on their own are left out; they are reported by
-old/montecarlo_single_states/single_state_response_variance_by_configuration.c.
+The other models are left out. State 1 and state 2 on their own are reported
+by old/montecarlo_single_states/single_state_response_variance_by_configuration.c, both states
+under the other three state weights by
+old/montecarlo_other_state_weights/other_state_weights_response_variance_by_configuration.c.
 */
 
 /* getline is POSIX, hidden by -std=c11 otherwise. */
@@ -44,9 +46,10 @@ static const char *const grid_label[N_GRIDS] = { "Seri", "naive" };
 /* own and off-target percentages, indexed [grid][model][cop], NaN when absent. */
 static double own_percent[N_GRIDS][N_MODELS][MAX_COP], off_percent[N_GRIDS][N_MODELS][MAX_COP];
 
-/* The models reported: every model but state 1 and state 2 on their own. */
+/* The models reported: the t-QVARMA, the linear projection and both states in
+   one vector under the causal HP cycle at the estimated lambda. */
 static int reported(int model) {
-    return !model_is_single_state(model);
+    return model_in_main_grid(model);
 }
 
 static void read_rates(void) {

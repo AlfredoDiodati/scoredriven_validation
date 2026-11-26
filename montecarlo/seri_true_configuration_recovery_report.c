@@ -1,5 +1,5 @@
 /*
-What the rows of montecarlo/seri_true_configuration_recovery.c say so far.
+What the rows of montecarlo/seri_held_out_mean_true_configuration_recovery.c say so far.
 Reads its progress file, or its compressed result when the progress file is
 gone, and writes out/montecarlo/seri_true_configuration_recovery_report.txt:
 
@@ -10,14 +10,17 @@ gone, and writes out/montecarlo/seri_true_configuration_recovery_report.txt:
 2. Per model, per configuration: the share of its own benchmarks whose set
    holds it, summarised as how many configurations reach at least half, at
    least 90%, and none.
-3. The t-QVARMA benchmarks that montecarlo/true_configuration_recovery.c also
-   finished before it was stopped: whether the configuration is in each
-   procedure's set, as a two by two table, and the mean set size under each.
+3. The benchmarks of the t-QVARMA with its two growth states that
+   montecarlo/true_configuration_recovery.c also holds in its progress file:
+   whether the configuration is in each procedure's set, as a two by two
+   table, and the mean set size under each.
 
-State 1 and state 2 on their own are left out; their rows are in
-old/montecarlo_single_states/ with their own report. Rows are read as written;
-a benchmark appearing twice is counted twice, and the report says how many
-duplicates it found.
+Only the linear projection, both states under the causal HP cycle at the
+estimated lambda and the t-QVARMA with its two growth states are reported; the
+rows of the other models are in old/montecarlo_single_states/,
+old/montecarlo_other_state_weights/ and old/montecarlo_mean_jacobian_qvarma/,
+with their own reports. Rows are read as written; a benchmark appearing twice is
+counted twice, and the report says how many duplicates it found.
 */
 
 /* getline and fmemopen are POSIX, hidden by -std=c11 otherwise. */
@@ -29,8 +32,8 @@ duplicates it found.
 #include <string.h>
 #include <sys/stat.h>
 
-#define PROGRESS_PATH "out/montecarlo/seri_true_configuration_recovery_progress.csv"
-#define RESULT_PATH "out/montecarlo/seri_true_configuration_recovery.csv.gz"
+#define PROGRESS_PATH "out/montecarlo/seri_held_out_mean_true_configuration_recovery_100_mean_runs_progress.csv"
+#define RESULT_PATH "out/montecarlo/seri_held_out_mean_true_configuration_recovery_100_mean_runs.csv.gz"
 #define OLD_PROGRESS_PATH "out/montecarlo/true_configuration_recovery_progress.csv"
 #define REPORT_PATH "out/montecarlo/seri_true_configuration_recovery_report.txt"
 #define MAX_COP 4096
@@ -48,9 +51,10 @@ static ModelSummary summary[N_MODELS];
 static signed char *seri_qvarma_in_set, *old_qvarma_in_set;
 static int *seri_qvarma_set_size, *old_qvarma_set_size;
 
-/* The models reported: every model but state 1 and state 2 on their own. */
+/* The models reported: the t-QVARMA, the linear projection and both states in
+   one vector under the causal HP cycle at the estimated lambda. */
 static int reported(int model) {
-    return !model_is_single_state(model);
+    return model_in_main_grid(model);
 }
 
 /* A row of a model not reported is skipped like a row that does not parse. */
@@ -87,7 +91,7 @@ static void add_seri_row(const char *line) {
     if (run > s->highest_run) s->highest_run = run;
     s->own_benchmarks[cop]++;
     s->own_in_set[cop] += in_set;
-    if (model == MODEL_QVARMA) {
+    if (model == MODEL_QVARMA_GROWTH_STATES) {
         size_t at = (size_t)cop * MAX_RUN + run;
         if (seri_qvarma_in_set[at] >= 0) s->duplicates++;
         seri_qvarma_in_set[at] = (signed char)in_set;
@@ -98,7 +102,7 @@ static void add_seri_row(const char *line) {
 static void add_old_row(const char *line) {
     int model, cop, run, in_set, rank, set_size, decided;
     if (!parse_row(line, &model, &cop, &run, &in_set, &rank, &set_size, &decided)) return;
-    if (model != MODEL_QVARMA) return;
+    if (model != MODEL_QVARMA_GROWTH_STATES) return;
     size_t at = (size_t)cop * MAX_RUN + run;
     old_qvarma_in_set[at] = (signed char)in_set;
     old_qvarma_set_size[at] = set_size;
@@ -237,8 +241,8 @@ int main(void) {
     mkdir("out/montecarlo", 0755);
     FILE *out = fopen(REPORT_PATH, "w");
     assert(out && "seri_true_configuration_recovery_report: cannot open the report");
-    fprintf(out, "Rows of montecarlo/seri_true_configuration_recovery.c read from %s.\n", source);
-    fprintf(out, "Duplicated t-QVARMA benchmarks found: %ld.\n\n", summary[MODEL_QVARMA].duplicates);
+    fprintf(out, "Rows of montecarlo/seri_held_out_mean_true_configuration_recovery.c read from %s.\n", source);
+    fprintf(out, "Duplicated t-QVARMA benchmarks found: %ld.\n\n", summary[MODEL_QVARMA_GROWTH_STATES].duplicates);
     write_per_model(out);
     write_per_configuration(out);
     write_against_old(out);

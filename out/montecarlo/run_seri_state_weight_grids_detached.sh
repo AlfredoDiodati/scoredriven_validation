@@ -1,14 +1,16 @@
 #!/bin/bash
 # The two Seri et al. true configuration recovery grids, corrected loss then
-# uncorrected loss, over the nine response vectors of the three state weights
-# other than lpirfs' (models 5 to 13 of montecarlo/response_cache.h). Each grid
-# unpacks its result into its progress file, runs only the models missing from
-# it and writes the result again with every model; an interrupted grid resumes
+# uncorrected loss, over both states in one vector under the causal HP cycle at
+# the estimated lambda (model 13 of montecarlo/response_cache.h), the one
+# state-dependent model the grids of montecarlo/ run. Each grid unpacks its
+# result into its progress file, runs only the models missing from it and
+# writes the result again with every model it runs; an interrupted grid resumes
 # from its progress file, and a finished one reports nothing to do.
 #
-# After each grid, its result as it was before the nine models were added
-# (out/montecarlo/before_state_weights/) must be the first bytes of the new
-# result, unpacked; the log says whether it is.
+# After each grid, its result as it was before the new weights were added
+# (out/montecarlo/before_state_weights/), without the rows of state 1 and state
+# 2 on their own and of both states under lpirfs' weight, must be the first
+# bytes of the new result, unpacked; the log says whether it is.
 #
 # Capped at 10 GB of address space, since no systemd user session is reachable
 # to cap resident memory.
@@ -27,8 +29,8 @@ for GRID in seri_true_configuration_recovery seri_uncorrected_true_configuration
   echo "$GRID exit status $STATUS ended $(date '+%F %T')" >> "$LOG"
   [ $STATUS -ne 0 ] && break
   OLD=out/montecarlo/before_state_weights/$GRID.csv.gz
-  OLD_BYTES=$(zcat "$OLD" | wc -c)
-  if cmp -s <(zcat "$OLD") <(zcat "out/montecarlo/$GRID.csv.gz" | head -c "$OLD_BYTES"); then
+  OLD_BYTES=$(zcat "$OLD" | awk -F, '$1 !~ /^lp_s[12](_|$)/ && $1 != "lp_nl"' | wc -c)
+  if cmp -s <(zcat "$OLD" | awk -F, '$1 !~ /^lp_s[12](_|$)/ && $1 != "lp_nl"') <(zcat "out/montecarlo/$GRID.csv.gz" | head -c "$OLD_BYTES"); then
     echo "$GRID: the $OLD_BYTES bytes of the earlier result are unchanged at the start of the new one" >> "$LOG"
   else
     echo "$GRID: FAILED, the earlier result is not the start of the new one" >> "$LOG"

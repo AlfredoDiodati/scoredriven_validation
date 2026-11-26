@@ -1,10 +1,11 @@
 /*
 What the rows of
-old/montecarlo_single_states/single_state_seri_true_configuration_recovery.c, state
-1 and state 2 of the state-dependent local projection on their own under the
-Seri et al. confidence set and the corrected loss, say so far. Reads its
-progress file, or its compressed result when the progress file is gone, and
-writes out/old/montecarlo_single_states/seri_true_configuration_recovery_report.txt:
+old/montecarlo_single_states/single_state_seri_true_configuration_recovery.c,
+state 1 and state 2 of the state-dependent local projection on their own,
+under the Seri et al. confidence set and the corrected loss, say so far. Reads
+its progress file, or its compressed result when the progress file is gone,
+and writes
+out/old/montecarlo_single_states/seri_true_configuration_recovery_report.txt:
 
 1. Per model: benchmarks done, how many run indices that covers, how often the
    benchmark's configuration is in the set, alone in it, and first by mean
@@ -14,8 +15,10 @@ writes out/old/montecarlo_single_states/seri_true_configuration_recovery_report.
    holds it, summarised as how many configurations reach at least half, at
    least 90%, and none.
 
-montecarlo/seri_true_configuration_recovery_report.c reports every other
-model. Rows are read as written; a benchmark appearing twice is counted twice.
+montecarlo/seri_true_configuration_recovery_report.c reports the t-QVARMA,
+the linear projection and both states under the causal HP cycle at the
+estimated lambda. Rows are read as written; a benchmark appearing twice is
+counted twice.
 */
 
 /* getline and fmemopen are POSIX, hidden by -std=c11 otherwise. */
