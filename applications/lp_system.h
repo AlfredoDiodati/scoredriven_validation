@@ -104,6 +104,41 @@ static inline void lp_system_from_stored(Mat stored, Mat *y, Mat *switching) {
         for (int t = first; t < stored.c; t++) AT(*y, k, t - first) = AT(stored, k, t);
 }
 
+/*
+The stored series the t-QVARMA treats as co-integrated: with K_star = 3
+(applications/abm_system_fit_qvarma.c) its first three rows are I(0) and the
+last two, inflation and the interest rate, are I(1) and co-integrated with
+rank one. Every row from LP_SYSTEM_FIRST_COINTEGRATED on is one of them.
+*/
+#define LP_SYSTEM_FIRST_COINTEGRATED STORED_INFLATION
+
+/*
+lp_system_from_stored with the co-integrated series in first differences: row
+k of y at period t is stored_k,t - stored_k,(t-1) for inflation and the
+interest rate, and the stored value for the other three. The period before the
+first fitted one is stored period 2, which the moving average already drops,
+so y covers the same periods as lp_system_from_stored's and switching is the
+same series, value for value.
+*/
+static inline void lp_system_from_stored_differenced(Mat stored, Mat *y, Mat *switching) {
+    lp_system_from_stored(stored, y, switching);
+    int first = LP_SYSTEM_SWITCHING_WINDOW - 1;
+    for (int k = LP_SYSTEM_FIRST_COINTEGRATED; k < LP_SYSTEM_K; k++)
+        for (int t = first; t < stored.c; t++) AT(*y, k, t - first) = AT(stored, k, t) - AT(stored, k, t - 1);
+}
+
+/* The fitted series under either treatment of the co-integrated pair. */
+static inline void lp_system_fitted_series(Mat stored, int difference_cointegrated, Mat *y, Mat *switching) {
+    if (difference_cointegrated) lp_system_from_stored_differenced(stored, y, switching);
+    else lp_system_from_stored(stored, y, switching);
+}
+
+/* What a directory of fits on the differenced series appends to its name,
+   before the state weight's suffix. */
+static inline const char *lp_system_data_suffix(int difference_cointegrated) {
+    return difference_cointegrated ? "_differenced" : "";
+}
+
 /* The one command-line flag the fitting scripts take, --refit. Anything else is
    a caller's mistake. */
 static inline int lp_parse_refit(int argc, char **argv) {

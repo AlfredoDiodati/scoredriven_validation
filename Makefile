@@ -269,7 +269,10 @@ OLD_SOURCES := old/score_loss/applications/abm_system_score_loss.c \
                old/montecarlo_mean_jacobian_qvarma/mean_jacobian_qvarma_identification_table.c \
                old/montecarlo_mean_jacobian_qvarma/mean_jacobian_qvarma_rows_split.c \
                old/montecarlo_full_sample_mean_seri/full_sample_mean_seri_true_configuration_recovery_report.c \
-               old/montecarlo_full_sample_mean_seri/full_sample_mean_identification_table.c
+               old/montecarlo_full_sample_mean_seri/full_sample_mean_identification_table.c \
+               old/montecarlo_differenced_lp/lp_system_differenced_correctness.c \
+               old/montecarlo_differenced_lp/differenced_lp_rows_split.c \
+               old/montecarlo_differenced_lp/differenced_lp_against_stored_seri_report.c
 
 # Whatever the application scripts share, so editing it rebuilds them.
 APPLICATION_HEADERS := applications/us_data.h applications/abm_system.h applications/lp_system.h \
@@ -610,6 +613,30 @@ endef
 $(eval $(call discarded_model_rules,single_state,montecarlo_single_states))
 $(eval $(call discarded_model_rules,other_state_weights,montecarlo_other_state_weights))
 $(eval $(call discarded_model_rules,mean_jacobian_qvarma,montecarlo_mean_jacobian_qvarma))
+
+# The two Seri grids over the local projections fitted with inflation and the
+# interest rate in first differences (old/montecarlo_differenced_lp/), at -O3
+# and with their own rules like the grids of montecarlo/. Their fits are
+# abm_system_fit_lp's with --difference-cointegrated, alone for the linear
+# projection and with the causal HP cycle at the estimated lambda for the
+# states.
+DIFFERENCED_LP_GRIDS := seri_held_out_mean_true_configuration_recovery seri_uncorrected_true_configuration_recovery
+.PHONY: $(addprefix old-differenced_lp_,$(DIFFERENCED_LP_GRIDS)) old-abm_system_fit_lp_differenced \
+        old-abm_system_fit_lp_differenced_causal_hp_estimated_lambda
+$(BIN)/differenced_lp_seri_held_out_mean_true_configuration_recovery: montecarlo/own_deviation_loss.h
+$(addprefix $(BIN)/differenced_lp_,$(DIFFERENCED_LP_GRIDS)): $(BIN)/differenced_lp_%: \
+    old/montecarlo_differenced_lp/differenced_lp_%.c montecarlo/progress_file.h montecarlo/recovery_loss.h \
+    montecarlo/response_cache.h $(HEADERS) $(APPLICATION_HEADERS) $(ETAL_INSTALLED_HEADERS) | $(BIN)
+	$(CC) $(subst -O2,-O3,$(CFLAGS)) -DMAT_DOUBLE -fopenmp $(ETAL_CFLAGS) $(INCLUDES) $< -o $@ $(ETAL_LIBS)
+$(addprefix old-differenced_lp_,$(DIFFERENCED_LP_GRIDS)): old-differenced_lp_%: $(BIN)/differenced_lp_% \
+    | out/old/montecarlo_differenced_lp
+	./$(BIN)/differenced_lp_$*
+$(addprefix $(BIN)/,lp_system_differenced_correctness differenced_lp_rows_split \
+    differenced_lp_against_stored_seri_report): montecarlo/response_cache.h
+old-abm_system_fit_lp_differenced: $(BIN)/abm_system_fit_lp | out/applications
+	./$(BIN)/abm_system_fit_lp --difference-cointegrated
+old-abm_system_fit_lp_differenced_causal_hp_estimated_lambda: $(BIN)/abm_system_fit_lp | out/applications
+	./$(BIN)/abm_system_fit_lp --difference-cointegrated $(LP_STATE_WEIGHT_FLAGS_causal_hp_estimated_lambda)
 
 # The naive-loss grid's five million confidence sets are built at -O3, where GCC
 # vectorises mcs()'s pair spreads; without -ffast-math that changes no

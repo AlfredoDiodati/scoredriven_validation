@@ -42,6 +42,13 @@ it, alone or together (applications/lp_system.h, LpSystemStateWeight):
 - --estimate-lambda replaces 1600 with et_al's hp_estimate, the maximum
   likelihood lambda of each replicate's own switching series.
 
+--difference-cointegrated fits both models on the series with inflation and
+the interest rate, the pair the t-QVARMA treats as co-integrated, in first
+differences (applications/lp_system.h, lp_system_from_stored_differenced); the
+switching series is unchanged. Its trees carry _differenced before the
+weight's suffix, so out/applications/abm_system_fit_lp_differenced and
+out/applications/abm_system_fit_lp_differenced_causal_hp_estimated_lambda.
+
 Each weight writes its own tree, the directory name followed by
 _causal_hp, _estimated_lambda or _causal_hp_estimated_lambda, so
 out/applications/abm_system_fit_lp_causal_hp for --causal-hp on the full
@@ -105,6 +112,7 @@ after it. Nothing printed.
 
 static const char *INPUT_DIR;
 static const char *OUTPUT_DIR;
+static int DIFFERENCE_COINTEGRATED = 0;
 
 static void make_directory(const char *path) {
     if (mkdir(path, 0755) != 0) assert(errno == EEXIST && "abm_system_fit_lp: mkdir failed");
@@ -191,7 +199,7 @@ static Series read_series(const char *sample) {
             block[b] = head;
 #endif
             s.replicate[s.count] = replicate[b];
-            lp_system_from_stored(block[b], &s.y[s.count], &s.switching[s.count]);
+            lp_system_fitted_series(block[b], DIFFERENCE_COINTEGRATED, &s.y[s.count], &s.switching[s.count]);
             s.count++;
             mat_free(block[b]);
         }
@@ -246,14 +254,25 @@ static Summary summarise(const LpSystemRecord *r) {
 }
 
 int main(int argc, char **argv) {
+    /* --difference-cointegrated is taken out here and the other flags left to
+       lp_parse_state_weight, which the US fit shares. */
+    char **weight_argv = malloc((size_t)(argc + 1) * sizeof(char *));
+    assert(weight_argv && "abm_system_fit_lp: out of memory parsing the flags");
+    int weight_argc = 0;
+    for (int i = 0; i < argc; i++) {
+        if (i > 0 && strcmp(argv[i], "--difference-cointegrated") == 0) DIFFERENCE_COINTEGRATED = 1;
+        else weight_argv[weight_argc++] = argv[i];
+    }
+    weight_argv[weight_argc] = NULL;
     int force_refit;
-    LpSystemStateWeight weight = lp_parse_state_weight(argc, argv, &force_refit);
+    LpSystemStateWeight weight = lp_parse_state_weight(weight_argc, weight_argv, &force_refit);
+    free(weight_argv);
 
     INPUT_DIR = getenv("ABM_SYSTEM_INPUT_DIR");
     if (!INPUT_DIR) INPUT_DIR = INPUT_DIR_DEFAULT;
     static char weighted_output_dir[512];
-    snprintf(weighted_output_dir, sizeof weighted_output_dir, "%s%s", OUTPUT_DIR_DEFAULT,
-             lp_system_state_weight_suffix(weight));
+    snprintf(weighted_output_dir, sizeof weighted_output_dir, "%s%s%s", OUTPUT_DIR_DEFAULT,
+             lp_system_data_suffix(DIFFERENCE_COINTEGRATED), lp_system_state_weight_suffix(weight));
     OUTPUT_DIR = getenv("ABM_SYSTEM_LP_FIT_DIR");
     if (!OUTPUT_DIR) OUTPUT_DIR = weighted_output_dir;
 #ifdef ESTIMATION_PERIODS
@@ -267,6 +286,15 @@ int main(int argc, char **argv) {
     assert((lp_system_state_weight_is_lpirfs(weight)
             || (strcmp(OUTPUT_DIR, OUTPUT_DIR_DEFAULT) != 0 && strcmp(OUTPUT_DIR, FULL_SAMPLE_OUTPUT_DIR) != 0))
            && "abm_system_fit_lp: another state weight must not write into the fits of lpirfs' weight");
+    /* A fit on the differenced series reads as a miss in a tree of the
+       undifferenced ones and would rewrite it. */
+    if (DIFFERENCE_COINTEGRATED) {
+        char undifferenced_output_dir[512];
+        snprintf(undifferenced_output_dir, sizeof undifferenced_output_dir, "%s%s", OUTPUT_DIR_DEFAULT,
+                 lp_system_state_weight_suffix(weight));
+        assert(strcmp(OUTPUT_DIR, undifferenced_output_dir) != 0 && strcmp(OUTPUT_DIR, FULL_SAMPLE_OUTPUT_DIR) != 0
+               && "abm_system_fit_lp: a fit on the differenced series must not write into the undifferenced fits");
+    }
 
     openblas_set_num_threads(1);
     make_directory(OUTPUT_DIR);
@@ -349,6 +377,9 @@ int main(int argc, char **argv) {
     fprintf(manifest, "Local projections of the R pipeline on every replicate of %s\n", INPUT_DIR);
     fprintf(manifest, "data: %s (applications/lp_system.h); state series R's GDP_MA4\n",
             LP_SYSTEM_SERIES_DESCRIPTION);
+    if (DIFFERENCE_COINTEGRATED)
+        fprintf(manifest, "Inflation and InterestRate, the series the t-QVARMA treats as co-integrated, in first "
+                          "differences; the other three and the state series as stored\n");
 #ifdef ESTIMATION_PERIODS
     fprintf(manifest, "each replicate cut to its first %d stored periods, %d after the moving average\n",
             ESTIMATION_PERIODS, lp_system_n_periods(ESTIMATION_PERIODS));

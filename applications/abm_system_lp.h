@@ -64,10 +64,14 @@ static inline int _lp_all_finite(const mreal *values) {
    the given state weight, their rows checked against the series they are
    fitted on. A configuration with no usable archive comes back with every row
    NULL. Under a weight other than lpirfs' the archive holds no linear
-   projection, so the linear model's response is never ok. */
-static inline LpConfiguration lp_configuration_load_weighted(const char *fit_dir, const char *input_dir,
-                                                             const char *sample, int n_replicates,
-                                                             LpSystemStateWeight weight) {
+   projection, so the linear model's response is never ok. difference_cointegrated
+   says whether the archive was fitted on the series with the co-integrated pair
+   in first differences (lp_system_fitted_series), which the rows are checked
+   against. */
+static inline LpConfiguration lp_configuration_load_transformed(const char *fit_dir, const char *input_dir,
+                                                                const char *sample, int n_replicates,
+                                                                LpSystemStateWeight weight,
+                                                                int difference_cointegrated) {
     LpConfiguration c;
     c.n_replicates = n_replicates;
     c.row = calloc((size_t)n_replicates, sizeof(LpSystemRecord *));
@@ -97,7 +101,7 @@ static inline LpConfiguration lp_configuration_load_weighted(const char *fit_dir
                 if (c.records[i].replicate == index) found = &c.records[i];
             if (found && index < n_replicates && found->has_responses) {
                 Mat y, switching;
-                lp_system_from_stored(block[b], &y, &switching);
+                lp_system_fitted_series(block[b], difference_cointegrated, &y, &switching);
                 if (lp_system_record_matches(found, y, switching)) {
                     c.row[index] = found;
                     for (int loss = 0; loss < LP_N_LOSSES; loss++)
@@ -110,6 +114,13 @@ static inline LpConfiguration lp_configuration_load_weighted(const char *fit_dir
         }
     }
     return c;
+}
+
+/* lp_configuration_load_transformed on the undifferenced series. */
+static inline LpConfiguration lp_configuration_load_weighted(const char *fit_dir, const char *input_dir,
+                                                             const char *sample, int n_replicates,
+                                                             LpSystemStateWeight weight) {
+    return lp_configuration_load_transformed(fit_dir, input_dir, sample, n_replicates, weight, 0);
 }
 
 /* lp_configuration_load_weighted under lpirfs' weight. */

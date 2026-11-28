@@ -211,6 +211,15 @@ Plan, none of it run:
 
 ## The same grid under the Seri et al. procedure
 
+This grid is discarded: its mean response uses the same runs as the loss
+matrix, which makes the rows dependent, and it is replaced by the grid of the
+section "The Seri grid with the mean taken from runs outside the loss matrix"
+below. Its program is now
+`old/montecarlo_full_sample_mean_seri/full_sample_mean_seri_true_configuration_recovery.c`
+(`make old-full_sample_mean_seri_true_configuration_recovery`) and its files are
+in `out/old/montecarlo_full_sample_mean_seri/`; the paths below are where they
+were when it ran.
+
 `montecarlo/seri_true_configuration_recovery.c` asks the same question of the
 procedure of `docs/MCS_ALTERNATIVE_CALIBRATION.md`. Everything above holds
 except the loss and the confidence set:
@@ -518,6 +527,30 @@ the file names carry S so a grid under another split never resumes from these
 rows. Its first minutes ran at about 0.015 s per benchmark on the linear
 projection.
 
+It finished on 2026-11-26 at 17:54 with exit status 0, 900,000 benchmarks per
+model, about 0.024 s per benchmark over the whole run (0.04 s on the t-QVARMA).
+Against the grid with the mean from all runs, over the 900,000 benchmarks both
+hold (runs 0 to 899), seri_mcs at alpha 0.05, true configuration in the set
+first with the full-sample mean, then with the held-out mean:
+
+- LP linear: 14.7% and 15.3%, mean set size 2.80 and 3.02, first by mean loss
+  8.6% and 8.5%.
+- Both states under the causal HP cycle at the estimated lambda: 38.6% and
+  40.2%, mean set size 27.78 and 30.49, first 7.0% and 6.8%.
+- t-QVARMA with its two growth states: 10.5% and 11.1%, mean set size 2.60 and
+  3.26, first 6.2% and 5.6%.
+
+The two agree on whether the true configuration is in the set in 98.3%, 95.4%
+and 97.8% of benchmarks. The held-out grid also has 100 fewer loss rows per
+column, so these differences mix the change of mean with the smaller sample.
+Report in
+`out/old/montecarlo_full_sample_mean_seri/seri_full_sample_mean_against_held_out_mean_grid_report.txt`.
+
+This grid replaces the one with the mean from all runs as the adjusted Seri
+grid: the table below and the Seri reports of `montecarlo/` read it, and the
+full-sample grid is in `old/montecarlo_full_sample_mean_seri/`
+(docs/OLD_EXPERIMENTS.md).
+
 ## The four grids under the other three state weights
 
 Besides the state-dependent projection of lpirfs' weight, the two-sided HP
@@ -633,8 +666,9 @@ causal HP cycle at the estimated lambda) and QVARMA states (the t-QVARMA with
 its two growth states in one vector). The discarded models have
 their own tables, written by the `identification_table` copy of each old
 folder into its `identification_table/` subfolder of `out/old/`. A cell is
-filled only when its grid holds all 1,000,000 benchmarks of that model and is
-"-" otherwise, so it can be rerun as grids finish. `identification_table_counts.txt` beside it lists the file each grid
+filled only when its grid holds all its benchmarks of that model (1,000,000,
+or 900,000 for the adjusted Seri grid, which is the held-out-mean grid above)
+and is "-" otherwise, so it can be rerun as grids finish. `identification_table_counts.txt` beside it lists the file each grid
 was read from and its benchmarks per model, and `identification_table.log`
 when each grid was read and how long it took.
 

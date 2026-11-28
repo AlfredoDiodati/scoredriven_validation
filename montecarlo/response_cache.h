@@ -8,7 +8,7 @@ Read by montecarlo/true_configuration_recovery.c through
 montecarlo/recovery_loss.h, and by the discarded naive-loss programs under
 old/naive_mae_loss/montecarlo/.
 
-Fifteen models. The first five: the t-QVARMA (p1q1r2, horizon 20, the stacked
+Nineteen models. The first five: the t-QVARMA (p1q1r2, horizon 20, the stacked
 total responses, 525 entries per run, computed from the cached fits in
 out/applications/abm_system_fit_qvarma/), the three local projections (linear,
 state 1, state 2, 400 entries per run, read from
@@ -37,6 +37,14 @@ expansion otherwise. D_expansion and D_recession are the plain means of D_t
 over the periods of each state, so periods 1 to 4, which have no g_(t-1), are in
 neither. The vector is the 525 responses at D_expansion followed by the 525 at
 D_recession, expansion first as lp_nl puts state 1 (GDP above trend) first.
+
+The last four are local projections fitted with inflation and the interest
+rate, the pair the t-QVARMA treats as co-integrated, in first differences
+(applications/lp_system.h, lp_system_from_stored_differenced): the linear one,
+read from out/applications/abm_system_fit_lp_differenced/, and state 1, state 2
+and both states under the causal HP cycle at the estimated lambda, read from
+out/applications/abm_system_fit_lp_differenced_causal_hp_estimated_lambda/.
+The programs of old/montecarlo_differenced_lp/ run and report them.
 
 float32 for storage and double for the arithmetic, so the only precision lost
 is in the stored responses themselves: 2.1 GB for the t-QVARMA, 4.2 GB for
@@ -82,22 +90,36 @@ enum {
     MODEL_LP_S1_CAUSAL_HP_ESTIMATED_LAMBDA, MODEL_LP_S2_CAUSAL_HP_ESTIMATED_LAMBDA,
     MODEL_LP_NL_CAUSAL_HP_ESTIMATED_LAMBDA,
     MODEL_QVARMA_GROWTH_STATES,
+    MODEL_LP_LIN_DIFFERENCED, MODEL_LP_S1_DIFFERENCED_CAUSAL_HP_ESTIMATED_LAMBDA,
+    MODEL_LP_S2_DIFFERENCED_CAUSAL_HP_ESTIMATED_LAMBDA, MODEL_LP_NL_DIFFERENCED_CAUSAL_HP_ESTIMATED_LAMBDA,
     N_MODELS
 };
 #define N_LPIRFS_WEIGHT_MODELS (MODEL_LP_NL + 1)
 
 /* A local-projection label is the response's name followed by the suffix of
-   its state weight's tree of fits (lp_system_state_weight_suffix). */
+   its tree of fits: _differenced for the fits on the series with the
+   co-integrated pair in first differences (lp_system_data_suffix), then the
+   state weight's (lp_system_state_weight_suffix). */
 static const char *const model_label[N_MODELS] = {
     "qvarma", "lp_lin", "lp_s1", "lp_s2", "lp_nl",
     "lp_s1_causal_hp", "lp_s2_causal_hp", "lp_nl_causal_hp",
     "lp_s1_estimated_lambda", "lp_s2_estimated_lambda", "lp_nl_estimated_lambda",
     "lp_s1_causal_hp_estimated_lambda", "lp_s2_causal_hp_estimated_lambda", "lp_nl_causal_hp_estimated_lambda",
     "qvarma_growth_states",
+    "lp_lin_differenced", "lp_s1_differenced_causal_hp_estimated_lambda",
+    "lp_s2_differenced_causal_hp_estimated_lambda", "lp_nl_differenced_causal_hp_estimated_lambda",
 };
 
+/* Whether a model's local projections were fitted with inflation and the
+   interest rate in first differences (applications/lp_system.h,
+   lp_system_from_stored_differenced): the linear projection, and state 1,
+   state 2 and both states under the causal HP cycle at the estimated lambda. */
+static inline int model_is_differenced(int model) {
+    return model >= MODEL_LP_LIN_DIFFERENCED && model <= MODEL_LP_NL_DIFFERENCED_CAUSAL_HP_ESTIMATED_LAMBDA;
+}
+
 static inline int model_is_lp(int model) {
-    return model >= MODEL_LP_LIN && model <= MODEL_LP_NL_CAUSAL_HP_ESTIMATED_LAMBDA;
+    return (model >= MODEL_LP_LIN && model <= MODEL_LP_NL_CAUSAL_HP_ESTIMATED_LAMBDA) || model_is_differenced(model);
 }
 
 /* Longer than any model label, for the buffers that parse one back from a
@@ -110,6 +132,7 @@ enum { LP_PART_LIN, LP_PART_S1, LP_PART_S2, LP_PART_NL };
 
 static inline int lp_model_part(int model) {
     assert(model_is_lp(model));
+    if (model_is_differenced(model)) return LP_PART_LIN + (model - MODEL_LP_LIN_DIFFERENCED);
     if (model <= MODEL_LP_NL) return LP_PART_LIN + (model - MODEL_LP_LIN);
     return LP_PART_S1 + (model - MODEL_LP_S1_CAUSAL_HP) % 3;
 }
@@ -118,7 +141,7 @@ static inline int lp_model_part(int model) {
    own. Its cache is what the both-states model of its weight is stacked from.
    The programs of old/montecarlo_single_states/ run and report these. */
 static inline int model_is_single_state(int model) {
-    if (!model_is_lp(model)) return 0;
+    if (!model_is_lp(model) || model_is_differenced(model)) return 0;
     int part = lp_model_part(model);
     return part == LP_PART_S1 || part == LP_PART_S2;
 }
@@ -142,12 +165,25 @@ static inline int model_is_mean_jacobian_qvarma(int model) {
    estimated lambda, and the t-QVARMA's two growth states in one vector. */
 static inline int model_in_main_grid(int model) {
     return !model_is_single_state(model) && !model_is_other_state_weight(model)
-        && !model_is_mean_jacobian_qvarma(model);
+        && !model_is_mean_jacobian_qvarma(model) && !model_is_differenced(model);
 }
 
-/* The state weight a local-projection model was fitted under. */
+/* The models the grids of old/montecarlo_differenced_lp/ run: the linear
+   projection and both states under the causal HP cycle at the estimated lambda,
+   fitted on the differenced series. */
+static inline int model_in_differenced_lp_grids(int model) {
+    if (!model_is_differenced(model)) return 0;
+    int part = lp_model_part(model);
+    return part == LP_PART_LIN || part == LP_PART_NL;
+}
+
+/* The state weight a local-projection model was fitted under. The linear
+   projection on the differenced series is stored in the tree of lpirfs'
+   weight, as the undifferenced one is. */
 static inline LpSystemStateWeight lp_model_state_weight(int model) {
     assert(model_is_lp(model));
+    if (model == MODEL_LP_LIN_DIFFERENCED) return lp_system_state_weight(0, 0);
+    if (model_is_differenced(model)) return lp_system_state_weight(1, 1);
     if (model <= MODEL_LP_NL) return lp_system_state_weight(0, 0);
     int weight = (model - MODEL_LP_S1_CAUSAL_HP) / 3;
     return lp_system_state_weight(weight != 1, weight != 0);
@@ -157,15 +193,21 @@ static inline LpSystemStateWeight lp_model_state_weight(int model) {
    model finds its two state models. */
 static inline int lp_model_with_part(int model, int part) {
     assert(model_is_lp(model));
+    if (model_is_differenced(model)) {
+        assert(part != LP_PART_LIN && "response_cache: the differenced linear projection is not a state's model");
+        return MODEL_LP_LIN_DIFFERENCED + (part - LP_PART_LIN);
+    }
     if (model <= MODEL_LP_NL) return MODEL_LP_LIN + (part - LP_PART_LIN);
     assert(part != LP_PART_LIN && "response_cache: the linear projection has no model under another weight");
     return model - (lp_model_part(model) - part);
 }
 
 /* Where a local-projection model's fits are: lp_fit_dir, the tree of lpirfs'
-   weight, followed by the model's weight suffix. */
+   weight on the undifferenced series, followed by the model's data suffix and
+   weight suffix. */
 static inline void lp_model_fit_dir(int model, const char *lp_fit_dir, char *out, size_t capacity) {
-    snprintf(out, capacity, "%s%s", lp_fit_dir, lp_system_state_weight_suffix(lp_model_state_weight(model)));
+    snprintf(out, capacity, "%s%s%s", lp_fit_dir, lp_system_data_suffix(model_is_differenced(model)),
+             lp_system_state_weight_suffix(lp_model_state_weight(model)));
 }
 
 /* A local-projection model's label without its "lp_" prefix, as the
@@ -377,8 +419,9 @@ static inline void _response_cache_fill(ResponseCache *cache, const LpSample *sa
             } else {
                 char fit_dir[600];
                 lp_model_fit_dir(model, lp_fit_dir, fit_dir, sizeof fit_dir);
-                LpConfiguration c = lp_configuration_load_weighted(fit_dir, input_dir, samples[sample].name,
-                                                                   n_replicates, lp_model_state_weight(model));
+                LpConfiguration c = lp_configuration_load_transformed(fit_dir, input_dir, samples[sample].name,
+                                                                      n_replicates, lp_model_state_weight(model),
+                                                                      model_is_differenced(model));
                 for (int replicate = 0; replicate < n_replicates; replicate++) {
                     if (!lp_model_response(&c, replicate, model, response)) continue;
                     float *slot = response_slot(cache, sample, replicate);

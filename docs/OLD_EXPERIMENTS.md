@@ -245,3 +245,97 @@ with `make old-mean_jacobian_qvarma_<grid>`. The model's response cache and the
 code computing it stay in `out/montecarlo/sweep_grid_response_cache/qvarma.f32`
 and `montecarlo/response_cache.h`, which the programs of `old/naive_mae_loss/`
 also read.
+
+## The Seri grid with the mean from all runs, `old/montecarlo_full_sample_mean_seri/`
+
+**What it was.** The adjusted Seri grid: every run of every configuration as
+the benchmark, 1,000,000 per model, the loss of replicate s of configuration i
+
+    L*_is = (1/K) sum_h (IR_ish - IR_dh)^2 - n/(n-1) (1/K) sum_h (IR_ish - IR_bar_ih)^2
+
+with IR_bar_ih the mean of entry h over all n kept runs of configuration i,
+then seri_mcs at alpha 0.05.
+
+**Why it is out.** IR_bar_ih uses every row of column i, so the correction of
+each row depends on all the other rows of the same column and the rows of the
+loss matrix are not independent, which seri_mcs assumes. It is replaced by
+`montecarlo/seri_held_out_mean_true_configuration_recovery.c`, which takes
+IR_bar_ih from the last S = 100 runs of each configuration, forms the losses
+and the benchmarks on runs 0 to 899, and scales the correction by S/(S+1)
+(docs/MONTECARLO_VALIDATION.md). Over the 900,000 benchmarks both grids hold
+(runs 0 to 899), the share of sets holding the true configuration was 14.7%,
+38.6% and 10.5% for the linear projection, both states under the causal HP
+cycle at the estimated lambda and the t-QVARMA with its two growth states,
+against 15.3%, 40.2% and 11.1% with the held-out mean; the mean set size 2.80,
+27.78 and 2.60 against 3.02, 30.49 and 3.26.
+
+**Where it is recorded.** `out/old/montecarlo_full_sample_mean_seri/`: the
+result `seri_true_configuration_recovery.csv.gz`, its log, its trial, its
+report, the recovery table it gave in `identification_table/`, and
+`seri_full_sample_mean_against_held_out_mean_grid_report.txt`, the benchmark by
+benchmark comparison with the held-out grid
+(`make old-seri_full_sample_mean_against_held_out_mean_grid`).
+
+| folder | programs |
+| --- | --- |
+| `old/montecarlo_full_sample_mean_seri/` | the grid `full_sample_mean_seri_true_configuration_recovery.c` (`make old-full_sample_mean_seri_true_configuration_recovery`, at -O3), its report `full_sample_mean_seri_true_configuration_recovery_report.c`, the table `full_sample_mean_identification_table.c` |
+
+Each is the program of `montecarlo/` with the same name less the prefix,
+reading and writing `out/old/montecarlo_full_sample_mean_seri/`.
+
+## The local projections with the co-integrated pair in first differences, `old/montecarlo_differenced_lp/`
+
+**What it was.** The linear local projection and both states under the causal
+HP cycle at the estimated lambda fitted with inflation and the interest rate,
+the last two of the t-QVARMA's five series (K_star = 3), which it treats as
+I(1) and co-integrated, in first differences, the other three series as
+stored. The difference at the first fitted period (stored period 3) uses
+stored period 2, which the 4-period moving average of the state series already
+drops, so the fit sees the same 397 periods as the undifferenced one; the state
+series, and so the estimated lambda and the state weight, are unchanged, only
+the regressions change (applications/lp_system.h,
+lp_system_from_stored_differenced). Both ran through the two Seri grids,
+seri_mcs at alpha 0.05 over the 1000 configurations: unadjusted (squared error,
+every run of every configuration a benchmark, 1,000,000 per model) and
+adjusted (own deviation from the mean of runs 900 to 999 subtracted, scaled by
+S/(S+1) with S = 100, runs 0 to 899 the benchmarks, 900,000 per model).
+
+**Why it is out.** It recovers the true configuration worse than the same
+projection on the stored series. Share of benchmarks whose set holds the true
+configuration, share where it has the smallest mean loss, and mean set size,
+stored against differenced:
+
+- Unadjusted, linear: 7.30% against 0.15%; 4.15% against 0.10%; 2.87 against
+  15.33.
+- Unadjusted, both states: 2.73% against 0.10%; 1.97% against 0.10%; 3.58
+  against 8.66.
+- Adjusted, linear: 15.26% against 27.59%, but the median set size goes from 2
+  to 120 of the 1000 configurations; smallest mean loss 8.50% against 0.25%.
+- Adjusted, both states: 40.23% against 30.87%; 6.78% against 0.46%; median
+  set size 20 against 58.
+
+**Where it is recorded.** `out/old/montecarlo_differenced_lp/`: the rows of
+the two differenced models of both Seri results, moved there by
+`differenced_lp_rows_split.c` with a check that the two parts are a partition
+of each result, and `differenced_lp_against_stored_seri_report.txt`, which has
+the numbers above and the paired counts. The two results before the
+differenced models were added stay whole in
+`out/montecarlo/before_differenced/`. `run_differenced_lp_seri_grids_detached.sh`
+and its log are the fits, caches, test and grid runs;
+`run_differenced_lp_split_detached.sh` and its log the split.
+
+| folder | programs |
+| --- | --- |
+| `old/montecarlo_differenced_lp/` | the grids `differenced_lp_seri_held_out_mean_true_configuration_recovery.c` and `differenced_lp_seri_uncorrected_true_configuration_recovery.c` (`make old-differenced_lp_<grid>`, at -O3); the comparison `differenced_lp_against_stored_seri_report.c`; the test `lp_system_differenced_correctness.c`; `differenced_lp_rows_split.c` |
+
+Each grid is the program of `montecarlo/` with the same name less the prefix,
+restricted to the differenced models (`model_in_differenced_lp_grids` of
+`montecarlo/response_cache.h`) and reading and writing
+`out/old/montecarlo_differenced_lp/`. The fits stay in
+`out/applications/abm_system_fit_lp_differenced/` and
+`out/applications/abm_system_fit_lp_differenced_causal_hp_estimated_lambda/`,
+from `bin/abm_system_fit_lp --difference-cointegrated` (`make
+old-abm_system_fit_lp_differenced` and `make
+old-abm_system_fit_lp_differenced_causal_hp_estimated_lambda`); the four
+models, 15 to 18, and their caches stay in `montecarlo/response_cache.h` and
+`out/montecarlo/sweep_grid_response_cache/`.
